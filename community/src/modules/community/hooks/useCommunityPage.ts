@@ -25,6 +25,7 @@ import {
   ConversationListResponse,
   ConversationItem,
   ConversationMessage,
+  BlockedUser,
 } from "@/modules/community/types";
 import { GroupMember } from "@/modules/community/components/GroupMembersList";
 import {
@@ -222,14 +223,8 @@ export function useCommunityPage(options?: {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // New features state
-  const [blockedUserIds, setBlockedUserIds] = useState<string[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      return JSON.parse(localStorage.getItem("COMMUNITY_BLOCKED_USERS") || "[]");
-    } catch {
-      return [];
-    }
-  });
+  const [blockedUsersList, setBlockedUsersList] = useState<BlockedUser[]>([]);
+  const [isLoadingBlockedUsers, setIsLoadingBlockedUsers] = useState(false);
   const [pinnedMessages, setPinnedMessages] = useState<Record<string, string>>(() => {
     if (typeof window === "undefined") return {};
     try {
@@ -245,23 +240,56 @@ export function useCommunityPage(options?: {
   const [forwardingMessages, setForwardingMessages] = useState<ConversationMessage[]>([]);
   const [messageToDelete, setMessageToDelete] = useState<ConversationMessage | null>(null);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("COMMUNITY_BLOCKED_USERS", JSON.stringify(blockedUserIds));
+  const loadBlockedUsers = useCallback(async () => {
+    setIsLoadingBlockedUsers(true);
+    try {
+      const users = await communityService.getBlockedUsers();
+      setBlockedUsersList(users);
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to load blocked users",
+      );
+    } finally {
+      setIsLoadingBlockedUsers(false);
     }
-  }, [blockedUserIds]);
+  }, []);
+
+  const handleUnblockUserById = useCallback(
+    async (targetUserId: string) => {
+      try {
+        await communityService.unblockUser(targetUserId);
+        setBlockedUsersList((current) =>
+          current.filter((user) => user.id !== targetUserId),
+        );
+        setProfile((current) =>
+          current
+            ? {
+                ...current,
+                blockedUsers: (current.blockedUsers || []).filter(
+                  (id) => id !== targetUserId,
+                ),
+              }
+            : current,
+        );
+        toast.success("User unblocked");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed to unblock user");
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (showBlockedUsersModal) {
+      void loadBlockedUsers();
+    }
+  }, [showBlockedUsersModal, loadBlockedUsers]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("COMMUNITY_PINNED_MESSAGES", JSON.stringify(pinnedMessages));
     }
   }, [pinnedMessages]);
-
-  const toggleBlockUserLocal = useCallback((userId: string) => {
-    setBlockedUserIds((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
-    );
-  }, []);
 
   const pinMessageLocal = useCallback((conversationId: string, messageId: string) => {
     setPinnedMessages((prev) => {
@@ -2324,8 +2352,9 @@ export function useCommunityPage(options?: {
     isUploadingImage,
     isConversationSidebarOpen,
     setIsConversationSidebarOpen,
-    blockedUserIds,
-    toggleBlockUserLocal,
+    blockedUsersList,
+    isLoadingBlockedUsers,
+    handleUnblockUserById,
     pinnedMessages,
     pinMessageLocal,
     selectChatsMode,

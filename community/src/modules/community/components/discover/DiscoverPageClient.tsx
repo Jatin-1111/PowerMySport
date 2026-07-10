@@ -219,13 +219,19 @@ export default function DiscoverPageClient() {
     }
   };
 
+  const communityGroupRank = (c: CommunityGroupSummary): number => {
+    if (c.isOwner) return 0;
+    if (c.isMember) return 1;
+    return 2;
+  };
+
   const filteredCommunities = communities
     .filter((c) => {
       if (selectedSport !== "All" && c.sport !== selectedSport) return false;
       if (selectedCity !== "All" && c.city !== selectedCity) return false;
       return true;
     })
-    .sort((a, b) => (b.isAdmin ? 1 : 0) - (a.isAdmin ? 1 : 0));
+    .sort((a, b) => communityGroupRank(a) - communityGroupRank(b));
 
   const filteredPlayers = players.filter((p) => {
     if (activeTab === "PARENTS") {
@@ -249,14 +255,15 @@ export default function DiscoverPageClient() {
           title="Discover"
           subtitle="Find local sports communities, coaches, and connect with other sports parents."
           badge="Explore"
+          size="lg"
         />
 
         <div className="mt-8 flex flex-col gap-6">
           {/* Search Bar & Filters Toggle */}
-          <div className="mx-auto flex w-full max-w-2xl flex-col gap-3">
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
             <div className="flex w-full gap-3">
               <div className="relative flex-1 group">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 transition-colors group-focus-within:text-power-orange">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 transition-colors duration-200 group-focus-within:text-power-orange group-focus-within:scale-110">
                   <Search size={18} />
                 </div>
                 <input
@@ -266,34 +273,53 @@ export default function DiscoverPageClient() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="discover-search"
                 />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-power-orange transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
+                <AnimatePresence>
+                  {searchQuery && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.6 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.6 }}
+                      transition={{ duration: 0.15 }}
+                      onClick={() => setSearchQuery("")}
+                      className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-power-orange transition-colors"
+                    >
+                      <X size={16} />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
               </div>
-              <button
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => setShowFilters(!showFilters)}
-                className={`shrink-0 flex items-center gap-2 rounded-2xl border px-4 py-3.5 text-sm font-semibold backdrop-blur transition-all duration-300 ${
-                  showFilters ||
-                  selectedSport !== "All" ||
-                  selectedCity !== "All"
-                    ? "border-power-orange/30 bg-power-orange/5 text-power-orange shadow-sm"
-                    : "border-white/60 bg-white/70 text-slate-500 hover:bg-white hover:text-slate-700"
-                }`}
+                style={
+                  showFilters || selectedSport !== "All" || selectedCity !== "All"
+                    ? { border: '1px solid rgba(233, 115, 22, 0.35)', background: 'rgba(233, 115, 22, 0.08)', color: '#E97316' }
+                    : { border: '1px solid rgba(226, 232, 240, 0.7)', background: 'rgba(255, 255, 255, 0.85)', color: '#64748b' }
+                }
+                className="shrink-0 flex items-center gap-1.5 rounded-full px-4 py-3 text-[13px] font-semibold backdrop-blur transition-colors duration-300 shadow-sm hover:shadow-md"
               >
-                <Filter size={18} />
+                <motion.span
+                  animate={showFilters ? { rotate: 180 } : { rotate: 0 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                >
+                  <Filter size={16} />
+                </motion.span>
                 <span className="hidden sm:inline">Filters</span>
-                {(selectedSport !== "All" || selectedCity !== "All") && (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-power-orange/15 text-[10px] text-power-orange font-bold">
-                    {(selectedSport !== "All" ? 1 : 0) +
-                      (selectedCity !== "All" ? 1 : 0)}
-                  </span>
-                )}
-              </button>
+                <AnimatePresence>
+                  {(selectedSport !== "All" || selectedCity !== "All") && (
+                    <motion.span
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.5 }}
+                      className="flex h-5 w-5 items-center justify-center rounded-full bg-power-orange/15 text-[10px] text-power-orange font-bold"
+                    >
+                      {(selectedSport !== "All" ? 1 : 0) +
+                        (selectedCity !== "All" ? 1 : 0)}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </motion.button>
             </div>
 
             <AnimatePresence>
@@ -305,7 +331,10 @@ export default function DiscoverPageClient() {
                   transition={{ type: "spring", damping: 25, stiffness: 300 }}
                   className="overflow-hidden"
                 >
-                  <div className="rounded-2xl border border-slate-200/60 bg-white/80 p-5 shadow-sm backdrop-blur-md">
+                  <div
+                    className="rounded-2xl p-5 shadow-sm backdrop-blur-md"
+                    style={{ border: '1px solid rgba(226, 232, 240, 0.6)', background: 'rgba(255, 255, 255, 0.8)' }}
+                  >
                     <div className="grid gap-6 sm:grid-cols-2">
                       <div>
                         <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -364,7 +393,10 @@ export default function DiscoverPageClient() {
           </div>
 
           {/* Tabs */}
-          <div className="mx-auto flex w-full max-w-2xl rounded-2xl bg-slate-100/80 p-1 shadow-inner backdrop-blur-md ring-1 ring-slate-200/50">
+          <div
+            className="mx-auto flex w-full max-w-3xl rounded-2xl p-1 shadow-inner backdrop-blur-md"
+            style={{ background: 'rgba(241, 245, 249, 0.8)', boxShadow: '0 0 0 1px rgba(226, 232, 240, 0.5) inset' }}
+          >
             {["COMMUNITIES", "PARENTS", "PLAYERS", "COACHES"].map((tab) => {
               const isActive = activeTab === tab;
               const Icon =
@@ -388,14 +420,15 @@ export default function DiscoverPageClient() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab as any)}
-                  className={`relative flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-colors duration-200 ${
+                  className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-[13px] font-semibold transition-colors duration-200 ${
                     isActive ? "text-power-orange" : "text-slate-400 hover:text-slate-600"
                   }`}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="discoverTab"
-                      className="absolute inset-0 z-0 rounded-xl bg-white shadow-md ring-1 ring-slate-200/60"
+                      className="absolute inset-0 z-0 rounded-xl bg-white shadow-md"
+                      style={{ boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 0 0 1px rgba(226,232,240,0.6)' }}
                       initial={false}
                       transition={{ type: "spring", stiffness: 280, damping: 26, mass: 0.8 }}
                     />
@@ -438,7 +471,8 @@ export default function DiscoverPageClient() {
                     </div>
                     <button
                       onClick={() => setIsCreateModalOpen(true)}
-                      className="inline-flex items-center gap-2 rounded-xl bg-power-orange/90 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-power-orange"
+                      style={{ background: 'rgba(233,115,22,0.9)' }}
+                      className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
                     >
                       <Plus size={16} />
                       <span className="hidden sm:inline">Create Community</span>
@@ -447,7 +481,10 @@ export default function DiscoverPageClient() {
                   </div>
 
                   {filteredCommunities.length === 0 ? (
-                    <div className="community-card flex flex-col items-center justify-center py-12 text-center bg-white/50 backdrop-blur-sm border-white/60">
+                    <div
+                      className="community-card flex flex-col items-center justify-center py-12 text-center backdrop-blur-sm"
+                      style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid rgba(255, 255, 255, 0.6)' }}
+                    >
                       <Users size={32} className="text-slate-300" />
                       <p className="mt-3 text-sm font-medium text-slate-900">
                         No communities found
@@ -469,16 +506,25 @@ export default function DiscoverPageClient() {
                             className="discover-card group flex flex-col p-4"
                           >
                             {/* Rectangular Logo/Cover */}
-                            <div className="relative w-full aspect-[5/3] rounded-xl bg-gradient-to-br from-orange-50 to-slate-100 flex items-center justify-center mb-4 shrink-0 overflow-hidden">
+                            <div
+                              className="relative w-full rounded-xl flex items-center justify-center mb-4 shrink-0 overflow-hidden"
+                              style={{ aspectRatio: '5/3', background: 'linear-gradient(135deg, #fff7ed, #f1f5f9)' }}
+                            >
                               <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1.5">
                                 {group.isMember && (
-                                  <span className="discover-badge text-emerald-600 border-emerald-500/30 bg-emerald-50/90 shadow-sm">
+                                  <span
+                                    className="discover-badge"
+                                    style={{ color: '#059669', borderColor: 'rgba(16,185,129,0.3)', background: 'rgba(236,253,245,0.92)' }}
+                                  >
                                     Joined
                                   </span>
                                 )}
                                 {group.audience && group.audience !== "ALL" && (
-                                  <span className="discover-badge text-amber-600 border-amber-500/30 bg-amber-50/90 shadow-sm">
-                                    <Shield size={10} className="mr-0.5 text-amber-500" />
+                                  <span
+                                    className="discover-badge"
+                                    style={{ color: '#d97706', borderColor: 'rgba(245,158,11,0.3)', background: 'rgba(255,251,235,0.92)' }}
+                                  >
+                                    <Shield size={10} style={{ marginRight: 2, color: '#f59e0b' }} />
                                     {group.audience === "PLAYERS_ONLY" ? "Players Only" : "Coaches Only"}
                                   </span>
                                 )}
@@ -509,13 +555,19 @@ export default function DiscoverPageClient() {
                               
                               <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 w-full">
                                 <div className="flex items-center gap-2 text-[11px] font-medium">
-                                  <div className="flex items-center gap-1.5 rounded-full border border-sky-200/60 bg-sky-50/60 px-2.5 py-1 text-sky-700">
-                                    <Users size={12} className="text-sky-500" />
+                                  <div
+                                    className="flex items-center gap-1.5 rounded-full px-2.5 py-1"
+                                    style={{ border: '1px solid rgba(186,210,235,0.6)', background: 'rgba(240,249,255,0.6)', color: '#0369a1', fontSize: 11, fontWeight: 500 }}
+                                  >
+                                    <Users size={12} style={{ color: '#0ea5e9' }} />
                                     {group.memberCount} members
                                   </div>
                                   {group.sport && (
-                                    <div className="flex items-center gap-1.5 rounded-full border border-amber-200/60 bg-amber-50/60 px-2.5 py-1 text-amber-700">
-                                      <Trophy size={12} className="text-amber-500" />
+                                    <div
+                                      className="flex items-center gap-1.5 rounded-full px-2.5 py-1"
+                                      style={{ border: '1px solid rgba(252,211,77,0.6)', background: 'rgba(255,251,235,0.6)', color: '#b45309', fontSize: 11, fontWeight: 500 }}
+                                    >
+                                      <Trophy size={12} style={{ color: '#f59e0b' }} />
                                       <span className="truncate max-w-[80px]">{group.sport}</span>
                                     </div>
                                   )}
@@ -533,7 +585,8 @@ export default function DiscoverPageClient() {
                                   {group.isMember ? (
                                     <button
                                       onClick={() => handleCommunityChat(group.id)}
-                                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-power-orange/85 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition hover:bg-power-orange"
+                                      style={{ background: 'rgba(233,115,22,0.85)' }}
+                                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition hover:opacity-90"
                                     >
                                       <MessageSquare size={14} /> Chat
                                     </button>
@@ -588,7 +641,10 @@ export default function DiscoverPageClient() {
                   </div>
 
                   {filteredPlayers.length === 0 ? (
-                    <div className="community-card flex flex-col items-center justify-center py-12 text-center bg-white/50 backdrop-blur-sm border-white/60">
+                    <div
+                      className="community-card flex flex-col items-center justify-center py-12 text-center backdrop-blur-sm"
+                      style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid rgba(255, 255, 255, 0.6)' }}
+                    >
                       <User size={32} className="text-slate-300" />
                       <p className="mt-3 text-sm font-medium text-slate-900">
                         No {activeTab.toLowerCase()} found
@@ -607,7 +663,8 @@ export default function DiscoverPageClient() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.3, delay: idx * 0.05 }}
-                            className="discover-card group flex flex-col items-center p-5 text-center"
+                            className="discover-card group flex flex-col items-center text-center"
+                            style={{ padding: '20px' }}
                           >
                             <div
                               className={`discover-avatar-ring mb-3 h-28 w-28 shrink-0 ${player.photoUrl ? "cursor-pointer transition-transform duration-200 hover:scale-105" : ""}`}
@@ -629,18 +686,26 @@ export default function DiscoverPageClient() {
                               {player.displayName}
                             </h3>
                             
-                            <span className="mt-1 discover-badge text-slate-600 border-slate-200 bg-slate-50">
+                            <span
+                              className="discover-badge"
+                              style={{ marginTop: 4, color: '#475569', borderColor: '#e2e8f0', background: '#f8fafc' }}
+                            >
                               {player.userType === "Parent" ? "Parent" : player.role === "Coach" ? "Coach" : "Player"}
                             </span>
 
                             <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 min-h-[24px]">
                               {player.sports?.slice(0, 2).map((s) => (
-                                <span key={s} className="inline-flex rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200/60">
+                                <span
+                                  key={s}
+                                  style={{ display: 'inline-flex', borderRadius: 8, background: '#f1f5f9', padding: '2px 8px', fontSize: 10, fontWeight: 500, color: '#475569', border: '1px solid rgba(226,232,240,0.6)' }}
+                                >
                                   {s}
                                 </span>
                               ))}
                               {player.sports?.length > 2 && (
-                                <span className="inline-flex rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200/60">
+                                <span
+                                  style={{ display: 'inline-flex', borderRadius: 8, background: '#f1f5f9', padding: '2px 8px', fontSize: 10, fontWeight: 500, color: '#475569', border: '1px solid rgba(226,232,240,0.6)' }}
+                                >
                                   +{player.sports.length - 2}
                                 </span>
                               )}
@@ -658,7 +723,8 @@ export default function DiscoverPageClient() {
                               </button>
                               <button
                                 onClick={() => handlePlayerChat(player.id)}
-                                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-power-orange/85 px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm transition hover:bg-power-orange"
+                                style={{ background: 'rgba(233,115,22,0.85)' }}
+                                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm transition hover:opacity-90"
                               >
                                 <MessageSquare size={12} /> Chat
                               </button>

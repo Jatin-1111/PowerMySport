@@ -56,10 +56,13 @@ export interface CommunityGroupSummary {
   memberAddPolicy?: "ADMIN_ONLY" | "ANY_MEMBER";
   sport: string;
   city: string;
+  createdBy?: string;
   profilePicture?: string;
+  profilePictureKey?: string;
   memberCount: number;
   isMember?: boolean;
   isAdmin?: boolean;
+  isOwner?: boolean;
 }
 
 export interface CommunityUserSearchResult {
@@ -131,7 +134,8 @@ export interface ConversationMessage {
   localPreviewUrl?: string;
 }
 
-export type CommunityFeedSort = "NEW" | "TOP" | "UNANSWERED";
+export type CommunityFeedSort = "NEW" | "TOP" | "UNANSWERED" | "ANSWERED";
+export type CommunityFeedSortDirection = "ASC" | "DESC";
 
 export const COMMUNITY_POST_CATEGORIES = [
   "General",

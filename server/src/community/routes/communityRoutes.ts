@@ -18,6 +18,7 @@ import {
   getCommunityProfile,
   getPlayerProfile,
   getConversationMessages,
+  getUnreadConversationCount,
   getGroupInviteCode,
   getGroupMembers,
   getChatImageUploadUrl,
@@ -81,6 +82,7 @@ router.post("/block", validateRequest(communityBlockSchema), blockUser);
 router.post("/unblock", validateRequest(communityBlockSchema), unblockUser);
 
 router.get("/conversations", listConversations);
+router.get("/conversations/unread-count", getUnreadConversationCount);
 router.post(
   "/conversations/start",
   validateRequest(communityStartConversationSchema),
