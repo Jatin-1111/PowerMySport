@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { communityService } from "@/modules/community/services/community";
 import {
@@ -57,6 +58,8 @@ export default function DiscoverPageClient() {
 
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
+
+  const [photoLightbox, setPhotoLightbox] = useState<{ url: string; name: string } | null>(null);
 
   const [showFilters, setShowFilters] = useState(false);
   const [selectedSport, setSelectedSport] = useState<string>(initialSport);
@@ -636,7 +639,10 @@ export default function DiscoverPageClient() {
                             className="discover-card group flex flex-col items-center text-center"
                             style={{ padding: '20px' }}
                           >
-                            <div className="discover-avatar-ring mb-3 h-24 w-24 shrink-0">
+                            <div
+                              className={`discover-avatar-ring mb-3 h-28 w-28 shrink-0 ${player.photoUrl ? "cursor-pointer transition-transform duration-200 hover:scale-105" : ""}`}
+                              onClick={() => { if (player.photoUrl) setPhotoLightbox({ url: player.photoUrl, name: player.displayName }); }}
+                            >
                               {player.photoUrl ? (
                                 <img
                                   src={player.photoUrl}
@@ -645,7 +651,7 @@ export default function DiscoverPageClient() {
                                 />
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                                  <User size={36} />
+                                  <User size={40} />
                                 </div>
                               )}
                             </div>
@@ -748,6 +754,38 @@ export default function DiscoverPageClient() {
         userId={selectedPlayerId!}
         onChat={handlePlayerChat}
       />
+
+      {/* Photo lightbox — portalled to body so it covers the fixed header */}
+      {typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {photoLightbox && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+              onClick={() => setPhotoLightbox(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.85, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.85, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 320, damping: 26 }}
+                className="relative flex flex-col items-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <img
+                  src={photoLightbox.url}
+                  alt={photoLightbox.name}
+                  className="max-h-[78vh] max-w-[78vw] rounded-2xl object-contain shadow-2xl"
+                />
+                <p className="mt-3 text-sm font-semibold text-white/90">{photoLightbox.name}</p>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

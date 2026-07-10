@@ -242,7 +242,7 @@ export default function BookCoachPage() {
       <Breadcrumbs
         items={[
           { label: "Dashboard", href: "/dashboard" },
-          { label: "Coaches", href: "/coaches" },
+          { label: "Coaches", href: "/booking?tab=coaches" },
           { label: coach.sports?.[0] || "Book Coach" },
         ]}
       />

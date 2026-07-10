@@ -9,6 +9,8 @@ import {
   getPlayersUsers,
   getCoachUsers,
   getVenueListerUsers,
+  getExpertUsers,
+  getParentUsers,
   getPlayersAnalytics,
   getCoachesAnalytics,
   getVenueListersAnalytics,
@@ -149,14 +151,8 @@ router.get(
   requirePermission("users:view"),
   getVenueListersAnalytics,
 );
-router.get("/users/experts", requirePermission("users:view"), (req, res) => {
-  req.query.role = "EXPERT";
-  return getAllUsers(req, res);
-});
-router.get("/users/parents", requirePermission("users:view"), (req, res) => {
-  req.query.role = "Parent";
-  return getAllUsers(req, res);
-});
+router.get("/users/experts", requirePermission("users:view"), getExpertUsers);
+router.get("/users/parents", requirePermission("users:view"), getParentUsers);
 router.get("/users", requirePermission("users:view"), getAllUsers);
 router.get("/venues", requirePermission("venues:view"), getAllVenues);
 router.get("/bookings", requirePermission("bookings:view"), getAllBookings);

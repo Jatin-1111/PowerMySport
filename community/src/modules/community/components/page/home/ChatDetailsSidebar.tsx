@@ -6,7 +6,6 @@ import {
   X,
   Shield,
   MapPin,
-  CalendarDays,
   Clock3,
   BadgeCheck,
   UserCircle2,
@@ -18,7 +17,6 @@ import {
   LogOut,
   UserPlus,
   Users,
-  Link2,
 } from "lucide-react";
 import { GroupMembersList } from "@/modules/community/components/GroupMembersList";
 import type { CommunityPageViewModel } from "@/modules/community/hooks/useCommunityPage";
@@ -57,8 +55,9 @@ export default function ChatDetailsSidebar({ page }: Props) {
     isLoadingMemberProfile,
     handleOpenMemberProfile,
     handleCloseMemberProfile,
-    blockedUserIds,
-    toggleBlockUserLocal,
+    handleToggleConversationBlock,
+    isTogglingBlockUser,
+    selectedConversationIsBlocked,
     handleMessageSelectedMember,
   } = page;
 
@@ -71,9 +70,8 @@ export default function ChatDetailsSidebar({ page }: Props) {
     ? mutedConversationIds.includes(selectedConversation.id)
     : false;
 
-  // Determine if it's a DM and the other user is blocked
-  const otherUserId = !isGroup ? selectedConversation?.otherParticipant?.id : undefined;
-  const isBlocked = otherUserId ? blockedUserIds.includes(otherUserId) : false;
+  // Use server-authoritative blocked state
+  const isBlocked = !isGroup && selectedConversationIsBlocked;
 
   return (
     <>
@@ -362,13 +360,18 @@ export default function ChatDetailsSidebar({ page }: Props) {
               )}
 
               {/* DM-specific: Block */}
-              {!isGroup && otherUserId && (
+              {!isGroup && (
                 <button
-                  onClick={() => toggleBlockUserLocal(otherUserId)}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-rose-600 hover:bg-rose-50 transition"
+                  onClick={() => void handleToggleConversationBlock()}
+                  disabled={isTogglingBlockUser}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-rose-600 hover:bg-rose-50 transition disabled:opacity-50"
                 >
                   <Ban size={16} />
-                  {isBlocked ? "Unblock User" : "Block User"}
+                  {isTogglingBlockUser
+                    ? "Please wait…"
+                    : isBlocked
+                    ? "Unblock User"
+                    : "Block User"}
                 </button>
               )}
 

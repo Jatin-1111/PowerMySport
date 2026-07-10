@@ -246,7 +246,7 @@ const startServer = async () => {
   }
 };
 
-// Start the server
+// Start
 startServer();
 
 export default app;

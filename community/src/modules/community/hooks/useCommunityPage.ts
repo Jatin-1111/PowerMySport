@@ -1624,14 +1624,6 @@ export function useCommunityPage(options?: {
     );
     const actionLabel = currentlyBlocked ? "unblock" : "block";
 
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm(
-        `Are you sure you want to ${actionLabel} this user for direct messages?`,
-      )
-    )
-      return;
-
     setIsTogglingBlockUser(true);
     try {
       if (currentlyBlocked) {
@@ -2165,6 +2157,34 @@ export function useCommunityPage(options?: {
 
   // ── Chat Enhancement Handlers ──
 
+  const handleClearChat = useCallback(
+    async (conversationId: string) => {
+      if (selectedConversationId === conversationId) {
+        setMessages([]);
+      }
+      try {
+        await setCachedMessages(conversationId, []);
+      } catch {}
+      toast.success("Chat cleared");
+    },
+    [selectedConversationId],
+  );
+
+  const handleDeleteChat = useCallback(
+    async (conversationId: string) => {
+      setConversations((prev) => prev.filter((c) => c.id !== conversationId));
+      if (selectedConversationId === conversationId) {
+        setSelectedConversationId(null);
+        setMessages([]);
+      }
+      try {
+        await setCachedMessages(conversationId, []);
+      } catch {}
+      toast.success("Chat deleted");
+    },
+    [selectedConversationId],
+  );
+
   const handleTogglePinConversation = useCallback(
     (conversationId: string) => {
       setPinnedConversationIds((prev) => {
@@ -2403,6 +2423,8 @@ export function useCommunityPage(options?: {
     setShowEmojiPicker,
     handleTogglePinConversation,
     handleToggleMuteConversation,
+    handleClearChat,
+    handleDeleteChat,
   };
 }
 
