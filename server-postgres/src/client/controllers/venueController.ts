@@ -1,0 +1,490 @@
+import { Request, Response } from "express";
+import { User } from "../models/User";
+import { Venue } from "../models/Venue";
+import { s3Service } from "../../shared/services/S3Service";
+import {
+  createVenue,
+  deleteVenue,
+  findVenuesNearby,
+  getAllVenues,
+  getVenueById,
+  getVenuesByOwner,
+  updateVenue,
+} from "../services/VenueService";
+import { getPaginationParams } from "../../utils/pagination";
+import {
+  transformDocument,
+  transformDocuments,
+} from "../../middleware/responseTransform";
+
+interface DiscoveryContext {
+  page: number;
+  limit: number;
+  sportFilter: string | undefined;
+  latitude: number | undefined;
+  longitude: number | undefined;
+  radiusMeters: number;
+  hasLocation: boolean;
+}
+
+const buildDiscoveryContext = (req: Request): DiscoveryContext => {
+  const lat = (req.query.lat || req.query.latitude) as string | undefined;
+  const lng = (req.query.lng || req.query.longitude) as string | undefined;
+  const radius = (req.query.radius || req.query.maxDistance) as
+    string | undefined;
+  const { sport } = req.query;
+
+  const sportFilter = sport as string | undefined;
+  const { page, limit } = getPaginationParams(
+    req.query.page,
+    req.query.limit,
+    20,
+    100,
+  );
+
+  const hasLocation = Boolean(lat && lng);
+  const latitude = hasLocation ? parseFloat(lat as string) : undefined;
+  const longitude = hasLocation ? parseFloat(lng as string) : undefined;
+
+  return {
+    page,
+    limit,
+    sportFilter,
+    latitude,
+    longitude,
+    radiusMeters: radius ? parseInt(radius as string, 10) : 5000,
+    hasLocation,
+  };
+};
+
+const fetchDiscoveryVenues = async (ctx: DiscoveryContext) => {
+  if (
+    !ctx.hasLocation ||
+    ctx.latitude === undefined ||
+    ctx.longitude === undefined
+  ) {
+    const venueFilters = ctx.sportFilter
+      ? {
+          sports: [ctx.sportFilter],
+          approvalStatus: "APPROVED" as const,
+        }
+      : {
+          approvalStatus: "APPROVED" as const,
+        };
+    return getAllVenues(venueFilters, ctx.page, ctx.limit);
+  }
+
+  return findVenuesNearby(
+    ctx.latitude,
+    ctx.longitude,
+    ctx.radiusMeters,
+    ctx.sportFilter,
+    ctx.page,
+    ctx.limit,
+  );
+};
+
+export const createNewVenue = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    console.log("=== Create Venue Request ===");
+    console.log("User:", req.user);
+    console.log("Request body:", req.body);
+
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    // Only venue listers can create venues
+    // Coaches store venue details in their profile and cannot create marketplace venues
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+      return;
+    }
+
+    console.log("Venue Lister user:", {
+      id: user._id,
+      role: user.role,
+    });
+
+    const venue = await createVenue({
+      ...req.body,
+      ownerId: req.user.id,
+      approvalStatus: "PENDING", // Require admin approval for quality control
+    });
+
+    const venueData = transformDocument(venue);
+
+    res.status(201).json({
+      success: true,
+      message: "Venue created successfully and pending admin approval",
+      data: venueData,
+    });
+  } catch (error) {
+    console.error("Venue creation error:", error);
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to create venue",
+    });
+  }
+};
+
+export const getVenue = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const venueId = (req.params as Record<string, unknown>).venueId as string;
+
+    const venue = await getVenueById(venueId);
+
+    if (!venue) {
+      res.status(404).json({
+        success: false,
+        message: "Venue not found",
+      });
+      return;
+    }
+
+    const venueData = transformDocument(venue);
+
+    res.status(200).json({
+      success: true,
+      message: "Venue retrieved successfully",
+      data: venueData,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to fetch venue",
+    });
+  }
+};
+
+export const getMyVenues = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const { page, limit } = getPaginationParams(
+      req.query.page,
+      req.query.limit,
+      20,
+      100,
+    );
+
+    const result = await getVenuesByOwner(req.user.id, page, limit);
+
+    res.status(200).json({
+      success: true,
+      message: "Venues retrieved successfully",
+      data: result.venues,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
+      },
+    });
+  } catch (error) {
+    console.error("Get my venues error:", error);
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to fetch venues",
+    });
+  }
+};
+
+/**
+ * Discovery endpoint: Search for venues near a location
+ * GET /api/search?lat=28.6139&lng=77.2090&radius=5000&sport=cricket
+ */
+export const discoverNearby = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const requestStartedAt = Date.now();
+    const context = buildDiscoveryContext(req);
+
+    const startedAt = Date.now();
+    const venuesResult = await fetchDiscoveryVenues(context);
+    const venuesFetchMs = Date.now() - startedAt;
+
+    const totalDurationMs = Date.now() - requestStartedAt;
+    const venueCount = venuesResult?.venues?.length ?? 0;
+
+    console.info(
+      "[discoverNearby]",
+      JSON.stringify({
+        hasLocation: context.hasLocation,
+        radiusMeters: context.radiusMeters,
+        sportFilter: context.sportFilter || null,
+        page: context.page,
+        limit: context.limit,
+        venueCount,
+        venuesFetchMs,
+        totalDurationMs,
+      }),
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Discovery results retrieved successfully",
+      data: {
+        venues: transformDocuments(venuesResult.venues),
+      },
+      pagination: {
+        venues: {
+          total: venuesResult.total,
+          page: venuesResult.page,
+          totalPages: venuesResult.totalPages,
+        },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Discovery failed",
+    });
+  }
+};
+
+/**
+ * Legacy search endpoint (for backward compatibility)
+ */
+export const searchVenues = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { sports, page: queryPage, limit: queryLimit } = req.query;
+
+    const filters: { sports?: string[] } = {};
+    if (sports) {
+      filters.sports = Array.isArray(sports)
+        ? (sports as string[])
+        : [sports as string];
+    }
+
+    const { page, limit } = getPaginationParams(queryPage, queryLimit, 20, 100);
+
+    const result = await getAllVenues(
+      { ...filters, approvalStatus: "APPROVED" },
+      page,
+      limit,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Search results retrieved successfully",
+      data: transformDocuments(result.venues),
+      pagination: {
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Search failed",
+    });
+  }
+};
+
+export const updateVenueDetails = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const venueId = (req.params as Record<string, unknown>).venueId as string;
+
+    const ownerId = req.user?.id;
+    if (!ownerId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const venue = await updateVenue(venueId, ownerId, req.body);
+
+    if (!venue) {
+      res.status(404).json({
+        success: false,
+        message: "Venue not found",
+      });
+      return;
+    }
+
+    const venueData = transformDocument(venue);
+
+    res.status(200).json({
+      success: true,
+      message: "Venue updated successfully",
+      data: venueData,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to update venue",
+    });
+  }
+};
+
+export const deleteVenueById = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const venueId = (req.params as Record<string, unknown>).venueId as string;
+
+    const ownerId = req.user?.id;
+    if (!ownerId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const venue = await deleteVenue(venueId, ownerId);
+
+    if (!venue) {
+      res.status(404).json({
+        success: false,
+        message: "Venue not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Venue deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to delete venue",
+    });
+  }
+};
+
+export const getVenueImageUploadUrls = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const venueId = (req.params as Record<string, unknown>).venueId as string;
+    const { files, coverPhotoIndex } = req.body as {
+      files: Array<{ fileName: string; contentType: string }>;
+      coverPhotoIndex: number;
+    };
+
+    const venue = await Venue.findById(venueId);
+    if (!venue) {
+      res.status(404).json({
+        success: false,
+        message: "Venue not found",
+      });
+      return;
+    }
+
+    if (venue.ownerId?.toString() !== req.user.id) {
+      res.status(403).json({
+        success: false,
+        message: "Access denied. You do not own this venue.",
+      });
+      return;
+    }
+
+    if (coverPhotoIndex < 0 || coverPhotoIndex >= files.length) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid cover photo index",
+      });
+      return;
+    }
+
+    const uploadUrls = [] as Array<{
+      field: string;
+      uploadUrl: string;
+      downloadUrl: string;
+      fileName: string;
+      contentType: string;
+      maxSizeBytes: number;
+    }>;
+
+    for (let i = 0; i < files.length; i += 1) {
+      const file = files[i];
+
+      // Type guard to ensure file exists
+      if (!file) {
+        continue;
+      }
+
+      const field = `image_${i}`;
+      const isCover = i === coverPhotoIndex;
+      const uploadResponse = await s3Service.generateImageUploadUrl(
+        file.fileName,
+        file.contentType,
+        venueId,
+        isCover,
+      );
+
+      uploadUrls.push({
+        field,
+        uploadUrl: uploadResponse.uploadUrl,
+        downloadUrl: uploadResponse.downloadUrl,
+        fileName: uploadResponse.fileName,
+        contentType: file.contentType,
+        maxSizeBytes: 5 * 1024 * 1024,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Image upload URLs generated",
+      data: {
+        uploadUrls,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to generate image upload URLs",
+    });
+  }
+};

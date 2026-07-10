@@ -1,0 +1,474 @@
+import { Router } from "express";
+import { S3Service } from "../../shared/services/S3Service";
+import {
+  listPendingPayouts,
+  markPayoutsAsPaid,
+} from "../controllers/adminPayoutController";
+import {
+  adminLogin,
+  adminLogout,
+  approveCoachVerification,
+  changeAdminPasswordHandler,
+  createAdminAccount,
+  createCoachAdminHandler,
+  createVenueAdminHandler,
+  getAdminCoachVerificationUploadUrlHandler,
+  updateCoachAdminHandler,
+  listCoaches,
+  submitCoachVerificationAdminHandler,
+  getCoachVerificationDetails,
+  getAdminProfile,
+  handleDispute,
+  listDisputes,
+  listWebhookErrors,
+  retryWebhookError,
+  reconcileOrderAdmin,
+  listAdmins,
+  listCoachVerifications,
+  listUsersForSafety,
+  markCoachVerificationForReview,
+  notifyCoachVerificationPending,
+  processRefund,
+  getRefundStatus,
+  rejectCoachVerification,
+  reviewCommunityReport,
+  bulkReviewCommunityReports,
+  listCommunityReports,
+  listRefunds,
+  updateVenueAdminHandler,
+  updateUserSafetyStatus,
+  getRoleTemplates,
+  updateAdminPermissionsHandler,
+  updateAdminRoleHandler,
+  updateAdminProfileHandler,
+  updateAdminStatusHandler,
+  listAuditLogsHandler,
+} from "../controllers/adminController";
+import {
+  getAllConciergeRequests,
+  updateConciergeRequestStatus,
+  getConciergeDocumentDownloadUrl,
+} from "../controllers/adminConciergeController";
+import {
+  adminMiddleware,
+  authMiddleware,
+  superAdminMiddleware,
+  requirePermission,
+} from "../../middleware/auth";
+import {
+  adminChangePasswordSchema,
+  adminCreateCoachSchema,
+  adminCreateSchema,
+  adminCreateVenueSchema,
+  adminLoginSchema,
+  communityModerationActionSchema,
+  promoCreateSchema,
+} from "../../middleware/schemas";
+import {
+  createPromoCodeHandler,
+  deactivatePromoCodeHandler,
+  listPromoCodesHandler,
+  promoCodeStatsHandler,
+} from "../../client/controllers/promoCodeController";
+import { validateRequest } from "../../middleware/validation";
+import { adminLoginRateLimiter } from "../../middleware/rateLimit";
+
+const router = Router();
+
+// Public routes
+router.post(
+  "/login",
+  adminLoginRateLimiter,
+  validateRequest(adminLoginSchema),
+  adminLogin,
+);
+
+// Protected routes (require admin authentication)
+router.post("/logout", authMiddleware, adminLogout);
+router.get("/profile", authMiddleware, getAdminProfile);
+router.post(
+  "/change-password",
+  authMiddleware,
+  adminMiddleware,
+  validateRequest(adminChangePasswordSchema),
+  changeAdminPasswordHandler,
+);
+
+// Coach verification management
+router.get(
+  "/coaches/verification",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("coaches:view"),
+  listCoachVerifications,
+);
+router.get(
+  "/coaches/:coachId",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("coaches:view"),
+  getCoachVerificationDetails,
+);
+router.post(
+  "/coaches/:coachId/verify",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("coaches:verify"),
+  approveCoachVerification,
+);
+router.post(
+  "/coaches/:coachId/reject",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("coaches:verify"),
+  rejectCoachVerification,
+);
+router.post(
+  "/coaches/:coachId/mark-review",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("coaches:verify"),
+  markCoachVerificationForReview,
+);
+router.post(
+  "/coaches/:coachId/notify",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("coaches:verify"),
+  notifyCoachVerificationPending,
+);
+
+// ===== NEW: Admin venue and coach creation routes =====
+router.post(
+  "/venues/create",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("venues:create"),
+  validateRequest(adminCreateVenueSchema),
+  createVenueAdminHandler,
+);
+
+router.put(
+  "/venues/:venueId",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("venues:manage"),
+  updateVenueAdminHandler,
+);
+
+router.post(
+  "/coaches/create",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("coaches:create"),
+  validateRequest(adminCreateCoachSchema),
+  createCoachAdminHandler,
+);
+
+router.get(
+  "/coaches",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("coaches:view"),
+  listCoaches,
+);
+
+router.post(
+  "/coaches/photo-upload-url",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("coaches:create"),
+  async (req, res) => {
+    try {
+      const { fileName, contentType } = req.body;
+
+      if (!fileName || !contentType) {
+        return res.status(400).json({
+          success: false,
+          message: "fileName and contentType are required",
+        });
+      }
+
+      const s3Service = new S3Service();
+      const { uploadUrl, downloadUrl, key } =
+        await s3Service.generateCoachPhotoUploadUrl(
+          fileName,
+          contentType,
+          "pending",
+        );
+
+      return res.json({
+        success: true,
+        data: {
+          uploadUrl,
+          downloadUrl,
+          key,
+        },
+      });
+    } catch (error) {
+      console.error("Photo upload URL generation error:", error);
+      return res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to generate upload URL",
+      });
+    }
+  },
+);
+
+// Admin: presigned upload URL for coach verification / venue images
+router.post(
+  "/coaches/:coachId/verification/upload-url",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("coaches:create"),
+  getAdminCoachVerificationUploadUrlHandler,
+);
+
+// Admin: update coach profile partially
+router.put(
+  "/coaches/:coachId",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("coaches:manage"),
+  updateCoachAdminHandler,
+);
+
+// Admin: submit verification on behalf of coach
+router.post(
+  "/coaches/:coachId/verification/submit",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("coaches:verify"),
+  submitCoachVerificationAdminHandler,
+);
+
+// Refund & dispute handling
+router.get(
+  "/refunds",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:refund"),
+  listRefunds,
+);
+router.post(
+  "/refunds/:bookingId",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:refund"),
+  processRefund,
+);
+router.get(
+  "/refunds/:bookingId/status",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:refund"),
+  getRefundStatus,
+);
+router.get(
+  "/disputes",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("disputes:view"),
+  listDisputes,
+);
+router.post(
+  "/disputes/:bookingId",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("disputes:resolve"),
+  handleDispute,
+);
+
+// Webhook Recovery & Reconciliations
+router.get(
+  "/webhook-errors",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:refund"), // finance/ops-sensitive, same tier as payouts
+  listWebhookErrors,
+);
+router.post(
+  "/webhook-errors/:key/retry",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:refund"),
+  retryWebhookError,
+);
+router.post(
+  "/reconcile/:type/:orderId",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:refund"),
+  reconcileOrderAdmin,
+);
+
+// Payouts & Settlements
+router.get(
+  "/payouts/pending",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:view"),
+  listPendingPayouts,
+);
+router.post(
+  "/payouts/mark-paid",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:refund"), // You could create a 'payouts:manage' permission, but bookings:refund is functionally identical for finance ops
+  markPayoutsAsPaid,
+);
+
+router.get(
+  "/users/safety",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:view"),
+  listUsersForSafety,
+);
+router.patch(
+  "/users/:userId/safety",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:manage"),
+  updateUserSafetyStatus,
+);
+
+router.get(
+  "/community/reports",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:view"),
+  listCommunityReports,
+);
+router.patch(
+  "/community/reports/bulk-review",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:manage"),
+  bulkReviewCommunityReports,
+);
+router.patch(
+  "/community/reports/:reportId",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:manage"),
+  validateRequest(communityModerationActionSchema),
+  reviewCommunityReport,
+);
+
+// Promo code management
+router.get(
+  "/promo-codes",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:view"),
+  listPromoCodesHandler,
+);
+router.post(
+  "/promo-codes",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:manage"),
+  validateRequest(promoCreateSchema),
+  createPromoCodeHandler,
+);
+router.patch(
+  "/promo-codes/:codeId/deactivate",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:manage"),
+  deactivatePromoCodeHandler,
+);
+router.get(
+  "/promo-codes/:codeId/stats",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:view"),
+  promoCodeStatsHandler,
+);
+
+// Admin management routes (System Admin only)
+router.post(
+  "/create",
+  authMiddleware,
+  adminMiddleware,
+  superAdminMiddleware,
+  validateRequest(adminCreateSchema),
+  createAdminAccount,
+);
+router.get(
+  "/list",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("admins:view"),
+  listAdmins,
+);
+router.get(
+  "/audit-logs",
+  authMiddleware,
+  adminMiddleware,
+  superAdminMiddleware,
+  listAuditLogsHandler,
+);
+router.get(
+  "/role-templates",
+  authMiddleware,
+  adminMiddleware,
+  getRoleTemplates,
+);
+router.put(
+  "/:adminId/permissions",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("admins:manage"),
+  updateAdminPermissionsHandler,
+);
+router.put(
+  "/:adminId/role",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("admins:manage"),
+  updateAdminRoleHandler,
+);
+router.patch(
+  "/:adminId/profile",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("admins:manage"),
+  updateAdminProfileHandler,
+);
+router.patch(
+  "/:adminId/status",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("admins:manage"),
+  updateAdminStatusHandler,
+);
+
+// Concierge Requests management
+router.get(
+  "/concierge-requests",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:view"),
+  getAllConciergeRequests,
+);
+router.patch(
+  "/concierge-requests/:id/status",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:manage"),
+  updateConciergeRequestStatus,
+);
+router.get(
+  "/concierge-requests/:id/document",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:view"),
+  getConciergeDocumentDownloadUrl,
+);
+
+export default router;

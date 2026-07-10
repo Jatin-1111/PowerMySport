@@ -1,0 +1,349 @@
+// ============================================
+// PERMISSION DEFINITIONS (module:action pattern)
+// ============================================
+
+// Users Module
+export const USERS_PERMISSIONS = {
+  VIEW: "users:view",
+  MANAGE: "users:manage",
+} as const;
+
+// Venues Module
+export const VENUES_PERMISSIONS = {
+  VIEW: "venues:view",
+  MANAGE: "venues:manage",
+  CREATE: "venues:create",
+} as const;
+
+// Bookings Module
+export const BOOKINGS_PERMISSIONS = {
+  VIEW: "bookings:view",
+  MANAGE: "bookings:manage",
+  REFUND: "bookings:refund",
+} as const;
+
+// Coaches Module
+export const COACHES_PERMISSIONS = {
+  VIEW: "coaches:view",
+  MANAGE: "coaches:manage",
+  VERIFY: "coaches:verify",
+  CREATE: "coaches:create",
+} as const;
+
+// Academies Module
+export const ACADEMIES_PERMISSIONS = {
+  VIEW: "academies:view",
+  MANAGE: "academies:manage",
+} as const;
+
+// Inquiries Module
+export const INQUIRIES_PERMISSIONS = {
+  VIEW: "inquiries:view",
+  MANAGE: "inquiries:manage",
+} as const;
+
+// Disputes & Refunds Module
+export const DISPUTES_PERMISSIONS = {
+  VIEW: "disputes:view",
+  RESOLVE: "disputes:resolve",
+} as const;
+
+// Analytics Module
+export const ANALYTICS_PERMISSIONS = {
+  VIEW: "analytics:view",
+  EXPORT: "analytics:export",
+} as const;
+
+// Admins Module
+export const ADMINS_PERMISSIONS = {
+  VIEW: "admins:view",
+  MANAGE: "admins:manage",
+} as const;
+
+// Reviews Module
+export const REVIEWS_PERMISSIONS = {
+  VIEW: "reviews:view",
+  MANAGE: "reviews:manage",
+} as const;
+
+// Sport Pathways Module
+export const PATHWAYS_PERMISSIONS = {
+  VIEW: "pathways:view",
+  MANAGE: "pathways:manage",
+} as const;
+
+// Ecommerce Module
+export const PRODUCTS_PERMISSIONS = {
+  VIEW: "products:view",
+  CREATE: "products:create",
+  MANAGE: "products:manage",
+} as const;
+
+export const ORDERS_PERMISSIONS = {
+  VIEW: "orders:view",
+  MANAGE: "orders:manage",
+  REFUND: "orders:refund",
+} as const;
+
+// Flatten all permissions into a single array for validation
+export const ALL_PERMISSIONS = [
+  ...Object.values(USERS_PERMISSIONS),
+  ...Object.values(VENUES_PERMISSIONS),
+  ...Object.values(BOOKINGS_PERMISSIONS),
+  ...Object.values(COACHES_PERMISSIONS),
+  ...Object.values(ACADEMIES_PERMISSIONS),
+  ...Object.values(INQUIRIES_PERMISSIONS),
+  ...Object.values(DISPUTES_PERMISSIONS),
+  ...Object.values(ANALYTICS_PERMISSIONS),
+  ...Object.values(ADMINS_PERMISSIONS),
+  ...Object.values(REVIEWS_PERMISSIONS),
+  ...Object.values(PRODUCTS_PERMISSIONS),
+  ...Object.values(ORDERS_PERMISSIONS),
+  ...Object.values(PATHWAYS_PERMISSIONS),
+] as const;
+
+// ============================================
+// ROLE TEMPLATES
+// ============================================
+
+// Support Admin - Handles user inquiries and basic support
+export const SUPPORT_ADMIN_PERMISSIONS = [
+  INQUIRIES_PERMISSIONS.VIEW,
+  INQUIRIES_PERMISSIONS.MANAGE,
+  USERS_PERMISSIONS.VIEW,
+  VENUES_PERMISSIONS.VIEW,
+  BOOKINGS_PERMISSIONS.VIEW,
+  REVIEWS_PERMISSIONS.VIEW,
+  REVIEWS_PERMISSIONS.MANAGE,
+] as const;
+
+// Operations Admin - Manages venues, academies, bookings, and coaches
+export const OPERATIONS_ADMIN_PERMISSIONS = [
+  VENUES_PERMISSIONS.VIEW,
+  VENUES_PERMISSIONS.MANAGE,
+  VENUES_PERMISSIONS.CREATE,
+  BOOKINGS_PERMISSIONS.VIEW,
+  BOOKINGS_PERMISSIONS.MANAGE,
+  ORDERS_PERMISSIONS.VIEW,
+  ORDERS_PERMISSIONS.MANAGE,
+  COACHES_PERMISSIONS.VIEW,
+  COACHES_PERMISSIONS.MANAGE,
+  COACHES_PERMISSIONS.VERIFY,
+  COACHES_PERMISSIONS.CREATE,
+  ACADEMIES_PERMISSIONS.VIEW,
+  ACADEMIES_PERMISSIONS.MANAGE,
+  USERS_PERMISSIONS.VIEW,
+  INQUIRIES_PERMISSIONS.VIEW,
+  REVIEWS_PERMISSIONS.VIEW,
+  PRODUCTS_PERMISSIONS.VIEW,
+  PRODUCTS_PERMISSIONS.CREATE,
+  PRODUCTS_PERMISSIONS.MANAGE,
+  PATHWAYS_PERMISSIONS.VIEW,
+  PATHWAYS_PERMISSIONS.MANAGE,
+] as const;
+
+// Finance Admin - Handles refunds, disputes, and financial matters
+export const FINANCE_ADMIN_PERMISSIONS = [
+  BOOKINGS_PERMISSIONS.VIEW,
+  BOOKINGS_PERMISSIONS.REFUND,
+  ORDERS_PERMISSIONS.VIEW,
+  ORDERS_PERMISSIONS.REFUND,
+  DISPUTES_PERMISSIONS.VIEW,
+  DISPUTES_PERMISSIONS.RESOLVE,
+  USERS_PERMISSIONS.VIEW,
+  VENUES_PERMISSIONS.VIEW,
+  ANALYTICS_PERMISSIONS.VIEW,
+] as const;
+
+// Analytics Admin - View-only access to reports and analytics
+export const ANALYTICS_ADMIN_PERMISSIONS = [
+  ANALYTICS_PERMISSIONS.VIEW,
+  ANALYTICS_PERMISSIONS.EXPORT,
+  USERS_PERMISSIONS.VIEW,
+  VENUES_PERMISSIONS.VIEW,
+  BOOKINGS_PERMISSIONS.VIEW,
+  COACHES_PERMISSIONS.VIEW,
+  REVIEWS_PERMISSIONS.VIEW,
+] as const;
+
+// System Admin - Full permissions, manages other admins
+export const SYSTEM_ADMIN_PERMISSIONS = [...ALL_PERMISSIONS] as const;
+
+// ============================================
+// ROLE TEMPLATE METADATA
+// ============================================
+
+export const ADMIN_ROLES = {
+  SUPPORT_ADMIN: "SUPPORT_ADMIN",
+  OPERATIONS_ADMIN: "OPERATIONS_ADMIN",
+  FINANCE_ADMIN: "FINANCE_ADMIN",
+  ANALYTICS_ADMIN: "ANALYTICS_ADMIN",
+  SYSTEM_ADMIN: "SYSTEM_ADMIN",
+} as const;
+
+export interface RoleTemplate {
+  role: string;
+  name: string;
+  description: string;
+  permissions: readonly string[];
+}
+
+export const ROLE_TEMPLATES: Record<string, RoleTemplate> = {
+  [ADMIN_ROLES.SUPPORT_ADMIN]: {
+    role: ADMIN_ROLES.SUPPORT_ADMIN,
+    name: "Support Admin",
+    description: "Handles user inquiries, reviews, and basic support tasks",
+    permissions: SUPPORT_ADMIN_PERMISSIONS,
+  },
+  [ADMIN_ROLES.OPERATIONS_ADMIN]: {
+    role: ADMIN_ROLES.OPERATIONS_ADMIN,
+    name: "Operations Admin",
+    description: "Manages venues, academies, bookings, and coach verifications",
+    permissions: OPERATIONS_ADMIN_PERMISSIONS,
+  },
+  [ADMIN_ROLES.FINANCE_ADMIN]: {
+    role: ADMIN_ROLES.FINANCE_ADMIN,
+    name: "Finance Admin",
+    description: "Handles refunds, disputes, and financial operations",
+    permissions: FINANCE_ADMIN_PERMISSIONS,
+  },
+  [ADMIN_ROLES.ANALYTICS_ADMIN]: {
+    role: ADMIN_ROLES.ANALYTICS_ADMIN,
+    name: "Analytics Admin",
+    description: "View-only access to analytics and reports",
+    permissions: ANALYTICS_ADMIN_PERMISSIONS,
+  },
+  [ADMIN_ROLES.SYSTEM_ADMIN]: {
+    role: ADMIN_ROLES.SYSTEM_ADMIN,
+    name: "System Admin",
+    description: "Full system access and admin management",
+    permissions: SYSTEM_ADMIN_PERMISSIONS,
+  },
+};
+
+// Helper to get role template permissions
+export const getRolePermissions = (role: string): readonly string[] => {
+  return ROLE_TEMPLATES[role]?.permissions || [];
+};
+
+// Permission module groupings for UI display
+export const PERMISSION_MODULES = {
+  users: {
+    name: "User Management",
+    permissions: Object.values(USERS_PERMISSIONS),
+  },
+  venues: {
+    name: "Venue Management",
+    permissions: Object.values(VENUES_PERMISSIONS),
+  },
+  bookings: {
+    name: "Booking Management",
+    permissions: Object.values(BOOKINGS_PERMISSIONS),
+  },
+  coaches: {
+    name: "Coach Management",
+    permissions: Object.values(COACHES_PERMISSIONS),
+  },
+  academies: {
+    name: "Academy Management",
+    permissions: Object.values(ACADEMIES_PERMISSIONS),
+  },
+  inquiries: {
+    name: "Inquiry Management",
+    permissions: Object.values(INQUIRIES_PERMISSIONS),
+  },
+  disputes: {
+    name: "Dispute & Refund Management",
+    permissions: Object.values(DISPUTES_PERMISSIONS),
+  },
+  analytics: {
+    name: "Analytics & Reports",
+    permissions: Object.values(ANALYTICS_PERMISSIONS),
+  },
+  admins: {
+    name: "Admin Management",
+    permissions: Object.values(ADMINS_PERMISSIONS),
+  },
+  reviews: {
+    name: "Review Management",
+    permissions: Object.values(REVIEWS_PERMISSIONS),
+  },
+  products: {
+    name: "Product Management",
+    permissions: Object.values(PRODUCTS_PERMISSIONS),
+  },
+  orders: {
+    name: "Order Management",
+    permissions: Object.values(ORDERS_PERMISSIONS),
+  },
+  pathways: {
+    name: "Sport Pathway Management",
+    permissions: Object.values(PATHWAYS_PERMISSIONS),
+  },
+} as const;
+
+// Permission labels for display
+export const PERMISSION_LABELS: Record<string, string> = {
+  // Users
+  "users:view": "View Users",
+  "users:manage": "Manage Users",
+
+  // Venues
+  "venues:view": "View Venues",
+  "venues:manage": "Manage Venues",
+  "venues:create": "Create Venues",
+
+  // Bookings
+  "bookings:view": "View Bookings",
+  "bookings:manage": "Manage Bookings",
+  "bookings:refund": "Process Refunds",
+
+  // Coaches
+  "coaches:view": "View Coaches",
+  "coaches:manage": "Manage Coaches",
+  "coaches:verify": "Verify Coaches",
+  "coaches:create": "Create Coaches",
+
+  // Academies
+  "academies:view": "View Academies",
+  "academies:manage": "Manage Academies",
+
+  // Inquiries
+  "inquiries:view": "View Inquiries",
+  "inquiries:manage": "Manage Inquiries",
+
+  // Disputes
+  "disputes:view": "View Disputes",
+  "disputes:resolve": "Resolve Disputes",
+
+  // Analytics
+  "analytics:view": "View Analytics",
+  "analytics:export": "Export Reports",
+
+  // Admins
+  "admins:view": "View Admins",
+  "admins:manage": "Manage Admins",
+
+  // Reviews
+  "reviews:view": "View Reviews",
+  "reviews:manage": "Manage Reviews",
+
+  // Products
+  "products:view": "View Products",
+  "products:create": "Create Products",
+  "products:manage": "Manage Products",
+
+  // Orders
+  "orders:view": "View Orders",
+  "orders:manage": "Manage Orders",
+  "orders:refund": "Refund Orders",
+
+  // Sport Pathways
+  "pathways:view": "View Sport Pathways",
+  "pathways:manage": "Edit & Verify Sport Pathways",
+};
+
+// Legacy support (for backward compatibility during migration)
+export const ADMIN_BASE_PERMISSIONS = SUPPORT_ADMIN_PERMISSIONS;
+// Legacy alias - deprecated
+export const SUPER_ADMIN_PERMISSIONS = SYSTEM_ADMIN_PERMISSIONS;

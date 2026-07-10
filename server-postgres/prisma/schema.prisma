@@ -1,0 +1,2920 @@
+// ============================================================================
+// PowerMySport — PostgreSQL (Prisma) schema
+// Ported from the MongoDB/Mongoose data layer (see server/src/**/models).
+//
+// Design rules (see prisma/SCHEMA_CHANGES.md for the full rationale):
+//  * Primary keys are String and default to cuid(). Rows migrated from Mongo
+//    keep their original 24-char ObjectId hex string as the id, so every
+//    cross-document reference survives the ETL unchanged.
+//  * Embedded *sub-document* arrays and object-maps are normalized into child
+//    tables with foreign keys (e.g. Booking.payments, Coach.sportPricing).
+//  * Scalar arrays of atomic values (sport slugs, tags, amenities, S3 keys)
+//    are kept as native Postgres String[] — normalizing atoms into join tables
+//    adds no relational value. This is the one documented deviation from
+//    "every array becomes a table".
+//  * GeoJSON Point { coordinates:[lng,lat] } becomes longitude/latitude Float
+//    columns. Mongo $near / 2dsphere radius queries must be re-implemented with
+//    PostGIS or the earthdistance module (documented as a behavioral change).
+//  * Mongoose "Mixed" fields become Json.
+//  * Mongo TTL indexes have no Postgres equivalent; a cron sweeper replaces them
+//    (see scripts/ttlSweeper). Fields keep an expiresAt/resetAt column + index.
+//  * enum fields whose values are all valid identifiers become native Prisma
+//    enums; enums containing spaces, ampersands, leading digits or hyphens stay
+//    String with app-layer validation (matching the old Mongoose behavior).
+//  * Polymorphic references (targetType + targetId) stay as indexed String
+//    columns — relational DBs cannot express a single FK to multiple tables.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS (native — all members are valid identifiers)
+// ============================================================================
+
+enum UserRole {
+  Player
+  Parent
+  VenueLister
+  Coach
+  Academy
+  EXPERT
+  Admin
+  VENUE_ONBOARDING
+}
+
+enum UserType {
+  Parent
+  Player
+  Coach
+  Academy
+  VenueLister
+  Admin
+  Expert
+}
+
+enum RefundMethodType {
+  ORIGINAL_CARD
+  BANK_ACCOUNT
+  STORE_CREDIT
+}
+
+enum PayoutMethodType {
+  BANK_TRANSFER
+  UPI
+}
+
+enum PlayerType {
+  SELF
+  DEPENDENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum PrimaryObjective {
+  Recreational
+  Fitness
+  Compete
+}
+
+enum BudgetTier {
+  Budget
+  Moderate
+  Premium
+}
+
+enum ServiceMode {
+  OWN_VENUE
+  FREELANCE
+  HYBRID
+}
+
+enum CoachVerificationStatus {
+  UNVERIFIED
+  PENDING
+  REVIEW
+  VERIFIED
+  REJECTED
+}
+
+enum CoachSubscriptionStatusOnCoach {
+  NONE
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum CoachDocumentType {
+  CERTIFICATION
+  ID_PROOF
+  ADDRESS_PROOF
+  BACKGROUND_CHECK
+  INSURANCE
+  OTHER
+}
+
+enum VenueDocumentType {
+  OWNERSHIP_PROOF
+  BUSINESS_REGISTRATION
+  TAX_DOCUMENT
+  INSURANCE
+  CERTIFICATE
+}
+
+enum VenueApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REVIEW
+}
+
+enum BookingStatus {
+  PENDING_INVITES
+  PENDING_CONFIRMATION
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  NO_SHOW
+  CANCELLED
+  EXPIRED
+}
+
+enum BookingType {
+  INDIVIDUAL
+  GROUP
+}
+
+enum BookingPaymentType {
+  SINGLE
+  SPLIT
+}
+
+enum SplitMethod {
+  EQUAL
+  CUSTOM
+}
+
+enum BookingRefundStatus {
+  PENDING
+  PROCESSED
+  REJECTED
+}
+
+enum PaymentUserType {
+  VenueLister
+  Coach
+  Player
+}
+
+enum PaymentLegStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum ParticipantStatus {
+  INVITED
+  ACCEPTED
+  DECLINED
+}
+
+enum SlotLockResourceType {
+  VENUE_SLOT
+  COACH_SLOT
+}
+
+enum WaitlistStatus {
+  ACTIVE
+  NOTIFIED
+  CANCELLED
+}
+
+enum BookingInvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentTxnStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum SubscriptionFrequency {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum CoachSubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum NoteType {
+  GENERAL
+  SESSION
+  INJURY
+  GOAL
+  PROGRESS
+}
+
+enum PlanDuration {
+  monthly
+  quarterly
+  annual
+}
+
+enum ReviewTargetType {
+  VENUE
+  Coach
+  PRODUCT
+}
+
+enum ReviewModerationStatus {
+  PENDING
+  APPROVED
+  FLAGGED
+  REMOVED
+}
+
+enum DisputeType {
+  NO_SHOW
+  POOR_QUALITY
+  PAYMENT_ISSUE
+  OTHER
+}
+
+enum DisputeStatus {
+  OPEN
+  RESOLVED
+  CLOSED
+}
+
+enum DisputeResolutionMethod {
+  AUTO
+  MANUAL
+}
+
+enum DisputeRecommendedAction {
+  FULL_REFUND
+  PARTIAL_REFUND
+  NO_REFUND
+  MANUAL_REVIEW
+}
+
+enum DisputeConfidence {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum WalletTxnType {
+  CREDIT
+  DEBIT
+}
+
+enum WalletTxnStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum FriendConnectionStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  BLOCKED
+}
+
+enum NotificationCategory {
+  SOCIAL
+  BOOKING
+  Admin
+  REVIEW
+  PAYMENT
+  COMMUNITY
+}
+
+enum ScheduledNotificationType {
+  BOOKING_REMINDER
+  PATHWAY_DOCUMENT_REMINDER
+}
+
+enum ScheduledNotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum SupportRequesterType {
+  player
+  venue_owner
+  coach
+  academy_owner
+  other
+}
+
+enum SupportCategory {
+  BOOKING
+  PAYMENT
+  ACCOUNT
+  TECHNICAL
+  OTHER
+}
+
+enum SupportStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SupportPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum SupportNoteAuthorType {
+  USER
+  Admin
+}
+
+enum CalendarEventType {
+  IMPORTANT
+  COMPETITION
+  TRAINING
+  REMINDER
+  OTHER
+}
+
+enum VenueInquiryStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ExpertSessionMode {
+  ONLINE
+  IN_PERSON
+  BOTH
+}
+
+enum ExpertVerificationStatus {
+  UNVERIFIED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ExpertSessionStatus {
+  PENDING_PAYMENT
+  PAID
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum ExpertBookingMode {
+  ONLINE
+  IN_PERSON
+}
+
+enum ExpertCanceller {
+  CLIENT
+  EXPERT
+  ADMIN
+  SYSTEM
+}
+
+enum ExpertRefundStatus {
+  NONE
+  REQUIRED
+  MANUAL_DONE
+}
+
+enum ExpertAcceptance {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum ExpertPayoutStatus {
+  PENDING
+  PAID
+}
+
+enum ChatRole {
+  user
+  assistant
+}
+
+// ---- community ----
+enum BlogPostStatus {
+  PUBLISHED
+  DRAFT
+}
+
+enum BlogLikeTargetType {
+  BLOG
+  COMMENT
+}
+
+enum ConversationStatus {
+  PENDING
+  ACTIVE
+}
+
+enum ConversationType {
+  DM
+  GROUP
+}
+
+enum GroupMemberAddPolicy {
+  ADMIN_ONLY
+  ANY_MEMBER
+}
+
+enum GroupAudience {
+  ALL
+  PLAYERS_ONLY
+  COACHES_ONLY
+}
+
+enum CommunityMessageType {
+  TEXT
+  IMAGE
+}
+
+enum CommunityPostStatus {
+  OPEN
+  CLOSED
+}
+
+enum MessagePrivacy {
+  EVERYONE
+  REQUEST_ONLY
+  NONE
+}
+
+enum CommunityReportTargetType {
+  MESSAGE
+  GROUP
+  POST
+  ANSWER
+}
+
+enum CommunityReportStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+enum CommunityVoteTargetType {
+  POST
+  ANSWER
+}
+
+enum GroupMemberRole {
+  MEMBER
+  ADMIN
+}
+
+// ---- admin ----
+enum AdminRole {
+  SUPPORT_ADMIN
+  OPERATIONS_ADMIN
+  FINANCE_ADMIN
+  ANALYTICS_ADMIN
+  SYSTEM_ADMIN
+}
+
+enum AnalyticsSource {
+  WEB
+  MOBILE
+  SERVER
+}
+
+enum AcademyBusinessType {
+  sole_proprietorship
+  partnership
+  pvt_ltd
+  ngo_trust
+}
+
+enum PayoutFrequency {
+  weekly
+  biweekly
+  monthly
+}
+
+// ---- shop ----
+enum OrderStatus {
+  CART
+  PENDING_PAYMENT
+  PAYMENT_CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum ShopPaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUND_INITIATED
+  REFUNDED
+}
+
+enum FulfillmentStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentGateway {
+  PHONEPE
+}
+
+enum ProductCategory {
+  APPAREL
+  FOOTWEAR
+  ACCESSORIES
+  EQUIPMENT
+}
+
+enum ProductCondition {
+  NEW
+  USED
+}
+
+enum ProductSellerType {
+  MERCHANT
+  PARENT
+  Player
+  Coach
+  ACADEMY
+  SYSTEM
+}
+
+// ---- shared ----
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+enum PromoDiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum PromoApplicableTo {
+  ALL
+  VENUE_ONLY
+  COACH_ONLY
+  MERCHANDISE_ONLY
+}
+
+enum RateLimitType {
+  EMAIL_VERIFICATION
+  LOGIN
+  API
+}
+
+enum ConciergeItemType {
+  tournament
+  scholarship
+  university
+}
+
+enum ConciergeStatus {
+  pending
+  processing
+  completed
+  rejected
+}
+
+// ============================================================================
+// CLIENT DOMAIN — users, coaches, venues, bookings, wallet, experts, etc.
+// ============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  phone         String    @unique
+  role          UserRole  @default(Player)
+  userType      UserType  @default(Player)
+  password      String? // null for Google-only accounts; bcrypt hashed in app layer
+  googleId      String?   @unique
+  photoUrl      String?
+  photoS3Key    String?
+  city          String?
+  lastActiveAt  DateTime? @default(now())
+  dob           DateTime?
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+  isActive      Boolean   @default(true)
+  suspensionReason String @default("")
+  suspendedAt   DateTime?
+  suspendedBy   String? // -> Admin.id
+  deactivatedAt DateTime?
+  defaultAddressId String?
+
+  // legal consents + notification/reminder prefs kept as structured Json config
+  // (never queried relationally; read/written wholesale). See SCHEMA_CHANGES.md.
+  legalConsents           Json?
+  notificationPreferences Json?
+  reminderPreferences     Json?
+  // single shipping address (shop) — kept inline as owned 1:1
+  shippingAddress Json?
+
+  addresses         Address[]
+  pushSubscriptions PushSubscription[]
+  refundMethods     RefundMethod[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role, createdAt(sort: Desc)])
+  @@index([role, isActive])
+  @@index([lastActiveAt])
+  @@index([isActive])
+  @@map("users")
+}
+
+model Address {
+  id           String  @id @default(cuid())
+  userId       String
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName     String
+  email        String
+  phone        String
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  postalCode   String
+  country      String  @default("IN")
+  isDefault    Boolean @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@map("user_addresses")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("user_push_subscriptions")
+}
+
+model RefundMethod {
+  id                String           @id @default(cuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              RefundMethodType @default(ORIGINAL_CARD)
+  accountHolderName String?
+  accountNumber     String?
+  ifscCode          String?
+  bankName          String?
+  isDefault         Boolean          @default(false)
+  addedAt           DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([userId])
+  @@map("user_refund_methods")
+}
+
+model Player {
+  id                   String            @id @default(cuid())
+  userId               String
+  type                 PlayerType
+  name                 String
+  age                  Int?
+  dob                  DateTime?
+  gender               Gender?
+  relation             String?
+  sportsFocus          String[]          @default([])
+  skillLevel           String?
+  yearsPlaying         Int?
+  personalityTags      String[]          @default([])
+  primaryObjective     PrimaryObjective?
+  weeklyTimeCommitment Int?
+  budgetTier           BudgetTier?
+  location             String?
+  // pathwayState (single embedded obj) flattened
+  psSatisfiedPrereqs   String[]          @default([])
+  psCurrentGpa         Float?
+  psTargetDivision     String?
+  psGraduationYear     Int?
+
+  paymentHistory PlayerPaymentHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("players")
+}
+
+model PlayerPaymentHistory {
+  id        String   @id @default(cuid())
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  bookingId String?
+  amount    Int?
+  date      DateTime?
+
+  @@index([playerId])
+  @@map("player_payment_history")
+}
+
+model Coach {
+  id                    String                         @id @default(cuid())
+  userId                String                         @unique
+  bio                   String                         @default("")
+  certifications        String[]                       @default([])
+  sports                String[]
+  hourlyRate            Int
+  serviceMode           ServiceMode
+  serviceRadiusKm       Int?
+  travelBufferTime      Int?
+  rating                Float                          @default(0)
+  reviewCount           Int                            @default(0)
+  verificationStatus    CoachVerificationStatus        @default(UNVERIFIED)
+  verificationNotes     String                         @default("")
+  onboardingProgressStep Int                           @default(1)
+  activeSubscriptionId  String?
+  subscriptionStatus    CoachSubscriptionStatusOnCoach @default(NONE)
+  subscriptionExpiresAt DateTime?
+  verificationSubmittedAt     DateTime?
+  lastVerificationReminderAt  DateTime?
+  verifiedAt            DateTime?
+  verifiedBy            String? // -> Admin.id
+  isVerified            Boolean                        @default(false)
+
+  // baseLocation GeoJSON Point -> lng/lat
+  baseLng               Float?
+  baseLat               Float?
+
+  // ownVenueDetails (single embedded obj) -> owned 1:1 child
+  ownVenue              CoachOwnVenue?
+  sportPricing          CoachSportPricing[]
+  availability          CoachAvailability[]
+  sportAvailability     CoachSportAvailability[]
+  documents             CoachDocument[]
+  blockedDates          CoachBlockedDate[]
+  payoutMethods         CoachPayoutMethod[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sports])
+  @@index([serviceMode])
+  @@index([isVerified])
+  @@index([verificationStatus])
+  @@index([subscriptionStatus])
+  @@map("coaches")
+}
+
+model CoachOwnVenue {
+  id           String   @id @default(cuid())
+  coachId      String   @unique
+  coach        Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  name         String?
+  address      String?
+  lng          Float?
+  lat          Float?
+  sports       String[] @default([])
+  amenities    String[] @default([])
+  pricePerHour Int?
+  description  String?
+  images       String[] @default([])
+  imageS3Keys  String[] @default([])
+  openingHours String?
+
+  @@map("coach_own_venues")
+}
+
+model CoachSportPricing {
+  id      String @id @default(cuid())
+  coachId String
+  coach   Coach  @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  sport   String
+  price   Int
+
+  @@unique([coachId, sport])
+  @@map("coach_sport_pricing")
+}
+
+model CoachAvailability {
+  id        String @id @default(cuid())
+  coachId   String
+  coach     Coach  @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  dayOfWeek Int
+  startTime String
+  endTime   String
+
+  @@index([coachId])
+  @@map("coach_availability")
+}
+
+model CoachSportAvailability {
+  id        String @id @default(cuid())
+  coachId   String
+  coach     Coach  @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  sport     String
+  dayOfWeek Int
+  startTime String
+  endTime   String
+
+  @@index([coachId, sport])
+  @@map("coach_sport_availability")
+}
+
+model CoachDocument {
+  id         String            @id @default(cuid())
+  coachId    String
+  coach      Coach             @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  type       CoachDocumentType
+  url        String
+  s3Key      String?
+  fileName   String
+  uploadedAt DateTime          @default(now())
+
+  @@index([coachId])
+  @@map("coach_documents")
+}
+
+model CoachBlockedDate {
+  id        String   @id @default(cuid())
+  coachId   String
+  coach     Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+  allDay    Boolean  @default(true)
+  blockedAt DateTime @default(now())
+
+  @@index([coachId])
+  @@map("coach_blocked_dates")
+}
+
+model CoachPayoutMethod {
+  id                String           @id @default(cuid())
+  coachId           String
+  coach             Coach            @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  type              PayoutMethodType
+  accountHolderName String?
+  accountNumber     String?
+  ifscCode          String?
+  bankName          String?
+  upiId             String?
+  isDefault         Boolean          @default(false)
+  addedAt           DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([coachId])
+  @@map("coach_payout_methods")
+}
+
+model Venue {
+  id                  String              @id @default(cuid())
+  ownerName           String
+  ownerEmail          String
+  ownerPhone          String
+  emailVerified       Boolean             @default(false)
+  name                String
+  ownerId             String?
+  sports              String[]            @default([])
+  pricePerHour        Int
+  amenities           String[]            @default([])
+  address             String              @default("")
+  description         String              @default("")
+  images              String[]            @default([]) // legacy
+  imageKeys           String[]            @default([]) // legacy
+  generalImages       String[]            @default([])
+  generalImageKeys    String[]            @default([])
+  coverPhotoUrl       String?
+  coverPhotoKey       String?
+  allowExternalCoaches Boolean            @default(true)
+  approvalStatus      VenueApprovalStatus @default(PENDING)
+  rejectionReason     String?
+  reviewNotes         String?
+  rating              Float               @default(0)
+  reviewCount         Int                 @default(0)
+  hasCoaches          Boolean             @default(false)
+  // location GeoJSON Point -> lng/lat (required in Mongo)
+  lng                 Float?
+  lat                 Float?
+
+  sportPricing   VenueSportPricing[]
+  sportImages    VenueSportImage[]
+  openingHours   VenueOpeningHour[]
+  venueCoaches   VenueCoach[]
+  documents      VenueDocument[]
+  payoutMethods  VenuePayoutMethod[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId, createdAt(sort: Desc)])
+  @@index([ownerEmail, approvalStatus])
+  @@index([approvalStatus, createdAt(sort: Desc)])
+  @@index([sports, approvalStatus])
+  @@map("venues")
+}
+
+model VenueSportPricing {
+  id      String @id @default(cuid())
+  venueId String
+  venue   Venue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  sport   String
+  price   Int
+
+  @@unique([venueId, sport])
+  @@map("venue_sport_pricing")
+}
+
+model VenueSportImage {
+  id      String   @id @default(cuid())
+  venueId String
+  venue   Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  sport   String
+  images  String[] @default([])
+  imageKeys String[] @default([])
+
+  @@unique([venueId, sport])
+  @@map("venue_sport_images")
+}
+
+model VenueOpeningHour {
+  id        String  @id @default(cuid())
+  venueId   String
+  venue     Venue   @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  day       String  // monday..sunday
+  isOpen    Boolean @default(true)
+  openTime  String  @default("09:00")
+  closeTime String  @default("21:00")
+  slots     Json    @default("[]") // [{startTime,endTime}]
+
+  @@unique([venueId, day])
+  @@map("venue_opening_hours")
+}
+
+model VenueCoach {
+  id         String @id @default(cuid())
+  venueId    String
+  venue      Venue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  name       String
+  sport      String
+  hourlyRate Int
+  bio        String?
+
+  @@index([venueId])
+  @@map("venue_coaches")
+}
+
+model VenueDocument {
+  id         String            @id @default(cuid())
+  venueId    String
+  venue      Venue             @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  type       VenueDocumentType
+  url        String
+  s3Key      String?
+  fileName   String
+  uploadedAt DateTime          @default(now())
+
+  @@index([venueId])
+  @@map("venue_documents")
+}
+
+model VenuePayoutMethod {
+  id                String           @id @default(cuid())
+  venueId           String
+  venue             Venue            @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  type              PayoutMethodType
+  accountHolderName String?
+  accountNumber     String?
+  ifscCode          String?
+  bankName          String?
+  upiId             String?
+  isDefault         Boolean          @default(false)
+  addedAt           DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([venueId])
+  @@map("venue_payout_methods")
+}
+
+model Booking {
+  id             String            @id @default(cuid())
+  userId         String
+  venueId        String?
+  coachId        String?
+  academyId      String?
+  sport          String
+  date           DateTime
+  startTime      String
+  endTime        String
+  totalAmount    Int
+  serviceFee     Int               @default(0)
+  taxAmount      Int               @default(0)
+  promoCode      String?
+  discountAmount Int               @default(0)
+  status         BookingStatus     @default(PENDING_CONFIRMATION)
+  expiresAt      DateTime?
+  checkInCode    String?
+  participantName String
+  participantId  String?
+  participantAge Int?
+  paymentConfirmedAt      DateTime?
+  confirmationEmailSentAt DateTime?
+  cancelledAt    DateTime?
+  cancellationReason String?
+  refundAmount   Int?
+  refundStatus   BookingRefundStatus?
+  bookingType    BookingType       @default(INDIVIDUAL)
+  organizerId    String
+  paymentType    BookingPaymentType @default(SINGLE)
+  splitMethod    SplitMethod?
+
+  payments     BookingPaymentLeg[]
+  participants BookingParticipant[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([venueId, date, startTime, endTime])
+  @@index([coachId, date, startTime, endTime])
+  @@index([expiresAt, status])
+  @@index([checkInCode])
+  @@index([userId, status, date(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("bookings")
+}
+
+model BookingPaymentLeg {
+  id        String           @id @default(cuid())
+  bookingId String
+  booking   Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId    String
+  userType  PaymentUserType
+  amount    Int
+  status    PaymentLegStatus @default(PENDING)
+  paidAt    DateTime?
+
+  @@index([bookingId])
+  @@map("booking_payment_legs")
+}
+
+model BookingParticipant {
+  id          String            @id @default(cuid())
+  bookingId   String
+  booking     Booking           @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId      String
+  name        String
+  status      ParticipantStatus @default(INVITED)
+  invitedAt   DateTime
+  respondedAt DateTime?
+
+  @@index([bookingId])
+  @@map("booking_participants")
+}
+
+model BookingSlotLock {
+  id           String               @id @default(cuid())
+  resourceType SlotLockResourceType
+  resourceId   String
+  dateKey      String
+  version      Int                  @default(0)
+  lastLockedAt DateTime             @default(now())
+
+  @@unique([resourceType, resourceId, dateKey], name: "unique_booking_slot_lock")
+  @@index([lastLockedAt])
+  @@map("booking_slot_locks")
+}
+
+model BookingWaitlist {
+  id             String         @id @default(cuid())
+  userId         String
+  venueId        String?
+  coachId        String?
+  sport          String
+  date           DateTime
+  startTime      String
+  endTime        String
+  alternateSlots String[]       @default([])
+  status         WaitlistStatus @default(ACTIVE)
+  notifiedAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([venueId])
+  @@index([coachId])
+  @@index([date])
+  @@index([status])
+  @@map("booking_waitlists")
+}
+
+model BookingInvitation {
+  id              String                  @id @default(cuid())
+  bookingId       String
+  inviterId       String
+  inviteeId       String
+  venueId         String
+  coachId         String?
+  sport           String
+  date            DateTime
+  startTime       String
+  endTime         String
+  estimatedAmount Int
+  status          BookingInvitationStatus @default(PENDING)
+  respondedAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([inviteeId, status])
+  @@index([bookingId])
+  @@map("booking_invitations")
+}
+
+model BookingPaymentTransaction {
+  id                String           @id @default(cuid())
+  bookingId         String
+  userId            String
+  merchantOrderId   String           @unique
+  phonepeOrderId    String?
+  amount            Int
+  status            PaymentTxnStatus @default(PENDING)
+  state             String?
+  redirectUrl       String?
+  callbackPayload   Json?
+  lastStatusPayload Json?
+  refundMerchantId  String?
+  refundId          String?
+  refundState       String?
+  refundAmount      Int?
+  refundResponse    Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId, userId])
+  @@map("booking_payment_transactions")
+}
+
+model CoachSubscription {
+  id                 String                  @id @default(cuid())
+  coachId            String
+  userId             String
+  dependentId        String?
+  packageId          String
+  status             CoachSubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  nextBillingDate    DateTime
+  autoRenew          Boolean                 @default(true)
+  gracePeriodEndsAt  DateTime?
+  cancelledAt        DateTime?
+  cancellationReason String                  @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([coachId, status])
+  @@index([userId, status])
+  @@index([dependentId])
+  @@index([packageId])
+  @@index([nextBillingDate])
+  @@map("coach_subscriptions")
+}
+
+model CoachSubscriptionPackage {
+  id          String                @id @default(cuid())
+  coachId     String
+  name        String
+  description String                @default("")
+  frequency   SubscriptionFrequency
+  price       Int
+  features    String[]              @default([])
+  maxStudents Int?
+  maxSessions Int?
+  isActive    Boolean               @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([coachId, isActive])
+  @@index([coachId, frequency])
+  @@map("coach_subscription_packages")
+}
+
+model CoachSubscriptionPaymentTransaction {
+  id                   String           @id @default(cuid())
+  coachId              String
+  userId               String
+  dependentId          String?
+  packageId            String
+  merchantOrderId      String           @unique
+  phonepeOrderId       String?
+  linkedSubscriptionId String?
+  baseAmount           Int
+  platformFeeAmount    Int              @default(0)
+  taxAmount            Int              @default(0)
+  amount               Int
+  status               PaymentTxnStatus @default(PENDING)
+  state                String?
+  redirectUrl          String?
+  callbackPayload      Json?
+  lastStatusPayload    Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([coachId, userId, createdAt(sort: Desc)])
+  @@map("coach_subscription_payment_transactions")
+}
+
+model CoachClientNote {
+  id          String   @id @default(cuid())
+  coachId     String
+  clientId    String
+  note        String
+  noteType    NoteType @default(GENERAL)
+  sessionDate DateTime?
+  bookingId   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([coachId, clientId, createdAt(sort: Desc)])
+  @@map("coach_client_notes")
+}
+
+model SubscriptionPlan {
+  id               String       @id @default(cuid())
+  academyId        String
+  name             String
+  duration         PlanDuration
+  price            Int
+  includesVenue    Boolean      @default(false)
+  includesCoaching Boolean      @default(true)
+  maxSessions      Int?
+  description      String       @default("")
+  isActive         Boolean      @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([academyId])
+  @@index([academyId, isActive])
+  @@map("subscription_plans")
+}
+
+model SessionPackage {
+  id           String  @id @default(cuid())
+  academyId    String
+  name         String
+  sessionCount Int
+  price        Int
+  validityDays Int
+  sport        String
+  coachId      String?
+  isActive     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([academyId])
+  @@index([academyId, isActive])
+  @@index([sport])
+  @@map("session_packages")
+}
+
+model Review {
+  id               String                 @id @default(cuid())
+  bookingId        String?
+  orderId          String?
+  userId           String
+  targetType       ReviewTargetType
+  targetId         String
+  rating           Int
+  review           String?
+  isVerified       Boolean                @default(true)
+  helpfulCount     Int                    @default(0)
+  reportCount      Int                    @default(0)
+  isHidden         Boolean                @default(false)
+  moderationStatus ReviewModerationStatus @default(APPROVED)
+  moderationNotes  String?
+
+  reports ReviewReport[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([targetType, targetId, createdAt(sort: Desc)])
+  @@index([userId])
+  @@index([moderationStatus, reportCount(sort: Desc)])
+  @@map("reviews")
+}
+
+model ReviewReport {
+  id         String   @id @default(cuid())
+  reviewId   String
+  review     Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  userId     String
+  reason     String
+  reportedAt DateTime @default(now())
+
+  @@index([reviewId])
+  @@map("review_reports")
+}
+
+model Dispute {
+  id                  String                    @id @default(cuid())
+  bookingId           String
+  userId              String?
+  disputeType         DisputeType
+  disputeDetails      String?
+  status              DisputeStatus             @default(OPEN)
+  resolutionMethod    DisputeResolutionMethod?
+  recommendedAction   DisputeRecommendedAction?
+  refundPercentage    Int                       @default(0)
+  reasoning           String?
+  confidence          DisputeConfidence?
+  requiresManualReview Boolean                  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([userId])
+  @@index([disputeType])
+  @@index([status])
+  @@map("disputes")
+}
+
+model Wallet {
+  id       String            @id @default(cuid())
+  userId   String            @unique
+  balance  Int               @default(0)
+  currency String            @default("INR")
+
+  transactions WalletTransaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id          String          @id @default(cuid())
+  walletId    String
+  wallet      Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  externalId  String // idempotency id (was "id" on the subdoc)
+  type        WalletTxnType
+  amount      Int
+  status      WalletTxnStatus @default(COMPLETED)
+  reason      String
+  referenceId String?
+  createdAt   DateTime        @default(now())
+
+  @@index([walletId])
+  @@map("wallet_transactions")
+}
+
+model FriendConnection {
+  id          String                 @id @default(cuid())
+  requesterId String
+  recipientId String
+  status      FriendConnectionStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([requesterId, recipientId])
+  @@index([recipientId, status])
+  @@index([requesterId, status])
+  @@map("friend_connections")
+}
+
+model Notification {
+  id        String               @id @default(cuid())
+  userId    String
+  type      String // large enum kept as validated string (see SCHEMA_CHANGES)
+  category  NotificationCategory
+  title     String
+  message   String
+  data      Json                 @default("{}")
+  isRead    Boolean              @default(false)
+  readAt    DateTime?
+  expiresAt DateTime? // replaces Mongo TTL; swept by cron
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, isRead, createdAt(sort: Desc)])
+  @@index([userId, category, createdAt(sort: Desc)])
+  @@index([expiresAt])
+  @@map("notifications")
+}
+
+model ScheduledNotification {
+  id            String                      @id @default(cuid())
+  userId        String
+  type          ScheduledNotificationType   @default(BOOKING_REMINDER)
+  interval      String // "24_HOURS" etc — leading-digit values kept as string
+  scheduledFor  DateTime
+  status        ScheduledNotificationStatus @default(PENDING)
+  bookingId     String?
+  title         String
+  body          String
+  data          Json                        @default("{}")
+  sentAt        DateTime?
+  failedAt      DateTime?
+  failureReason String?
+  retryCount    Int                         @default(0)
+  // channels (embedded obj) flattened
+  chEmail       Boolean                     @default(false)
+  chPush        Boolean                     @default(false)
+  chInApp       Boolean                     @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([bookingId, interval])
+  @@index([userId, type, status])
+  @@index([sentAt])
+  @@map("scheduled_notifications")
+}
+
+model SupportTicket {
+  id              String               @id @default(cuid())
+  userId          String?
+  requesterName   String?
+  requesterEmail  String?
+  requesterPhone  String?
+  requesterType   SupportRequesterType @default(other)
+  subject         String
+  description     String
+  category        SupportCategory      @default(OTHER)
+  status          SupportStatus        @default(OPEN)
+  priority        SupportPriority      @default(MEDIUM)
+  assignedAdminId String?
+  lastUpdatedBy   String?
+
+  notes SupportTicketNote[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([requesterType])
+  @@index([category])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedAdminId])
+  @@index([createdAt(sort: Desc)])
+  @@index([status, priority(sort: Desc), updatedAt(sort: Desc)])
+  @@map("support_tickets")
+}
+
+model SupportTicketNote {
+  id         String                @id @default(cuid())
+  ticketId   String
+  ticket     SupportTicket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorType SupportNoteAuthorType
+  authorId   String
+  message    String
+  createdAt  DateTime              @default(now())
+
+  @@index([ticketId])
+  @@map("support_ticket_notes")
+}
+
+model UserCalendarEvent {
+  id     String            @id @default(cuid())
+  userId String
+  title  String
+  date   DateTime
+  color  String            @default("#f97316")
+  type   CalendarEventType @default(IMPORTANT)
+  notes  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+  @@map("user_calendar_events")
+}
+
+model VenueInquiry {
+  id          String             @id @default(cuid())
+  venueName   String
+  ownerName   String
+  phone       String
+  address     String
+  sports      String
+  message     String?
+  status      VenueInquiryStatus @default(PENDING)
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  reviewNotes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([phone])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("venue_inquiries")
+}
+
+model Expert {
+  id                     String                   @id @default(cuid())
+  userId                 String                   @unique
+  bio                    String                   @default("")
+  sports                 String[]                 @default([])
+  expertise              String[]                 @default([])
+  achievements           String?
+  sessionFee             Int
+  sessionMode            ExpertSessionMode        @default(ONLINE)
+  sessionDurationMinutes Int                      @default(60)
+  timezone               String                   @default("Asia/Kolkata")
+  blackoutDates          String[]                 @default([]) // "YYYY-MM-DD"
+  city                   String?
+  languages              String[]                 @default([])
+  photoUrl               String?
+  photoKey               String?
+  inPersonAddress        String?
+  isActive               Boolean                  @default(false)
+  verificationStatus     ExpertVerificationStatus @default(UNVERIFIED)
+  rejectionReason        String?
+  rating                 Float                    @default(0)
+  reviewCount            Int                      @default(0)
+  createdBy              String?
+
+  weeklyAvailability ExpertAvailabilityWindow[]
+  payoutMethods      ExpertPayoutMethod[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, rating(sort: Desc)])
+  @@index([city])
+  @@index([verificationStatus])
+  @@map("experts")
+}
+
+model ExpertAvailabilityWindow {
+  id        String @id @default(cuid())
+  expertId  String
+  expert    Expert @relation(fields: [expertId], references: [id], onDelete: Cascade)
+  dayOfWeek Int
+  start     String
+  end       String
+
+  @@index([expertId])
+  @@map("expert_availability_windows")
+}
+
+model ExpertPayoutMethod {
+  id                String           @id @default(cuid())
+  expertId          String
+  expert            Expert           @relation(fields: [expertId], references: [id], onDelete: Cascade)
+  type              PayoutMethodType
+  accountHolderName String?
+  accountNumber     String?
+  ifscCode          String?
+  bankName          String?
+  upiId             String?
+  isDefault         Boolean          @default(false)
+  addedAt           DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([expertId])
+  @@map("expert_payout_methods")
+}
+
+model ExpertSession {
+  id                      String              @id @default(cuid())
+  expertId                String
+  userId                  String
+  amount                  Int
+  status                  ExpertSessionStatus @default(PENDING_PAYMENT)
+  paymentStatus           PaymentTxnStatus    @default(PENDING)
+  merchantOrderId         String              @unique
+  phonepeOrderId          String?
+  scheduledAt             DateTime?
+  durationMinutes         Int                 @default(60)
+  holdExpiresAt           DateTime?
+  mode                    ExpertBookingMode?
+  meetingLink             String?
+  clientNote              String?
+  callbackPayload         Json?
+  cancelledAt             DateTime?
+  cancelledBy             ExpertCanceller?
+  cancelReason            String?
+  refundStatus            ExpertRefundStatus  @default(NONE)
+  cancellationNoticeHours Int?
+  autoCompleted           Boolean             @default(false)
+  expertAcceptance        ExpertAcceptance    @default(PENDING)
+  expertRespondedAt       DateTime?
+  completedAt             DateTime?
+  payoutStatus            ExpertPayoutStatus  @default(PENDING)
+  payoutPaidAt            DateTime?
+  reviewed                Boolean             @default(false)
+  rating                  Int?
+  review                  String?
+  reviewAnonymous         Boolean             @default(false)
+  reviewHidden            Boolean             @default(false)
+  reviewedAt              DateTime?
+  reviewReminderSentAt    DateTime?
+  meetingLinkNudgeSentAt  DateTime?
+  startReminderSentAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expertId, status, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([expertId, scheduledAt, status])
+  @@index([status, payoutStatus, completedAt])
+  @@index([status, scheduledAt])
+  @@map("expert_sessions")
+}
+
+model GuidanceSubmission {
+  id        String   @id @default(cuid())
+  userId    String?
+  // request + response are AI payloads consumed/produced as whole documents;
+  // kept as structured Json (see SCHEMA_CHANGES.md — pragmatic vs ~15 tables).
+  request   Json
+  response  Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt(sort: Desc)])
+  @@map("guidance_submissions")
+}
+
+model GuidanceChatSession {
+  id                String               @id @default(cuid())
+  submissionId      String
+  userId            String
+  totalMessageCount Int                  @default(0)
+
+  messages GuidanceChatMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([submissionId, userId])
+  @@map("guidance_chat_sessions")
+}
+
+model GuidanceChatMessage {
+  id        String              @id @default(cuid())
+  sessionId String
+  session   GuidanceChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      ChatRole
+  content   String
+  createdAt DateTime            @default(now())
+
+  @@index([sessionId])
+  @@map("guidance_chat_messages")
+}
+
+model RoadmapChatSession {
+  id                String               @id @default(cuid())
+  userId            String
+  sportSlug         String
+  totalMessageCount Int                  @default(0)
+
+  messages RoadmapChatMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, sportSlug])
+  @@map("roadmap_chat_sessions")
+}
+
+model RoadmapChatMessage {
+  id        String             @id @default(cuid())
+  sessionId String
+  session   RoadmapChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      ChatRole
+  content   String
+  createdAt DateTime           @default(now())
+
+  @@index([sessionId])
+  @@map("roadmap_chat_messages")
+}
+
+// ============================================================================
+// COMMUNITY DOMAIN
+// ============================================================================
+
+model CommunityProfile {
+  id                 String              @id @default(cuid())
+  userId             String              @unique
+  anonymousAlias     String
+  isIdentityPublic   Boolean             @default(true)
+  messagePrivacy     MessagePrivacy      @default(EVERYONE)
+  readReceiptsEnabled Boolean            @default(true)
+  lastSeenVisible    Boolean             @default(true)
+  lastSeenAt         DateTime?
+  username           String?             @unique
+  bio                String              @default("")
+  // socialLinks (embedded obj) flattened
+  slYoutube          String              @default("")
+  slInstagram        String              @default("")
+  slFacebook         String              @default("")
+  slTwitter          String              @default("")
+  slGithub           String              @default("")
+  slWebsite          String              @default("")
+
+  blockedUsers CommunityBlockedUser[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("community_profiles")
+}
+
+model CommunityBlockedUser {
+  id            String           @id @default(cuid())
+  profileId     String
+  profile       CommunityProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  blockedUserId String
+
+  @@unique([profileId, blockedUserId])
+  @@map("community_blocked_users")
+}
+
+model CommunityReputation {
+  id             String @id @default(cuid())
+  userId         String @unique
+  totalPoints    Int    @default(0)
+  questionCount  Int    @default(0)
+  answerCount    Int    @default(0)
+  receivedUpvotes Int   @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([totalPoints(sort: Desc), updatedAt(sort: Desc)])
+  @@map("community_reputations")
+}
+
+model CommunityPost {
+  id            String              @id @default(cuid())
+  authorId      String
+  title         String
+  body          String
+  tags          String[]            @default([])
+  sport         String              @default("")
+  city          String              @default("")
+  category      String              @default("General") // 8 values incl "Injury & Recovery" -> string
+  isAnonymous   Boolean             @default(false)
+  voteScore     Int                 @default(0)
+  upvoteCount   Int                 @default(0)
+  downvoteCount Int                 @default(0)
+  answerCount   Int                 @default(0)
+  viewCount     Int                 @default(0)
+  status        CommunityPostStatus @default(OPEN)
+  isDeleted     Boolean             @default(false)
+  deletedAt     DateTime?
+
+  answers CommunityAnswer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([authorId])
+  @@index([category])
+  @@index([isAnonymous])
+  @@index([voteScore])
+  @@index([answerCount])
+  @@index([status])
+  @@index([isDeleted])
+  @@index([createdAt(sort: Desc)])
+  @@index([voteScore(sort: Desc), createdAt(sort: Desc)])
+  @@index([status, isDeleted, createdAt(sort: Desc)])
+  @@index([tags, createdAt(sort: Desc)])
+  @@map("community_posts")
+}
+
+model CommunityAnswer {
+  id            String        @id @default(cuid())
+  postId        String
+  post          CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId      String
+  content       String
+  isAnonymous   Boolean       @default(false)
+  voteScore     Int           @default(0)
+  upvoteCount   Int           @default(0)
+  downvoteCount Int           @default(0)
+  isDeleted     Boolean       @default(false)
+  deletedAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId, createdAt])
+  @@index([postId, voteScore(sort: Desc), createdAt(sort: Desc)])
+  @@index([authorId])
+  @@index([voteScore])
+  @@index([isDeleted])
+  @@map("community_answers")
+}
+
+model CommunityVote {
+  id         String                  @id @default(cuid())
+  userId     String
+  targetType CommunityVoteTargetType
+  targetId   String
+  value      Int // 1 or -1
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, targetType, targetId])
+  @@index([targetType, targetId])
+  @@map("community_votes")
+}
+
+model CommunityGroup {
+  id                String               @id @default(cuid())
+  name              String
+  description       String               @default("")
+  visibility        String               @default("PUBLIC")
+  sport             String               @default("")
+  city              String               @default("")
+  profilePicture    String               @default("")
+  profilePictureKey String               @default("")
+  memberAddPolicy   GroupMemberAddPolicy @default(ADMIN_ONLY)
+  audience          GroupAudience        @default(ALL)
+  createdBy         String
+  inviteCode        String               @unique
+
+  members       CommunityGroupMember[]
+  conversations CommunityConversation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([visibility, updatedAt(sort: Desc)])
+  @@map("community_groups")
+}
+
+model CommunityGroupMember {
+  id      String          @id @default(cuid())
+  groupId String
+  group   CommunityGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId  String
+  role    GroupMemberRole @default(MEMBER)
+
+  @@unique([groupId, userId])
+  @@index([userId])
+  @@map("community_group_members")
+}
+
+model CommunityConversation {
+  id               String             @id @default(cuid())
+  conversationType ConversationType   @default(DM)
+  groupId          String?
+  group            CommunityGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  participantKey   String?
+  status           ConversationStatus @default(ACTIVE)
+  requestedBy      String
+  lastMessageAt    DateTime           @default(now())
+
+  participants ConversationParticipant[]
+  messages     CommunityMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // partial-unique (DM only) enforced via raw SQL migration — see SCHEMA_CHANGES
+  @@index([groupId, updatedAt(sort: Desc)])
+  @@map("community_conversations")
+}
+
+model ConversationParticipant {
+  id             String                @id @default(cuid())
+  conversationId String
+  conversation   CommunityConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+  @@map("conversation_participants")
+}
+
+model CommunityMessage {
+  id             String                @id @default(cuid())
+  conversationId String
+  conversation   CommunityConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  type           CommunityMessageType  @default(TEXT)
+  content        String
+  // metadata (embedded obj) flattened
+  metaWidth      Int?
+  metaHeight     Int?
+  metaCaption    String?
+  isDeleted      Boolean               @default(false)
+  deletedAt      DateTime?
+  deletedBy      String?
+  editedAt       DateTime?
+
+  readBy      MessageReadReceipt[]
+  deliveredTo MessageDeliveryReceipt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([conversationId, createdAt(sort: Desc)])
+  @@index([conversationId, senderId, createdAt(sort: Desc)])
+  @@index([senderId])
+  @@index([type])
+  @@index([isDeleted])
+  @@map("community_messages")
+}
+
+model MessageReadReceipt {
+  id        String           @id @default(cuid())
+  messageId String
+  message   CommunityMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  readAt    DateTime         @default(now())
+
+  @@unique([messageId, userId])
+  @@map("message_read_receipts")
+}
+
+model MessageDeliveryReceipt {
+  id          String           @id @default(cuid())
+  messageId   String
+  message     CommunityMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId      String
+  deliveredAt DateTime         @default(now())
+
+  @@unique([messageId, userId])
+  @@map("message_delivery_receipts")
+}
+
+model CommunityReport {
+  id             String                    @id @default(cuid())
+  reporterUserId String
+  targetType     CommunityReportTargetType
+  targetId       String
+  reason         String
+  details        String?
+  // messageAudit (embedded obj) flattened
+  maSenderId     String?
+  maCreatedAt    DateTime?
+  maUpdatedAt    DateTime?
+  maEditedAt     DateTime?
+  maDeletedAt    DateTime?
+  maWasEdited    Boolean                   @default(false)
+  maWasDeleted   Boolean                   @default(false)
+  status         CommunityReportStatus     @default(OPEN)
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  resolutionNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reporterUserId])
+  @@index([targetType, targetId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("community_reports")
+}
+
+model BlogPost {
+  id            String         @id @default(cuid())
+  authorId      String
+  title         String
+  excerpt       String         @default("")
+  coverImageKey String?
+  coverImageUrl String?
+  topic         String         @default("General")
+  tags          String[]       @default([])
+  content       String         @default("")
+  likeCount     Int            @default(0)
+  commentCount  Int            @default(0)
+  viewCount     Int            @default(0)
+  status        BlogPostStatus @default(PUBLISHED)
+  isDeleted     Boolean        @default(false)
+  deletedAt     DateTime?
+
+  comments BlogComment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([authorId])
+  @@index([topic])
+  @@index([likeCount])
+  @@index([status])
+  @@index([isDeleted])
+  @@index([createdAt(sort: Desc)])
+  @@index([topic, createdAt(sort: Desc)])
+  @@index([authorId, createdAt(sort: Desc)])
+  @@index([status, isDeleted, createdAt(sort: Desc)])
+  @@map("blog_posts")
+}
+
+model BlogComment {
+  id        String    @id @default(cuid())
+  blogId    String
+  blog      BlogPost  @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  authorId  String
+  content   String
+  parentId  String?
+  likeCount Int       @default(0)
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([blogId, createdAt(sort: Desc)])
+  @@index([blogId, parentId, createdAt])
+  @@index([authorId])
+  @@index([parentId])
+  @@index([isDeleted])
+  @@map("blog_comments")
+}
+
+model BlogLike {
+  id         String             @id @default(cuid())
+  userId     String
+  targetType BlogLikeTargetType
+  targetId   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, targetType, targetId])
+  @@index([userId])
+  @@index([targetType, targetId])
+  @@map("blog_likes")
+}
+
+// ============================================================================
+// ADMIN DOMAIN
+// ============================================================================
+
+model Admin {
+  id                 String    @id @default(cuid())
+  name               String
+  email              String    @unique
+  password           String
+  mustChangePassword Boolean   @default(false)
+  role               AdminRole @default(SUPPORT_ADMIN)
+  permissions        String[]  @default([])
+  isActive           Boolean   @default(true)
+  lastLogin          DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("admins")
+}
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  adminEmail String
+  action     String
+  targetType String
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([adminId, createdAt(sort: Desc)])
+  @@index([targetType, targetId])
+  @@map("admin_audit_logs")
+}
+
+model AnalyticsEvent {
+  id         String          @id @default(cuid())
+  userId     String?
+  guestId    String?
+  eventName  String
+  entityType String?
+  entityId   String?
+  metadata   Json            @default("{}")
+  source     AnalyticsSource @default(WEB)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([guestId])
+  @@index([eventName])
+  @@index([source])
+  @@index([eventName, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([guestId, createdAt(sort: Desc)])
+  @@map("analytics_events")
+}
+
+model Academy {
+  id                String              @id @default(cuid())
+  name              String
+  legalName         String
+  slug              String              @unique
+  description       String              @default("")
+  establishedYear   Int?
+  logoUrl           String?
+  logoKey           String?
+  coverPhotoUrl     String?
+  coverPhotoKey     String?
+  photos            String[]            @default([])
+  photoKeys         String[]            @default([])
+  sports            String[]
+  ageGroups         String[] // kids|teens|adults|all
+  // location GeoJSON -> lng/lat
+  lng               Float?
+  lat               Float?
+  address           String?
+  city              String?
+  state             String?
+  pincode           String?
+  placeId           String?
+  panNumber         String              @default("")
+  panDocumentUrl    String              @default("")
+  panDocumentKey    String?
+  businessType      AcademyBusinessType @default(sole_proprietorship)
+  gstNumber         String?
+  gstDocumentUrl    String?
+  gstDocumentKey    String?
+  msmeRegistration  String?
+  sportsAuthorityAffiliation String?
+  aadhaarLast4      String              @default("")
+  // operatingHours (7-day OpeningHours) kept as Json blob
+  operatingHours    Json?
+  languagesSpoken   String[]
+  whatsappNumber    String
+  contactEmail      String
+  contactPhone      String
+  contactPersonName String
+  allowsExternalCoaches Boolean         @default(false)
+  maxBatchSize      Int
+  batchTimings      String[] // morning|evening|both
+  // academyVenues[] / academyCoaches[] were Mongo Mixed; kept as Json (see notes)
+  academyVenues     Json                @default("[]")
+  academyCoaches    Json                @default("[]")
+  ownerId           String?
+  venueIds          String[]            @default([])
+  coachIds          String[]            @default([])
+  sessionRatePerHour Int                @default(0)
+  trialsessionOffered Boolean           @default(false)
+  trialSessionPrice Int?
+  subscriptionPlanIds String[]          @default([])
+  sessionPackageIds String[]            @default([])
+  // bank fields stay AES-256-GCM encrypted strings (app-layer crypt)
+  bankAccountNumber String              @default("")
+  bankIfsc          String              @default("")
+  bankAccountName   String              @default("")
+  upiId             String              @default("")
+  payoutFrequency   PayoutFrequency     @default(weekly)
+  cancellationPolicy String             @default("")
+  refundPolicy      String              @default("")
+  kycVerified       Boolean             @default(false)
+  isActive          Boolean             @default(false)
+  isApproved        Boolean             @default(false)
+  rejectionReason   String?
+  onboardingStep    Int                 @default(1)
+  onboardingCompleted Boolean           @default(false)
+  rating            Float               @default(0)
+  reviewCount       Int                 @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([isApproved, kycVerified])
+  @@index([isApproved, isActive, sports])
+  @@map("academies")
+}
+
+// ============================================================================
+// SHOP DOMAIN
+// ============================================================================
+
+model Product {
+  id               String            @id @default(cuid())
+  sku              String            @unique
+  name             String
+  shortDescription String?
+  description      String
+  brand            String?
+  material         String?
+  warranty         String?
+  tags             String[]          @default([])
+  ageGroup         String?
+  skillLevel       String?
+  gender           String?
+  category         ProductCategory
+  images           String[]
+  basePrice        Int
+  salePrice        Int?
+  weight           Float
+  // dimensions (embedded) flattened
+  dimLength        Float
+  dimWidth         Float
+  dimHeight        Float
+  taxable          Boolean           @default(true)
+  taxRate          Float
+  totalStock       Int               @default(0)
+  isActive         Boolean           @default(true)
+  averageRating    Float             @default(0)
+  totalReviews     Int               @default(0)
+  seller           String?
+  sellerName       String?
+  sellerType       ProductSellerType @default(SYSTEM)
+  condition        ProductCondition  @default(NEW)
+
+  variants ProductVariant[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([averageRating])
+  @@index([seller])
+  @@index([sellerType])
+  @@index([condition])
+  @@index([isActive, category])
+  @@map("products")
+}
+
+model ProductVariant {
+  id           String  @id @default(cuid())
+  productId    String
+  product      Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku          String
+  variantLabel String
+  attributes   Json // Map<string,string>
+  price        Int
+  stock        Int     @default(0)
+  reorderLevel Int     @default(10)
+
+  inventory Inventory?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model Inventory {
+  id                String         @id @default(cuid())
+  productVariantId  String         @unique
+  productVariant    ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+  quantityOnHand    Int            @default(0)
+  quantityReserved  Int            @default(0)
+  quantityAvailable Int            @default(0)
+  reorderLevel      Int            @default(10)
+  lastStockCheckAt  DateTime       @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("inventory")
+}
+
+model Cart {
+  id                String     @id @default(cuid())
+  userId            String
+  subtotal          Int        @default(0)
+  taxAmount         Int        @default(0)
+  discountAmount    Int        @default(0)
+  totalAmount       Int        @default(0)
+  appliedPromoCode  String?
+  expiresAt         DateTime // swept by cron (was Mongo TTL)
+
+  items CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("carts")
+}
+
+model CartItem {
+  id               String   @id @default(cuid())
+  cartId           String
+  cart             Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productVariantId String
+  quantity         Int
+  lineTotal        Int
+  reservedAt       DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([cartId])
+  @@map("cart_items")
+}
+
+model Order {
+  id                       String            @id @default(cuid())
+  orderNumber              String            @unique
+  userId                   String
+  subtotal                 Int
+  taxAmount                Int
+  shippingAmount           Int               @default(0)
+  discountAmount           Int
+  totalAmount              Int
+  status                   OrderStatus       @default(PENDING_PAYMENT)
+  paymentMethod            String
+  paymentGateway           PaymentGateway
+  paymentGatewayOrderId    String?
+  paymentGatewayPaymentId  String?
+  paymentStatus            ShopPaymentStatus @default(PENDING)
+  appliedPromoCode         String?
+  promoDiscountAmount      Int               @default(0)
+  // shippingAddress (embedded) flattened
+  shipFullName             String?
+  shipEmail                String?
+  shipPhone                String?
+  shipAddressLine1         String?
+  shipAddressLine2         String?
+  shipCity                 String?
+  shipState                String?
+  shipPostalCode           String?
+  shipCountry              String?           @default("IN")
+  estimatedDeliveryDate    DateTime?
+  fulfillmentStatus        FulfillmentStatus @default(PENDING)
+  trackingNumber           String?
+  cancelledAt              DateTime?
+  cancelReason             String?
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([fulfillmentStatus])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                String            @id @default(cuid())
+  orderId           String
+  order             Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productVariantId  String
+  productName       String
+  variantLabel      String
+  quantity          Int
+  unitPrice         Int
+  lineTotal         Int
+  sellerId          String?
+  condition         ProductCondition  @default(NEW)
+  fulfillmentStatus FulfillmentStatus @default(PENDING)
+  trackingNumber    String?
+  createdAt         DateTime          @default(now())
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Wishlist {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  products WishlistItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("wishlists")
+}
+
+model WishlistItem {
+  id         String   @id @default(cuid())
+  wishlistId String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId  String
+  addedAt    DateTime @default(now())
+
+  @@unique([wishlistId, productId])
+  @@map("wishlist_items")
+}
+
+model ShopPaymentTransaction {
+  id               String            @id @default(cuid())
+  orderId          String
+  paymentGateway   PaymentGateway
+  gatewayOrderId   String
+  gatewayPaymentId String?
+  amount           Int
+  currency         String            @default("INR")
+  status           ShopPaymentStatus @default(PENDING)
+  idempotencyKey   String            @unique
+  gatewayResponse  Json              @default("{}")
+  webhookData      Json?
+  attemptNumber    Int               @default(1)
+  lastRetryAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([gatewayOrderId])
+  @@index([gatewayPaymentId])
+  @@index([status])
+  @@index([status, lastRetryAt])
+  @@map("shop_payment_transactions")
+}
+
+model ShopWaitlist {
+  id        String   @id @default(cuid())
+  email     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("shop_waitlists")
+}
+
+// ============================================================================
+// SHARED DOMAIN
+// ============================================================================
+
+model EmailVerification {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime // swept by cron (was Mongo TTL 3600s)
+  attempts  Int      @default(0)
+  verified  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([email, verified])
+  @@index([expiresAt])
+  @@map("email_verifications")
+}
+
+model OutboxMessage {
+  id            String       @id @default(cuid())
+  type          String
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  attempts      Int          @default(0)
+  nextAttemptAt DateTime     @default(now())
+  lastError     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, nextAttemptAt])
+  @@map("outbox_messages")
+}
+
+model PaymentWebhookEvent {
+  id          String    @id @default(cuid())
+  eventId     String    @unique
+  eventType   String?
+  payload     Json
+  status      String    @default("PENDING")
+  attempts    Int       @default(0)
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+  lastError   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("payment_webhook_events")
+}
+
+model PromoCode {
+  id                String            @id @default(cuid())
+  code              String            @unique
+  description       String
+  discountType      PromoDiscountType
+  discountValue     Int
+  applicableTo      PromoApplicableTo @default(ALL)
+  minBookingAmount  Int?
+  maxDiscountAmount Int?
+  validFrom         DateTime
+  validUntil        DateTime
+  isActive          Boolean           @default(true)
+  maxUsageTotal     Int?
+  maxUsagePerUser   Int               @default(1)
+  currentUsageCount Int               @default(0)
+  createdBy         String
+
+  usedBy PromoCodeUsage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, validUntil])
+  @@map("promo_codes")
+}
+
+model PromoCodeUsage {
+  id              String    @id @default(cuid())
+  promoCodeId     String
+  promoCode       PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  userId          String
+  bookingId       String?
+  orderId         String?
+  discountApplied Int
+  usedAt          DateTime  @default(now())
+
+  @@index([promoCodeId])
+  @@map("promo_code_usages")
+}
+
+model RateLimit {
+  id        String        @id @default(cuid())
+  key       String
+  type      RateLimitType
+  count     Int           @default(1)
+  resetAt   DateTime // swept by cron (was Mongo TTL)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([key, type], name: "unique_rate_limit")
+  @@index([resetAt])
+  @@map("rate_limits")
+}
+
+model Sport {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String    @default("")
+  category    String    @default("Other") // has spaces -> string
+  // attributes (embedded obj) flattened
+  attrInteractionType String?
+  attrDemand          String?
+  attrContactLevel    String?
+  isVerified  Boolean   @default(false)
+  verifiedAt  DateTime?
+  addedBy     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sports")
+}
+
+model Scholarship {
+  id                String   @id @default(cuid())
+  sportSlug         String
+  city              String?
+  name              String
+  provider          String
+  description       String
+  eligibility       String
+  prerequisiteId    String?
+  prerequisiteName  String?
+  prerequisiteGuide String[] @default([])
+  documentChecklist String[] @default([])
+  sourceUrls        String[] @default([])
+  isVerified        Boolean  @default(false)
+  lastScrapedAt     DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sportSlug, name])
+  @@index([sportSlug])
+  @@index([city])
+  @@map("scholarships")
+}
+
+model University {
+  id                  String   @id @default(cuid())
+  sportSlug           String
+  city                String?
+  name                String
+  location            String
+  admissionCriteria   String
+  sportsQuotaDetails  String
+  prerequisiteId      String?
+  prerequisiteName    String?
+  prerequisiteGuide   String[] @default([])
+  documentChecklist   String[] @default([])
+  sourceUrls          String[] @default([])
+  isVerified          Boolean  @default(false)
+  lastScrapedAt       DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sportSlug, name])
+  @@index([sportSlug])
+  @@index([city])
+  @@map("universities")
+}
+
+model AthleteStory {
+  id            String   @id @default(cuid())
+  sportSlug     String
+  level         Int
+  name          String
+  location      String
+  achievement   String
+  quote         String
+  parentNote    String
+  tags          String[] @default([])
+  isAiGenerated Boolean  @default(true)
+  sourceUrls    String[] @default([])
+  lastScrapedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sportSlug])
+  @@index([level])
+  @@map("athlete_stories")
+}
+
+model Tournament {
+  id                   String   @id @default(cuid())
+  sportSlug            String
+  city                 String?
+  name                 String
+  level                String
+  description          String
+  ageGroup             String
+  prerequisiteId       String?
+  prerequisiteName     String?
+  prerequisiteGuide    String[] @default([])
+  documentChecklist    String[] @default([])
+  typicalDates         String?
+  registrationDeadline String?
+  sourceUrls           String[] @default([])
+  isVerified           Boolean  @default(false)
+  lastScrapedAt        DateTime @default(now())
+  slug                 String?  @unique
+  isCurated            Boolean  @default(false)
+  // federation (embedded obj) flattened
+  fedName              String?
+  fedAcronym           String?
+  fedWebsite           String?
+  fedType              String?
+  fedAbout             String?
+  participationGuide   String[] @default([])
+  qualificationPath    String?
+  format               String?
+  prestige             String?
+  prizePool            String?
+  registrationUrl      String?
+  entryFee             String?
+  selectionCriteria    String?
+  prizes               String?
+  keyFacts             String[] @default([])
+  importantNotes       String[] @default([])
+  circuitContext       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sportSlug, name])
+  @@index([sportSlug])
+  @@index([city])
+  @@index([isCurated])
+  @@index([isCurated, sportSlug])
+  @@map("tournaments")
+}
+
+model TournamentEdition {
+  id                        String   @id @default(cuid())
+  sportSlug                 String
+  name                      String
+  editionYear              Int
+  startDate                 DateTime
+  endDate                   DateTime?
+  registrationDeadlineDate  DateTime?
+  venue                     String?
+  city                      String?
+  level                     String?
+  ageGroups                 String[] @default([])
+  sourceUrl                 String
+  status                    String   @default("announced")
+  lastCheckedAt             DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sportSlug, name, startDate])
+  @@index([sportSlug])
+  @@index([sportSlug, startDate])
+  @@map("tournament_editions")
+}
+
+model ConciergeRequest {
+  id               String          @id @default(cuid())
+  userId           String
+  sportSlug        String
+  itemType         String? // tournament|scholarship|university
+  itemId           String?
+  itemName         String?
+  tournamentId     String? // legacy
+  tournamentName   String? // legacy
+  prerequisiteId   String?
+  prerequisiteName String?
+  status           String          @default("pending")
+  adminNotes       String?
+
+  documents ConciergeRequestDocument[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("concierge_requests")
+}
+
+model ConciergeRequestDocument {
+  id           String           @id @default(cuid())
+  requestId    String
+  request      ConciergeRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  documentName String
+  s3Key        String
+
+  @@index([requestId])
+  @@map("concierge_request_documents")
+}
+
+model PathwayExpertVerification {
+  id             String   @id @default(cuid())
+  sportSlug      String
+  sportName      String
+  expertId       String
+  expertName     String
+  expertPhotoUrl String?
+  verifiedAt     DateTime @default(now())
+  note           String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sportSlug, expertId])
+  @@index([sportSlug])
+  @@map("pathway_expert_verifications")
+}
+
+model UserPathwayProfile {
+  id           String @id @default(cuid())
+  userId       String @unique
+  progress     Json   @default("{}")
+  savedItems   Json   @default("[]")
+  applications Json   @default("[]")
+  reminders    Json   @default("[]")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_pathway_profiles")
+}
+
+// SportPathway / SportBasePath / SportStatePath store AI-generated pathway
+// *content documents* (deeply nested, read/written as a whole). Their nested
+// level/tournament/etc. arrays are kept as structured Json rather than ~15
+// child tables — see SCHEMA_CHANGES.md "Pathway content" for the rationale.
+model SportPathway {
+  id                          String    @id @default(cuid())
+  sportSlug                   String
+  sportName                   String
+  cacheKey                    String?
+  category                    String    @default("Other")
+  overview                    String    @default("")
+  levels                      Json      @default("[]")
+  tournaments                 Json      @default("[]")
+  scholarships                Json      @default("[]")
+  universities                Json      @default("[]")
+  equipment                   Json      @default("[]")
+  careers                     Json      @default("[]")
+  tournamentsVerifiedEmpty    Boolean   @default(false)
+  scholarshipsVerifiedEmpty   Boolean   @default(false)
+  universitiesVerifiedEmpty   Boolean   @default(false)
+  isVerified                  Boolean   @default(false)
+  verifiedAt                  DateTime?
+  verifiedBy                  String?
+  lookupCount                 Int       @default(1)
+  contentRefreshedAt          DateTime?
+  financialDataRefreshedAt    DateTime?
+  contentRefreshInProgress    Boolean   @default(false)
+  financialRefreshInProgress  Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sportSlug])
+  @@index([cacheKey])
+  @@map("sport_pathways")
+}
+
+model SportBasePath {
+  id          String   @id @default(cuid())
+  sportSlug   String   @unique
+  sportName   String
+  category    String?
+  overview    String
+  levels      Json     @default("[]")
+  equipment   Json     @default("[]")
+  careers     Json     @default("[]")
+  generatedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sport_base_paths")
+}
+
+model SportStatePath {
+  id                String   @id @default(cuid())
+  sportSlug         String
+  stateSlug         String
+  stateName         String
+  // stateAssociation (embedded obj) flattened
+  saName            String?
+  saAcronym         String?
+  saWebsite         String?
+  saContact         String?
+  topAcademies      Json     @default("[]")
+  // feeRange (embedded obj) flattened
+  feeMonthly        String?
+  feeEquipment      String?
+  feeTournaments    String?
+  governmentSchemes Json     @default("[]")
+  regionalCalendar  String
+  generatedAt       DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sportSlug, stateSlug])
+  @@map("sport_state_paths")
+}

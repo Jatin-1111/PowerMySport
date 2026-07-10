@@ -1,0 +1,1332 @@
+import mongoose from "mongoose";
+import { User as UserModel } from "../../client/models/User";
+import OutboxMessage from "../../shared/models/OutboxMessage";
+import { getPhonePeOrderStatus } from "../../shared/services/PhonePeService";
+import { buildSafeSearchRegexSource } from "../../utils/regex";
+import {
+  FulfillmentStatus,
+  OrderStatus,
+  PaymentGateway,
+  PaymentStatus,
+} from "../../types/ecommerce";
+import {
+  CartDocument,
+  CartItemDocument,
+  Cart as CartModel,
+  Inventory as InventoryModel,
+  OrderDocument,
+  Order as OrderModel,
+  PaymentTransaction as PaymentTransactionModel,
+  ProductDocument,
+  Product as ProductModel,
+} from "../models/Ecommerce";
+
+// ============ INVENTORY SERVICE ============
+
+export class InventoryService {
+  /**
+   * Reserve inventory for a cart item
+   * Called when item is added to cart
+   */
+  async reserveInventory(
+    productVariantId: string,
+    quantity: number,
+  ): Promise<boolean> {
+    const inventoryDoc = await InventoryModel.findOne({
+      productVariantId: new mongoose.Types.ObjectId(productVariantId),
+    });
+
+    if (!inventoryDoc) {
+      throw new Error("Inventory record not found");
+    }
+
+    if (inventoryDoc.quantityAvailable < quantity) {
+      throw new Error("Insufficient inventory available");
+    }
+
+    inventoryDoc.quantityReserved += quantity;
+    await inventoryDoc.save();
+    return true;
+  }
+
+  /**
+   * Release reserved inventory
+   * Called when cart item is removed or checkout cancelled
+   */
+  async releaseReservedInventory(
+    productVariantId: string,
+    quantity: number,
+  ): Promise<boolean> {
+    const inventoryDoc = await InventoryModel.findOne({
+      productVariantId: new mongoose.Types.ObjectId(productVariantId),
+    });
+
+    if (!inventoryDoc) {
+      throw new Error("Inventory record not found");
+    }
+
+    inventoryDoc.quantityReserved = Math.max(
+      0,
+      inventoryDoc.quantityReserved - quantity,
+    );
+    await inventoryDoc.save();
+    return true;
+  }
+
+  /**
+   * Confirm inventory deduction (move from reserved to sold)
+   * Called after successful payment
+   */
+  async confirmInventoryDeduction(
+    productVariantId: string,
+    quantity: number,
+  ): Promise<boolean> {
+    const inventoryDoc = await InventoryModel.findOne({
+      productVariantId: new mongoose.Types.ObjectId(productVariantId),
+    });
+
+    if (!inventoryDoc) {
+      throw new Error("Inventory record not found");
+    }
+
+    if (inventoryDoc.quantityReserved < quantity) {
+      throw new Error("Insufficient reserved inventory");
+    }
+
+    inventoryDoc.quantityReserved -= quantity;
+    inventoryDoc.quantityOnHand -= quantity;
+    await inventoryDoc.save();
+
+    // Sync back to Product.variants[].stock
+    const product = await ProductModel.findOne({
+      "variants._id": new mongoose.Types.ObjectId(productVariantId),
+    });
+
+    if (product) {
+      const variant = product.variants.find(
+        (v) => v._id.toString() === productVariantId,
+      );
+      if (variant) {
+        variant.stock = inventoryDoc.quantityOnHand;
+        await product.save();
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Get available quantity for a variant
+   */
+  async getAvailableQuantity(productVariantId: string): Promise<number> {
+    const inventoryDoc = await InventoryModel.findOne({
+      productVariantId: new mongoose.Types.ObjectId(productVariantId),
+    });
+
+    return inventoryDoc?.quantityAvailable || 0;
+  }
+
+  /**
+   * Check if low stock and needs reorder
+   */
+  async isLowStock(productVariantId: string): Promise<boolean> {
+    const inventoryDoc = await InventoryModel.findOne({
+      productVariantId: new mongoose.Types.ObjectId(productVariantId),
+    });
+
+    if (!inventoryDoc) return false;
+    return inventoryDoc.quantityOnHand < inventoryDoc.reorderLevel;
+  }
+}
+
+// ============ CART SERVICE ============
+
+export class CartService {
+  private inventoryService: InventoryService;
+
+  constructor() {
+    this.inventoryService = new InventoryService();
+  }
+
+  /**
+   * Get or create cart for user
+   */
+  async getOrCreateCart(userId: string): Promise<CartDocument> {
+    let cart = await CartModel.findOne({
+      userId: new mongoose.Types.ObjectId(userId),
+    });
+
+    if (!cart) {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // 24-hour TTL
+      cart = new CartModel({
+        userId: new mongoose.Types.ObjectId(userId),
+        items: [],
+        subtotal: 0,
+        taxAmount: 0,
+        discountAmount: 0,
+        totalAmount: 0,
+        expiresAt,
+      });
+      await cart.save();
+    }
+
+    // Refresh expiration
+    cart.expiresAt = new Date();
+    cart.expiresAt.setHours(cart.expiresAt.getHours() + 24);
+    await cart.save();
+
+    return cart;
+  }
+
+  /**
+   * Add item to cart
+   */
+  async addItemToCart(
+    userId: string,
+    productVariantId: string,
+    quantity: number,
+  ): Promise<CartDocument> {
+    // Validate variant exists and has stock
+    const variant = await this.getProductVariant(productVariantId);
+    if (!variant) {
+      throw new Error("Product variant not found");
+    }
+
+    // Check inventory availability
+    const availableQty =
+      await this.inventoryService.getAvailableQuantity(productVariantId);
+    if (availableQty < quantity) {
+      throw new Error(`Only ${availableQty} units available for this product`);
+    }
+
+    // Get or create cart
+    const cart = await this.getOrCreateCart(userId);
+
+    // Check if item already in cart
+    const existingItem = cart.items.find(
+      (item) =>
+        item.productVariantId.toString() === productVariantId.toString(),
+    );
+
+    if (existingItem) {
+      // Update quantity and line total
+      const newQuantity = existingItem.quantity + quantity;
+
+      // Verify we have enough for new total
+      if (availableQty < newQuantity) {
+        throw new Error(
+          `Only ${availableQty} units available for this product`,
+        );
+      }
+
+      existingItem.quantity = newQuantity;
+      existingItem.lineTotal = newQuantity * variant.price;
+    } else {
+      // Add new item
+      const newItem = {
+        cartId: cart._id,
+        productVariantId: new mongoose.Types.ObjectId(productVariantId),
+        quantity,
+        lineTotal: quantity * variant.price,
+        reservedAt: new Date(),
+      };
+      cart.items.push(newItem as CartItemDocument);
+    }
+
+    // Reserve inventory
+    await this.inventoryService.reserveInventory(productVariantId, quantity);
+
+    // Recalculate totals
+    await this.recalculateCartTotals(cart);
+    await cart.save();
+
+    return cart;
+  }
+
+  /**
+   * Remove item from cart
+   */
+  async removeItemFromCart(
+    userId: string,
+    cartItemId: string,
+  ): Promise<CartDocument> {
+    const cart = await CartModel.findOne({
+      userId: new mongoose.Types.ObjectId(userId),
+    });
+
+    if (!cart) {
+      throw new Error("Cart not found");
+    }
+
+    const itemIndex = cart.items.findIndex(
+      (item) => item._id.toString() === cartItemId,
+    );
+
+    if (itemIndex === -1) {
+      throw new Error("Item not found in cart");
+    }
+
+    const item = cart.items[itemIndex];
+    if (!item) {
+      throw new Error("Item not found in cart");
+    }
+
+    // Release reserved inventory
+    await this.inventoryService.releaseReservedInventory(
+      item.productVariantId.toString(),
+      item.quantity,
+    );
+
+    // Remove item
+    cart.items.splice(itemIndex, 1);
+
+    // Recalculate totals
+    await this.recalculateCartTotals(cart);
+    await cart.save();
+
+    return cart;
+  }
+
+  /**
+   * Update cart item quantity
+   */
+  async updateItemQuantity(
+    userId: string,
+    cartItemId: string,
+    newQuantity: number,
+  ): Promise<CartDocument> {
+    if (newQuantity < 1) {
+      throw new Error("Quantity must be at least 1");
+    }
+
+    const cart = await CartModel.findOne({
+      userId: new mongoose.Types.ObjectId(userId),
+    });
+
+    if (!cart) {
+      throw new Error("Cart not found");
+    }
+
+    const item = cart.items.find((i) => i._id.toString() === cartItemId);
+    if (!item) {
+      throw new Error("Item not found in cart");
+    }
+
+    const variant = await this.getProductVariant(
+      item.productVariantId.toString(),
+    );
+    if (!variant) {
+      throw new Error("Product variant not found");
+    }
+
+    // Handle quantity change (increase or decrease)
+    const quantityDifference = newQuantity - item.quantity;
+
+    if (quantityDifference > 0) {
+      // Increasing quantity - need to reserve more
+      const availableQty = await this.inventoryService.getAvailableQuantity(
+        item.productVariantId.toString(),
+      );
+      if (availableQty < quantityDifference) {
+        throw new Error(`Only ${availableQty} additional units available`);
+      }
+      await this.inventoryService.reserveInventory(
+        item.productVariantId.toString(),
+        quantityDifference,
+      );
+    } else {
+      // Decreasing quantity - release reserved
+      await this.inventoryService.releaseReservedInventory(
+        item.productVariantId.toString(),
+        Math.abs(quantityDifference),
+      );
+    }
+
+    item.quantity = newQuantity;
+    item.lineTotal = newQuantity * variant.price;
+
+    await this.recalculateCartTotals(cart);
+    await cart.save();
+
+    return cart;
+  }
+
+  /**
+   * Clear entire cart
+   */
+  async clearCart(userId: string): Promise<void> {
+    const cart = await CartModel.findOne({
+      userId: new mongoose.Types.ObjectId(userId),
+    });
+
+    if (!cart) {
+      return;
+    }
+
+    // Release all reserved inventory
+    for (const item of cart.items) {
+      await this.inventoryService.releaseReservedInventory(
+        item.productVariantId.toString(),
+        item.quantity,
+      );
+    }
+
+    // Clear items and reset totals
+    cart.items = [];
+    cart.subtotal = 0;
+    cart.taxAmount = 0;
+    cart.discountAmount = 0;
+    cart.totalAmount = 0;
+    cart.appliedPromoCode = "";
+
+    await cart.save();
+  }
+
+  /**
+   * Apply promo code to cart
+   * This is simplified - actual implementation should validate promo eligibility
+   */
+  async applyPromoCode(
+    userId: string,
+    promoCode: string,
+    discountAmount: number,
+  ): Promise<CartDocument> {
+    const cart = await CartModel.findOne({
+      userId: new mongoose.Types.ObjectId(userId),
+    });
+
+    if (!cart) {
+      throw new Error("Cart not found");
+    }
+
+    if (discountAmount < 0 || discountAmount > cart.subtotal) {
+      throw new Error("Invalid discount amount");
+    }
+
+    cart.appliedPromoCode = promoCode;
+    cart.discountAmount = discountAmount;
+    cart.totalAmount = cart.subtotal + cart.taxAmount - discountAmount;
+
+    await cart.save();
+    return cart;
+  }
+
+  /**
+   * Remove promo code from cart
+   */
+  async removePromoCode(userId: string): Promise<CartDocument> {
+    const cart = await CartModel.findOne({
+      userId: new mongoose.Types.ObjectId(userId),
+    });
+
+    if (!cart) {
+      throw new Error("Cart not found");
+    }
+
+    cart.appliedPromoCode = "";
+    cart.discountAmount = 0;
+    cart.totalAmount = cart.subtotal + cart.taxAmount;
+
+    await cart.save();
+    return cart;
+  }
+
+  /**
+   * Recalculate cart totals (subtotal, tax, total)
+   * Tax calculation: subtotal * product.taxRate
+   */
+  private async recalculateCartTotals(cart: CartDocument): Promise<void> {
+    let subtotal = 0;
+    let taxAmount = 0;
+
+    for (const item of cart.items) {
+      subtotal += item.lineTotal;
+
+      // Get product to calculate tax rate snapshot for current cart line.
+      const product = await ProductModel.findOne({
+        "variants._id": new mongoose.Types.ObjectId(
+          item.productVariantId.toString(),
+        ),
+      });
+      if (product && product.taxable) {
+        taxAmount += item.lineTotal * product.taxRate;
+      }
+    }
+
+    cart.subtotal = subtotal;
+    cart.taxAmount = Math.round(taxAmount); // Round to nearest paise
+    cart.totalAmount =
+      cart.subtotal + cart.taxAmount - (cart.discountAmount || 0);
+  }
+
+  /**
+   * Helper: Get product variant details
+   */
+  private async getProductVariant(productVariantId: string) {
+    const product = await ProductModel.findOne({
+      "variants._id": new mongoose.Types.ObjectId(productVariantId),
+    });
+
+    if (!product) return null;
+
+    return product.variants.find((v) => v._id.toString() === productVariantId);
+  }
+}
+
+// ============ ORDER SERVICE ============
+
+export class OrderService {
+  private cartService: CartService;
+  private inventoryService: InventoryService;
+
+  constructor() {
+    this.cartService = new CartService();
+    this.inventoryService = new InventoryService();
+  }
+
+  /**
+   * Generate unique order number
+   */
+  private generateOrderNumber(): string {
+    const date = new Date();
+    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, "");
+    const random = Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(5, "0");
+    return `ORD-${dateStr}-${random}`;
+  }
+
+  /**
+   * Create order from cart
+   */
+  async createOrderFromCart(
+    userId: string,
+    shippingAddress: any,
+    paymentMethod: string,
+    paymentGateway: PaymentGateway,
+  ): Promise<OrderDocument> {
+    // Get cart
+    const cart = await this.cartService.getOrCreateCart(userId);
+
+    if (cart.items.length === 0) {
+      throw new Error("Cart is empty");
+    }
+
+    // Create order items from cart
+    const orderItems = [];
+    for (const cartItem of cart.items) {
+      const variant = await ProductModel.findOne({
+        "variants._id": cartItem.productVariantId,
+      });
+
+      if (!variant) {
+        throw new Error("Product variant not found");
+      }
+
+      const variantDoc = variant.variants.find(
+        (v) => v._id.toString() === cartItem.productVariantId.toString(),
+      );
+
+      orderItems.push({
+        productVariantId: cartItem.productVariantId,
+        productName: variant.name,
+        variantLabel: variantDoc?.variantLabel || "",
+        quantity: cartItem.quantity,
+        unitPrice: variantDoc?.price || 0,
+        lineTotal: cartItem.lineTotal,
+        sellerId: variant.seller || null,
+        condition: variant.condition || "NEW",
+        fulfillmentStatus: FulfillmentStatus.PENDING,
+      });
+    }
+
+    // Create order
+    const order = new OrderModel({
+      orderNumber: this.generateOrderNumber(),
+      userId: new mongoose.Types.ObjectId(userId),
+      items: orderItems,
+      subtotal: cart.subtotal,
+      taxAmount: cart.taxAmount,
+      shippingAmount: 0, // Reserved for future
+      discountAmount: cart.discountAmount,
+      totalAmount: cart.totalAmount,
+      status: OrderStatus.PENDING_PAYMENT,
+      paymentMethod,
+      paymentGateway,
+      paymentStatus: PaymentStatus.PENDING,
+      shippingAddress,
+      fulfillmentStatus: FulfillmentStatus.PENDING,
+      appliedPromoCode: cart.appliedPromoCode,
+      promoDiscountAmount: cart.discountAmount,
+    });
+
+    await order.save();
+
+    // Inventory already reserved in cart, just need to track order-payment link
+    return order;
+  }
+
+  /**
+   * Confirm payment and update order status
+   */
+  async confirmPayment(
+    orderId: string,
+    paymentGatewayPaymentId: string,
+    paymentGatewayOrderId: string,
+  ): Promise<OrderDocument> {
+    const order = await OrderModel.findById(orderId);
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    // Idempotency guard: confirmPayment can be invoked by both the PhonePe
+    // webhook reconciler and the client-side payment sync. If the order is
+    // already confirmed (or no longer awaiting payment), return it as-is
+    // instead of throwing — re-running the side effects would double-deduct
+    // inventory and re-send emails.
+    if (
+      order.paymentStatus === PaymentStatus.CAPTURED ||
+      order.status !== OrderStatus.PENDING_PAYMENT
+    ) {
+      return order;
+    }
+
+    // SECURITY: independently verify with PhonePe (using the merchantOrderId WE
+    // stored, not any client/webhook-supplied value) that this order was
+    // actually captured for the EXACT order amount before confirming. This is
+    // the single chokepoint every confirmation path flows through (client
+    // verify, sync, webhook, recovery), so it guards them all against
+    // confirming an unpaid or underpaid order.
+    const paymentTx = await PaymentTransactionModel.findOne({
+      orderId: order._id,
+    }).sort({ createdAt: -1 });
+
+    if (!paymentTx?.gatewayOrderId) {
+      throw new Error("Payment transaction not found for order");
+    }
+
+    const gatewayStatus = await getPhonePeOrderStatus(paymentTx.gatewayOrderId);
+    if (gatewayStatus.state !== "COMPLETED") {
+      throw new Error("Payment not completed at gateway");
+    }
+    if (
+      typeof gatewayStatus.amount !== "number" ||
+      gatewayStatus.amount !== order.totalAmount
+    ) {
+      throw new Error("Payment amount mismatch");
+    }
+
+    // 1) Persist the payment confirmation FIRST so the status is durable even
+    // if a downstream side effect (inventory/cart/email) fails.
+    order.status = OrderStatus.PAYMENT_CONFIRMED;
+    order.paymentStatus = PaymentStatus.CAPTURED;
+    if (paymentGatewayPaymentId) {
+      order.paymentGatewayPaymentId = paymentGatewayPaymentId;
+    }
+    order.fulfillmentStatus = FulfillmentStatus.PENDING;
+    await order.save();
+
+    // 2) Confirm inventory deduction for each item (best effort — a reservation
+    // mismatch must never roll back a confirmed payment).
+    for (const item of order.items) {
+      try {
+        await this.inventoryService.confirmInventoryDeduction(
+          item.productVariantId.toString(),
+          item.quantity,
+        );
+      } catch (err) {
+        console.error("[order] inventory deduction failed (non-fatal)", {
+          orderId,
+          productVariantId: item.productVariantId.toString(),
+          error: (err as Error)?.message || String(err),
+        });
+      }
+    }
+
+    // 3) Clear user's cart after successful order (best effort).
+    try {
+      await this.cartService.clearCart(order.userId.toString());
+    } catch (err) {
+      console.error("[order] cart clear failed (non-fatal)", {
+        orderId,
+        error: (err as Error)?.message || String(err),
+      });
+    }
+
+    // 4) Queue order confirmation email via the outbox worker (best effort).
+    try {
+      await this.queueOrderConfirmationEmail(order);
+    } catch (err) {
+      console.error("[order] failed to queue confirmation email (non-fatal)", {
+        orderId,
+        error: (err as Error)?.message || String(err),
+      });
+    }
+
+    return order;
+  }
+
+  /**
+   * Build and enqueue the order confirmation email for the outbox worker.
+   * Kept separate so checkout flows never fail on email-side errors.
+   */
+  private async queueOrderConfirmationEmail(
+    order: OrderDocument,
+  ): Promise<void> {
+    const user = await UserModel.findById(order.userId);
+    if (user && user.email) {
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"></head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+            <h2 style="color: #ff5722;">Order Confirmation</h2>
+            <p>Hi ${user.name || "Customer"},</p>
+            <p>Thank you for your order! We're thrilled to have you with us.</p>
+            
+            <h3>Order Details</h3>
+            <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+            <p><strong>Order Date:</strong> ${new Date().toLocaleDateString()}</p>
+            <p><strong>Total Amount:</strong> ₹${(order.totalAmount / 100).toFixed(2)}</p>
+            
+            <h3>Items Ordered</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead><tr style="background-color: #f5f5f5;"><th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Product</th><th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Qty</th><th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Price</th></tr></thead>
+              <tbody>
+                ${order.items
+                  .map(
+                    (item) => `
+                  <tr>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${item.productName}${item.variantLabel ? ` (${item.variantLabel})` : ""}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.quantity}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">₹${(item.lineTotal / 100).toFixed(2)}</td>
+                  </tr>
+                `,
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+            
+            <h3>Shipping Address</h3>
+            <p>
+              ${order.shippingAddress.fullName}<br/>
+              ${order.shippingAddress.addressLine1}<br/>
+              ${order.shippingAddress.addressLine2 ? order.shippingAddress.addressLine2 + "<br/>" : ""}
+              ${order.shippingAddress.city}, ${order.shippingAddress.state} ${order.shippingAddress.postalCode}<br/>
+              ${order.shippingAddress.country || "IN"}
+            </p>
+            
+            <h3>What's Next?</h3>
+            <p>Your order is being processed and will be shipped shortly. You'll receive tracking updates via email.</p>
+            
+            <p style="color: #666; font-size: 12px; margin-top: 20px;">
+              If you have any questions, please contact our support team at support@powermysport.com
+            </p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      await OutboxMessage.create({
+        type: "send_email",
+        payload: {
+          to: user.email,
+          subject: `Order Confirmation - ${order.orderNumber}`,
+          html: emailHtml,
+        },
+        status: "PENDING",
+        attempts: 0,
+      });
+      console.info("[order] queued confirmation email for", {
+        orderId: order._id.toString(),
+        email: user.email,
+      });
+    }
+  }
+
+  /**
+   * Handle payment failure
+   */
+  async handlePaymentFailure(
+    orderId: string,
+    failureReason?: string,
+  ): Promise<OrderDocument> {
+    const order = await OrderModel.findById(orderId);
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    // Update payment status
+    order.paymentStatus = PaymentStatus.FAILED;
+
+    // Release reserved inventory
+    for (const item of order.items) {
+      await this.inventoryService.releaseReservedInventory(
+        item.productVariantId.toString(),
+        item.quantity,
+      );
+    }
+
+    await order.save();
+    return order;
+  }
+
+  /**
+   * Cancel order
+   */
+  async cancelOrder(orderId: string, reason: string): Promise<OrderDocument> {
+    const order = await OrderModel.findById(orderId);
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    // Can only cancel PENDING_PAYMENT orders
+    if (order.status !== OrderStatus.PENDING_PAYMENT) {
+      throw new Error(
+        `Cannot cancel order in ${order.status} state. Only PENDING_PAYMENT orders can be cancelled.`,
+      );
+    }
+
+    // Release reserved inventory
+    for (const item of order.items) {
+      await this.inventoryService.releaseReservedInventory(
+        item.productVariantId.toString(),
+        item.quantity,
+      );
+    }
+
+    // Update order
+    order.status = OrderStatus.CANCELLED;
+    order.cancelledAt = new Date();
+    order.cancelReason = reason;
+
+    await order.save();
+    return order;
+  }
+
+  /**
+   * Update fulfillment status
+   */
+  async updateFulfillmentStatus(
+    orderId: string,
+    fulfillmentStatus: FulfillmentStatus,
+    trackingNumber?: string,
+  ): Promise<OrderDocument> {
+    const order = await OrderModel.findById(orderId);
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    // Validate state transition
+    const validTransitions: Record<FulfillmentStatus, FulfillmentStatus[]> = {
+      [FulfillmentStatus.PENDING]: [
+        FulfillmentStatus.PROCESSING,
+        FulfillmentStatus.CANCELLED,
+      ],
+      [FulfillmentStatus.PROCESSING]: [
+        FulfillmentStatus.SHIPPED,
+        FulfillmentStatus.CANCELLED,
+      ],
+      [FulfillmentStatus.SHIPPED]: [FulfillmentStatus.DELIVERED],
+      [FulfillmentStatus.DELIVERED]: [],
+      [FulfillmentStatus.CANCELLED]: [],
+    };
+
+    if (
+      !validTransitions[order.fulfillmentStatus].includes(fulfillmentStatus)
+    ) {
+      throw new Error(
+        `Cannot transition from ${order.fulfillmentStatus} to ${fulfillmentStatus}`,
+      );
+    }
+
+    order.fulfillmentStatus = fulfillmentStatus;
+    if (trackingNumber) {
+      order.trackingNumber = trackingNumber;
+    }
+
+    await order.save();
+    await order.populate("userId", "name email");
+    return order;
+  }
+
+  /**
+   * Get order by ID
+   */
+  async getOrderById(orderId: string): Promise<OrderDocument | null> {
+    return OrderModel.findById(orderId);
+  }
+
+  /**
+   * Get order by ID with customer populated, for the admin detail drill-down.
+   * Separate from getOrderById() because callers of that method compare
+   * order.userId as a raw ObjectId string — populating there would break them.
+   */
+  async getOrderByIdForAdmin(orderId: string): Promise<OrderDocument | null> {
+    return OrderModel.findById(orderId).populate("userId", "name email");
+  }
+
+  /**
+   * List user's orders
+   */
+  async listUserOrders(
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+    status?: OrderStatus,
+  ) {
+    const query: any = {
+      userId: new mongoose.Types.ObjectId(userId),
+    };
+
+    if (status) {
+      query.status = status;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const orders = await OrderModel.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await OrderModel.countDocuments(query);
+
+    return {
+      orders,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * List all orders for admin dashboard with optional filters
+   */
+  async listAllOrders(
+    page: number = 1,
+    limit: number = 20,
+    options?: {
+      status?: OrderStatus;
+      dateFrom?: string;
+      dateTo?: string;
+      search?: string;
+      sortBy?: "createdAt" | "totalAmount" | "orderNumber";
+      sortOrder?: "asc" | "desc";
+    },
+  ) {
+    const query: any = {};
+
+    if (options?.status) {
+      query.status = options.status;
+    }
+
+    if (options?.dateFrom || options?.dateTo) {
+      query.createdAt = {};
+      if (options.dateFrom) {
+        query.createdAt.$gte = new Date(options.dateFrom);
+      }
+      if (options.dateTo) {
+        query.createdAt.$lte = new Date(options.dateTo);
+      }
+    }
+
+    if (options?.search) {
+      query.orderNumber = {
+        $regex: buildSafeSearchRegexSource(options.search),
+        $options: "i",
+      };
+    }
+
+    const skip = (page - 1) * limit;
+    const sortField = options?.sortBy || "createdAt";
+    const sortDir = options?.sortOrder === "asc" ? 1 : -1;
+
+    const orders = await OrderModel.find(query)
+      .populate("userId", "name email")
+      .sort({ [sortField]: sortDir })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await OrderModel.countDocuments(query);
+
+    return {
+      orders,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    };
+  }
+}
+
+// ============ PRODUCT SERVICE ============
+
+export class ProductService {
+  /**
+   * Get product by ID
+   */
+  async getProductById(productId: string): Promise<ProductDocument | null> {
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return null;
+    }
+    return ProductModel.findById(productId);
+  }
+
+  /**
+   * Get product by SKU
+   */
+  async getProductBySku(sku: string): Promise<ProductDocument | null> {
+    return ProductModel.findOne({ sku: sku.toUpperCase() });
+  }
+
+  /**
+   * List products with filters and pagination
+   */
+  async listProducts(
+    page: number = 1,
+    limit: number = 20,
+    category?: string,
+    search?: string,
+    sortBy: string = "newest",
+    brand?: string,
+    rating?: number,
+    minPrice?: number,
+    maxPrice?: number,
+    condition?: string,
+    sellerType?: string,
+  ) {
+    const query: any = {
+      isActive: true,
+    };
+
+    if (category) {
+      query.category = category;
+    }
+
+    if (brand) {
+      query.brand = { $regex: new RegExp(`^${brand}$`, "i") };
+    }
+
+    if (rating !== undefined) {
+      query.averageRating = { $gte: rating };
+    }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      query.basePrice = {};
+      if (minPrice !== undefined) query.basePrice.$gte = minPrice;
+      if (maxPrice !== undefined) query.basePrice.$lte = maxPrice;
+    }
+
+    if (condition) {
+      query.condition = condition;
+    }
+
+    if (sellerType) {
+      query.sellerType = sellerType;
+    }
+
+    if (search) {
+      query.$or = [
+        { name: new RegExp(search, "i") },
+        { description: new RegExp(search, "i") },
+        { sku: new RegExp(search, "i") },
+      ];
+    }
+
+    const sortOptions: Record<string, any> = {
+      price_asc: { basePrice: 1 },
+      price_desc: { basePrice: -1 },
+      newest: { createdAt: -1 },
+      popularity: { totalStock: -1 }, // Simple popularity metric
+    };
+
+    const sortField = sortOptions[sortBy] || sortOptions.newest;
+
+    const skip = (page - 1) * limit;
+
+    const products = await ProductModel.find(query)
+      .sort(sortField)
+      .skip(skip)
+      .limit(limit);
+
+    const total = await ProductModel.countDocuments(query);
+
+    // Facets power the filter sidebar. Categories are computed across the whole
+    // active catalog (never scoped by the current category) so the shopper can
+    // always switch between categories; brands and price range reflect the
+    // current category/condition/seller context.
+    const facetResult = await ProductModel.aggregate([
+      { $match: { isActive: true } },
+      {
+        $facet: {
+          categories: [{ $group: { _id: "$category" } }, { $sort: { _id: 1 } }],
+          scoped: [
+            {
+              $match: {
+                ...(category ? { category } : {}),
+                ...(condition ? { condition } : {}),
+                ...(sellerType ? { sellerType } : {}),
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                brands: { $addToSet: "$brand" },
+                minPrice: { $min: "$basePrice" },
+                maxPrice: { $max: "$basePrice" },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    const facetData = facetResult[0] || { categories: [], scoped: [] };
+    const scopedFacets = facetData.scoped?.[0] || {};
+    const availableFacets = {
+      categories: (facetData.categories || [])
+        .map((entry: { _id: string }) => entry._id)
+        .filter(Boolean)
+        .sort(),
+      brands: (scopedFacets.brands || []).filter(Boolean).sort(),
+      minPrice: scopedFacets.minPrice || 0,
+      maxPrice: scopedFacets.maxPrice || 10000,
+    };
+
+    return {
+      products,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      facets: availableFacets,
+    };
+  }
+
+  /**
+   * List products for the admin catalog view — unlike listProducts(), this
+   * includes inactive products and supports admin-relevant search/sort.
+   */
+  async listProductsForAdmin(
+    page: number = 1,
+    limit: number = 20,
+    options?: {
+      search?: string;
+      isActive?: boolean;
+      sortBy?: "name" | "basePrice" | "totalStock" | "createdAt";
+      sortOrder?: "asc" | "desc";
+    },
+  ) {
+    const query: any = {};
+
+    if (typeof options?.isActive === "boolean") {
+      query.isActive = options.isActive;
+    }
+
+    if (options?.search) {
+      const safeSearch = buildSafeSearchRegexSource(options.search);
+      query.$or = [
+        { name: { $regex: safeSearch, $options: "i" } },
+        { sku: { $regex: safeSearch, $options: "i" } },
+      ];
+    }
+
+    const sortField = options?.sortBy || "createdAt";
+    const sortDir = options?.sortOrder === "asc" ? 1 : -1;
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      ProductModel.find(query)
+        .sort({ [sortField]: sortDir })
+        .skip(skip)
+        .limit(limit),
+      ProductModel.countDocuments(query),
+    ]);
+
+    return {
+      products,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Get related products based on category and tags
+   */
+  async getRelatedProducts(
+    productId: string,
+    limit: number = 4,
+  ): Promise<ProductDocument[]> {
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return [];
+    }
+    const product = await ProductModel.findById(productId);
+    if (!product) return [];
+
+    // Find products in the same category or with intersecting tags, excluding the current product
+    const related = await ProductModel.find({
+      _id: { $ne: product._id },
+      isActive: true,
+      $or: [{ category: product.category }, { tags: { $in: product.tags } }],
+    })
+      .sort({ averageRating: -1, totalReviews: -1 }) // Show best rated first
+      .limit(limit);
+
+    return related;
+  }
+
+  /**
+   * Create product (admin)
+   */
+  async createProduct(productData: any): Promise<ProductDocument> {
+    const product = new ProductModel(productData);
+    await product.save();
+
+    // Create inventory records for each variant
+    for (const variant of product.variants) {
+      const inventory = new InventoryModel({
+        productVariantId: variant._id,
+        quantityOnHand: variant.stock,
+        quantityReserved: 0,
+        quantityAvailable: variant.stock,
+        reorderLevel: variant.reorderLevel,
+      });
+      await inventory.save();
+    }
+
+    return product;
+  }
+
+  /**
+   * Update product (admin)
+   */
+  async updateProduct(
+    productId: string,
+    updateData: any,
+  ): Promise<ProductDocument | null> {
+    const product = await ProductModel.findById(productId);
+    if (!product) return null;
+
+    // Apply updates
+    Object.assign(product, updateData);
+
+    // Save product (which runs validation & pre-save hook for totalStock)
+    await product.save();
+
+    for (const variant of product.variants) {
+      let inventory = await InventoryModel.findOne({
+        productVariantId: variant._id,
+      });
+      if (inventory) {
+        inventory.quantityOnHand = variant.stock;
+        inventory.reorderLevel = variant.reorderLevel;
+        await inventory.save();
+      } else {
+        inventory = new InventoryModel({
+          productVariantId: variant._id,
+          quantityOnHand: variant.stock,
+          quantityReserved: 0,
+          quantityAvailable: variant.stock,
+          reorderLevel: variant.reorderLevel,
+        });
+        await inventory.save();
+      }
+    }
+
+    return product;
+  }
+
+  /**
+   * Soft delete product
+   */
+  async deleteProduct(productId: string): Promise<ProductDocument | null> {
+    return ProductModel.findByIdAndUpdate(
+      productId,
+      { isActive: false },
+      { new: true },
+    );
+  }
+}
+
+// ============ ECOMMERCE WEBHOOK RECONCILIATION ============
+
+const pickStr = (...values: unknown[]): string | undefined => {
+  for (const v of values) {
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return undefined;
+};
+
+const asObj = (v: unknown): Record<string, unknown> =>
+  v && typeof v === "object" ? (v as Record<string, unknown>) : {};
+
+/**
+ * Reconcile an e-commerce order payment from a raw PhonePe webhook payload.
+ * Called by the outbox worker alongside booking and coach-subscription reconciliation.
+ *
+ * Only acts on merchantOrderIds that start with "O_" (e-commerce prefix).
+ * Returns true if the order was updated, false/null if not applicable.
+ */
+export async function reconcileEcommerceOrderFromWebhookPayload(
+  rawPayload: unknown,
+): Promise<boolean | null> {
+  const payload = asObj(rawPayload);
+  const inner = asObj(payload.payload);
+  const data = asObj(payload.data);
+
+  const merchantOrderId = pickStr(
+    payload.originalMerchantOrderId,
+    payload.merchantOrderId,
+    inner.originalMerchantOrderId,
+    inner.merchantOrderId,
+    data.originalMerchantOrderId,
+    data.merchantOrderId,
+    asObj(inner.paymentDetails).merchantOrderId,
+    asObj(data.paymentDetails).merchantOrderId,
+  );
+
+  if (!merchantOrderId || !merchantOrderId.startsWith("O_")) {
+    return null;
+  }
+
+  const paymentTx = await PaymentTransactionModel.findOne({
+    gatewayOrderId: merchantOrderId,
+  });
+
+  if (!paymentTx) {
+    return null;
+  }
+
+  if (paymentTx.status === PaymentStatus.CAPTURED) {
+    return false;
+  }
+
+  try {
+    const result = await getPhonePeOrderStatus(merchantOrderId);
+    if (result.state !== "COMPLETED") {
+      return false;
+    }
+  } catch {
+    return false;
+  }
+
+  const orderService = new OrderService();
+  await orderService.confirmPayment(
+    paymentTx.orderId.toString(),
+    paymentTx.gatewayPaymentId || merchantOrderId,
+    merchantOrderId,
+  );
+
+  console.info("[ecommerce-reconcile] order confirmed from webhook", {
+    merchantOrderId,
+    orderId: paymentTx.orderId,
+  });
+
+  return true;
+}

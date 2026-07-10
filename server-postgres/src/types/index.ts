@@ -1,0 +1,367 @@
+// ============================================
+// ROLE & ENUM TYPES
+// ============================================
+export type UserRole =
+  | "Player"
+  | "Parent"
+  | "VenueLister"
+  | "Coach"
+  | "Academy"
+  | "EXPERT"
+  | "Admin"
+  | "VENUE_ONBOARDING";
+
+// Admin role types
+export type AdminRole =
+  | "SUPPORT_ADMIN"
+  | "OPERATIONS_ADMIN"
+  | "FINANCE_ADMIN"
+  | "ANALYTICS_ADMIN"
+  | "SYSTEM_ADMIN";
+
+export type Permission = string; // e.g., "users:view", "venues:manage"
+
+export interface RoleTemplate {
+  role: string;
+  name: string;
+  description: string;
+  permissions: readonly string[];
+}
+
+export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
+export type BookingStatus =
+  | "PENDING_INVITES" // Group booking waiting for invites to be accepted
+  | "PENDING_CONFIRMATION" // Awaiting coach/venue confirmation
+  | "CONFIRMED"
+  | "IN_PROGRESS" // Booking started, check-in completed
+  | "COMPLETED" // Booking finished successfully
+  | "NO_SHOW" // User didn't show up
+  | "CANCELLED"
+  | "EXPIRED"; // Not confirmed by the venue/coach before expiresAt — auto-refunded
+
+// ============================================
+// USER TYPES
+// ============================================
+
+export interface IPlayerProfile {
+  sports?: string[];
+}
+
+export interface IBusinessDetails {
+  name: string;
+  gstNumber?: string;
+  address: string;
+}
+
+export interface IPayoutInfo {
+  accountNumber: string;
+  ifsc: string;
+  bankName: string;
+}
+
+export interface IVenueListerProfile {
+  businessDetails: IBusinessDetails;
+  payoutInfo: IPayoutInfo;
+  canAddMoreVenues?: boolean;
+}
+
+export interface IUser {
+  id?: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: UserRole;
+  userType?: string;
+  password: string;
+  photoUrl?: string;
+  photoS3Key?: string; // S3 key for profile picture
+  playerProfile?: IPlayerProfile;
+  venueListerProfile?: IVenueListerProfile;
+  lastActiveAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface IUserPayload {
+  id: string;
+  email: string;
+  role: UserRole | AdminRole;
+  userType?: string;
+  jti?: string;
+  exp?: number;
+  iat?: number;
+}
+
+// ============================================
+// COACH TYPES
+// ============================================
+export interface IAvailability {
+  dayOfWeek: number; // 0-6 (Sunday-Saturday)
+  startTime: string; // "09:00"
+  endTime: string; // "18:00"
+}
+
+/**
+ * Venue details stored in coach profile for OWN_VENUE coaches.
+ * These venues are NOT listed in the marketplace - they exist only for coach bookings.
+ * Coaches who want to rent out venues separately must create a venue-lister account.
+ */
+export interface IOwnVenueDetails {
+  name: string;
+  address: string;
+  location: {
+    type: "Point";
+    coordinates: [number, number]; // [longitude, latitude]
+  };
+  sports: string[];
+  amenities?: string[];
+  pricePerHour: number;
+  description?: string;
+  images?: string[];
+  imageS3Keys?: string[];
+  openingHours?: string;
+}
+
+export interface ICoach {
+  id?: string;
+  userId: string;
+  bio: string;
+  certifications: string[];
+  sports: string[];
+  hourlyRate: number;
+  sportPricing?: Record<string, number>;
+  serviceMode: ServiceMode;
+  ownVenueDetails?: IOwnVenueDetails; // For OWN_VENUE/HYBRID coaches - venue info for bookings only
+  baseLocation?: {
+    // For FREELANCE coaches: their home/office location
+    type: "Point";
+    coordinates: [number, number]; // [longitude, latitude]
+  };
+  serviceRadiusKm?: number; // Required if FREELANCE/HYBRID
+  travelBufferTime?: number; // Minutes, required if FREELANCE/HYBRID
+  availability: IAvailability[];
+  availabilityBySport?: Record<string, IAvailability[]>;
+  onboardingProgressStep?: 1 | 2 | 3;
+  verificationDocuments?: Array<{
+    type:
+      "CERTIFICATION" | "ID_PROOF" | "BACKGROUND_CHECK" | "INSURANCE" | "OTHER";
+    url: string;
+    s3Key?: string; // S3 key for document
+    fileName: string;
+    uploadedAt: Date;
+  }>;
+  isVerified: boolean;
+  rating: number;
+  reviewCount: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// ============================================
+// VENUE TYPES
+// ============================================
+export interface IGeoLocation {
+  type: "Point";
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
+export interface DayHours {
+  isOpen: boolean;
+  openTime?: string; // Format: "HH:MM" (24-hour)
+  closeTime?: string; // Format: "HH:MM" (24-hour)
+  slots?: Array<{
+    startTime: string; // Format: "HH:MM" (24-hour)
+    endTime: string; // Format: "HH:MM" (24-hour)
+  }>;
+}
+
+export interface OpeningHours {
+  monday: DayHours;
+  tuesday: DayHours;
+  wednesday: DayHours;
+  thursday: DayHours;
+  friday: DayHours;
+  saturday: DayHours;
+  sunday: DayHours;
+}
+
+export interface IVenue {
+  id?: string;
+  name: string;
+  ownerId: string;
+  location: IGeoLocation;
+  sports: string[];
+  pricePerHour: number;
+  sportPricing?: Record<string, number>;
+  amenities: string[];
+  description: string;
+  images: string[];
+  coverPhotoUrl?: string;
+  allowExternalCoaches: boolean;
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED" | "REVIEW";
+  documents?: IVenueDocument[];
+  rating: number;
+  reviewCount: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// ============================================
+// ACADEMY TYPES
+// ============================================
+
+export interface IAcademyPendingReview {
+  id: string;
+  name: string;
+  legalName: string;
+  city: string;
+  sports: string[];
+  ownerEmail: string;
+  ownerPhone: string;
+  isApproved: boolean;
+  kycVerified: boolean;
+  submittedAt?: Date;
+  lastReviewedAt?: Date;
+}
+
+export interface IAcademyDocument {
+  type: "panDocument" | "gstDocument";
+  url: string;
+  s3Key?: string;
+  fileName: string;
+  uploadedAt: Date;
+}
+
+// ============================================
+// VENUE ONBOARDING TYPES
+// ============================================
+export interface IVenueDocument {
+  type:
+    | "OWNERSHIP_PROOF"
+    | "BUSINESS_REGISTRATION"
+    | "TAX_DOCUMENT"
+    | "INSURANCE"
+    | "CERTIFICATE";
+  url: string;
+  s3Key?: string; // S3 object key for regenerating presigned URLs
+  fileName: string;
+  uploadedAt: Date;
+}
+
+export interface IVenueOnboardingStep1 {
+  ownerName: string;
+  ownerEmail: string;
+  ownerPhone: string;
+}
+
+export interface IVenueOnboardingStep2 {
+  venueId: string;
+  name: string;
+  sports: string[];
+  pricePerHour: number;
+  sportPricing?: Record<string, number>;
+  amenities: string[];
+  address: string;
+  openingHours: OpeningHours;
+  description: string;
+  allowExternalCoaches: boolean;
+  location: IGeoLocation;
+}
+
+export interface IVenueOnboardingStep3 {
+  venueId: string;
+  images: string[]; // S3 URLs from client upload - LEGACY
+  imageKeys: string[]; // S3 keys for regenerating URLs - LEGACY
+  generalImages?: string[]; // General venue images (3 required)
+  generalImageKeys?: string[]; // S3 keys for general images
+  sportImages?: Record<string, string[]>; // Sport-specific images (5 per sport)
+  sportImageKeys?: Record<string, string[]>; // S3 keys for sport images
+  coverPhotoUrl: string; // S3 URL for cover shot
+  coverPhotoKey: string; // S3 key for cover photo
+}
+
+export interface IVenueOnboardingStep4 {
+  venueId: string;
+  images: string[]; // S3 URLs from client upload - LEGACY
+  imageKeys: string[]; // S3 keys for regenerating URLs - LEGACY
+  generalImages?: string[]; // General venue images (3 required)
+  generalImageKeys?: string[]; // S3 keys for general images
+  sportImages?: Record<string, string[]>; // Sport-specific images (5 per sport)
+  sportImageKeys?: Record<string, string[]>; // S3 keys for sport images
+  coverPhotoUrl: string; // S3 URL for cover shot
+  coverPhotoKey: string; // S3 key for cover photo
+  documents: {
+    type:
+      | "OWNERSHIP_PROOF"
+      | "BUSINESS_REGISTRATION"
+      | "TAX_DOCUMENT"
+      | "INSURANCE"
+      | "CERTIFICATE";
+    url: string;
+    s3Key?: string; // S3 object key for regenerating URLs
+    fileName: string;
+  }[];
+}
+
+export interface IOnboardingUploadUrl {
+  field: string; // image_0, document_OWNERSHIP_PROOF, etc.
+  uploadUrl: string;
+  downloadUrl: string;
+  s3Key?: string; // S3 object key (for documents)
+  fileName: string;
+  contentType: string;
+  maxSizeBytes: number;
+}
+
+export interface IPendingVenue {
+  id: string;
+  name: string;
+  ownerEmail: string;
+  ownerPhone: string;
+  sports: string[];
+  approvalStatus: "PENDING" | "REVIEW" | "REJECTED";
+  submittedAt: Date;
+  lastReviewedAt?: Date;
+}
+
+// ============================================
+// BOOKING TYPES
+// ============================================
+export type PaymentUserType = "VenueLister" | "Coach" | "Player";
+export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
+
+export interface IPayment {
+  userId: string;
+  userType: PaymentUserType;
+  amount: number;
+  status: PaymentStatus;
+  paidAt?: Date;
+}
+
+export interface IBooking {
+  id?: string;
+  userId: string; // Player
+  venueId: string;
+  coachId?: string; // Optional
+  date: Date;
+  startTime: string; // "18:00"
+  endTime: string; // "19:00"
+  totalAmount: number;
+  status: BookingStatus;
+  expiresAt: Date;
+  checkInCode?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// API Response Types
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data?: T;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: IUser;
+}

@@ -1,0 +1,1410 @@
+import { z } from "zod";
+
+export const registerSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email format"),
+  phone: z.string().min(1, "Phone number is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  acceptedTerms: z
+    .boolean()
+    .refine((value) => value === true, "Terms of Service must be accepted"),
+  acceptedPrivacy: z
+    .boolean()
+    .refine((value) => value === true, "Privacy Policy must be accepted"),
+  role: z
+    .enum(["Parent", "Player", "VenueLister", "Coach", "EXPERT"])
+    .optional()
+    .default("Player"),
+  // NOTE: "Admin" is intentionally NOT accepted at self-registration. Privileged
+  // roles/types must be provisioned through the admin/verification flows, never
+  // self-selected by the registrant. EXPERT is self-selectable but goes through
+  // an async admin review before becoming active.
+  userType: z
+    .enum(["Parent", "Player", "Coach", "Academy", "VenueLister"])
+    .optional()
+    .default("Player"),
+});
+
+export const loginSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const adminLoginSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const adminCreateSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters").max(100),
+  email: z.string().email("Invalid email format"),
+  role: z
+    .enum([
+      "SUPPORT_ADMIN",
+      "OPERATIONS_ADMIN",
+      "FINANCE_ADMIN",
+      "ANALYTICS_ADMIN",
+      "SYSTEM_ADMIN",
+    ])
+    .optional()
+    .default("SUPPORT_ADMIN"),
+  permissions: z.array(z.string().min(1)).optional(),
+});
+
+export const adminChangePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z
+      .string()
+      .min(8, "New password must be at least 8 characters"),
+    confirmPassword: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.confirmPassword) {
+        return true;
+      }
+      return data.newPassword === data.confirmPassword;
+    },
+    {
+      message: "New password and confirm password must match",
+      path: ["confirmPassword"],
+    },
+  );
+
+export const communityUpdateProfileSchema = z.object({
+  isIdentityPublic: z.boolean().optional(),
+  messagePrivacy: z.enum(["EVERYONE", "REQUEST_ONLY", "NONE"]).optional(),
+  readReceiptsEnabled: z.boolean().optional(),
+  lastSeenVisible: z.boolean().optional(),
+  anonymousAlias: z
+    .string()
+    .trim()
+    .min(3, "Anonymous alias must be at least 3 characters")
+    .max(40, "Anonymous alias cannot exceed 40 characters")
+    .optional(),
+});
+
+export const communityBlockSchema = z.object({
+  targetUserId: z.string().min(1, "Target user ID is required"),
+});
+
+export const communityStartConversationSchema = z.object({
+  targetUserId: z.string().min(1, "Target user ID is required"),
+});
+
+export const communitySendMessageSchema = z.object({
+  conversationId: z.string().min(1, "Conversation ID is required"),
+  content: z
+    .string()
+    .trim()
+    .min(1, "Message content is required")
+    .max(2000, "Message cannot exceed 2000 characters"),
+});
+
+export const communityChatUploadUrlSchema = z.object({
+  conversationId: z.string().min(1, "Conversation ID is required"),
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+});
+
+export const communityUpdateMessageSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, "Message content is required")
+    .max(2000, "Message cannot exceed 2000 characters"),
+});
+
+export const communityCreateGroupSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Group name must be at least 2 characters")
+    .max(60, "Group name cannot exceed 60 characters"),
+  description: z
+    .string()
+    .trim()
+    .max(240, "Description cannot exceed 240 characters")
+    .optional(),
+  sport: z
+    .string()
+    .trim()
+    .max(60, "Sport cannot exceed 60 characters")
+    .optional(),
+  city: z
+    .string()
+    .trim()
+    .max(80, "City cannot exceed 80 characters")
+    .optional(),
+  profilePicture: z.string().url("Must be a valid URL").optional(),
+  profilePictureKey: z.string().optional(),
+  audience: z.enum(["ALL", "PLAYERS_ONLY", "COACHES_ONLY"]).optional(),
+});
+
+export const communityUpdateGroupSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Group name must be at least 2 characters")
+    .max(60, "Group name cannot exceed 60 characters")
+    .optional(),
+  description: z
+    .string()
+    .trim()
+    .max(240, "Description cannot exceed 240 characters")
+    .optional(),
+  sport: z
+    .string()
+    .trim()
+    .max(60, "Sport cannot exceed 60 characters")
+    .optional(),
+  city: z
+    .string()
+    .trim()
+    .max(80, "City cannot exceed 80 characters")
+    .optional(),
+  profilePicture: z.string().url("Must be a valid URL").optional(),
+  profilePictureKey: z.string().optional(),
+  audience: z.enum(["ALL", "PLAYERS_ONLY", "COACHES_ONLY"]).optional(),
+});
+
+export const communityGroupUploadUrlSchema = z.object({
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+});
+
+export const communityAddGroupMemberSchema = z.object({
+  targetUserId: z.string().min(1, "Target user ID is required"),
+});
+
+export const communityUpdateGroupSettingsSchema = z.object({
+  memberAddPolicy: z.enum(["ADMIN_ONLY", "ANY_MEMBER"]),
+});
+
+const geoLocationSchema = z.object({
+  type: z.literal("Point"),
+  coordinates: z
+    .tuple([z.number(), z.number()])
+    .refine(
+      ([lng, lat]) => lng >= -180 && lng <= 180 && lat >= -90 && lat <= 90,
+      {
+        message: "Coordinates must be valid longitude/latitude values",
+      },
+    ),
+});
+
+const timeStringSchema = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format");
+
+const openingSlotSchema = z.object({
+  startTime: timeStringSchema,
+  endTime: timeStringSchema,
+});
+
+const dayHoursSchema = z
+  .object({
+    isOpen: z.boolean(),
+    openTime: timeStringSchema.optional(),
+    closeTime: timeStringSchema.optional(),
+    slots: z.array(openingSlotSchema).optional(),
+  })
+  .superRefine((data, ctx) => {
+    const normalizedSlots =
+      data.slots && data.slots.length > 0
+        ? data.slots
+        : data.openTime && data.closeTime
+          ? [{ startTime: data.openTime, endTime: data.closeTime }]
+          : [];
+
+    if (!data.isOpen) {
+      return;
+    }
+
+    if (normalizedSlots.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one time slot is required when open",
+      });
+      return;
+    }
+
+    const toMinutes = (time: string) => {
+      const [h, m] = time.split(":").map(Number);
+      return (h || 0) * 60 + (m || 0);
+    };
+
+    const sortedSlots = [...normalizedSlots].sort(
+      (a, b) => toMinutes(a.startTime) - toMinutes(b.startTime),
+    );
+
+    for (let index = 0; index < sortedSlots.length; index += 1) {
+      const slot = sortedSlots[index];
+      if (!slot || toMinutes(slot.startTime) >= toMinutes(slot.endTime)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Each time slot must have start time before end time",
+        });
+        return;
+      }
+
+      if (index > 0) {
+        const previousSlot = sortedSlots[index - 1];
+        if (
+          previousSlot &&
+          toMinutes(slot.startTime) < toMinutes(previousSlot.endTime)
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Time slots in a day cannot overlap",
+          });
+          return;
+        }
+      }
+    }
+  });
+
+const openingHoursSchema = z.object({
+  monday: dayHoursSchema,
+  tuesday: dayHoursSchema,
+  wednesday: dayHoursSchema,
+  thursday: dayHoursSchema,
+  friday: dayHoursSchema,
+  saturday: dayHoursSchema,
+  sunday: dayHoursSchema,
+});
+
+export const venueSchema = z.object({
+  name: z.string().min(1, "Venue name is required"),
+  location: geoLocationSchema,
+  sports: z.array(z.string()).min(1, "At least one sport is required"),
+  pricePerHour: z.number().min(0, "Price must be non-negative"),
+  sportPricing: z.record(z.string(), z.number().min(0)).optional(),
+  amenities: z.array(z.string()).optional().default([]),
+  description: z.string().optional().default(""),
+  images: z.array(z.string()).optional().default([]),
+});
+
+export const venueImageUploadSchema = z.object({
+  files: z
+    .array(
+      z.object({
+        fileName: z.string().min(1),
+        contentType: z.string().min(1),
+      }),
+    )
+    .min(1)
+    .max(20),
+  coverPhotoIndex: z.number().min(0).max(19),
+});
+
+export const bookingSchema = z
+  .object({
+    venueId: z.string().min(1, "Venue ID is required").optional(),
+    coachId: z.string().min(1, "Coach ID is required").optional(),
+    academyId: z.string().min(1, "Academy ID is required").optional(),
+    dependentId: z.string().min(1, "Dependent ID is required").optional(),
+    playerLocation: geoLocationSchema.optional(),
+    sport: z.string().min(1, "Sport is required"),
+    promoCode: z.string().trim().min(1).max(40).optional(),
+    date: z.string().datetime(),
+    startTime: z
+      .string()
+      .regex(
+        /^([01]?\d|2[0-3]):([0-5]\d)$/,
+        "Start time must be in HH:mm format",
+      ),
+    endTime: z
+      .string()
+      .regex(
+        /^([01]?\d|2[0-3]):([0-5]\d)$/,
+        "End time must be in HH:mm format",
+      ),
+  })
+  .refine((data) => data.venueId || data.coachId || data.academyId, {
+    message: "Either venueId, coachId, or academyId is required",
+    path: ["venueId"],
+  })
+  .refine(
+    (data) => {
+      if (!data.coachId) return true;
+      return Boolean(data.playerLocation);
+    },
+    {
+      message: "Player location is required when booking a coach",
+      path: ["playerLocation"],
+    },
+  );
+
+export const bookingCheckInCodeSchema = z.object({
+  checkInCode: z.string().min(1, "Check-in code is required"),
+});
+
+export const promoValidateSchema = z.object({
+  code: z.string().trim().min(1, "Promo code is required"),
+  subtotal: z.number().min(0, "Subtotal must be non-negative"),
+  hasCoach: z.boolean().optional().default(false),
+});
+
+export const promoCreateSchema = z
+  .object({
+    code: z.string().trim().min(3).max(40),
+    description: z.string().trim().min(3).max(200),
+    discountType: z.enum(["PERCENTAGE", "FIXED_AMOUNT"]),
+    discountValue: z.number().min(0),
+    applicableTo: z.enum(["ALL", "VENUE_ONLY", "COACH_ONLY"]).optional(),
+    minBookingAmount: z.number().min(0).optional(),
+    maxDiscountAmount: z.number().min(0).optional(),
+    validFrom: z.string().datetime(),
+    validUntil: z.string().datetime(),
+    maxUsageTotal: z.number().int().min(1).optional(),
+    maxUsagePerUser: z.number().int().min(1).optional(),
+  })
+  .refine((data) => new Date(data.validUntil) > new Date(data.validFrom), {
+    message: "validUntil must be after validFrom",
+    path: ["validUntil"],
+  });
+
+export const bookingWaitlistSchema = z
+  .object({
+    venueId: z.string().min(1, "Venue ID is required").optional(),
+    coachId: z.string().min(1, "Coach ID is required").optional(),
+    sport: z.string().trim().min(1, "Sport is required"),
+    date: z.string().datetime(),
+    startTime: z
+      .string()
+      .regex(
+        /^([01]?\d|2[0-3]):([0-5]\d)$/,
+        "Start time must be in HH:mm format",
+      ),
+    endTime: z
+      .string()
+      .regex(
+        /^([01]?\d|2[0-3]):([0-5]\d)$/,
+        "End time must be in HH:mm format",
+      ),
+    alternateSlots: z.array(z.string()).optional().default([]),
+  })
+  .refine((data) => data.venueId || data.coachId, {
+    message: "Either venueId or coachId is required",
+    path: ["venueId"],
+  });
+
+export const communityReportSchema = z.object({
+  targetType: z.enum(["MESSAGE", "GROUP", "POST", "ANSWER"]),
+  targetId: z.string().min(1, "Target ID is required"),
+  reason: z.string().trim().min(3, "Reason is required").max(120),
+  details: z.string().trim().max(1000).optional(),
+});
+
+export const communityCreatePostSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(10, "Title must be at least 10 characters")
+    .max(180, "Title cannot exceed 180 characters"),
+  body: z
+    .string()
+    .trim()
+    .min(20, "Post body must be at least 20 characters")
+    .max(5000, "Post body cannot exceed 5000 characters"),
+  tags: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1, "Tag cannot be empty")
+        .max(40, "Tag cannot exceed 40 characters"),
+    )
+    .max(8, "A post can have at most 8 tags")
+    .optional(),
+  sport: z
+    .string()
+    .trim()
+    .max(60, "Sport cannot exceed 60 characters")
+    .optional(),
+  city: z
+    .string()
+    .trim()
+    .max(80, "City cannot exceed 80 characters")
+    .optional(),
+});
+
+export const communityUpdatePostSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(10, "Title must be at least 10 characters")
+    .max(180, "Title cannot exceed 180 characters")
+    .optional(),
+  body: z
+    .string()
+    .trim()
+    .min(20, "Post body must be at least 20 characters")
+    .max(5000, "Post body cannot exceed 5000 characters")
+    .optional(),
+  tags: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1, "Tag cannot be empty")
+        .max(40, "Tag cannot exceed 40 characters"),
+    )
+    .max(8, "A post can have at most 8 tags")
+    .optional(),
+  status: z.enum(["OPEN", "CLOSED"]).optional(),
+  sport: z
+    .string()
+    .trim()
+    .max(60, "Sport cannot exceed 60 characters")
+    .optional(),
+  city: z
+    .string()
+    .trim()
+    .max(80, "City cannot exceed 80 characters")
+    .optional(),
+});
+
+export const communityCreateAnswerSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(10, "Answer must be at least 10 characters")
+    .max(5000, "Answer cannot exceed 5000 characters"),
+});
+
+export const communityVoteSchema = z.object({
+  targetType: z.enum(["POST", "ANSWER"]),
+  targetId: z.string().min(1, "Target ID is required"),
+  value: z.union([z.literal(1), z.literal(-1)]),
+});
+
+export const communityModerationActionSchema = z.object({
+  status: z.enum(["UNDER_REVIEW", "RESOLVED", "REJECTED"]),
+  resolutionNote: z.string().trim().max(1000).optional(),
+});
+
+// ─── Community Blog ───────────────────────────────────────────────────────────
+// `content` is a rich-text HTML string produced by the Tiptap editor; the
+// client-side DOMPurify allowlist is the sanitization boundary on render, so
+// the server just bounds its size.
+const blogContentSchema = z
+  .string()
+  .max(100_000, "A blog cannot exceed 100,000 characters")
+  .optional();
+
+export const blogCreateSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(5, "Title must be at least 5 characters")
+    .max(200, "Title cannot exceed 200 characters"),
+  excerpt: z.string().trim().max(300).optional(),
+  coverImageKey: z.string().trim().max(300).nullable().optional(),
+  topic: z.string().trim().max(60).optional(),
+  tags: z
+    .array(z.string().trim().min(1).max(40))
+    .max(8, "A blog can have at most 8 tags")
+    .optional(),
+  content: blogContentSchema,
+});
+
+export const blogUpdateSchema = z.object({
+  title: z.string().trim().min(5).max(200).optional(),
+  excerpt: z.string().trim().max(300).optional(),
+  coverImageKey: z.string().trim().max(300).nullable().optional(),
+  topic: z.string().trim().max(60).optional(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(8).optional(),
+  content: blogContentSchema,
+});
+
+export const blogLikeSchema = z.object({
+  targetType: z.enum(["BLOG", "COMMENT"]),
+  targetId: z.string().min(1, "Target ID is required"),
+});
+
+export const blogCommentSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, "Comment cannot be empty")
+    .max(2000, "Comment cannot exceed 2000 characters"),
+  parentId: z.string().min(1).optional(),
+});
+
+const socialHandle = z.string().trim().max(200).optional();
+
+export const blogProfileUpdateSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(
+      /^[a-z0-9_]{3,30}$/,
+      "Username must be 3–30 characters: letters, numbers, or underscores",
+    )
+    .optional(),
+  bio: z.string().trim().max(300).optional(),
+  socialLinks: z
+    .object({
+      youtube: socialHandle,
+      instagram: socialHandle,
+      facebook: socialHandle,
+      twitter: socialHandle,
+      github: socialHandle,
+      website: socialHandle,
+    })
+    .partial()
+    .optional(),
+});
+
+export const blogUploadUrlSchema = z.object({
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+});
+
+export const funnelEventSchema = z.object({
+  eventName: z.string().trim().min(1, "eventName is required").max(80),
+  entityType: z.string().trim().max(80).optional(),
+  entityId: z.string().trim().max(80).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  source: z.enum(["WEB", "MOBILE", "SERVER"]).optional().default("WEB"),
+});
+
+// Anonymous, batched activity events from not-signed-in visitors.
+// `guestId` is a random client-generated id (NOT personal data); we never
+// accept names, emails, or any identifier here.
+export const guestEventSchema = z.object({
+  guestId: z.string().trim().min(8).max(64),
+  events: z
+    .array(
+      z.object({
+        eventName: z.string().trim().min(1, "eventName is required").max(80),
+        entityType: z.string().trim().max(80).optional(),
+        entityId: z.string().trim().max(300).optional(),
+        metadata: z.record(z.string(), z.unknown()).optional(),
+      }),
+    )
+    .min(1, "At least one event is required")
+    .max(50, "Too many events in one batch"),
+});
+
+export const createReviewSchema = z.object({
+  bookingId: z.string().min(1, "Booking ID is required"),
+  targetType: z.enum(["VENUE", "Coach"]),
+  targetId: z.string().min(1, "Target ID is required"),
+  rating: z.number().min(1).max(5),
+  review: z.string().max(1000).optional(),
+});
+
+const coachVerificationDocumentTypeSchema = z.enum([
+  "CERTIFICATION",
+  "ID_PROOF",
+  "ADDRESS_PROOF",
+  "BACKGROUND_CHECK",
+  "INSURANCE",
+  "OTHER",
+]);
+
+export const coachVerificationStep1Schema = z.object({
+  bio: z
+    .string()
+    .min(20, "Bio must be at least 20 characters")
+    .max(2000, "Bio cannot exceed 2000 characters"),
+  mobileNumber: z
+    .string()
+    .min(10, "Mobile number must be at least 10 digits")
+    .regex(/^[+]?[0-9\s().\-]+$/, "Please provide a valid mobile number"),
+});
+
+export const coachVerificationStep2Schema = z
+  .object({
+    bio: z
+      .string()
+      .min(20, "Bio must be at least 20 characters")
+      .max(2000, "Bio cannot exceed 2000 characters"),
+    sports: z
+      .array(z.string().min(1, "Sport cannot be empty"))
+      .min(1, "At least one sport is required"),
+    certifications: z.array(z.string().min(1)).optional().default([]),
+    hourlyRate: z.number().min(1, "Hourly rate must be greater than 0"),
+    sportPricing: z
+      .record(z.string(), z.number().min(1))
+      .optional()
+      .default({}),
+    serviceMode: z.enum(["OWN_VENUE", "FREELANCE", "HYBRID"]).optional(),
+    baseLocation: geoLocationSchema.optional(),
+    serviceRadiusKm: z
+      .number()
+      .min(1, "Service radius must be greater than 0")
+      .max(500, "Service radius is too large")
+      .optional(),
+    travelBufferTime: z
+      .number()
+      .min(0, "Travel buffer time must be non-negative")
+      .max(600, "Travel buffer time is too large")
+      .optional(),
+    ownVenueDetails: z
+      .object({
+        name: z.string().min(1, "Venue name is required"),
+        address: z.string().min(1, "Venue address is required"),
+        description: z.string().optional().default(""),
+        openingHours: z.string().optional().default("09:00-18:00"),
+        images: z
+          .array(z.string().url("Venue image URL must be valid"))
+          .optional()
+          .default([]),
+        imageS3Keys: z.array(z.string().min(1)).optional().default([]),
+        coordinates: z.tuple([z.number(), z.number()]).optional(),
+        location: z
+          .object({
+            type: z.literal("Point"),
+            coordinates: z
+              .tuple([z.number(), z.number()])
+              .refine(
+                ([lon, lat]) =>
+                  lon >= -180 && lon <= 180 && lat >= -90 && lat <= 90,
+                { message: "Coordinates must be valid [longitude, latitude]" },
+              ),
+          })
+          .optional(),
+      })
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.sportPricing || Object.keys(data.sportPricing).length === 0) {
+        return true;
+      }
+
+      return data.sports.every((sport) => {
+        const rate = data.sportPricing?.[sport];
+        return typeof rate === "number" && rate > 0;
+      });
+    },
+    {
+      message: "Each selected sport must have a valid price",
+      path: ["sportPricing"],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.serviceMode === "FREELANCE" || data.serviceMode === "HYBRID") {
+        return Boolean(data.baseLocation);
+      }
+      return true;
+    },
+    {
+      message: "Base location is required for FREELANCE and HYBRID coaches",
+      path: ["baseLocation"],
+    },
+  );
+
+export const coachVerificationStep3Schema = z.object({
+  documents: z
+    .array(
+      z.object({
+        type: coachVerificationDocumentTypeSchema,
+        url: z.string().url("Document URL must be valid"),
+        s3Key: z.string().optional(),
+        fileName: z.string().min(1, "File name is required"),
+        uploadedAt: z.union([z.string().datetime(), z.date()]).optional(),
+      }),
+    )
+    .optional()
+    .default([]),
+});
+
+// ============================================
+// VENUE ONBOARDING SCHEMAS (4-Step Flow)
+// ============================================
+
+/**
+ * Step 1: Venue Lister Contact Information
+ * REFACTORED: Now takes contact info instead of venue details
+ */
+export const venueOnboardingStep1Schema = z.object({
+  ownerName: z
+    .string()
+    .min(2, "Name must be at least 2 characters")
+    .max(100, "Name cannot exceed 100 characters"),
+  ownerEmail: z.string().email("Please provide a valid email address"),
+  ownerPhone: z
+    .string()
+    .min(10, "Phone number must be at least 10 digits")
+    .regex(
+      /^[+]?[0-9\s().\-]+$/,
+      "Please provide a valid phone number (digits, spaces, +, -, (), . allowed)",
+    ),
+});
+
+/**
+ * Step 2: Venue Details (REFACTORED from Step 1)
+ * Previously Step 1, now contains all venue information
+ */
+export const venueOnboardingStep2Schema = z
+  .object({
+    venueId: z.string().min(1, "Venue ID is required"),
+    name: z
+      .string()
+      .min(2, "Venue name must be at least 2 characters")
+      .max(100, "Venue name cannot exceed 100 characters"),
+    sports: z.array(z.string().min(1)).min(1, "At least one sport is required"),
+    pricePerHour: z.number().min(0, "Price must be non-negative"),
+    sportPricing: z.record(z.string(), z.number().min(0)).optional(),
+    amenities: z.array(z.string()).optional().default([]),
+    address: z.string().min(5, "Address must be at least 5 characters"),
+    openingHours: openingHoursSchema,
+    description: z
+      .string()
+      .max(500, "Description cannot exceed 500 characters")
+      .optional()
+      .default(""),
+    allowExternalCoaches: z.boolean().optional().default(true),
+    location: z.object({
+      type: z.enum(["Point"]),
+      coordinates: z
+        .array(z.number())
+        .length(2, "Coordinates must have [longitude, latitude]"),
+    }),
+  })
+  .refine(
+    (data) => Object.values(data.openingHours).some((day) => day.isOpen),
+    {
+      message: "At least one day must be open",
+      path: ["openingHours"],
+    },
+  );
+
+/**
+ * Step 3: Venue Images Upload (REFACTORED from Step 2)
+ * Now called for Step 3, previously Step 2
+ */
+export const getImageUploadUrlsSchema = z.object({
+  venueId: z.string().min(1, "Venue ID is required"),
+  sports: z
+    .array(z.string())
+    .min(1, "At least one sport is required")
+    .max(10, "Maximum 10 sports allowed"),
+});
+
+/**
+ * Step 3B: Confirm Images (REFACTORED from Step 2)
+ * Now Step 3 images confirmation
+ */
+export const venueOnboardingStep3ImagesSchema = z
+  .object({
+    venueId: z.string().min(1, "Venue ID is required"),
+    // Legacy images array (optional now)
+    images: z.array(z.string().url()).optional().default([]),
+
+    // New structure
+    generalImages: z.array(z.string().url()).optional(),
+    generalImageKeys: z.array(z.string()).optional(),
+    sportImages: z.record(z.string(), z.array(z.string().url())).optional(),
+    sportImageKeys: z.record(z.string(), z.array(z.string())).optional(),
+
+    coverPhotoUrl: z.string().url("Cover photo URL must be valid"),
+    coverPhotoKey: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      // Check if using new structure
+      if (data.generalImages && data.sportImages) {
+        // Validate general images (must be 3)
+        if (data.generalImages.length !== 3) return false;
+
+        // Validate sport images (must be 5 per sport)
+        const sportImages = data.sportImages;
+        if (!sportImages) return false;
+
+        const sports = Object.keys(sportImages);
+        if (sports.length === 0) return false;
+
+        for (const sport of sports) {
+          const images = sportImages[sport];
+          if (!images || images.length !== 5) return false;
+        }
+
+        return true;
+      }
+
+      // Fallback to legacy structure validation
+      return data.images.length >= 5 && data.images.length <= 20;
+    },
+    {
+      message:
+        "Invalid images: Requirement is either 3 general images + 5 per sport, OR 5-20 total images (legacy)",
+    },
+  );
+
+/**
+ * Step 4: Finalize Onboarding with Images + Documents
+ * Frontend sends complete payload with both images and documents
+ */
+export const venueOnboardingStep4Schema = z.object({
+  venueId: z.string().min(1, "Venue ID is required"),
+  images: z
+    .array(z.string().url("Image URL must be valid"))
+    .min(5, "Minimum 5 images required")
+    .max(20, "Maximum 20 images allowed"),
+  coverPhotoUrl: z.string().url("Cover photo URL must be valid"),
+  documents: z
+    .array(
+      z.object({
+        type: z.enum(
+          [
+            "OWNERSHIP_PROOF",
+            "BUSINESS_REGISTRATION",
+            "TAX_DOCUMENT",
+            "INSURANCE",
+            "CERTIFICATE",
+          ],
+          {
+            message:
+              "Invalid document type. Must be one of: OWNERSHIP_PROOF, BUSINESS_REGISTRATION, TAX_DOCUMENT, INSURANCE, CERTIFICATE",
+          },
+        ),
+        url: z.string().url("Document URL must be valid"),
+        fileName: z.string().min(1, "File name is required"),
+      }),
+    )
+    .min(1, "At least one document is required"),
+});
+
+/**
+ * Get Presigned URLs for Documents
+ */
+export const getDocumentUploadUrlsSchema = z.object({
+  venueId: z.string().min(1, "Venue ID is required"),
+  documents: z
+    .array(
+      z.object({
+        type: z.enum(
+          [
+            "OWNERSHIP_PROOF",
+            "BUSINESS_REGISTRATION",
+            "TAX_DOCUMENT",
+            "INSURANCE",
+            "CERTIFICATE",
+          ],
+          {
+            message: "Invalid document type",
+          },
+        ),
+        fileName: z.string().min(1, "File name is required"),
+        contentType: z.enum(["application/pdf", "image/jpeg", "image/png"], {
+          message: "Document must be PDF, JPG, or PNG",
+        }),
+      }),
+    )
+    .min(1, "At least one document is required"),
+});
+
+const venueCoachSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Coach name must be at least 2 characters")
+    .max(100, "Coach name cannot exceed 100 characters"),
+  sport: z
+    .string()
+    .trim()
+    .min(1, "Sport is required")
+    .max(60, "Sport cannot exceed 60 characters"),
+  hourlyRate: z.number().positive("Hourly rate must be greater than 0"),
+  bio: z
+    .union([
+      z.literal(""),
+      z
+        .string()
+        .trim()
+        .min(20, "Coach bio must be at least 20 characters")
+        .max(500, "Coach bio cannot exceed 500 characters"),
+    ])
+    .optional(),
+  profilePhoto: z
+    .union([z.string().url("Profile photo must be a valid URL"), z.literal("")])
+    .optional(),
+});
+
+export const venueOnboardingStep5Schema = z.object({
+  venueId: z.string().min(1, "Venue ID is required"),
+  coaches: z
+    .array(venueCoachSchema)
+    .max(20, "A venue can have at most 20 coaches")
+    .default([])
+    .optional(),
+});
+
+/**
+ * Admin: Approve Venue
+ */
+export const adminApproveVenueSchema = z.object({
+  venueId: z.string().min(1, "Venue ID is required"),
+});
+
+/**
+ * Admin: Reject Venue
+ */
+export const adminRejectVenueSchema = z.object({
+  venueId: z.string().min(1, "Venue ID is required"),
+  reason: z
+    .string()
+    .min(5, "Rejection reason must be at least 5 characters")
+    .max(500, "Rejection reason cannot exceed 500 characters"),
+});
+
+/**
+ * Admin: Mark for Review
+ */
+export const adminReviewVenueSchema = z.object({
+  venueId: z.string().min(1, "Venue ID is required"),
+  notes: z
+    .string()
+    .min(5, "Review notes must be at least 5 characters")
+    .max(500, "Review notes cannot exceed 500 characters")
+    .optional(),
+});
+
+/**
+ * Admin: Create Venue
+ */
+export const adminCreateVenueSchema = z.object({
+  ownerName: z
+    .string()
+    .trim()
+    .min(2, "Owner name must be at least 2 characters")
+    .max(100, "Owner name cannot exceed 100 characters"),
+  ownerEmail: z.string().email("Invalid owner email format"),
+  ownerPhone: z
+    .string()
+    .trim()
+    .min(10, "Owner mobile number must be at least 10 characters")
+    .max(20, "Owner mobile number cannot exceed 20 characters"),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Venue name must be at least 2 characters")
+    .max(100, "Venue name cannot exceed 100 characters"),
+  address: z
+    .string()
+    .trim()
+    .min(5, "Address must be at least 5 characters")
+    .max(200, "Address cannot exceed 200 characters"),
+  sports: z
+    .array(z.string().trim().min(1, "Sport cannot be empty"))
+    .min(1, "At least one sport is required")
+    .max(10, "Maximum 10 sports allowed"),
+  pricePerHour: z
+    .number()
+    .min(0, "Price must be non-negative")
+    .max(99999, "Price is too high"),
+  sportPricing: z
+    .record(z.string(), z.number().min(0, "Price must be non-negative"))
+    .optional(),
+  amenities: z
+    .array(z.string().trim().min(1, "Amenity cannot be empty"))
+    .optional()
+    .default([]),
+  description: z
+    .string()
+    .trim()
+    .max(500, "Description cannot exceed 500 characters")
+    .optional()
+    .default(""),
+  location: z.object({
+    type: z.literal("Point"),
+    coordinates: z
+      .tuple([z.number(), z.number()])
+      .refine(
+        ([lng, lat]) => lng >= -180 && lng <= 180 && lat >= -90 && lat <= 90,
+        {
+          message: "Coordinates must be valid longitude/latitude values",
+        },
+      ),
+  }),
+  openingHours: openingHoursSchema,
+  allowExternalCoaches: z.boolean().optional().default(true),
+  approvalStatus: z
+    .enum(["PENDING", "APPROVED", "REJECTED", "REVIEW"])
+    .optional()
+    .default("APPROVED"),
+});
+
+/**
+ * Admin: Create Coach
+ */
+export const adminCreateCoachSchema = z
+  .object({
+    firstName: z
+      .string()
+      .trim()
+      .min(2, "First name must be at least 2 characters")
+      .max(50, "First name cannot exceed 50 characters"),
+    lastName: z
+      .string()
+      .trim()
+      .min(2, "Last name must be at least 2 characters")
+      .max(50, "Last name cannot exceed 50 characters"),
+    email: z.string().trim().email("Please provide a valid email address"),
+    phone: z
+      .string()
+      .trim()
+      .min(10, "Phone number must be at least 10 digits")
+      .regex(/^[+]?[0-9\s().\-]+$/, "Please provide a valid phone number"),
+    bio: z
+      .string()
+      .trim()
+      .min(20, "Bio must be at least 20 characters")
+      .max(2000, "Bio cannot exceed 2000 characters"),
+    sports: z
+      .array(z.string().trim().min(1, "Sport cannot be empty"))
+      .min(1, "At least one sport is required"),
+    hourlyRate: z
+      .number()
+      .min(1, "Hourly rate must be greater than 0")
+      .max(99999, "Hourly rate is too high"),
+    sportPricing: z
+      .record(
+        z.string(),
+        z.number().min(1, "Sport price must be greater than 0"),
+      )
+      .optional(),
+    serviceMode: z
+      .enum(["OWN_VENUE", "FREELANCE", "HYBRID"])
+      .optional()
+      .default("FREELANCE"),
+    baseLocation: geoLocationSchema.optional(),
+    serviceRadiusKm: z
+      .number()
+      .min(1, "Service radius must be greater than 0")
+      .max(500, "Service radius is too large")
+      .optional(),
+    travelBufferTime: z
+      .number()
+      .min(0, "Travel buffer time must be non-negative")
+      .max(600, "Travel buffer time is too large")
+      .optional(),
+    venueId: z.string().optional(),
+    profilePhotoUrl: z.string().url().optional(),
+    profilePhotoKey: z.string().optional(),
+    ownVenueDetails: z
+      .object({
+        name: z.string().trim().min(1, "Venue name is required"),
+        address: z.string().trim().min(1, "Venue address is required"),
+        description: z.string().trim().optional(),
+        openingHours: z.string().trim().optional(),
+        images: z.array(z.string()).optional(),
+        imageS3Keys: z.array(z.string()).optional(),
+        location: geoLocationSchema.optional(),
+      })
+      .optional(),
+    verificationStatus: z
+      .enum(["UNVERIFIED", "PENDING", "REVIEW", "VERIFIED", "REJECTED"])
+      .optional()
+      .default("VERIFIED"),
+    convertExistingUser: z.boolean().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.serviceMode === "FREELANCE" || data.serviceMode === "HYBRID") {
+        return Boolean(data.baseLocation);
+      }
+      return true;
+    },
+    {
+      message: "Base location is required for FREELANCE and HYBRID coaches",
+      path: ["baseLocation"],
+    },
+  );
+
+/**
+ * Email Verification: Send Code
+ */
+export const sendVerificationCodeSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+});
+
+/**
+ * Email Verification: Verify Code
+ */
+export const verifyEmailCodeSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  code: z
+    .string()
+    .length(6, "Verification code must be 6 digits")
+    .regex(/^\d{6}$/, "Verification code must contain only digits"),
+  venueId: z.string().min(1, "Venue ID is required"),
+});
+
+// ============================================
+// ACADEMY ONBOARDING SCHEMAS (6-Step Flow)
+// ============================================
+
+/**
+ * Step 1: Academy Basic Information
+ */
+export const academyOnboardingStep1Schema = z.object({
+  ownerName: z.string().min(2, "Name must be at least 2 characters"),
+  ownerEmail: z.string().email("Invalid email address"),
+  ownerPhone: z
+    .string()
+    .regex(/^\+91[0-9]{10}$/, "Phone must be +91 followed by 10 digits"),
+  name: z
+    .string()
+    .min(3, "Academy name must be at least 3 characters")
+    .max(100, "Academy name cannot exceed 100 characters"),
+  legalName: z
+    .string()
+    .min(3, "Legal name must be at least 3 characters")
+    .max(100, "Legal name cannot exceed 100 characters"),
+  sports: z.array(z.string().min(1)).min(1, "At least one sport is required"),
+  ageGroups: z
+    .array(z.enum(["kids", "teens", "adults", "all"]))
+    .min(1, "At least one age group is required"),
+  establishedYear: z
+    .number()
+    .min(1900, "Year must be 1900 or later")
+    .max(new Date().getFullYear(), "Year cannot be in the future")
+    .optional(),
+  description: z
+    .string()
+    .min(10, "Description must be at least 10 characters")
+    .max(300, "Description cannot exceed 300 characters"),
+  logoUrl: z
+    .preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().url("Logo must be a valid URL").optional(),
+    )
+    .optional(),
+  logoKey: z.string().optional(),
+  coverPhotoUrl: z
+    .preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().url("Cover photo must be a valid URL").optional(),
+    )
+    .optional(),
+  coverPhotoKey: z.string().optional(),
+  photos: z.array(z.string().url()).optional(),
+  photoKeys: z.array(z.string()).optional(),
+});
+
+/**
+ * Step 2: Location & Contact Information
+ */
+export const academyOnboardingStep2Schema = z
+  .object({
+    location: geoLocationSchema,
+    address: z.string().min(5, "Address must be at least 5 characters"),
+    city: z.string().min(2, "City name required"),
+    state: z.string().min(2, "State name required"),
+    pincode: z.string().regex(/^[0-9]{6}$/, "Pincode must be 6 digits"),
+    placeId: z.string().optional(),
+    contactPersonName: z.string().min(2, "Contact person name required"),
+    contactPhone: z
+      .string()
+      .regex(/^\+91[0-9]{10}$/, "Phone must be in format +91XXXXXXXXXX"),
+    whatsappNumber: z
+      .string()
+      .regex(
+        /^\+91[0-9]{10}$/,
+        "WhatsApp number must be in format +91XXXXXXXXXX",
+      ),
+    contactEmail: z.string().email("Invalid email format"),
+    languagesSpoken: z
+      .array(z.string())
+      .min(1, "At least one language required"),
+  })
+  .strip();
+
+/**
+ * Step 3: Legal & KYC Information
+ */
+export const academyOnboardingStep3Schema = z
+  .object({
+    businessType: z.enum([
+      "sole_proprietorship",
+      "partnership",
+      "pvt_ltd",
+      "ngo_trust",
+    ]),
+    panNumber: z
+      .string()
+      .regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, "Invalid PAN number format"),
+    panDocumentUrl: z.string().url("PAN document must be a valid URL"),
+    panDocumentKey: z.string().optional(),
+    gstNumber: z
+      .string()
+      .regex(
+        /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[A-Z0-9]{3}$/,
+        "Invalid GST format",
+      )
+      .optional(),
+    gstDocumentUrl: z
+      .string()
+      .url("GST document must be a valid URL")
+      .optional(),
+    gstDocumentKey: z.string().optional(),
+    msmeRegistration: z.string().optional(),
+    sportsAuthorityAffiliation: z.string().optional(),
+    aadhaarLast4: z.string().regex(/^[0-9]{4}$/, "Aadhaar must be 4 digits"),
+  })
+  .strip();
+
+/**
+ * Step 4: Academy Venues
+ */
+export const academyOnboardingStep4Schema = z
+  .object({
+    academyVenues: z
+      .array(
+        z.object({
+          name: z.string().min(2, "Venue name required"),
+          address: z.string().min(5, "Venue address required"),
+          city: z.string().min(2, "City is required"),
+          state: z.string().min(2, "State is required"),
+          pincode: z.string().regex(/^[0-9]{6}$/, "Pincode must be 6 digits"),
+          placeId: z.string().optional(),
+          location: geoLocationSchema,
+          sports: z.array(z.string()).min(1, "Select at least one sport"),
+          pricePerHour: z.number().min(0, "Price must be non-negative"),
+          sportPricing: z
+            .record(z.string(), z.number().min(0, "Price must be non-negative"))
+            .optional(),
+          amenities: z.array(z.string()).default([]),
+          description: z.string().max(500).optional(),
+          openingHours: openingHoursSchema,
+          allowExternalCoaches: z.boolean().default(true),
+          generalImages: z
+            .array(z.string().url("General image URL must be valid"))
+            .min(3, "At least 3 general images are required"),
+          generalImageKeys: z.array(z.string()).optional().default([]),
+          sportImages: z.record(
+            z.string(),
+            z
+              .array(z.string().url("Sport image URL must be valid"))
+              .min(5, "At least 5 sport images are required per sport"),
+          ),
+          sportImageKeys: z.record(z.string(), z.array(z.string())).optional(),
+          coverPhotoUrl: z.string().url("Cover photo URL must be valid"),
+          coverPhotoKey: z.string().optional(),
+        }),
+      )
+      .min(1, "At least one academy venue is required"),
+  })
+  .strip();
+
+/**
+ * Step 5: Academy Coaches
+ */
+export const academyOnboardingStep5Schema = z
+  .object({
+    academyCoaches: z
+      .array(
+        z.object({
+          firstName: z.string().min(2, "Coach first name required"),
+          lastName: z.string().min(2, "Coach last name required"),
+          email: z.string().email("Coach email must be valid"),
+          phone: z
+            .string()
+            .regex(/^[+]?[0-9]{10,14}$/, "Coach phone must be valid"),
+          bio: z.string().min(20, "Coach bio must be at least 20 characters"),
+          profilePhotoUrl: z.string().url().optional(),
+          profilePhotoKey: z.string().optional(),
+          sports: z.array(z.string()).min(1, "Select at least one sport"),
+          hourlyRate: z.number().min(0, "Hourly rate must be non-negative"),
+          sportPricing: z
+            .record(z.string(), z.number().min(0, "Price must be non-negative"))
+            .optional(),
+          serviceMode: z.enum(["OWN_VENUE", "FREELANCE", "HYBRID"]),
+          baseLocation: geoLocationSchema.optional(),
+          serviceRadiusKm: z.number().min(0).optional(),
+          travelBufferTime: z.number().min(0).optional(),
+          ownVenueDetails: z
+            .object({
+              name: z.string().min(2).optional(),
+              address: z.string().min(5).optional(),
+              description: z.string().max(500).optional(),
+              openingHours: z.string().optional(),
+              amenities: z.array(z.string()).optional(),
+              images: z.array(
+                z.string().url("Own-venue image URL must be valid"),
+              ),
+              imageS3Keys: z.array(z.string()).optional(),
+              location: geoLocationSchema.optional(),
+            })
+            .optional(),
+          certifications: z.array(z.string()).optional(),
+        }),
+      )
+      .min(1, "At least one in-house coach is required"),
+  })
+  .strip();
+
+/**
+ * Step 6: Pricing & Subscriptions
+ */
+export const academyOnboardingStep6Schema = z
+  .object({
+    sessionRatePerHour: z.number().min(0, "Rate must be non-negative"),
+    batchTimings: z
+      .array(z.enum(["morning", "evening", "both"]))
+      .min(1, "Select at least one batch timing"),
+    maxBatchSize: z.number().min(1, "Batch size must be at least 1"),
+    trialsessionOffered: z.boolean(),
+    trialSessionPrice: z.number().min(0).optional(),
+    subscriptionPlans: z
+      .array(
+        z.object({
+          name: z.string().min(2, "Plan name required"),
+          duration: z.enum(["monthly", "quarterly", "annual"]),
+          price: z.number().min(0, "Price must be non-negative"),
+          includesVenue: z.boolean(),
+          includesCoaching: z.boolean(),
+          maxSessions: z.number().min(1).optional(),
+          description: z.string().max(150).optional(),
+        }),
+      )
+      .min(1, "At least one subscription plan required"),
+    sessionPackages: z
+      .array(
+        z.object({
+          name: z.string().min(2, "Package name required"),
+          sessionCount: z.number().min(1, "Session count must be at least 1"),
+          price: z.number().min(0, "Price must be non-negative"),
+          validityDays: z.number().min(1, "Validity must be at least 1 day"),
+          sport: z.string(),
+          coachId: z.string().optional(),
+        }),
+      )
+      .optional(),
+  })
+  .strip();
+
+/**
+ * Step 7: Payouts & Review
+ */
+export const academyOnboardingStep7Schema = z
+  .object({
+    bankAccountName: z.string().min(2, "Account holder name required"),
+    bankAccountNumber: z.string().min(8, "Account number too short"),
+    bankAccountNumberConfirm: z.string().min(8, "Account number too short"),
+    bankIfsc: z
+      .string()
+      .regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, "Invalid IFSC code format"),
+    upiId: z
+      .string()
+      .regex(/^[a-zA-Z0-9._-]+@[a-zA-Z]{3,}$/, "Invalid UPI ID format"),
+    payoutFrequency: z.enum(["weekly", "biweekly", "monthly"]),
+    cancellationPolicy: z.string().min(10, "Cancellation policy required"),
+    refundPolicy: z.string().min(10, "Refund policy required"),
+    agreeToTerms: z
+      .boolean()
+      .refine((val) => val === true, "You must agree to the terms"),
+  })
+  .refine((data) => data.bankAccountNumber === data.bankAccountNumberConfirm, {
+    message: "Account numbers do not match",
+    path: ["bankAccountNumberConfirm"],
+  })
+  .strip();
