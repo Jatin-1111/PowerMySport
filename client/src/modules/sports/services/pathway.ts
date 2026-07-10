@@ -2,6 +2,23 @@ import axiosInstance from "@/lib/api/axios";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export interface ProgressionPlanMilestone {
+  title: string;
+  description: string;
+  timeframe: string;
+}
+
+export interface ProgressionPlan {
+  gap: string;
+  prerequisites: string[];
+  milestones: ProgressionPlanMilestone[];
+  targetCompetitions: string[];
+  coachSignals: string[];
+  commonMistakes: string[];
+  typicalTimeline: string;
+  generatedAt?: string;
+}
+
 export interface PathwayLevel {
   level: number;
   label: string;
@@ -55,6 +72,7 @@ export interface PathwayLevel {
   }>;
   academicIntegration?: string;
   proactiveDocuments?: string[];
+  progressionPlan?: ProgressionPlan;
 }
 
 export interface FederationInfo {
@@ -370,6 +388,31 @@ export const pathwayApi = {
     try {
       const resp = await axiosInstance.get<ApiResponse<Tournament>>(
         `/pathways/tournaments/${encodeURIComponent(slug)}`,
+      );
+      return resp.data.data ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Fetch (or lazily generate) the progression plan for a raw pathway level.
+   * level must be 1–4 (level 5 is the top — no next level to progress to).
+   * Returns null on any error so the caller can show a graceful error state.
+   */
+  getProgressionPlan: async (
+    sportName: string,
+    state: string,
+    level: number,
+  ): Promise<ProgressionPlan | null> => {
+    try {
+      const params = new URLSearchParams({
+        sport: sportName,
+        state,
+        level: String(level),
+      });
+      const resp = await axiosInstance.get<ApiResponse<ProgressionPlan>>(
+        `/pathways/progression?${params.toString()}`,
       );
       return resp.data.data ?? null;
     } catch {

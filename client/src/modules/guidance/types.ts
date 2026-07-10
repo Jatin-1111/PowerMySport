@@ -14,6 +14,12 @@ export type GuidanceFormState = {
   current_pathway_level?: number;
   /** How long the child has already been playing this sport, in years (0 = brand new) */
   years_playing?: number;
+  /** Optional short bio the parent writes about themselves */
+  parent_bio?: string;
+  /** Sports the parent follows, played, or is most interested in */
+  parent_sport_interest?: string[];
+  /** How long the parent has been involved or interested in sport, in years (0 = just starting) */
+  parent_involvement_years?: number;
 };
 
 export type BurnoutRisk = {

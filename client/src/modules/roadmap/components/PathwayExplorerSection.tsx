@@ -83,7 +83,7 @@ import { BudgetCalculator } from './BudgetCalculator';
 import { ComparePanel } from './ComparePanel';
 import { PathwayLevelCard } from './PathwayLevelCard';
 import { PathwayLevelDetail } from './PathwayLevelDetail';
-import { ProgressTracker } from './ProgressTracker';
+import { ProgressionStepper } from './ProgressionStepper';
 import { SaveButton } from './SaveButton';
 import { SavedTab } from './SavedTab';
 import { StoriesTab } from './StoriesTab';
@@ -1301,206 +1301,19 @@ export function PathwayExplorerSection() {
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
                   >
-                    {result &&
-                      entitiesStatus !== "loading" &&
-                      totalOpportunities > 0 && (
-                        <div className="mb-6 rounded-2xl border border-slate-200/70 bg-white/60 p-4 backdrop-blur-sm">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0 w-full sm:w-auto">
-                              Opportunities found
-                            </p>
-                            <div className="flex flex-wrap gap-2 flex-1">
-                              {(result.pathway.tournaments?.length ?? 0) >
-                                0 && (
-                                <div className="flex items-center gap-1.5 rounded-lg border border-orange-100 bg-orange-50 px-3 py-1.5">
-                                  <Trophy className="h-3.5 w-3.5 text-power-orange shrink-0" />
-                                  <span className="text-sm font-bold text-power-orange">
-                                    {result.pathway.tournaments!.length}
-                                  </span>
-                                  <span className="text-xs text-orange-400 font-medium">
-                                    Tournaments
-                                  </span>
-                                </div>
-                              )}
-                              {(result.pathway.scholarships?.length ?? 0) >
-                                0 && (
-                                <div className="flex items-center gap-1.5 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1.5">
-                                  <Wallet className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                                  <span className="text-sm font-bold text-emerald-600">
-                                    {result.pathway.scholarships!.length}
-                                  </span>
-                                  <span className="text-xs text-emerald-400 font-medium">
-                                    Scholarships
-                                  </span>
-                                </div>
-                              )}
-                              {(result.pathway.universities?.length ?? 0) >
-                                0 && (
-                                <div className="flex items-center gap-1.5 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-1.5">
-                                  <Landmark className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
-                                  <span className="text-sm font-bold text-indigo-600">
-                                    {result.pathway.universities!.length}
-                                  </span>
-                                  <span className="text-xs text-indigo-400 font-medium">
-                                    Universities
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => setActiveTab("opportunities")}
-                              className="shrink-0 flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-700"
-                            >
-                              View All <ArrowRight className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    <div className="grid grid-cols-1 gap-6 lg:gap-8 lg:grid-cols-[340px_1fr] xl:grid-cols-[380px_1fr]">
-                      {/* Left: level pills */}
-                      <div className="space-y-3">
-                        {/* P1: Progress Tracker */}
-                        <ProgressTracker
-                          progress={progress}
-                          onChange={handleProgressChange}
-                          levels={currentLevels}
+                    <div className="space-y-5">
+                      {/* Visual progression stepper */}
+                      <div className="rounded-3xl border border-slate-200/60 bg-white/70 shadow-sm backdrop-blur-sm overflow-hidden">
+                        <ProgressionStepper
+                          macroLevels={macroLevels}
+                          activeIdx={activeIdx}
+                          onSelect={setActiveIdx}
+                          currentLevel={progress.currentLevel}
                         />
-
-                        <div className="mb-6 hidden lg:block">
-                          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                            Level progression
-                          </p>
-                          <div className="relative">
-                            <div className="absolute left-4 right-4 top-4 h-0.5 bg-slate-200" />
-                            <div className="relative flex justify-between">
-                              {macroLevels.map((macro, i) => {
-                                const c = macro;
-                                const rawLevelNums = macro.rawLevels.map(
-                                  (l) => l.level,
-                                );
-                                const isActive = i === activeIdx;
-                                const isCurrent = rawLevelNums.includes(
-                                  progress.currentLevel,
-                                );
-                                const isCompleted =
-                                  progress.currentLevel > 0 &&
-                                  rawLevelNums.every(
-                                    (n) => n < progress.currentLevel,
-                                  );
-                                return (
-                                  <button
-                                    key={macro.id}
-                                    onClick={() => setActiveIdx(i)}
-                                    title={macro.label}
-                                    className="flex min-w-0 max-w-[120px] flex-1 flex-col items-center gap-1.5 group"
-                                  >
-                                    <div
-                                      className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-all duration-200 ${
-                                        isActive
-                                          ? `bg-gradient-to-br ${c.gradient} border-transparent text-white shadow-lg scale-110`
-                                          : isCurrent
-                                            ? `bg-white ${c.border} ${c.text} shadow-sm`
-                                            : isCompleted
-                                              ? `bg-gradient-to-br ${c.gradient} border-transparent text-white opacity-70`
-                                              : "bg-white border-slate-200 text-slate-400 group-hover:border-slate-300"
-                                      }`}
-                                    >
-                                      {isCompleted && !isActive ? (
-                                        <CheckCircle2 className="h-3.5 w-3.5" />
-                                      ) : (
-                                        i + 1
-                                      )}
-                                      {isCurrent && (
-                                        <span className="absolute -right-0.5 -top-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-amber-400 ring-2 ring-white">
-                                          <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                                        </span>
-                                      )}
-                                    </div>
-                                    <span
-                                      className={`line-clamp-2 text-center text-[10px] font-semibold leading-tight transition-colors ${
-                                        isActive
-                                          ? c.text
-                                          : "text-slate-400 group-hover:text-slate-600"
-                                      }`}
-                                    >
-                                      {macro.label}
-                                    </span>
-                                    <span className="text-center text-[9px] text-slate-400 leading-tight">
-                                      {macro.scopeTag}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-
-                        {macroLevels.map((macro, i) => (
-                          <div key={macro.id} className="flex flex-col gap-3">
-                            <PathwayLevelCard
-                              macroLevel={macro}
-                              isActive={i === activeIdx}
-                              isCurrentLevel={macro.rawLevels.some(
-                                (l) => l.level === progress.currentLevel,
-                              )}
-                              completedSteps={macro.rawLevels.reduce(
-                                (sum, l) =>
-                                  sum +
-                                  (
-                                    progress.completedSteps?.[l.level] || []
-                                  ).filter(Boolean).length,
-                                0,
-                              )}
-                              totalSteps={macro.rawLevels.reduce(
-                                (sum, l) => sum + l.steps.length,
-                                0,
-                              )}
-                              onClick={() => {
-                                if (
-                                  typeof window !== "undefined" &&
-                                  window.innerWidth < 1024
-                                ) {
-                                  setActiveIdx(activeIdx === i ? -1 : i);
-                                } else {
-                                  setActiveIdx(i);
-                                }
-                              }}
-                            />
-                            <AnimatePresence initial={false}>
-                              {i === activeIdx && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: "auto", opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{
-                                    height: {
-                                      type: "spring",
-                                      stiffness: 300,
-                                      damping: 30,
-                                    },
-                                    opacity: { duration: 0.2 },
-                                  }}
-                                  className="lg:hidden overflow-hidden origin-top"
-                                >
-                                  <div className="pt-1 pb-2">
-                                    <PathwayLevelDetail
-                                      macroLevel={macro}
-                                      sportName={
-                                        result
-                                          ? result.pathway.sportName
-                                          : "General"
-                                      }
-                                    />
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        ))}
                       </div>
 
-                      {/* Right: detail (Desktop Only) */}
-                      <div className="hidden lg:flex lg:flex-col lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:[scrollbar-gutter:stable]">
+                      {/* Level detail panel */}
+                      <div>
                         <AnimatePresence mode="wait">
                           {selectedMacroLevel && (
                             <PathwayLevelDetail
@@ -1509,10 +1322,13 @@ export function PathwayExplorerSection() {
                               sportName={
                                 result ? result.pathway.sportName : "General"
                               }
+                              state={selectedState || undefined}
+                              nextMacroLevel={macroLevels[activeIdx + 1]}
                             />
                           )}
                         </AnimatePresence>
                       </div>
+
                     </div>
                   </motion.div>
                 )}
@@ -2193,6 +2009,93 @@ export function PathwayExplorerSection() {
                   />
                 )}
               </AnimatePresence>
+
+              {/* ── Persistent tab navigation ── */}
+              {result && (
+                <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    {
+                      id: "journey" as const,
+                      icon: <Flag className="h-5 w-5" />,
+                      label: "The Journey",
+                      desc: "3-stage development map",
+                      badge: undefined,
+                      activeColor: "text-power-orange",
+                      activeBg: "bg-orange-50 border-orange-200",
+                      activeIcon: "bg-power-orange text-white",
+                      inactiveIcon: "bg-orange-100 text-power-orange",
+                    },
+                    {
+                      id: "opportunities" as const,
+                      icon: <Trophy className="h-5 w-5" />,
+                      label: "Opportunities",
+                      desc: "Tournaments & scholarships",
+                      badge: entitiesStatus === "ready" && totalOpportunities > 0 ? totalOpportunities : undefined,
+                      activeColor: "text-emerald-700",
+                      activeBg: "bg-emerald-50 border-emerald-200",
+                      activeIcon: "bg-emerald-600 text-white",
+                      inactiveIcon: "bg-emerald-100 text-emerald-600",
+                    },
+                    {
+                      id: "plan" as const,
+                      icon: <Calculator className="h-5 w-5" />,
+                      label: "The Plan",
+                      desc: "Budget & gear checklist",
+                      badge: undefined,
+                      activeColor: "text-amber-700",
+                      activeBg: "bg-amber-50 border-amber-200",
+                      activeIcon: "bg-amber-500 text-white",
+                      inactiveIcon: "bg-amber-100 text-amber-600",
+                    },
+                    {
+                      id: "inspire" as const,
+                      icon: <Sparkles className="h-5 w-5" />,
+                      label: "Inspire",
+                      desc: "Stories & career paths",
+                      badge: undefined,
+                      activeColor: "text-indigo-700",
+                      activeBg: "bg-indigo-50 border-indigo-200",
+                      activeIcon: "bg-indigo-600 text-white",
+                      inactiveIcon: "bg-indigo-100 text-indigo-600",
+                    },
+                  ].map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`group flex flex-col items-center gap-3 rounded-2xl border px-4 py-5 text-center transition-all duration-200 ${
+                          isActive
+                            ? `${tab.activeBg} shadow-sm`
+                            : "border-slate-200 bg-white/70 hover:bg-white hover:border-slate-300 hover:shadow-sm"
+                        }`}
+                      >
+                        <span
+                          className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 ${
+                            isActive ? tab.activeIcon : `${tab.inactiveIcon} group-hover:scale-105`
+                          }`}
+                        >
+                          {tab.icon}
+                        </span>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span className={`text-sm font-bold transition-colors ${isActive ? tab.activeColor : "text-slate-700"}`}>
+                              {tab.label}
+                            </span>
+                            {tab.badge !== undefined && (
+                              <span className={`rounded-full px-1.5 py-px text-[9px] font-bold ${isActive ? "bg-white/80 text-slate-700" : "bg-slate-100 text-slate-500"}`}>
+                                {tab.badge}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-400 leading-snug">{tab.desc}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -2279,7 +2182,7 @@ export function PathwayExplorerSection() {
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            className="fixed bottom-5 right-5 z-30 flex items-center gap-2 rounded-full bg-power-orange px-4 py-3 text-sm font-bold text-white shadow-[0_10px_30px_-8px_rgba(233,115,22,0.6)] transition hover:bg-orange-600 sm:bottom-6 sm:right-6"
+            className="fixed bottom-24 right-5 z-30 flex items-center gap-2 rounded-full bg-power-orange px-4 py-3 text-sm font-bold text-white shadow-[0_10px_30px_-8px_rgba(233,115,22,0.6)] transition hover:bg-orange-600 sm:bottom-24 sm:right-6"
           >
             <MessageSquareQuote className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">

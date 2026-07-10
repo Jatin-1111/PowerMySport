@@ -16,6 +16,7 @@ import {
     Target,
     Timer,
     Trophy,
+    User,
     UserCircle2,
     Users,
     Wallet,
@@ -108,10 +109,11 @@ export const BUDGET_OPTIONS = [
 ] as const;
 
 export const STEPS = [
-  { id: 1, label: "Profile", icon: UserCircle2 },
-  { id: 2, label: "Goals", icon: Target },
-  { id: 3, label: "Lifestyle", icon: Activity },
-  { id: 4, label: "Details", icon: Sparkles },
+  { id: 1, label: "About You", icon: User },
+  { id: 2, label: "Profile", icon: UserCircle2 },
+  { id: 3, label: "Goals", icon: Target },
+  { id: 4, label: "Lifestyle", icon: Activity },
+  { id: 5, label: "Details", icon: Sparkles },
 ] as const;
 
 export const initialForm: GuidanceFormState = {
@@ -125,6 +127,8 @@ export const initialForm: GuidanceFormState = {
   parent_specific_question: "",
   sport: "",
   location: "",
+  parent_bio: "",
+  parent_sport_interest: [],
 };
 
 export const INDIAN_STATES = [

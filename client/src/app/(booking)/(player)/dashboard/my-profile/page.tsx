@@ -28,6 +28,7 @@ import { User } from "@/types";
 import { cn } from "@/utils/cn";
 import {
     Calendar,
+    Dumbbell,
     Edit2,
     GraduationCap,
     Info,
@@ -140,6 +141,13 @@ export default function ProfilePage() {
   const [isEditingSports, setIsEditingSports] = useState(false);
   const [isSavingSports, setIsSavingSports] = useState(false);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
+  const [isEditingParent, setIsEditingParent] = useState(false);
+  const [isSavingParent, setIsSavingParent] = useState(false);
+  const [parentForm, setParentForm] = useState({
+    bio: "",
+    sportInterests: [] as string[],
+    involvementYears: "" as string | number,
+  });
   const [playerProfileForm, setPlayerProfileForm] = useState({
     yearsPlaying: undefined as number | undefined,
     personalityTags: [] as string[],
@@ -354,6 +362,49 @@ export default function ProfilePage() {
       toast.error(getErrorMessage(error) || "Failed to update profile");
     } finally {
       setIsSavingProfile(false);
+    }
+  };
+
+  const resetParentForm = () => {
+    if (!user) return;
+    setParentForm({
+      bio: (user as any).bio ?? "",
+      sportInterests: (user as any).sportInterests ?? [],
+      involvementYears: (user as any).involvementYears ?? "",
+    });
+  };
+
+  const handleEditParentClick = () => {
+    resetParentForm();
+    setIsEditingParent(true);
+  };
+
+  const handleCancelParentEdit = () => {
+    resetParentForm();
+    setIsEditingParent(false);
+  };
+
+  const handleSaveParent = async () => {
+    setIsSavingParent(true);
+    try {
+      const bio = (parentForm.bio as string).trim();
+      const sportInterests = parentForm.sportInterests;
+      const involvementYears =
+        parentForm.involvementYears !== "" ? Number(parentForm.involvementYears) : undefined;
+      await authApi.updateProfile({
+        parentProfile: {
+          bio,
+          sportInterests,
+          ...(involvementYears !== undefined ? { involvementYears } : {}),
+        },
+      });
+      await fetchProfile();
+      setIsEditingParent(false);
+      toast.success("Parent profile updated successfully");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error) || "Failed to update parent profile");
+    } finally {
+      setIsSavingParent(false);
     }
   };
 
@@ -961,6 +1012,120 @@ export default function ProfilePage() {
           )}
         </CardContent>
       </Card>
+
+      {user.userType === "Parent" && (
+        <Card
+          className={cn(
+            "shop-surface premium-shadow overflow-hidden p-0 transition-shadow",
+            isEditingParent && "ring-2 ring-power-orange/20",
+          )}
+        >
+          <ProfileSectionHeader
+            icon={Dumbbell}
+            title="Parent Profile"
+            description="Your sports background and involvement — used to personalise AI guidance."
+            isEditing={isEditingParent}
+            onEdit={handleEditParentClick}
+            onCancel={handleCancelParentEdit}
+            onSave={handleSaveParent}
+            saving={isSavingParent}
+            saveLabel="Save Profile"
+          />
+
+          <CardContent className="px-6 py-6">
+            {isEditingParent ? (
+              <div className="space-y-5">
+                <ProfileEditField
+                  label="About You"
+                  htmlFor="parent-bio"
+                  hint={`${(parentForm.bio as string).length}/300 — your background as a sports parent helps the AI understand your perspective`}
+                >
+                  <textarea
+                    id="parent-bio"
+                    rows={3}
+                    maxLength={300}
+                    value={parentForm.bio as string}
+                    onChange={(e) => setParentForm((f) => ({ ...f, bio: e.target.value }))}
+                    placeholder="e.g., Former club cricketer, now focused on my daughter's tennis journey."
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20 resize-none"
+                  />
+                </ProfileEditField>
+
+                <ProfileEditField
+                  label="Sports You Follow or Have Played"
+                  hint="Helps the AI understand your sports perspective"
+                >
+                  <SportsMultiSelect
+                    value={parentForm.sportInterests}
+                    onChange={(s) => setParentForm((f) => ({ ...f, sportInterests: s }))}
+                  />
+                </ProfileEditField>
+
+                <ProfileEditField
+                  label="Years Involved in Sport"
+                  htmlFor="parent-involvement-years"
+                  hint="How long you've been involved or interested in sport"
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="parent-involvement-years"
+                      type="number"
+                      min={0}
+                      max={40}
+                      value={parentForm.involvementYears}
+                      onChange={(e) =>
+                        setParentForm((f) => ({
+                          ...f,
+                          involvementYears:
+                            e.target.value === ""
+                              ? ""
+                              : Math.min(40, parseInt(e.target.value, 10) || 0),
+                        }))
+                      }
+                      placeholder="e.g., 5"
+                      className="w-28 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-power-orange focus:ring-2 focus:ring-power-orange/20"
+                    />
+                    <span className="text-sm text-slate-500">years</span>
+                  </div>
+                </ProfileEditField>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                <ProfileInfoField label="About You">
+                  {(user as any).bio ? (
+                    <p className="text-sm text-slate-700 leading-relaxed">{(user as any).bio}</p>
+                  ) : (
+                    <span className="text-slate-400 italic text-sm">Not provided</span>
+                  )}
+                </ProfileInfoField>
+
+                <ProfileInfoField label="Sports Followed">
+                  {(user as any).sportInterests && (user as any).sportInterests.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {((user as any).sportInterests as string[]).map((sport) => (
+                        <Badge
+                          key={sport}
+                          className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
+                        >
+                          {sport}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-slate-400 italic text-sm">Not provided</span>
+                  )}
+                </ProfileInfoField>
+
+                <ProfileInfoField label="Years Involved">
+                  {(user as any).involvementYears !== undefined
+                    ? `${(user as any).involvementYears} year${(user as any).involvementYears === 1 ? "" : "s"}`
+                    : <span className="text-slate-400 italic text-sm">Not provided</span>}
+                </ProfileInfoField>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {(user.userType === "Parent" ||
         (user.dependents && user.dependents.length > 0)) && (

@@ -14,10 +14,12 @@ export function useGuidanceForm({
   initialSport,
   initialLevel,
   initialLevelLabel,
+  initialState,
 }: {
   initialSport?: string;
   initialLevel?: number;
   initialLevelLabel?: string;
+  initialState?: string;
 } = {}) {
   const isLevelPlan = !!initialSport && !!initialLevel;
   const levelLabel =
@@ -36,6 +38,7 @@ export function useGuidanceForm({
     const base: GuidanceFormState = {
       ...initialForm,
       ...(initialSport ? { sport: initialSport } : {}),
+      ...(initialState ? { location: initialState } : {}),
     };
     if (isLevelPlan) {
       base.parent_specific_question = buildLevelPlanQuestion(
@@ -207,6 +210,7 @@ export function useGuidanceForm({
 
   const nextStep = () => {
     const messages = [
+      "Great start! ✨",
       "Step Complete!",
       "Keep Going! ⚡",
       "Almost There! 🔥",
@@ -214,7 +218,7 @@ export function useGuidanceForm({
     ];
     setAchievement(messages[step - 1] || "Progress!");
     setTimeout(() => setAchievement(null), 2000);
-    setStep((s) => Math.min(s + 1, 4));
+    setStep((s) => Math.min(s + 1, 5));
   };
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
