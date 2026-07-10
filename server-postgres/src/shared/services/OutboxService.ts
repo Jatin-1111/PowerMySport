@@ -4,8 +4,7 @@ import { reconcileExpertSessionPaymentFromWebhookPayload } from "../../client/se
 import { NotificationService } from "../../client/services/NotificationService";
 import { reconcileEcommerceOrderFromWebhookPayload } from "../../shop/services/EcommerceService";
 import { sendEmail } from "../../utils/email";
-import OutboxMessage from "../models/OutboxMessage";
-import PaymentWebhookEvent from "../models/PaymentWebhookEvent";
+import prisma from "../../lib/prisma";
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_ATTEMPTS = 6;
@@ -20,20 +19,34 @@ export const startOutboxWorker = () => {
   const tick = async () => {
     try {
       const now = new Date();
-      const item = await OutboxMessage.findOneAndUpdate(
-        { status: "PENDING", nextAttemptAt: { $lte: now } },
-        { $set: { status: "PROCESSING" } },
-        { sort: { nextAttemptAt: 1 } },
-      );
+
+      // Atomically claim the next due PENDING message (PENDING -> PROCESSING).
+      // Mongo used findOneAndUpdate with sort; Prisma has no atomic
+      // find-and-update, so we do it inside a transaction: read the oldest due
+      // item, then conditionally flip its status. updateMany's count tells us
+      // whether we won the race (important once multiple workers run).
+      const item = await prisma.$transaction(async (tx) => {
+        const candidate = await tx.outboxMessage.findFirst({
+          where: { status: "PENDING", nextAttemptAt: { lte: now } },
+          orderBy: { nextAttemptAt: "asc" },
+        });
+        if (!candidate) return null;
+
+        const claimed = await tx.outboxMessage.updateMany({
+          where: { id: candidate.id, status: "PENDING" },
+          data: { status: "PROCESSING" },
+        });
+        if (claimed.count === 0) return null; // lost the race
+        return { ...candidate, status: "PROCESSING" as const };
+      });
 
       if (!item) return;
 
       try {
         if (item.type === "deliver_message") {
-          const payload = item.payload || {};
+          const payload = (item.payload as any) || {};
           const participantIds: string[] = payload.participantIds || [];
 
-          // Send a Notification per participant (respecting preferences inside NotificationService)
           for (const userId of participantIds) {
             try {
               await NotificationService.send(
@@ -67,13 +80,15 @@ export const startOutboxWorker = () => {
             }
           }
         } else if (item.type === "process_payment_webhook") {
-          const payload = item.payload || {};
+          const payload = (item.payload as any) || {};
           const eventId: string = payload.eventId;
           if (!eventId) {
             throw new Error("Missing eventId for payment webhook processing");
           }
 
-          const event = await PaymentWebhookEvent.findOne({ eventId });
+          const event = await prisma.paymentWebhookEvent.findUnique({
+            where: { eventId },
+          });
           if (!event) {
             throw new Error(`PaymentWebhookEvent not found: ${eventId}`);
           }
@@ -81,41 +96,43 @@ export const startOutboxWorker = () => {
           if (event.status === "DONE") {
             // already processed
           } else {
-            // Mark processing
-            event.status = "PROCESSING";
-            await event.save();
+            await prisma.paymentWebhookEvent.update({
+              where: { eventId },
+              data: { status: "PROCESSING" },
+            });
 
             try {
               await reconcileCoachSubscriptionPaymentFromWebhookPayload(
                 event.payload,
               );
-
-              // Also try booking payment reconciliation — the webhook may be
-              // for a booking rather than a coach subscription.
               await reconcileBookingPaymentFromWebhookPayload(event.payload);
-
-              // Also try e-commerce order reconciliation — the webhook may be
-              // for a shop order (merchantOrderId prefix "O_").
               await reconcileEcommerceOrderFromWebhookPayload(event.payload);
-
-              // Also try expert session reconciliation — the webhook may be
-              // for an expert session (merchantOrderId prefix "EXP_").
               await reconcileExpertSessionPaymentFromWebhookPayload(
                 event.payload,
               );
 
-              event.status = "DONE";
-              event.processedAt = new Date();
-              event.lastError = null;
-              await event.save();
+              await prisma.paymentWebhookEvent.update({
+                where: { eventId },
+                data: {
+                  status: "DONE",
+                  processedAt: new Date(),
+                  lastError: null,
+                },
+              });
               console.info("[outbox][payment] processed", { eventId });
             } catch (procErr) {
-              event.status = "FAILED";
-              event.lastError =
-                (procErr as any)?.stack ||
-                (procErr as any)?.message ||
-                String(procErr);
-              await event.save().catch(() => undefined);
+              await prisma.paymentWebhookEvent
+                .update({
+                  where: { eventId },
+                  data: {
+                    status: "FAILED",
+                    lastError:
+                      (procErr as any)?.stack ||
+                      (procErr as any)?.message ||
+                      String(procErr),
+                  },
+                })
+                .catch(() => undefined);
 
               console.error("[outbox][payment] processing failed", {
                 eventId,
@@ -125,7 +142,7 @@ export const startOutboxWorker = () => {
             }
           }
         } else if (item.type === "send_email") {
-          const payload = item.payload || {};
+          const payload = (item.payload as any) || {};
           const { to, subject, html, text } = payload;
 
           if (!to || !subject || !html) {
@@ -136,10 +153,11 @@ export const startOutboxWorker = () => {
           console.info("[outbox][email] sent", { to, subject });
         }
 
-        item.status = "DONE";
-        item.lastError = null;
-        await item.save();
-        console.info("[outbox] item done", { id: item._id, type: item.type });
+        await prisma.outboxMessage.update({
+          where: { id: item.id },
+          data: { status: "DONE", lastError: null },
+        });
+        console.info("[outbox] item done", { id: item.id, type: item.type });
       } catch (procErr) {
         const attempts = (item.attempts || 0) + 1;
         const baseBackoff = Math.min(
@@ -147,30 +165,34 @@ export const startOutboxWorker = () => {
           Math.pow(2, attempts) * 1000,
         );
         const backoffMs = jitter(baseBackoff);
-        item.attempts = attempts;
-        item.nextAttemptAt = new Date(Date.now() + backoffMs);
-        item.lastError =
+        const nextAttemptAt = new Date(Date.now() + backoffMs);
+        const lastError =
           (procErr as any)?.stack ||
           (procErr as any)?.message ||
           String(procErr);
-        item.status = attempts >= MAX_ATTEMPTS ? "FAILED" : "PENDING";
-        await item.save();
+        await prisma.outboxMessage.update({
+          where: { id: item.id },
+          data: {
+            attempts,
+            nextAttemptAt,
+            lastError,
+            status: attempts >= MAX_ATTEMPTS ? "FAILED" : "PENDING",
+          },
+        });
         console.warn("[outbox] item failed, scheduled retry", {
-          id: item._id,
-          attempts: item.attempts,
-          nextAttemptAt: item.nextAttemptAt,
-          error: item.lastError,
+          id: item.id,
+          attempts,
+          nextAttemptAt,
+          error: lastError,
         });
       }
     } catch (error) {
-      // Top-level worker error — log and continue
       console.error("Outbox worker error:", error);
     }
   };
 
   const interval = setInterval(tick, POLL_INTERVAL_MS);
 
-  // Return a shutdown function
   return () => clearInterval(interval);
 };
 

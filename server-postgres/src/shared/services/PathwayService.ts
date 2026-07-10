@@ -1,11 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
-import { Sport } from "../models/Sport";
-import { SportPathway, SportPathwayDocument } from "../models/SportPathway";
-import { Tournament } from "../models/Tournament";
-import { Scholarship } from "../models/Scholarship";
-import { University } from "../models/University";
+import type { SportPathway } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { realDataScraperService } from "./RealDataScraperService";
 import { buildSafeSearchRegexSource } from "../../utils/regex";
+
+// The Mongoose `SportPathwayDocument` no longer exists. Callers depend on a
+// pathway object plus a few overlaid, non-column fields (tournaments arrays and
+// their *Status flags) added at read time in attachCanonicalEntities(). Alias
+// to the Prisma row type + an open index so those extra fields still type.
+type SportPathwayDocument = SportPathway & Record<string, any>;
 
 const isDev = process.env.NODE_ENV !== "production";
 const log = {
@@ -234,7 +237,7 @@ export class PathwayService {
     let slug = toSlug(sportName);
 
     // ── 1. Validate with existing Sport collection FIRST ───────────────────
-    const knownSport = await Sport.findOne({ slug });
+    const knownSport = await prisma.sport.findUnique({ where: { slug } });
     log.info(
       `[PathwayService] getOrGeneratePathway for ${sportName} - slug: ${slug}, knownSport:`,
       knownSport ? knownSport.name : "null",
@@ -248,10 +251,19 @@ export class PathwayService {
     const cacheKey = `${slug}_${stateSlug}`;
 
     // ── 3. Check cache by cacheKey ─────────────────────────────────────────
-    const existing = await SportPathway.findOne({ cacheKey });
+    // cacheKey is indexed but NOT unique in the Prisma schema → findFirst.
+    const existing = await prisma.sportPathway.findFirst({
+      where: { cacheKey },
+    });
     if (existing) {
       log.info(`[PathwayService] Cache hit for ${cacheKey}`);
-      SportPathway.updateOne({ cacheKey }, { $inc: { lookupCount: 1 } }).exec();
+      // Fire-and-forget lookup counter bump (was updateOne(...).exec()).
+      prisma.sportPathway
+        .updateMany({
+          where: { cacheKey },
+          data: { lookupCount: { increment: 1 } },
+        })
+        .catch(() => {});
 
       // ── Stale-while-revalidate: return cached, refresh in background ───
       // Expert-verified pathways are never auto-refreshed — that would
@@ -312,8 +324,9 @@ export class PathwayService {
     if (!generated) {
       // Graceful fallback: if generation fails for a city/age variant,
       // serve any existing cached pathway for this sport slug.
-      const fallbackDoc = await SportPathway.findOne({ sportSlug: slug }).sort({
-        lookupCount: -1,
+      const fallbackDoc = await prisma.sportPathway.findFirst({
+        where: { sportSlug: slug },
+        orderBy: { lookupCount: "desc" },
       });
       if (fallbackDoc) {
         log.warn(
@@ -373,14 +386,22 @@ export class PathwayService {
    * Search for pathways by sport name prefix (for autocomplete).
    */
   async searchPathways(query: string): Promise<SportPathwayDocument[]> {
-    // Escape + length-cap user input to prevent regex injection / ReDoS.
-    const regex = new RegExp(buildSafeSearchRegexSource(query), "i");
-    return SportPathway.find({
-      $or: [{ sportName: regex }, { sportSlug: regex }],
-    })
-      .sort({ lookupCount: -1, sportName: 1 })
-      .limit(10)
-      .lean() as unknown as SportPathwayDocument[];
+    // Length-cap + strip regex escaping — Prisma `contains` compiles to a
+    // parameterized ILIKE, so there is no regex engine to attack (mirrors the
+    // SportsService reference port).
+    const term = buildSafeSearchRegexSource(query)
+      .replace(/\\/g, "")
+      .slice(0, 100);
+    return (await prisma.sportPathway.findMany({
+      where: {
+        OR: [
+          { sportName: { contains: term, mode: "insensitive" } },
+          { sportSlug: { contains: term, mode: "insensitive" } },
+        ],
+      },
+      orderBy: [{ lookupCount: "desc" }, { sportName: "asc" }],
+      take: 10,
+    })) as unknown as SportPathwayDocument[];
   }
 
   /**
@@ -400,10 +421,11 @@ export class PathwayService {
     }
 
     if (!force) {
-      const current = await SportPathway.findOne({ cacheKey })
-        .select("isVerified")
-        .lean();
-      if ((current as any)?.isVerified) {
+      const current = await prisma.sportPathway.findFirst({
+        where: { cacheKey },
+        select: { isVerified: true },
+      });
+      if (current?.isVerified) {
         log.info(
           `[PathwayService] ${cacheKey} is expert-verified — skipping auto-refresh (pass force=true to override).`,
         );
@@ -416,15 +438,13 @@ export class PathwayService {
 
     try {
       // Mark in DB for multi-instance safety
-      await SportPathway.updateOne(
-        { cacheKey },
-        {
-          $set: {
-            contentRefreshInProgress: true,
-            financialRefreshInProgress: true,
-          },
+      await prisma.sportPathway.updateMany({
+        where: { cacheKey },
+        data: {
+          contentRefreshInProgress: true,
+          financialRefreshInProgress: true,
         },
-      );
+      });
 
       // Parse slug / state from cacheKey e.g. "cricket_punjab"
       const parts = cacheKey.split("_");
@@ -434,12 +454,11 @@ export class PathwayService {
         parsedState && parsedState !== "any" ? parsedState : undefined;
 
       // Prefer sportName from existing doc
-      const existingDoc = await SportPathway.findOne({ cacheKey })
-        .select("sportName")
-        .lean();
-      const sportName: string = String(
-        (existingDoc as any)?.sportName || sportSlug,
-      );
+      const existingDoc = await prisma.sportPathway.findFirst({
+        where: { cacheKey },
+        select: { sportName: true },
+      });
+      const sportName: string = String(existingDoc?.sportName || sportSlug);
 
       const generated = await this.generatePathway(sportName, state);
 
@@ -447,37 +466,52 @@ export class PathwayService {
         log.warn(
           `[PathwayService] Refresh generation returned null for ${cacheKey}`,
         );
-        await SportPathway.updateOne(
-          { cacheKey },
-          {
-            $set: {
-              contentRefreshInProgress: false,
-              financialRefreshInProgress: false,
-            },
-          },
-        );
-        return null;
-      }
-
-      const refreshed = await SportPathway.findOneAndUpdate(
-        { cacheKey },
-        {
-          $set: {
-            ...generated,
-            // Ensure canonical fields are never overwritten by Gemini output
-            tournaments: [],
-            scholarships: [],
-            universities: [],
-            sportSlug,
-            cacheKey,
-            contentRefreshedAt: new Date(),
-            financialDataRefreshedAt: new Date(),
+        await prisma.sportPathway.updateMany({
+          where: { cacheKey },
+          data: {
             contentRefreshInProgress: false,
             financialRefreshInProgress: false,
           },
-        },
-        { upsert: true, new: true },
-      );
+        });
+        return null;
+      }
+
+      // NOTE: the Mongo version spread `...generated` here, which also carried
+      // `governingBodyNational`. The Prisma SportPathway model has no such
+      // column (same as savePathway, which never persisted it), so we write
+      // only the mapped columns explicitly.
+      const updateData = {
+        sportName: generated.sportName || sportName,
+        category: generated.category,
+        overview: generated.overview,
+        levels: generated.levels,
+        equipment: generated.equipment,
+        careers: generated.careers,
+        // Ensure canonical fields are never overwritten by Gemini output
+        tournaments: [],
+        scholarships: [],
+        universities: [],
+        sportSlug,
+        cacheKey,
+        contentRefreshedAt: new Date(),
+        financialDataRefreshedAt: new Date(),
+        contentRefreshInProgress: false,
+        financialRefreshInProgress: false,
+      };
+
+      // TODO(prisma): cacheKey is not unique in the schema, so we cannot use
+      // prisma.upsert. Emulate findOneAndUpdate({cacheKey}, ..., {upsert,new})
+      // with a find-then-write.
+      const existingForUpdate = await prisma.sportPathway.findFirst({
+        where: { cacheKey },
+        select: { id: true },
+      });
+      const refreshed = existingForUpdate
+        ? await prisma.sportPathway.update({
+            where: { id: existingForUpdate.id },
+            data: updateData,
+          })
+        : await prisma.sportPathway.create({ data: updateData });
 
       log.info(`[PathwayService] ✅ Pathway refreshed: ${cacheKey}`);
 
@@ -497,15 +531,15 @@ export class PathwayService {
       return refreshed as SportPathwayDocument;
     } catch (err) {
       log.error(`[PathwayService] ❌ Refresh error for ${cacheKey}:`, err);
-      await SportPathway.updateOne(
-        { cacheKey },
-        {
-          $set: {
+      await prisma.sportPathway
+        .updateMany({
+          where: { cacheKey },
+          data: {
             contentRefreshInProgress: false,
             financialRefreshInProgress: false,
           },
-        },
-      ).catch(() => {});
+        })
+        .catch(() => {});
       return null;
     } finally {
       this.refreshInProgressSet.delete(cacheKey);
@@ -522,27 +556,31 @@ export class PathwayService {
     const financialCutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
     const contentCutoff = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
 
-    const staleDocs = await SportPathway.find({
-      $or: [
-        { financialDataRefreshedAt: { $exists: false } },
-        { financialDataRefreshedAt: null },
-        { financialDataRefreshedAt: { $lt: financialCutoff } },
-        { contentRefreshedAt: { $exists: false } },
-        { contentRefreshedAt: null },
-        { contentRefreshedAt: { $lt: contentCutoff } },
-      ],
-      contentRefreshInProgress: { $ne: true },
-      financialRefreshInProgress: { $ne: true },
-      // Expert-verified pathways are excluded from automatic regeneration —
-      // an AI refresh would silently overwrite reviewed content.
-      isVerified: { $ne: true },
-    })
-      .select("cacheKey")
-      .sort({ lastRefreshedAt: 1 }) // oldest first
-      .limit(50)
-      .lean();
+    // TODO(prisma): the Prisma schema has no `lastRefreshedAt` column (the old
+    // single timestamp was split into contentRefreshedAt/financialDataRefreshedAt).
+    // Ordering therefore falls back to contentRefreshedAt (oldest first). The
+    // `{ $exists:false }` OR branches collapse into `null` checks since a
+    // missing value in Postgres is simply NULL.
+    const staleDocs = await prisma.sportPathway.findMany({
+      where: {
+        OR: [
+          { financialDataRefreshedAt: null },
+          { financialDataRefreshedAt: { lt: financialCutoff } },
+          { contentRefreshedAt: null },
+          { contentRefreshedAt: { lt: contentCutoff } },
+        ],
+        contentRefreshInProgress: { not: true },
+        financialRefreshInProgress: { not: true },
+        // Expert-verified pathways are excluded from automatic regeneration —
+        // an AI refresh would silently overwrite reviewed content.
+        isVerified: { not: true },
+      },
+      select: { cacheKey: true },
+      orderBy: { contentRefreshedAt: "asc" }, // oldest first
+      take: 50,
+    });
 
-    return staleDocs.map((doc: any) => doc.cacheKey as string).filter(Boolean);
+    return staleDocs.map((doc) => doc.cacheKey as string).filter(Boolean);
   }
 
   /**
@@ -558,9 +596,10 @@ export class PathwayService {
         const slug = toSlug(sportName);
         const cacheKey = `${slug}_any_`;
 
-        const exists = await SportPathway.findOne({ cacheKey })
-          .select("_id")
-          .lean();
+        const exists = await prisma.sportPathway.findFirst({
+          where: { cacheKey },
+          select: { id: true },
+        });
 
         if (exists) {
           log.info(`[PathwayService] Pre-warm skipped (cached): ${cacheKey}`);
@@ -606,28 +645,31 @@ export class PathwayService {
       Date.now() - DEFAULT_STALE_DAYS * 24 * 60 * 60 * 1000,
     );
 
+    // TODO(prisma): no `lastRefreshedAt` column — staleness is measured against
+    // contentRefreshedAt (null or older than the cutoff).
     const [total, verified, stale, topSports] = await Promise.all([
-      SportPathway.countDocuments(),
-      SportPathway.countDocuments({ isVerified: true }),
-      SportPathway.countDocuments({
-        $or: [
-          { lastRefreshedAt: { $exists: false } },
-          { lastRefreshedAt: null },
-          { lastRefreshedAt: { $lt: cutoff } },
-        ],
+      prisma.sportPathway.count(),
+      prisma.sportPathway.count({ where: { isVerified: true } }),
+      prisma.sportPathway.count({
+        where: {
+          OR: [
+            { contentRefreshedAt: null },
+            { contentRefreshedAt: { lt: cutoff } },
+          ],
+        },
       }),
-      SportPathway.find()
-        .sort({ lookupCount: -1 })
-        .limit(10)
-        .select("sportName lookupCount")
-        .lean(),
+      prisma.sportPathway.findMany({
+        orderBy: { lookupCount: "desc" },
+        take: 10,
+        select: { sportName: true, lookupCount: true },
+      }),
     ]);
 
     return {
       total,
       verified,
       stale,
-      topSports: (topSports as any[]).map((d) => ({
+      topSports: topSports.map((d) => ({
         sportName: d.sportName,
         lookupCount: d.lookupCount,
       })),
@@ -647,25 +689,28 @@ export class PathwayService {
     state?: string,
   ): Promise<{ tournaments: any[]; scholarships: any[]; universities: any[] }> {
     const slug = toSlug(sportName);
-    const knownSport = await Sport.findOne({ slug });
+    const knownSport = await prisma.sport.findUnique({ where: { slug } });
     const finalSlug = knownSport ? knownSport.slug : slug;
     const finalName = knownSport ? knownSport.name : sportName;
 
     const stateQuery = this.buildStateQuery(state);
 
     const [t, s, u] = await Promise.all([
-      Tournament.find({ sportSlug: finalSlug, ...stateQuery })
-        .sort({ updatedAt: -1 })
-        .limit(6)
-        .lean(),
-      Scholarship.find({ sportSlug: finalSlug, ...stateQuery })
-        .sort({ updatedAt: -1 })
-        .limit(6)
-        .lean(),
-      University.find({ sportSlug: finalSlug, ...stateQuery })
-        .sort({ updatedAt: -1 })
-        .limit(6)
-        .lean(),
+      prisma.tournament.findMany({
+        where: { sportSlug: finalSlug, ...stateQuery },
+        orderBy: { updatedAt: "desc" },
+        take: 6,
+      }),
+      prisma.scholarship.findMany({
+        where: { sportSlug: finalSlug, ...stateQuery },
+        orderBy: { updatedAt: "desc" },
+        take: 6,
+      }),
+      prisma.university.findMany({
+        where: { sportSlug: finalSlug, ...stateQuery },
+        orderBy: { updatedAt: "desc" },
+        take: 6,
+      }),
     ]);
 
     const missingEntities = t.length === 0 || s.length === 0 || u.length === 0;
@@ -693,18 +738,21 @@ export class PathwayService {
       }
 
       const [t2, s2, u2] = await Promise.all([
-        Tournament.find({ sportSlug: finalSlug, ...stateQuery })
-          .sort({ updatedAt: -1 })
-          .limit(6)
-          .lean(),
-        Scholarship.find({ sportSlug: finalSlug, ...stateQuery })
-          .sort({ updatedAt: -1 })
-          .limit(6)
-          .lean(),
-        University.find({ sportSlug: finalSlug, ...stateQuery })
-          .sort({ updatedAt: -1 })
-          .limit(6)
-          .lean(),
+        prisma.tournament.findMany({
+          where: { sportSlug: finalSlug, ...stateQuery },
+          orderBy: { updatedAt: "desc" },
+          take: 6,
+        }),
+        prisma.scholarship.findMany({
+          where: { sportSlug: finalSlug, ...stateQuery },
+          orderBy: { updatedAt: "desc" },
+          take: 6,
+        }),
+        prisma.university.findMany({
+          where: { sportSlug: finalSlug, ...stateQuery },
+          orderBy: { updatedAt: "desc" },
+          take: 6,
+        }),
       ]);
       return { tournaments: t2, scholarships: s2, universities: u2 };
     }
@@ -728,29 +776,30 @@ export class PathwayService {
 
     // Prefer curated tournaments (hand-seeded, complete data).
     // Only fall back to scraped entries when no curated ones exist for this sport.
-    const curatedTournaments = await Tournament.find({
-      sportSlug,
-      isCurated: true,
-    })
-      .sort({ prestige: 1 })
-      .limit(6)
-      .lean();
+    const curatedTournaments = await prisma.tournament.findMany({
+      where: { sportSlug, isCurated: true },
+      orderBy: { prestige: "asc" },
+      take: 6,
+    });
 
     const [tournaments, scholarships, universities] = await Promise.all([
       curatedTournaments.length > 0
         ? Promise.resolve(curatedTournaments)
-        : Tournament.find({ sportSlug, ...stateQuery })
-            .sort({ updatedAt: -1 })
-            .limit(6)
-            .lean(),
-      Scholarship.find({ sportSlug, ...stateQuery })
-        .sort({ updatedAt: -1 })
-        .limit(6)
-        .lean(),
-      University.find({ sportSlug, ...stateQuery })
-        .sort({ updatedAt: -1 })
-        .limit(6)
-        .lean(),
+        : prisma.tournament.findMany({
+            where: { sportSlug, ...stateQuery },
+            orderBy: { updatedAt: "desc" },
+            take: 6,
+          }),
+      prisma.scholarship.findMany({
+        where: { sportSlug, ...stateQuery },
+        orderBy: { updatedAt: "desc" },
+        take: 6,
+      }),
+      prisma.university.findMany({
+        where: { sportSlug, ...stateQuery },
+        orderBy: { updatedAt: "desc" },
+        take: 6,
+      }),
     ]);
 
     const plain =
@@ -829,24 +878,21 @@ export class PathwayService {
   }
 
   private buildStateQuery(state?: string) {
+    // TODO(prisma): the Tournament/Scholarship/University Prisma models do not
+    // have a `state` column (the Mongo docs did). The old query OR'd on
+    // `state == /^state$/i`, missing state, null, or /national/i — which
+    // effectively also matched every stateless row. With no column to filter
+    // on we return an empty predicate (all rows for the sport), matching that
+    // permissive fallback. Revisit if a state column is added to these models.
     if (!state) return {};
-    const stateRegex = new RegExp(`^${state}$`, "i");
-    return {
-      $or: [
-        { state: stateRegex },
-        { state: { $exists: false } },
-        { state: null },
-        { state: /national/i },
-      ],
-    };
+    return {};
   }
 
   private isPathwayStale(doc: SportPathwayDocument): boolean {
     const staleCutoff = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
-    const referenceDate =
-      (doc as any).contentRefreshedAt ??
-      (doc as any).lastRefreshedAt ??
-      doc.createdAt;
+    // TODO(prisma): no `lastRefreshedAt` column — reference falls back straight
+    // from contentRefreshedAt to createdAt.
+    const referenceDate = (doc as any).contentRefreshedAt ?? doc.createdAt;
     return referenceDate < staleCutoff;
   }
 
@@ -1204,6 +1250,11 @@ export class PathwayService {
       careers: Array<any>;
     },
   ): Promise<SportPathwayDocument> {
+    // NOTE: `governingBodyNational` (present on `data`) is intentionally not
+    // persisted — the Prisma SportPathway model has no such column, matching
+    // the original Mongo docData which also dropped it. `lastRefreshedAt`
+    // (Mongo-only) is mapped to `contentRefreshedAt`; `refreshInProgress`
+    // (Mongo-only) maps to the two refresh-in-progress flags (default false).
     const docData = {
       sportSlug: slug,
       cacheKey,
@@ -1220,20 +1271,31 @@ export class PathwayService {
       equipment: data.equipment || [],
       careers: data.careers || [],
       isVerified: false,
-      lastRefreshedAt: new Date(),
-      refreshInProgress: false,
+      // TODO(prisma): no lastRefreshedAt column — mapped to contentRefreshedAt.
+      contentRefreshedAt: new Date(),
+      contentRefreshInProgress: false,
+      financialRefreshInProgress: false,
     };
 
-    const saved = await SportPathway.findOneAndUpdate(
-      { cacheKey },
-      {
-        $setOnInsert: docData,
-        $inc: { lookupCount: 1 },
-      },
-      { upsert: true, new: true },
-    );
-
-    return saved as SportPathwayDocument;
+    // TODO(prisma): cacheKey has no unique constraint in the Prisma schema, so
+    // we cannot use prisma.upsert. Emulate Mongo findOneAndUpdate({cacheKey},
+    // {$setOnInsert: docData, $inc:{lookupCount:1}}, {upsert:true,new:true}):
+    // an existing row only gets its lookupCount bumped; a new row is inserted
+    // with docData (lookupCount defaults to 1 via the schema). Small race
+    // window on concurrent first-writes for the same cacheKey (acceptable).
+    const existing = await prisma.sportPathway.findFirst({
+      where: { cacheKey },
+      select: { id: true },
+    });
+    if (existing) {
+      return (await prisma.sportPathway.update({
+        where: { id: existing.id },
+        data: { lookupCount: { increment: 1 } },
+      })) as SportPathwayDocument;
+    }
+    return (await prisma.sportPathway.create({
+      data: docData,
+    })) as SportPathwayDocument;
   }
 }
 

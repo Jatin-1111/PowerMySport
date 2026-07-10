@@ -1,9 +1,6 @@
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
-import { Tournament } from "../models/Tournament";
-import { Scholarship } from "../models/Scholarship";
-import { University } from "../models/University";
-import { AthleteStory } from "../models/AthleteStory";
+import prisma from "../../lib/prisma";
 
 dotenv.config();
 
@@ -319,26 +316,25 @@ async function upsertTournaments(
 ) {
   for (const item of dedupeTournamentItems(items)) {
     if (!item?.name) continue;
-    await Tournament.findOneAndUpdate(
-      { sportSlug, name: item.name },
-      {
-        $set: {
-          level: item.level || "National",
-          description: item.description || "",
-          ageGroup: item.ageGroup || "Open",
-          city: item.city,
-          typicalDates: item.typicalDates || undefined,
-          registrationDeadline: item.registrationDeadline || undefined,
-          prerequisiteId: item.prerequisiteId,
-          prerequisiteName: item.prerequisiteName,
-          prerequisiteGuide: item.prerequisiteGuide || [],
-          documentChecklist: item.documentChecklist || [],
-          sourceUrls,
-          lastScrapedAt: new Date(),
-        },
-      },
-      { upsert: true, new: true },
-    );
+    const data = {
+      level: item.level || "National",
+      description: item.description || "",
+      ageGroup: item.ageGroup || "Open",
+      city: item.city,
+      typicalDates: item.typicalDates || undefined,
+      registrationDeadline: item.registrationDeadline || undefined,
+      prerequisiteId: item.prerequisiteId,
+      prerequisiteName: item.prerequisiteName,
+      prerequisiteGuide: item.prerequisiteGuide || [],
+      documentChecklist: item.documentChecklist || [],
+      sourceUrls,
+      lastScrapedAt: new Date(),
+    };
+    await prisma.tournament.upsert({
+      where: { sportSlug_name: { sportSlug, name: item.name } },
+      create: { sportSlug, name: item.name, ...data },
+      update: data,
+    });
   }
 }
 
@@ -349,24 +345,23 @@ async function upsertScholarships(
 ) {
   for (const item of items) {
     if (!item?.name) continue;
-    await Scholarship.findOneAndUpdate(
-      { sportSlug, name: item.name },
-      {
-        $set: {
-          provider: item.provider || "",
-          description: item.description || "",
-          eligibility: item.eligibility || "",
-          city: item.city,
-          prerequisiteId: item.prerequisiteId,
-          prerequisiteName: item.prerequisiteName,
-          prerequisiteGuide: item.prerequisiteGuide || [],
-          documentChecklist: item.documentChecklist || [],
-          sourceUrls,
-          lastScrapedAt: new Date(),
-        },
-      },
-      { upsert: true, new: true },
-    );
+    const data = {
+      provider: item.provider || "",
+      description: item.description || "",
+      eligibility: item.eligibility || "",
+      city: item.city,
+      prerequisiteId: item.prerequisiteId,
+      prerequisiteName: item.prerequisiteName,
+      prerequisiteGuide: item.prerequisiteGuide || [],
+      documentChecklist: item.documentChecklist || [],
+      sourceUrls,
+      lastScrapedAt: new Date(),
+    };
+    await prisma.scholarship.upsert({
+      where: { sportSlug_name: { sportSlug, name: item.name } },
+      create: { sportSlug, name: item.name, ...data },
+      update: data,
+    });
   }
 }
 
@@ -377,24 +372,23 @@ async function upsertUniversities(
 ) {
   for (const item of items) {
     if (!item?.name) continue;
-    await University.findOneAndUpdate(
-      { sportSlug, name: item.name },
-      {
-        $set: {
-          location: item.location || "",
-          admissionCriteria: item.admissionCriteria || "",
-          sportsQuotaDetails: item.sportsQuotaDetails || "",
-          city: item.city,
-          prerequisiteId: item.prerequisiteId,
-          prerequisiteName: item.prerequisiteName,
-          prerequisiteGuide: item.prerequisiteGuide || [],
-          documentChecklist: item.documentChecklist || [],
-          sourceUrls,
-          lastScrapedAt: new Date(),
-        },
-      },
-      { upsert: true, new: true },
-    );
+    const data = {
+      location: item.location || "",
+      admissionCriteria: item.admissionCriteria || "",
+      sportsQuotaDetails: item.sportsQuotaDetails || "",
+      city: item.city,
+      prerequisiteId: item.prerequisiteId,
+      prerequisiteName: item.prerequisiteName,
+      prerequisiteGuide: item.prerequisiteGuide || [],
+      documentChecklist: item.documentChecklist || [],
+      sourceUrls,
+      lastScrapedAt: new Date(),
+    };
+    await prisma.university.upsert({
+      where: { sportSlug_name: { sportSlug, name: item.name } },
+      create: { sportSlug, name: item.name, ...data },
+      update: data,
+    });
   }
 }
 
@@ -405,23 +399,32 @@ async function upsertStories(
 ) {
   for (const item of items) {
     if (!item?.name) continue;
-    await AthleteStory.findOneAndUpdate(
-      { sportSlug, name: item.name },
-      {
-        $set: {
-          location: item.location || "",
-          achievement: item.achievement || "",
-          quote: item.quote || "",
-          parentNote: item.parentNote || "",
-          level: Number(item.level) || 1,
-          tags: Array.isArray(item.tags) ? item.tags : [],
-          isAiGenerated: true,
-          sourceUrls,
-          lastScrapedAt: new Date(),
-        },
-      },
-      { upsert: true, new: true },
-    );
+    const data = {
+      location: item.location || "",
+      achievement: item.achievement || "",
+      quote: item.quote || "",
+      parentNote: item.parentNote || "",
+      level: Number(item.level) || 1,
+      tags: Array.isArray(item.tags) ? item.tags : [],
+      isAiGenerated: true,
+      sourceUrls,
+      lastScrapedAt: new Date(),
+    };
+    // TODO(prisma): AthleteStory has no unique constraint on [sportSlug, name]
+    // in schema.prisma, so prisma.athleteStory.upsert() is unavailable. We
+    // emulate the old findOneAndUpdate({ upsert:true }) with find-then-
+    // update/create. This is not atomic — add @@unique([sportSlug, name]) to
+    // the model to switch to a single upsert() call.
+    const existing = await prisma.athleteStory.findFirst({
+      where: { sportSlug, name: item.name },
+    });
+    if (existing) {
+      await prisma.athleteStory.update({ where: { id: existing.id }, data });
+    } else {
+      await prisma.athleteStory.create({
+        data: { sportSlug, name: item.name, ...data },
+      });
+    }
   }
 }
 

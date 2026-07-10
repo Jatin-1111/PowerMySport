@@ -1,8 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
-import { SportPathway } from "../models/SportPathway";
-import { SportBasePath } from "../models/SportBasePath";
-import { SportStatePath } from "../models/SportStatePath";
+import prisma from "../../lib/prisma";
 
 export const guidanceRequestSchema = z.object({
   child_age: z.number().int().min(3).max(21),
@@ -197,8 +195,10 @@ export const generateYouthSportsGuidance = async (
       // Prefer the new split models (SportBasePath + SportStatePath) — they give
       // richer, more accurate grounding and avoid redundant per-state regeneration.
       const [basePath, statePath] = await Promise.all([
-        SportBasePath.findOne({ sportSlug: slug }).lean(),
-        SportStatePath.findOne({ sportSlug: slug, stateSlug }).lean(),
+        prisma.sportBasePath.findUnique({ where: { sportSlug: slug } }),
+        prisma.sportStatePath.findUnique({
+          where: { sportSlug_stateSlug: { sportSlug: slug, stateSlug } },
+        }),
       ]);
 
       if (basePath && (basePath as any).levels?.length > 0) {
@@ -214,6 +214,13 @@ export const generateYouthSportsGuidance = async (
             coachSelectionGuide: levelObj.coachSelectionGuide,
           };
           if (statePath) {
+            // TODO(prisma): in schema.prisma the SportStatePath embedded objects
+            // were flattened to scalar columns — `stateAssociation` is now
+            // saName/saAcronym/saWebsite/saContact and `feeRange` is now
+            // feeMonthly/feeEquipment/feeTournaments. topAcademies,
+            // governmentSchemes and regionalCalendar remain as-is. Rebuild these
+            // two nested objects from the flat columns before shipping (kept
+            // verbatim here so the grounding contract is unchanged).
             groundingObj.stateContext = {
               stateAssociation: (statePath as any).stateAssociation,
               topAcademies: (statePath as any).topAcademies,
@@ -228,7 +235,9 @@ export const generateYouthSportsGuidance = async (
         // Fall back to the monolithic SportPathway for sports/states not yet
         // migrated to the new split model.
         const cacheKey = `${slug}_${stateSlug}`;
-        const pathway = await SportPathway.findOne({ cacheKey }).lean();
+        const pathway = await prisma.sportPathway.findFirst({
+          where: { cacheKey },
+        });
         if (
           pathway &&
           (pathway as any).levels &&

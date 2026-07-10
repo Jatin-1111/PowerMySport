@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { TournamentEdition } from "../models/TournamentEdition";
+import prisma from "../../lib/prisma";
 import {
   TOURNAMENT_SOURCE_REGISTRY,
   TournamentSource,
@@ -365,24 +365,29 @@ async function upsertEditions(
   let upserted = 0;
   for (const e of editions) {
     try {
-      await TournamentEdition.findOneAndUpdate(
-        { sportSlug, name: e.name, startDate: e.startDate },
-        {
-          $set: {
-            editionYear: e.startDate.getUTCFullYear(),
-            endDate: e.endDate ?? null,
-            registrationDeadlineDate: e.registrationDeadlineDate ?? null,
-            venue: e.venue ?? null,
-            city: e.city ?? null,
-            level: e.level ?? null,
-            ageGroups: e.ageGroups,
-            sourceUrl,
-            status: deriveStatus(e),
-            lastCheckedAt: new Date(),
+      const data = {
+        editionYear: e.startDate.getUTCFullYear(),
+        endDate: e.endDate ?? null,
+        registrationDeadlineDate: e.registrationDeadlineDate ?? null,
+        venue: e.venue ?? null,
+        city: e.city ?? null,
+        level: e.level ?? null,
+        ageGroups: e.ageGroups,
+        sourceUrl,
+        status: deriveStatus(e),
+        lastCheckedAt: new Date(),
+      };
+      await prisma.tournamentEdition.upsert({
+        where: {
+          sportSlug_name_startDate: {
+            sportSlug,
+            name: e.name,
+            startDate: e.startDate,
           },
         },
-        { upsert: true, new: true },
-      );
+        create: { sportSlug, name: e.name, startDate: e.startDate, ...data },
+        update: data,
+      });
       upserted++;
     } catch (err) {
       log.warn(`[TournamentCalendar] Upsert failed for "${e.name}":`, err);
@@ -541,12 +546,13 @@ export async function getUpcomingEditions(
 > {
   const startOfToday = new Date();
   startOfToday.setUTCHours(0, 0, 0, 0);
-  return TournamentEdition.find({
-    sportSlug,
-    startDate: { $gte: startOfToday },
-    status: { $ne: "cancelled" },
-  })
-    .sort({ startDate: 1 })
-    .limit(limit)
-    .lean() as any;
+  return prisma.tournamentEdition.findMany({
+    where: {
+      sportSlug,
+      startDate: { gte: startOfToday },
+      status: { not: "cancelled" },
+    },
+    orderBy: { startDate: "asc" },
+    take: limit,
+  }) as any;
 }

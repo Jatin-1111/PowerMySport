@@ -1,7 +1,17 @@
-import mongoose from "mongoose";
-import { Venue, VenueDocument } from "../models/Venue";
+import type { Venue, VenueApprovalStatus } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { IGeoLocation } from "../../types/index";
 import { buildSafeSearchRegexSource } from "../../utils/regex";
+
+// Children hydrated alongside a venue (previously embedded sub-documents).
+const venueInclude = {
+  sportPricing: true,
+  sportImages: true,
+  openingHours: true,
+  venueCoaches: true,
+  documents: true,
+  payoutMethods: true,
+} as const;
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
@@ -41,7 +51,9 @@ const getVenueDisplayPrice = (venue: any): number => {
   const values =
     pricing instanceof Map
       ? Array.from(pricing.values())
-      : Object.values(pricing as Record<string, unknown>);
+      : Array.isArray(pricing)
+        ? pricing.map((row: any) => row?.price)
+        : Object.values(pricing as Record<string, unknown>);
 
   const validValues = values.filter(
     (value): value is number =>
@@ -128,28 +140,48 @@ export interface CreateVenuePayload {
 
 export const createVenue = async (
   payload: CreateVenuePayload,
-): Promise<VenueDocument> => {
-  // Ensure ownerId is properly converted to ObjectId
-  const venueData: any = {
-    ...payload,
-    ownerId: payload.ownerId
-      ? new mongoose.Types.ObjectId(payload.ownerId)
-      : undefined,
-  };
+): Promise<Venue> => {
+  // GeoJSON Point { coordinates:[lng,lat] } is gone; store lng/lat columns.
+  const lng = payload.location?.coordinates?.[0] ?? null;
+  const lat = payload.location?.coordinates?.[1] ?? null;
 
-  console.log("Creating venue with data:", {
-    name: venueData.name,
-    ownerId: venueData.ownerId,
-    ownerIdType: typeof venueData.ownerId,
-    sports: venueData.sports,
-    approvalStatus: venueData.approvalStatus,
+  const venue = await prisma.venue.create({
+    data: {
+      name: payload.name,
+      ownerId: payload.ownerId,
+      // NOTE(prisma): ownerName/ownerEmail/ownerPhone are required columns in
+      // the Postgres schema but are not part of CreateVenuePayload (they were
+      // optional in the old Mongo model). Defaulted to "" to keep the create
+      // contract. // TODO(prisma): source these from the owner User record.
+      ownerName: "",
+      ownerEmail: "",
+      ownerPhone: "",
+      sports: payload.sports ?? [],
+      pricePerHour: payload.pricePerHour,
+      amenities: payload.amenities ?? [],
+      description: payload.description ?? "",
+      images: payload.images ?? [],
+      allowExternalCoaches: payload.allowExternalCoaches ?? true,
+      approvalStatus:
+        (payload.approvalStatus as VenueApprovalStatus | undefined) ??
+        "PENDING",
+      lng,
+      lat,
+      ...(payload.sportPricing
+        ? {
+            sportPricing: {
+              create: Object.entries(payload.sportPricing).map(
+                ([sport, price]) => ({ sport, price }),
+              ),
+            },
+          }
+        : {}),
+    },
+    include: venueInclude,
   });
 
-  const venue = new Venue(venueData);
-  await venue.save();
-
   console.log("Venue saved:", {
-    id: venue._id,
+    id: venue.id,
     name: venue.name,
     ownerId: venue.ownerId,
     approvalStatus: venue.approvalStatus,
@@ -158,15 +190,14 @@ export const createVenue = async (
   return venue;
 };
 
-export const getVenueById = async (
-  id: string,
-): Promise<VenueDocument | null> => {
-  const venue = await Venue.findById(id).populate("ownerId");
-  if (venue) {
-    // For venue detail reads, only image URLs are needed.
-    // Avoid refreshing document URLs here because it adds expensive S3 calls.
-    await venue.refreshImageUrls();
-  }
+export const getVenueById = async (id: string): Promise<Venue | null> => {
+  const venue = await prisma.venue.findUnique({
+    where: { id },
+    include: venueInclude,
+  });
+  // TODO(prisma): the Mongo document exposed .refreshImageUrls()/.populate("ownerId");
+  // model instance methods no longer exist. Re-issue S3 presigned image URLs and
+  // resolve the owner User via a standalone helper if the caller needs them.
   return venue;
 };
 
@@ -175,23 +206,26 @@ export const getVenuesByOwner = async (
   page: number = 1,
   limit: number = 20,
 ): Promise<{
-  venues: VenueDocument[];
+  venues: Venue[];
   total: number;
   page: number;
   totalPages: number;
 }> => {
-  // Convert string to ObjectId for proper comparison
-  const ownerObjectId = new mongoose.Types.ObjectId(ownerId);
-  const query = {
-    $or: [{ ownerId: ownerObjectId }, { ownerId }],
-  };
+  const where = { ownerId };
 
   const skip = (page - 1) * limit;
-  const total = await Venue.countDocuments(query);
-  const venues = await Venue.find(query).skip(skip).limit(limit);
+  const [total, venues] = await Promise.all([
+    prisma.venue.count({ where }),
+    prisma.venue.findMany({
+      where,
+      skip,
+      take: limit,
+      include: venueInclude,
+    }),
+  ]);
 
-  // Refresh URLs for all venues
-  await Promise.all(venues.map((v) => v.refreshAllUrls()));
+  // TODO(prisma): refreshAllUrls() was a Mongoose model method (S3 presign);
+  // reimplement as a standalone helper if fresh image/doc URLs are required.
 
   return { venues, total, page, totalPages: Math.ceil(total / limit) };
 };
@@ -204,7 +238,7 @@ export const findVenuesNearby = async (
   page: number = 1,
   limit: number = 20,
 ): Promise<{
-  venues: VenueDocument[];
+  venues: Venue[];
   total: number;
   page: number;
   totalPages: number;
@@ -212,57 +246,38 @@ export const findVenuesNearby = async (
   try {
     const skip = (page - 1) * limit;
 
-    const pipeline: any[] = [
-      {
-        $geoNear: {
-          near: { type: "Point", coordinates: [lng, lat] },
-          distanceField: "distanceMeters",
-          maxDistance: radiusMeters,
-          spherical: true,
-          query: {
-            approvalStatus: "APPROVED",
-            ...(sport ? { sports: sport } : {}),
-          },
-        },
-      },
-      {
-        $sort: { rating: -1, reviewCount: -1, distanceMeters: 1, _id: 1 },
-      },
-      {
-        $facet: {
-          metadata: [{ $count: "total" }],
-          data: [
-            { $skip: skip },
-            { $limit: limit },
-            {
-              $lookup: {
-                from: "users",
-                localField: "ownerId",
-                foreignField: "_id",
-                as: "ownerInfo",
-              },
-            },
-          ],
-        },
-      },
-    ];
+    // TODO(prisma): geo — needs PostGIS/earthdistance $queryRaw. The Mongo
+    // $geoNear (spherical radius + distance sort) has no Prisma equivalent.
+    // Bounding-box fallback below keeps the endpoint returning results:
+    // approximate degrees-per-km, filter lng/lat within the box, and order by
+    // rating/reviewCount. Distance-based sort/paging is NOT preserved.
+    const radiusKm = radiusMeters / 1000;
+    const latDelta = radiusKm / 111; // ~111 km per degree of latitude
+    const cosLat = Math.cos(toRadians(lat));
+    const lngDelta = radiusKm / (111 * (Math.abs(cosLat) || 1));
 
-    const [result] = await Venue.aggregate(pipeline);
+    const where = {
+      approvalStatus: "APPROVED" as VenueApprovalStatus,
+      ...(sport ? { sports: { has: sport } } : {}),
+      lat: { gte: lat - latDelta, lte: lat + latDelta },
+      lng: { gte: lng - lngDelta, lte: lng + lngDelta },
+    };
 
-    const total = result.metadata[0]?.total || 0;
-    const paginatedVenues = result.data || [];
-
-    // Convert aggregation results to hydrated Mongoose documents and refresh URLs
-    const venueDocuments = await Promise.all(
-      paginatedVenues.map(async (v: any) => {
-        const doc = Venue.hydrate(v);
-        await doc.refreshAllUrls();
-        return doc;
+    const [total, venues] = await Promise.all([
+      prisma.venue.count({ where }),
+      prisma.venue.findMany({
+        where,
+        orderBy: [{ rating: "desc" }, { reviewCount: "desc" }, { id: "asc" }],
+        skip,
+        take: limit,
+        include: venueInclude,
       }),
-    );
+    ]);
+
+    // TODO(prisma): refreshAllUrls() model method removed — see getVenuesByOwner.
 
     return {
-      venues: venueDocuments.filter(Boolean) as VenueDocument[],
+      venues,
       total,
       page,
       totalPages: Math.ceil(total / limit),
@@ -283,38 +298,43 @@ export const getAllVenues = async (
   page: number = 1,
   limit: number = 20,
 ): Promise<{
-  venues: VenueDocument[];
+  venues: Venue[];
   total: number;
   page: number;
   totalPages: number;
 }> => {
-  const query: any = {};
+  const where: any = {};
 
   if (filters?.sports && filters.sports.length > 0) {
-    query.sports = { $in: filters.sports };
+    where.sports = { hasSome: filters.sports };
   }
 
   if (filters?.approvalStatus) {
-    query.approvalStatus = filters.approvalStatus;
+    where.approvalStatus = filters.approvalStatus;
   }
 
   if (filters?.search) {
-    query.name = {
-      $regex: buildSafeSearchRegexSource(filters.search),
-      $options: "i",
-    };
+    // Postgres ILIKE via `contains` — strip the regex escaping from the shared
+    // helper and keep only its length cap (see SportsService reference port).
+    const term = buildSafeSearchRegexSource(filters.search)
+      .replace(/\\/g, "")
+      .slice(0, 100);
+    where.name = { contains: term, mode: "insensitive" };
   }
 
   const skip = (page - 1) * limit;
-  const total = await Venue.countDocuments(query);
-  const venues = await Venue.find(query)
-    .sort({ rating: -1, reviewCount: -1, _id: 1 })
-    .skip(skip)
-    .limit(limit)
-    .populate("ownerId");
+  const [total, venues] = await Promise.all([
+    prisma.venue.count({ where }),
+    prisma.venue.findMany({
+      where,
+      orderBy: [{ rating: "desc" }, { reviewCount: "desc" }, { id: "asc" }],
+      skip,
+      take: limit,
+      include: venueInclude,
+    }),
+  ]);
 
-  // Refresh URLs for all venues
-  await Promise.all(venues.map((v) => v.refreshAllUrls()));
+  // TODO(prisma): refreshAllUrls()/populate("ownerId") model helpers removed.
 
   return {
     venues,
@@ -327,6 +347,7 @@ export const getAllVenues = async (
 // Fields a venue owner must never be able to set via a self-service update —
 // these control ownership, verification/approval state, and platform economics.
 const VENUE_PROTECTED_FIELDS = [
+  "id",
   "_id",
   "ownerId",
   "approvalStatus",
@@ -341,19 +362,47 @@ export const updateVenue = async (
   id: string,
   ownerId: string,
   payload: Partial<CreateVenuePayload>,
-): Promise<VenueDocument | null> => {
+): Promise<Venue | null> => {
   // Strip protected fields so they cannot be mass-assigned, and scope the
   // update to the owner so a lister can only edit their OWN venue (IDOR).
   const sanitized: Record<string, unknown> = { ...payload };
   for (const field of VENUE_PROTECTED_FIELDS) {
     delete sanitized[field];
   }
-  return Venue.findOneAndUpdate({ _id: id, ownerId }, sanitized, { new: true });
+
+  // location/sportPricing are not scalar columns — translate/skip them.
+  const { location, sportPricing, ...rest } = sanitized as any;
+  const data: any = { ...rest };
+  if (location?.coordinates) {
+    data.lng = location.coordinates[0] ?? null;
+    data.lat = location.coordinates[1] ?? null;
+  }
+  // TODO(prisma): sportPricing update requires delete+recreate of the
+  // VenueSportPricing child rows in a $transaction; not handled by this
+  // scalar-only update path.
+
+  // Owner-scoped update: updateMany can filter on the non-unique ownerId, then
+  // re-read to return the fresh row (Mongo's findOneAndUpdate({new:true})).
+  const result = await prisma.venue.updateMany({
+    where: { id, ownerId },
+    data,
+  });
+  if (result.count === 0) return null;
+
+  return prisma.venue.findUnique({ where: { id }, include: venueInclude });
 };
 
 export const deleteVenue = async (
   id: string,
   ownerId: string,
-): Promise<VenueDocument | null> => {
-  return Venue.findOneAndDelete({ _id: id, ownerId });
+): Promise<Venue | null> => {
+  // Owner-scoped delete — return null if it isn't this owner's venue (IDOR).
+  const venue = await prisma.venue.findFirst({
+    where: { id, ownerId },
+    include: venueInclude,
+  });
+  if (!venue) return null;
+
+  await prisma.venue.delete({ where: { id } });
+  return venue;
 };

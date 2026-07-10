@@ -1,6 +1,6 @@
-import { User } from "../models/User";
-import { Venue } from "../models/Venue";
-import VenueInquiry, { IVenueInquiry } from "../models/VenueInquiry";
+import bcrypt from "bcryptjs";
+import type { VenueInquiry, VenueInquiryStatus } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { sendCredentialsEmail } from "../../utils/email";
 
 interface CreateInquiryPayload {
@@ -20,11 +20,10 @@ interface ReviewInquiryPayload {
 
 export const createVenueInquiry = async (
   data: CreateInquiryPayload,
-): Promise<IVenueInquiry> => {
+): Promise<VenueInquiry> => {
   // Check if inquiry already exists for this phone
-  const existingInquiry = await VenueInquiry.findOne({
-    phone: data.phone,
-    status: "PENDING",
+  const existingInquiry = await prisma.venueInquiry.findFirst({
+    where: { phone: data.phone, status: "PENDING" },
   });
 
   if (existingInquiry) {
@@ -33,49 +32,52 @@ export const createVenueInquiry = async (
     );
   }
 
-  const inquiry = new VenueInquiry(data);
-  await inquiry.save();
-  return inquiry;
+  return prisma.venueInquiry.create({ data });
 };
 
 export const getAllInquiries = async (
   status?: string,
-): Promise<IVenueInquiry[]> => {
-  const filter = status ? { status } : {};
-  return await VenueInquiry.find(filter).sort({ createdAt: -1 });
+): Promise<VenueInquiry[]> => {
+  return prisma.venueInquiry.findMany({
+    where: status ? { status: status as VenueInquiryStatus } : {},
+    orderBy: { createdAt: "desc" },
+  });
 };
 
 export const getInquiryById = async (
   inquiryId: string,
-): Promise<IVenueInquiry | null> => {
-  return await VenueInquiry.findById(inquiryId);
+): Promise<VenueInquiry | null> => {
+  return prisma.venueInquiry.findUnique({ where: { id: inquiryId } });
 };
 
 export const reviewInquiry = async (
   inquiryId: string,
   reviewData: ReviewInquiryPayload,
 ): Promise<{
-  inquiry: IVenueInquiry;
+  inquiry: VenueInquiry;
   credentials?: { email: string; password: string };
 }> => {
-  const inquiry = await VenueInquiry.findById(inquiryId);
+  const existing = await prisma.venueInquiry.findUnique({
+    where: { id: inquiryId },
+  });
 
-  if (!inquiry) {
+  if (!existing) {
     throw new Error("Inquiry not found");
   }
 
-  if (inquiry.status !== "PENDING") {
+  if (existing.status !== "PENDING") {
     throw new Error("This inquiry has already been reviewed");
   }
 
-  inquiry.status = reviewData.status;
-  inquiry.reviewedBy = reviewData.reviewedBy as any;
-  inquiry.reviewedAt = new Date();
-  if (reviewData.reviewNotes) {
-    inquiry.reviewNotes = reviewData.reviewNotes;
-  }
-
-  await inquiry.save();
+  const inquiry = await prisma.venueInquiry.update({
+    where: { id: inquiryId },
+    data: {
+      status: reviewData.status,
+      reviewedBy: reviewData.reviewedBy,
+      reviewedAt: new Date(),
+      ...(reviewData.reviewNotes ? { reviewNotes: reviewData.reviewNotes } : {}),
+    },
+  });
 
   // If approved, create venue lister account
   if (reviewData.status === "APPROVED") {
@@ -83,8 +85,8 @@ export const reviewInquiry = async (
     const generatedEmail = `venue_${inquiry.phone.replace(/\s+/g, "")}@powermysport.com`;
 
     // Check if user already exists
-    const existingUser = await User.findOne({
-      $or: [{ email: generatedEmail }, { phone: inquiry.phone }],
+    const existingUser = await prisma.user.findFirst({
+      where: { OR: [{ email: generatedEmail }, { phone: inquiry.phone }] },
     });
 
     if (existingUser) {
@@ -94,45 +96,45 @@ export const reviewInquiry = async (
     // Generate temporary password
     const tempPassword = Math.random().toString(36).slice(-8) + "!A1";
 
-    // Create venue lister account (User model will hash the password)
-    const user = new User({
-      name: inquiry.ownerName,
-      email: generatedEmail,
-      phone: inquiry.phone,
-      password: tempPassword, // Pass plain password, User model will hash it
-      role: "VenueLister",
-      venueListerProfile: {
-        businessDetails: {
-          name: inquiry.ownerName,
-          address: inquiry.address || "",
-        },
-        payoutInfo: {
-          accountNumber: "",
-          ifsc: "",
-          bankName: "",
-        },
-        canAddMoreVenues: false, // Restrict to only the approved venue
+    // Hash the password here — the Mongo pre-save hook that used to do this is
+    // gone under Prisma (bcrypt, 12 salt rounds, matching the old User model).
+    const hashedPassword = await bcrypt.hash(tempPassword, 12);
+
+    // Create venue lister account.
+    // NOTE(prisma): the old Mongo User carried an embedded `venueListerProfile`
+    // (businessDetails / payoutInfo / canAddMoreVenues); that sub-document has
+    // no column in the Postgres User model, so it is dropped here.
+    // TODO(prisma): if venue-lister business details must persist, model them
+    // as a dedicated table and write them in this flow.
+    const savedUser = await prisma.user.create({
+      data: {
+        name: inquiry.ownerName,
+        email: generatedEmail,
+        phone: inquiry.phone,
+        password: hashedPassword,
+        role: "VenueLister",
+        userType: "VenueLister",
       },
     });
 
-    const savedUser = await user.save();
-
-    // Create the first venue automatically
-    const venue = new Venue({
-      name: inquiry.venueName,
-      ownerId: savedUser._id,
-      location: {
-        type: "Point",
-        coordinates: [0, 0], // Default coordinates - user must update
+    // Create the first venue automatically. GeoJSON Point -> lng/lat columns;
+    // default 0,0 (user must update).
+    await prisma.venue.create({
+      data: {
+        name: inquiry.venueName,
+        ownerId: savedUser.id,
+        ownerName: inquiry.ownerName,
+        ownerEmail: generatedEmail,
+        ownerPhone: inquiry.phone,
+        lng: 0,
+        lat: 0,
+        sports: inquiry.sports.split(",").map((s) => s.trim()),
+        amenities: [],
+        address: inquiry.address,
+        description: inquiry.message || "",
+        pricePerHour: 0, // Default price - user must update
       },
-      sports: inquiry.sports.split(",").map((s) => s.trim()),
-      amenities: [],
-      address: inquiry.address,
-      description: inquiry.message || "",
-      pricePerHour: 0, // Default price - user must update
     });
-
-    await venue.save();
 
     // Send credentials via email
     try {
@@ -160,11 +162,13 @@ export const reviewInquiry = async (
 };
 
 export const deleteInquiry = async (inquiryId: string): Promise<void> => {
-  const inquiry = await VenueInquiry.findById(inquiryId);
+  const inquiry = await prisma.venueInquiry.findUnique({
+    where: { id: inquiryId },
+  });
 
   if (!inquiry) {
     throw new Error("Inquiry not found");
   }
 
-  await inquiry.deleteOne();
+  await prisma.venueInquiry.delete({ where: { id: inquiryId } });
 };

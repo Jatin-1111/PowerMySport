@@ -5,11 +5,11 @@ import {
   ApiResponse,
 } from "../../types/ecommerce";
 import {
-  PaymentTransaction as PaymentTransactionModel,
-  PaymentTransactionDocument,
-  Order as OrderModel,
-} from "../../shop/models/Ecommerce";
-import mongoose from "mongoose";
+  ShopPaymentStatus,
+  PaymentGateway as PrismaPaymentGateway,
+} from "@prisma/client";
+import type { ShopPaymentTransaction } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import {
   initiatePhonePePayment,
   getPhonePeOrderStatus,
@@ -177,10 +177,10 @@ export class PaymentService {
       email: string;
       phone: string;
     },
-  ): Promise<PaymentTransactionDocument> {
-    // Check for duplicate using idempotency key
-    const existingTransaction = await PaymentTransactionModel.findOne({
-      idempotencyKey,
+  ): Promise<ShopPaymentTransaction> {
+    // Check for duplicate using idempotency key (unique field).
+    const existingTransaction = await prisma.shopPaymentTransaction.findUnique({
+      where: { idempotencyKey },
     });
 
     if (existingTransaction) {
@@ -197,20 +197,23 @@ export class PaymentService {
     );
 
     // Record transaction
-    const transaction = new PaymentTransactionModel({
-      orderId: new mongoose.Types.ObjectId(orderId),
-      paymentGateway,
-      gatewayOrderId:
-        gatewayOrder.id || gatewayOrder.data?.merchantTransactionId,
-      amount,
-      currency,
-      status: PaymentStatus.PENDING,
-      idempotencyKey,
-      gatewayResponse: gatewayOrder,
-      attemptNumber: 1,
+    const transaction = await prisma.shopPaymentTransaction.create({
+      data: {
+        orderId, // String FK — Mongo used a new ObjectId(orderId)
+        // TODO(prisma): types/ecommerce PaymentGateway and the generated Prisma
+        // PaymentGateway enum are string-identical (PHONEPE only); the cast
+        // reconciles the two nominal enum types.
+        paymentGateway: paymentGateway as unknown as PrismaPaymentGateway,
+        gatewayOrderId:
+          gatewayOrder.id || gatewayOrder.data?.merchantTransactionId,
+        amount,
+        currency,
+        status: ShopPaymentStatus.PENDING,
+        idempotencyKey,
+        gatewayResponse: gatewayOrder,
+        attemptNumber: 1,
+      },
     });
-
-    await transaction.save();
 
     return transaction;
   }
@@ -223,14 +226,15 @@ export class PaymentService {
     paymentId: string,
     _phonepeOrderId: string,
     _signature: string,
-  ): Promise<PaymentTransactionDocument> {
+  ): Promise<ShopPaymentTransaction> {
     // SECURITY: the client-supplied phonepeOrderId/signature are NOT trusted.
     // We locate the transaction by our own orderId link, then re-poll PhonePe
     // using the merchantOrderId WE stored at order creation, and require BOTH a
     // COMPLETED state AND an exact amount match (paise) before confirming.
-    const transaction = await PaymentTransactionModel.findOne({
-      orderId: new mongoose.Types.ObjectId(orderId),
-    }).sort({ createdAt: -1 });
+    const transaction = await prisma.shopPaymentTransaction.findFirst({
+      where: { orderId },
+      orderBy: { createdAt: "desc" },
+    });
 
     if (!transaction) {
       throw new Error("Payment transaction not found");
@@ -251,14 +255,13 @@ export class PaymentService {
       throw new Error("Payment amount mismatch");
     }
 
-    const updated = await PaymentTransactionModel.findOneAndUpdate(
-      { _id: transaction._id },
-      {
+    const updated = await prisma.shopPaymentTransaction.update({
+      where: { id: transaction.id },
+      data: {
         gatewayPaymentId: paymentId,
-        status: PaymentStatus.CAPTURED,
+        status: ShopPaymentStatus.CAPTURED,
       },
-      { new: true },
-    );
+    });
 
     return updated || transaction;
   }
@@ -270,18 +273,23 @@ export class PaymentService {
     orderId: string,
     gatewayOrderId: string,
     failureReason: string,
-  ): Promise<PaymentTransactionDocument> {
-    const transaction = await PaymentTransactionModel.findOneAndUpdate(
-      {
-        orderId: new mongoose.Types.ObjectId(orderId),
-        gatewayOrderId,
-      },
-      {
-        status: PaymentStatus.FAILED,
-        gatewayResponse: { failure_reason: failureReason },
-      },
-      { new: true },
-    );
+  ): Promise<ShopPaymentTransaction> {
+    // Mongo findOneAndUpdate on a non-unique (orderId, gatewayOrderId) filter.
+    // Prisma has no atomic find-and-update on non-unique keys, so read then
+    // update by id inside a transaction to keep the two writes ordered.
+    const transaction = await prisma.$transaction(async (tx) => {
+      const found = await tx.shopPaymentTransaction.findFirst({
+        where: { orderId, gatewayOrderId },
+      });
+      if (!found) return null;
+      return tx.shopPaymentTransaction.update({
+        where: { id: found.id },
+        data: {
+          status: ShopPaymentStatus.FAILED,
+          gatewayResponse: { failure_reason: failureReason },
+        },
+      });
+    });
 
     if (!transaction) {
       throw new Error("Payment transaction not found");
@@ -298,17 +306,17 @@ export class PaymentService {
     eventId: string,
     eventType: string,
     payload: any,
-  ): Promise<PaymentTransactionDocument> {
-    // Check for duplicate event
-    const existingTransaction = await PaymentTransactionModel.findOne({
-      idempotencyKey: `webhook-${eventId}`,
+  ): Promise<ShopPaymentTransaction> {
+    // Check for duplicate event (idempotencyKey is unique).
+    const existingTransaction = await prisma.shopPaymentTransaction.findUnique({
+      where: { idempotencyKey: `webhook-${eventId}` },
     });
 
     if (existingTransaction) {
       return existingTransaction; // Duplicate event - return existing
     }
 
-    let transaction: PaymentTransactionDocument | null = null;
+    let transaction: ShopPaymentTransaction | null = null;
 
     if (
       eventType === "payment.authorized" ||
@@ -316,18 +324,23 @@ export class PaymentService {
     ) {
       const payment = payload.payload.payment;
 
-      transaction = await PaymentTransactionModel.findOneAndUpdate(
-        {
-          gatewayOrderId: payment.order_id,
-          gatewayPaymentId: payment.id,
-        },
-        {
-          status: PaymentStatus.CAPTURED,
-          webhookData: payload,
-          idempotencyKey: `webhook-${eventId}`, // Update idempotency key
-        },
-        { new: true },
-      );
+      transaction = await prisma.$transaction(async (tx) => {
+        const found = await tx.shopPaymentTransaction.findFirst({
+          where: {
+            gatewayOrderId: payment.order_id,
+            gatewayPaymentId: payment.id,
+          },
+        });
+        if (!found) return null;
+        return tx.shopPaymentTransaction.update({
+          where: { id: found.id },
+          data: {
+            status: ShopPaymentStatus.CAPTURED,
+            webhookData: payload,
+            idempotencyKey: `webhook-${eventId}`, // Update idempotency key
+          },
+        });
+      });
 
       if (!transaction) {
         throw new Error("Payment transaction not found");
@@ -335,17 +348,20 @@ export class PaymentService {
     } else if (eventType === "payment.failed") {
       const payment = payload.payload.payment;
 
-      transaction = await PaymentTransactionModel.findOneAndUpdate(
-        {
-          gatewayOrderId: payment.order_id,
-        },
-        {
-          status: PaymentStatus.FAILED,
-          webhookData: payload,
-          idempotencyKey: `webhook-${eventId}`,
-        },
-        { new: true },
-      );
+      transaction = await prisma.$transaction(async (tx) => {
+        const found = await tx.shopPaymentTransaction.findFirst({
+          where: { gatewayOrderId: payment.order_id },
+        });
+        if (!found) return null;
+        return tx.shopPaymentTransaction.update({
+          where: { id: found.id },
+          data: {
+            status: ShopPaymentStatus.FAILED,
+            webhookData: payload,
+            idempotencyKey: `webhook-${eventId}`,
+          },
+        });
+      });
 
       if (!transaction) {
         throw new Error("Payment transaction not found");
@@ -384,7 +400,7 @@ export class RefundService {
     reason: string,
   ): Promise<string> {
     // Validate order exists
-    const order = await OrderModel.findById(orderId);
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
 
     if (!order) {
       throw new Error("Order not found");
@@ -394,7 +410,7 @@ export class RefundService {
     // the first refund flips paymentStatus to REFUND_INITIATED, so a second
     // call no longer sees CAPTURED and is rejected (prevents over-refunding
     // beyond the amount actually collected).
-    if (order.paymentStatus !== PaymentStatus.CAPTURED) {
+    if (order.paymentStatus !== ShopPaymentStatus.CAPTURED) {
       throw new Error("Order is not in a refundable (captured) state");
     }
 
@@ -418,8 +434,10 @@ export class RefundService {
     );
 
     // Update order status
-    order.paymentStatus = PaymentStatus.REFUND_INITIATED;
-    await order.save();
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { paymentStatus: ShopPaymentStatus.REFUND_INITIATED },
+    });
 
     return refundId;
   }
@@ -431,14 +449,16 @@ export class RefundService {
     orderId: string,
     refundId: string,
   ): Promise<void> {
-    const order = await OrderModel.findById(orderId);
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
 
     if (!order) {
       throw new Error("Order not found");
     }
 
-    order.paymentStatus = PaymentStatus.REFUNDED;
-    await order.save();
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { paymentStatus: ShopPaymentStatus.REFUNDED },
+    });
   }
 
   /**
@@ -457,8 +477,8 @@ export class RefundService {
     const paymentId = refund.payment_id;
 
     // Find order by payment ID
-    const paymentTransaction = await PaymentTransactionModel.findOne({
-      gatewayPaymentId: paymentId,
+    const paymentTransaction = await prisma.shopPaymentTransaction.findFirst({
+      where: { gatewayPaymentId: paymentId },
     });
 
     if (!paymentTransaction) {
@@ -466,17 +486,19 @@ export class RefundService {
     }
 
     // Find associated order
-    const order = await OrderModel.findById(
-      paymentTransaction.orderId.toString(),
-    );
+    const order = await prisma.order.findUnique({
+      where: { id: paymentTransaction.orderId },
+    });
 
     if (!order) {
       throw new Error("Order not found for refund");
     }
 
     // Update order status to refunded
-    order.paymentStatus = PaymentStatus.REFUNDED;
-    await order.save();
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { paymentStatus: ShopPaymentStatus.REFUNDED },
+    });
 
     // Emit notification (implement in NotificationService)
   }

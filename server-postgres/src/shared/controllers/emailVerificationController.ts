@@ -3,7 +3,7 @@ import {
   sendVerificationCode,
   verifyCode,
 } from "../services/EmailVerificationService";
-import { Venue } from "../../client/models/Venue";
+import prisma from "../../lib/prisma";
 
 /**
  * Send verification code to email
@@ -73,7 +73,7 @@ export const verifyEmailHandler = async (
     }
 
     // Mark venue email as verified
-    const venue = await Venue.findById(venueId);
+    const venue = await prisma.venue.findUnique({ where: { id: venueId } });
 
     if (!venue) {
       res.status(404).json({
@@ -91,14 +91,16 @@ export const verifyEmailHandler = async (
       return;
     }
 
-    venue.emailVerified = true;
-    await venue.save();
+    const updated = await prisma.venue.update({
+      where: { id: venueId },
+      data: { emailVerified: true },
+    });
 
     res.status(200).json({
       success: true,
       message: "Email verified successfully",
       data: {
-        venueId: venue._id,
+        venueId: updated.id,
         emailVerified: true,
       },
     });

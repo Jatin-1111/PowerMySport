@@ -1,4 +1,19 @@
-import type { PathwayLevel } from "../models/SportPathway";
+// TODO(prisma): `PathwayLevel` used to be imported from the Mongoose
+// SportPathway model. In Postgres, SportPathway.levels is a Json column (not
+// normalized into a child table), so Prisma generates no dedicated type for a
+// single level. We keep the shape locally as the read contract for one level.
+// This file performs NO database access — it only builds the chat system
+// prompt from a pathway object passed in by the controller.
+interface PathwayLevel {
+  level: number;
+  label: string;
+  title: string;
+  description: string;
+  keyFocus: string;
+  ageRange: string;
+  competitions: string;
+  steps: string[];
+}
 
 interface PathwayContext {
   sportName: string;

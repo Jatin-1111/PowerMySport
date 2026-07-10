@@ -1,5 +1,5 @@
 import redis from "../../config/redis";
-import { User } from "../../client/models/User";
+import prisma from "../../lib/prisma";
 import { getNotificationSocket } from "../../client/sockets/notificationSocket";
 
 const WRITE_THROTTLE_MS = 60 * 1_000;
@@ -24,10 +24,12 @@ const persistLastActive = async (
 ): Promise<void> => {
   if (!force && !shouldWriteNow(userId)) return;
   try {
-    await User.updateOne(
-      { _id: userId },
-      { $set: { lastActiveAt: new Date() } },
-    );
+    // updateMany (not update) preserves the Mongo updateOne semantics: a missing
+    // user is a no-op rather than a thrown P2025.
+    await prisma.user.updateMany({
+      where: { id: userId },
+      data: { lastActiveAt: new Date() },
+    });
   } catch (error) {
     console.error("Failed to persist user lastActiveAt:", error);
   }

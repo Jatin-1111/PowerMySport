@@ -1,9 +1,8 @@
 import crypto from "crypto";
-import mongoose from "mongoose";
-import { Booking } from "../../client/models/Booking";
-import { Player } from "../../client/models/Player";
-import { User, UserDocument } from "../../client/models/User";
-import { Expert } from "../../client/models/ExpertProfile";
+import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
+import type { Player, Address } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import {
   sendPasswordResetEmail,
   sendWelcomeEmail,
@@ -15,6 +14,58 @@ import { OAuth2Client } from "google-auth-library";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const googleOAuthClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+/**
+ * bcrypt work factor. Was a Mongoose pre-save hook (`bcrypt.genSalt(12)` +
+ * `bcrypt.hash`) — relocated into this service per PORTING_GUIDE §3. Hashing
+ * now happens explicitly before every `prisma.user.create` and before any
+ * password update.
+ */
+const BCRYPT_ROUNDS = 12;
+
+const hashPassword = async (plain: string): Promise<string> =>
+  bcrypt.hash(plain, BCRYPT_ROUNDS);
+
+/**
+ * Replacement for the old `UserDocument.comparePassword` instance method.
+ * `password` is nullable (Google-only accounts have no password), so a missing
+ * hash always fails the comparison.
+ */
+const comparePassword = async (
+  plain: string,
+  hashed: string | null,
+): Promise<boolean> => {
+  if (!hashed) return false;
+  return bcrypt.compare(plain, hashed);
+};
+
+/**
+ * A User row with its normalized child tables loaded. These children were
+ * embedded arrays on the old Mongoose document, so eager-loading them keeps the
+ * return shape identical for controllers that read `user.addresses` etc.
+ */
+export type UserWithRelations = Prisma.UserGetPayload<{
+  include: { addresses: true; pushSubscriptions: true; refundMethods: true };
+}>;
+
+const USER_INCLUDE = {
+  addresses: { orderBy: { createdAt: "asc" as const } },
+  pushSubscriptions: true,
+  refundMethods: true,
+} as const;
+
+const loadUserWithRelations = async (
+  userId: string,
+): Promise<UserWithRelations> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: USER_INCLUDE,
+  });
+  if (!user) {
+    throw new Error("User not found");
+  }
+  return user;
+};
 
 export interface VerifiedGoogleIdentity {
   googleId: string;
@@ -90,42 +141,55 @@ export interface LoginPayload {
 
 export const registerUser = async (
   payload: RegisterPayload,
-): Promise<UserDocument> => {
-  const existingUser = await User.findOne({
-    $or: [{ email: payload.email }, { phone: payload.phone }],
+): Promise<UserWithRelations> => {
+  const existingUser = await prisma.user.findFirst({
+    where: { OR: [{ email: payload.email }, { phone: payload.phone }] },
   });
 
   if (existingUser) {
     throw new Error("User with this email or phone already exists");
   }
 
-  const user = new User({ ...payload });
   const now = new Date();
-  user.legalConsents = {
-    terms: {
-      accepted: payload.acceptedTerms,
-      acceptedAt: now,
-      version: LEGAL_POLICY_VERSION,
+  const hashedPassword = await hashPassword(payload.password);
+
+  const user = await prisma.user.create({
+    data: {
+      name: payload.name,
+      email: payload.email,
+      phone: payload.phone,
+      password: hashedPassword,
+      role: payload.role,
+      ...(payload.userType ? { userType: payload.userType } : {}),
+      legalConsents: {
+        terms: {
+          accepted: payload.acceptedTerms,
+          acceptedAt: now.toISOString(),
+          version: LEGAL_POLICY_VERSION,
+        },
+        privacy: {
+          accepted: payload.acceptedPrivacy,
+          acceptedAt: now.toISOString(),
+          version: LEGAL_POLICY_VERSION,
+        },
+      },
     },
-    privacy: {
-      accepted: payload.acceptedPrivacy,
-      acceptedAt: now,
-      version: LEGAL_POLICY_VERSION,
-    },
-  };
-  await user.save();
+    include: USER_INCLUDE,
+  });
 
   // For self-registered experts create a blank profile pending admin review.
   if (payload.role === "EXPERT") {
-    await Expert.create({
-      userId: user._id,
-      bio: "",
-      sports: [],
-      expertise: [],
-      sessionFee: 0,
-      sessionMode: "ONLINE",
-      isActive: false,
-      verificationStatus: "UNVERIFIED",
+    await prisma.expert.create({
+      data: {
+        userId: user.id,
+        bio: "",
+        sports: [],
+        expertise: [],
+        sessionFee: 0,
+        sessionMode: "ONLINE",
+        isActive: false,
+        verificationStatus: "UNVERIFIED",
+      },
     });
   }
 
@@ -143,14 +207,17 @@ export const registerUser = async (
 
 export const loginUser = async (
   payload: LoginPayload,
-): Promise<UserDocument> => {
-  const user = await User.findOne({ email: payload.email }).select("+password");
+): Promise<UserWithRelations> => {
+  const user = await prisma.user.findFirst({
+    where: { email: payload.email },
+    include: USER_INCLUDE,
+  });
 
   if (!user) {
     throw new Error("Invalid email or password");
   }
 
-  const isPasswordValid = await user.comparePassword(payload.password);
+  const isPasswordValid = await comparePassword(payload.password, user.password);
 
   if (!isPasswordValid) {
     throw new Error("Invalid email or password");
@@ -159,14 +226,14 @@ export const loginUser = async (
   return user;
 };
 
-export const getUserById = async (id: string): Promise<UserDocument | null> => {
-  return User.findById(id).select("+password");
+export const getUserById = async (
+  id: string,
+): Promise<UserWithRelations | null> => {
+  return prisma.user.findUnique({ where: { id }, include: USER_INCLUDE });
 };
 
 export const requestPasswordReset = async (email: string): Promise<string> => {
-  const user = await User.findOne({ email }).select(
-    "+resetPasswordToken +resetPasswordExpires",
-  );
+  const user = await prisma.user.findFirst({ where: { email } });
 
   if (!user) {
     // Return the same message as success — never reveal whether the email exists
@@ -180,10 +247,13 @@ export const requestPasswordReset = async (email: string): Promise<string> => {
     .update(resetToken)
     .digest("hex");
 
-  user.resetPasswordToken = hashedToken;
-  user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
-
-  await user.save();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: new Date(Date.now() + 3600000), // 1 hour
+    },
+  });
 
   // Send password reset email asynchronously
   sendPasswordResetEmail({
@@ -203,20 +273,27 @@ export const resetPassword = async (
 ): Promise<void> => {
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-  const user = await User.findOne({
-    resetPasswordToken: hashedToken,
-    resetPasswordExpires: { $gt: new Date() },
-  }).select("+resetPasswordToken +resetPasswordExpires +password");
+  const user = await prisma.user.findFirst({
+    where: {
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { gt: new Date() },
+    },
+  });
 
   if (!user) {
     throw new Error("Invalid or expired reset token");
   }
 
-  user.password = newPassword;
-  delete user.resetPasswordToken;
-  delete user.resetPasswordExpires;
+  const hashedPassword = await hashPassword(newPassword);
 
-  await user.save();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      password: hashedPassword,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+    },
+  });
 
   // Security confirmation that the password was changed (fire-and-forget).
   if (user.email) {
@@ -237,7 +314,7 @@ export const changePassword = async (
   currentPassword: string,
   newPassword: string,
 ): Promise<void> => {
-  const user = await User.findById(userId).select("+password");
+  const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     throw new Error("User not found");
   }
@@ -248,13 +325,17 @@ export const changePassword = async (
     );
   }
 
-  const isValid = await user.comparePassword(currentPassword);
+  const isValid = await comparePassword(currentPassword, user.password);
   if (!isValid) {
     throw new Error("Current password is incorrect");
   }
 
-  user.password = newPassword;
-  await user.save();
+  const hashedPassword = await hashPassword(newPassword);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: hashedPassword },
+  });
 
   if (user.email) {
     sendPasswordChangedEmail({ name: user.name, email: user.email }).catch(
@@ -277,36 +358,46 @@ export const deleteAccount = async (
   userId: string,
   currentPassword: string,
 ): Promise<void> => {
-  const user = await User.findById(userId).select("+password");
+  const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     throw new Error("User not found");
   }
 
   if (user.password) {
-    const isValid = await user.comparePassword(currentPassword);
+    const isValid = await comparePassword(currentPassword, user.password);
     if (!isValid) {
       throw new Error("Password is incorrect");
     }
   }
 
-  const anonymizedTag = `deleted-${user._id.toString()}`;
-  user.name = "Deleted User";
-  user.email = `${anonymizedTag}@deleted.powermysport.com`;
-  user.phone = anonymizedTag;
-  delete user.password;
-  delete user.googleId;
-  delete user.photoUrl;
-  delete user.photoS3Key;
-  user.addresses = [];
-  delete user.shippingAddress;
-  user.refundMethods = [];
-  delete user.resetPasswordToken;
-  delete user.resetPasswordExpires;
-  user.pushSubscriptions = [];
-  user.isActive = false;
-  user.deactivatedAt = new Date();
+  const anonymizedTag = `deleted-${user.id}`;
 
-  await user.save();
+  // The embedded arrays are now child tables — clearing them means deleting the
+  // child rows (deleteMany). shippingAddress is a nullable Json column, so it is
+  // set to SQL NULL via Prisma.JsonNull. defaultAddressId is cleared too since
+  // every address is being removed (the old code left it dangling, but here the
+  // pointer must not reference a now-deleted address).
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      name: "Deleted User",
+      email: `${anonymizedTag}@deleted.powermysport.com`,
+      phone: anonymizedTag,
+      password: null,
+      googleId: null,
+      photoUrl: null,
+      photoS3Key: null,
+      shippingAddress: Prisma.JsonNull,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+      defaultAddressId: null,
+      isActive: false,
+      deactivatedAt: new Date(),
+      addresses: { deleteMany: {} },
+      refundMethods: { deleteMany: {} },
+      pushSubscriptions: { deleteMany: {} },
+    },
+  });
 };
 
 export interface GoogleLoginPayload {
@@ -323,20 +414,28 @@ export interface GoogleLoginPayload {
 
 export const googleLogin = async (
   payload: GoogleLoginPayload,
-): Promise<UserDocument> => {
-  let user = await User.findOne({ googleId: payload.googleId });
+): Promise<UserWithRelations> => {
+  let user = await prisma.user.findFirst({
+    where: { googleId: payload.googleId },
+    include: USER_INCLUDE,
+  });
 
   if (!user) {
     // Check if user exists with email
-    user = await User.findOne({ email: payload.email });
+    const existingByEmail = await prisma.user.findFirst({
+      where: { email: payload.email },
+    });
 
-    if (user) {
+    if (existingByEmail) {
       // Link Google account to existing user
-      user.googleId = payload.googleId;
-      if (payload.photoUrl) {
-        user.photoUrl = payload.photoUrl;
-      }
-      await user.save();
+      user = await prisma.user.update({
+        where: { id: existingByEmail.id },
+        data: {
+          googleId: payload.googleId,
+          ...(payload.photoUrl ? { photoUrl: payload.photoUrl } : {}),
+        },
+        include: USER_INCLUDE,
+      });
     } else {
       if (payload.action === "login") {
         throw new Error(
@@ -356,28 +455,30 @@ export const googleLogin = async (
       // Generate unique phone from Google ID to avoid phone field collision
       const uniquePhoneId = `goog_${payload.googleId.slice(0, 15)}_${Date.now()}`;
 
-      user = new User({
-        name: payload.name,
-        email: payload.email,
-        googleId: payload.googleId,
-        photoUrl: payload.photoUrl,
-        phone: uniquePhoneId, // Unique ID instead of fake phone number
-        role: payload.role || "Player",
-        userType: payload.userType || "Player",
-        legalConsents: {
-          terms: {
-            accepted: true,
-            acceptedAt: now,
-            version: LEGAL_POLICY_VERSION,
-          },
-          privacy: {
-            accepted: true,
-            acceptedAt: now,
-            version: LEGAL_POLICY_VERSION,
+      user = await prisma.user.create({
+        data: {
+          name: payload.name,
+          email: payload.email,
+          googleId: payload.googleId,
+          ...(payload.photoUrl ? { photoUrl: payload.photoUrl } : {}),
+          phone: uniquePhoneId, // Unique ID instead of fake phone number
+          role: payload.role || "Player",
+          userType: payload.userType || "Player",
+          legalConsents: {
+            terms: {
+              accepted: true,
+              acceptedAt: now.toISOString(),
+              version: LEGAL_POLICY_VERSION,
+            },
+            privacy: {
+              accepted: true,
+              acceptedAt: now.toISOString(),
+              version: LEGAL_POLICY_VERSION,
+            },
           },
         },
+        include: USER_INCLUDE,
       });
-      await user.save();
 
       // Send welcome email for new Google users
       sendWelcomeEmail({
@@ -408,22 +509,25 @@ export interface GraduateDependentPayload {
  */
 export const graduateDependent = async (
   payload: GraduateDependentPayload,
-): Promise<UserDocument> => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
+): Promise<UserWithRelations> => {
+  // prisma.$transaction auto-commits on success and auto-rolls-back if the
+  // callback throws — replacing the manual mongoose startSession/commit/abort.
+  const newUser = await prisma.$transaction(async (tx) => {
     // Find the parent user
-    const parent = await User.findById(payload.parentId).session(session);
+    const parent = await tx.user.findUnique({
+      where: { id: payload.parentId },
+    });
     if (!parent) {
       throw new Error("Parent user not found");
     }
 
-    const dependent = await Player.findOne({
-      _id: payload.dependentId,
-      userId: payload.parentId,
-      type: "DEPENDENT",
-    }).session(session);
+    const dependent = await tx.player.findFirst({
+      where: {
+        id: payload.dependentId,
+        userId: payload.parentId,
+        type: "DEPENDENT",
+      },
+    });
 
     if (!dependent) {
       throw new Error("Dependent not found");
@@ -435,64 +539,56 @@ export const graduateDependent = async (
     }
 
     // Check if email or phone already exists
-    const existingUser = await User.findOne({
-      $or: [{ email: payload.email }, { phone: payload.phone }],
-    }).session(session);
+    const existingUser = await tx.user.findFirst({
+      where: { OR: [{ email: payload.email }, { phone: payload.phone }] },
+    });
     if (existingUser) {
       throw new Error("User with this email or phone already exists");
     }
 
     // Create new independent user account
-    const newUser = new User({
-      name: dependent.name,
-      email: payload.email,
-      phone: payload.phone,
-      password: payload.password,
-      role: "Player",
-      userType: "Player",
-    });
-    await newUser.save({ session });
-
-    // Transfer all bookings where this dependent was the participant
-    const dependentObjectId = dependent._id;
-    const result = await Booking.updateMany(
-      { participantId: dependentObjectId },
-      {
-        $set: {
-          userId: newUser._id,
-        },
-        $unset: {
-          participantId: "",
-        },
+    const hashedPassword = await hashPassword(payload.password);
+    const created = await tx.user.create({
+      data: {
+        name: dependent.name,
+        email: payload.email,
+        phone: payload.phone,
+        password: hashedPassword,
+        role: "Player",
+        userType: "Player",
       },
-      { session },
-    );
+      include: USER_INCLUDE,
+    });
 
-    console.log(`Transferred ${result.modifiedCount} bookings to new user`);
+    // Transfer all bookings where this dependent was the participant.
+    // The old $set userId / $unset participantId becomes: set userId and null
+    // out participantId in one updateMany.
+    const result = await tx.booking.updateMany({
+      where: { participantId: dependent.id },
+      data: {
+        userId: created.id,
+        participantId: null,
+      },
+    });
+
+    console.log(`Transferred ${result.count} bookings to new user`);
 
     // Remove the dependent from Player collection
-    await Player.deleteOne({ _id: dependent._id }).session(session);
+    await tx.player.delete({ where: { id: dependent.id } });
 
-    // Commit the transaction
-    await session.commitTransaction();
+    return created;
+  });
 
-    // Send welcome email to the new adult user
-    sendWelcomeEmail({
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-    }).catch((error) => {
-      console.error("Failed to send welcome email:", error);
-    });
+  // Send welcome email to the new adult user
+  sendWelcomeEmail({
+    name: newUser.name,
+    email: newUser.email,
+    role: newUser.role,
+  }).catch((error) => {
+    console.error("Failed to send welcome email:", error);
+  });
 
-    return newUser;
-  } catch (error) {
-    // Rollback transaction on error
-    await session.abortTransaction();
-    throw error;
-  } finally {
-    session.endSession();
-  }
+  return newUser;
 };
 
 export interface AddDependentPayload {
@@ -521,8 +617,8 @@ function calculateAge(dob: Date): number {
 export const addDependent = async (
   userId: string,
   payload: AddDependentPayload,
-): Promise<any> => {
-  const user = await User.findById(userId);
+): Promise<Player> => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     throw new Error("User not found");
   }
@@ -543,25 +639,26 @@ export const addDependent = async (
     }
   }
 
-  const newDependent = new Player({
-    userId: user._id,
-    type: "DEPENDENT",
-    name: payload.name,
-    age: age,
-    dob: parsedDob,
-    gender: payload.gender,
-    relation: payload.relation,
-    sportsFocus: payload.sportsFocus || payload.sports || [],
-    skillLevel: payload.skillLevel || "",
-    yearsPlaying: payload.yearsPlaying,
-    personalityTags: payload.personalityTags,
-    primaryObjective: payload.primaryObjective,
-    weeklyTimeCommitment: payload.weeklyTimeCommitment,
-    budgetTier: payload.budgetTier,
-    location: payload.location,
+  const newDependent = await prisma.player.create({
+    data: {
+      userId: user.id,
+      type: "DEPENDENT",
+      name: payload.name,
+      age,
+      dob: parsedDob,
+      gender: payload.gender,
+      relation: payload.relation,
+      sportsFocus: payload.sportsFocus || payload.sports || [],
+      skillLevel: payload.skillLevel || "",
+      yearsPlaying: payload.yearsPlaying,
+      personalityTags: payload.personalityTags,
+      primaryObjective: payload.primaryObjective,
+      weeklyTimeCommitment: payload.weeklyTimeCommitment,
+      budgetTier: payload.budgetTier,
+      location: payload.location,
+    },
   });
 
-  await newDependent.save();
   return newDependent;
 };
 
@@ -569,63 +666,63 @@ export const updateDependent = async (
   userId: string,
   dependentId: string,
   payload: Partial<AddDependentPayload>,
-): Promise<any> => {
-  const dependent = await Player.findOne({
-    _id: dependentId,
-    userId,
-    type: "DEPENDENT",
+): Promise<Player> => {
+  const dependent = await prisma.player.findFirst({
+    where: { id: dependentId, userId, type: "DEPENDENT" },
   });
   if (!dependent) {
     throw new Error("Dependent not found");
   }
 
-  if (payload.name) dependent.name = payload.name;
+  const data: Prisma.PlayerUpdateInput = {};
+
+  if (payload.name) data.name = payload.name;
 
   if (payload.dob) {
     const parsedDob = new Date(payload.dob);
     if (!isNaN(parsedDob.getTime())) {
-      dependent.dob = parsedDob;
-      dependent.age = calculateAge(parsedDob);
+      data.dob = parsedDob;
+      data.age = calculateAge(parsedDob);
     }
   } else if (payload.age !== undefined) {
-    dependent.age = payload.age;
+    data.age = payload.age;
   }
 
-  if (payload.gender) dependent.gender = payload.gender;
-  if (payload.relation) dependent.relation = payload.relation;
-  if (payload.sportsFocus) dependent.sportsFocus = payload.sportsFocus;
-  if (payload.sports) dependent.sportsFocus = payload.sports;
-  if (payload.skillLevel) dependent.skillLevel = payload.skillLevel;
+  if (payload.gender) data.gender = payload.gender;
+  if (payload.relation) data.relation = payload.relation;
+  if (payload.sportsFocus) data.sportsFocus = payload.sportsFocus;
+  if (payload.sports) data.sportsFocus = payload.sports;
+  if (payload.skillLevel) data.skillLevel = payload.skillLevel;
   if (payload.yearsPlaying !== undefined)
-    dependent.yearsPlaying = payload.yearsPlaying;
-  if (payload.personalityTags)
-    dependent.personalityTags = payload.personalityTags;
+    data.yearsPlaying = payload.yearsPlaying;
+  if (payload.personalityTags) data.personalityTags = payload.personalityTags;
   if (payload.primaryObjective)
-    dependent.primaryObjective = payload.primaryObjective;
+    data.primaryObjective = payload.primaryObjective;
   if (payload.weeklyTimeCommitment !== undefined)
-    dependent.weeklyTimeCommitment = payload.weeklyTimeCommitment;
-  if (payload.budgetTier) dependent.budgetTier = payload.budgetTier;
-  if (payload.location !== undefined) dependent.location = payload.location;
+    data.weeklyTimeCommitment = payload.weeklyTimeCommitment;
+  if (payload.budgetTier) data.budgetTier = payload.budgetTier;
+  if (payload.location !== undefined) data.location = payload.location;
 
-  await dependent.save();
-  return dependent;
+  const updated = await prisma.player.update({
+    where: { id: dependent.id },
+    data,
+  });
+  return updated;
 };
 
 export const deleteDependent = async (
   userId: string,
   dependentId: string,
 ): Promise<void> => {
-  const dependent = await Player.findOne({
-    _id: dependentId,
-    userId,
-    type: "DEPENDENT",
+  const dependent = await prisma.player.findFirst({
+    where: { id: dependentId, userId, type: "DEPENDENT" },
   });
   if (!dependent) {
     throw new Error("Dependent not found");
   }
 
-  const bookingCount = await Booking.countDocuments({
-    participantId: dependentId,
+  const bookingCount = await prisma.booking.count({
+    where: { participantId: dependentId },
   });
 
   if (bookingCount > 0) {
@@ -634,11 +731,20 @@ export const deleteDependent = async (
     );
   }
 
-  await Player.deleteOne({ _id: dependentId });
+  await prisma.player.delete({ where: { id: dependentId } });
 };
 
-export const getPlayersByUserId = async (userId: string): Promise<any[]> => {
-  return Player.find({ userId }).sort({ type: -1, name: 1 });
+export const getPlayersByUserId = async (userId: string): Promise<Player[]> => {
+  // TODO(prisma): the old Mongo sort `{ type: -1 }` sorts the PlayerType value
+  // lexicographically as a string ("SELF" > "DEPENDENT" => SELF first). In
+  // Postgres an enum orders by its *declaration order* (SELF=0, DEPENDENT=1),
+  // so `type: "desc"` yields DEPENDENT first — the opposite. If the intent is
+  // "SELF listed first", switch this to `{ type: "asc" }`. Kept as a mechanical
+  // `desc` translation for now.
+  return prisma.player.findMany({
+    where: { userId },
+    orderBy: [{ type: "desc" }, { name: "asc" }],
+  });
 };
 
 export interface UpdateProfilePayload {
@@ -647,7 +753,12 @@ export interface UpdateProfilePayload {
   phone?: string;
   dob?: string | Date;
   userType?:
-    "Parent" | "Player" | "Coach" | "Academy" | "VenueLister" | "Admin";
+    | "Parent"
+    | "Player"
+    | "Coach"
+    | "Academy"
+    | "VenueLister"
+    | "Admin";
   playerProfile?: {
     sports?: string[];
     yearsPlaying?: number;
@@ -679,80 +790,114 @@ export interface UpdateProfilePayload {
 export const updateProfile = async (
   userId: string,
   payload: UpdateProfilePayload,
-): Promise<UserDocument> => {
-  const user = await User.findById(userId);
+): Promise<UserWithRelations> => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     throw new Error("User not found");
   }
 
   // Check if new email/phone already exists (from other users)
   if (payload.email && payload.email !== user.email) {
-    const existingEmailUser = await User.findOne({ email: payload.email });
+    const existingEmailUser = await prisma.user.findFirst({
+      where: { email: payload.email },
+    });
     if (existingEmailUser) {
       throw new Error("Email already in use");
     }
   }
 
   if (payload.phone && payload.phone !== user.phone) {
-    const existingPhoneUser = await User.findOne({ phone: payload.phone });
+    const existingPhoneUser = await prisma.user.findFirst({
+      where: { phone: payload.phone },
+    });
     if (existingPhoneUser) {
       throw new Error("Phone number already in use");
     }
   }
 
   // Update user fields
-  if (payload.name) user.name = payload.name;
-  if (payload.email) user.email = payload.email;
-  if (payload.phone) user.phone = payload.phone;
-  if (payload.dob) user.dob = new Date(payload.dob);
+  const userData: Prisma.UserUpdateInput = {};
+  if (payload.name) userData.name = payload.name;
+  if (payload.email) userData.email = payload.email;
+  if (payload.phone) userData.phone = payload.phone;
+  if (payload.dob) userData.dob = new Date(payload.dob);
 
-  let userTypeToUpdate: any = undefined;
+  // userType change: the old Mongo code had to bypass Mongoose and do a raw
+  // collection update because `userType` was the schema discriminatorKey.
+  // Prisma has no discriminator, so we simply set the column directly.
   if (payload.userType && payload.userType !== user.userType) {
-    userTypeToUpdate = payload.userType;
+    userData.userType = payload.userType;
   }
 
   // Update player profile if provided
   if (payload.playerProfile && Array.isArray(payload.playerProfile.sports)) {
-    let selfPlayer = await Player.findOne({ userId, type: "SELF" });
+    const pp = payload.playerProfile;
+
+    const pfFields: {
+      sportsFocus: string[];
+      yearsPlaying?: number;
+      personalityTags?: string[];
+      primaryObjective?: "Recreational" | "Fitness" | "Compete";
+      weeklyTimeCommitment?: number;
+      budgetTier?: "Budget" | "Moderate" | "Premium";
+      location?: string;
+      psSatisfiedPrereqs?: string[];
+      psCurrentGpa?: number;
+      psTargetDivision?: string;
+      psGraduationYear?: number;
+    } = { sportsFocus: pp.sports };
+
+    if (pp.yearsPlaying !== undefined) pfFields.yearsPlaying = pp.yearsPlaying;
+    if (pp.personalityTags) pfFields.personalityTags = pp.personalityTags;
+    if (pp.primaryObjective) pfFields.primaryObjective = pp.primaryObjective;
+    if (pp.weeklyTimeCommitment !== undefined)
+      pfFields.weeklyTimeCommitment = pp.weeklyTimeCommitment;
+    if (pp.budgetTier) pfFields.budgetTier = pp.budgetTier;
+    if (pp.location !== undefined) pfFields.location = pp.location;
+
+    // The embedded `pathwayState` object was flattened into ps* columns on the
+    // Player model. The old code merged the sub-object wholesale; here each key
+    // maps to its flattened column.
+    if (pp.pathwayState) {
+      const ps = pp.pathwayState;
+      if (ps.satisfiedPrerequisites !== undefined)
+        pfFields.psSatisfiedPrereqs = ps.satisfiedPrerequisites;
+      if (ps.currentGpa !== undefined) {
+        // TODO(prisma): psCurrentGpa is a Float column but the payload/UI sends
+        // currentGpa as a string (Mongo stored it schemaless). Coerce here;
+        // non-numeric input is dropped rather than throwing.
+        const gpa = Number(ps.currentGpa);
+        if (!Number.isNaN(gpa)) pfFields.psCurrentGpa = gpa;
+      }
+      if (ps.targetDivision !== undefined)
+        pfFields.psTargetDivision = ps.targetDivision;
+      if (ps.graduationYear !== undefined)
+        pfFields.psGraduationYear = ps.graduationYear;
+    }
+
+    const selfPlayer = await prisma.player.findFirst({
+      where: { userId, type: "SELF" },
+    });
+
     if (!selfPlayer) {
-      selfPlayer = new Player({
-        userId: user._id,
-        type: "SELF",
-        name: user.name,
-        sportsFocus: payload.playerProfile.sports,
+      await prisma.player.create({
+        data: {
+          userId: user.id,
+          type: "SELF",
+          name: user.name,
+          ...pfFields,
+        },
       });
     } else {
-      if (payload.playerProfile.sports)
-        selfPlayer.sportsFocus = payload.playerProfile.sports;
+      await prisma.player.update({
+        where: { id: selfPlayer.id },
+        data: { ...pfFields },
+      });
     }
-
-    if (payload.playerProfile.yearsPlaying !== undefined)
-      selfPlayer.yearsPlaying = payload.playerProfile.yearsPlaying;
-    if (payload.playerProfile.personalityTags)
-      selfPlayer.personalityTags = payload.playerProfile.personalityTags;
-    if (payload.playerProfile.primaryObjective)
-      selfPlayer.primaryObjective = payload.playerProfile.primaryObjective;
-    if (payload.playerProfile.weeklyTimeCommitment !== undefined)
-      selfPlayer.weeklyTimeCommitment =
-        payload.playerProfile.weeklyTimeCommitment;
-    if (payload.playerProfile.budgetTier)
-      selfPlayer.budgetTier = payload.playerProfile.budgetTier;
-    if (payload.playerProfile.location !== undefined)
-      selfPlayer.location = payload.playerProfile.location;
-
-    if (payload.playerProfile.pathwayState) {
-      if (!selfPlayer.pathwayState) selfPlayer.pathwayState = {};
-      Object.assign(
-        selfPlayer.pathwayState,
-        payload.playerProfile.pathwayState,
-      );
-    }
-
-    await selfPlayer.save();
   }
 
   if (payload.shippingAddress) {
-    user.shippingAddress = {
+    userData.shippingAddress = {
       fullName: payload.shippingAddress.fullName,
       email: payload.shippingAddress.email,
       phone: payload.shippingAddress.phone,
@@ -767,18 +912,13 @@ export const updateProfile = async (
     };
   }
 
-  await user.save();
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: userData,
+    include: USER_INCLUDE,
+  });
 
-  if (userTypeToUpdate) {
-    await mongoose.connection
-      .collection("users")
-      .updateOne({ _id: user._id }, { $set: { userType: userTypeToUpdate } });
-    const updatedUser = await User.findById(userId);
-    if (!updatedUser) throw new Error("Failed to refetch updated user");
-    return updatedUser;
-  }
-
-  return user;
+  return updated;
 };
 
 /**
@@ -793,7 +933,7 @@ export const getProfilePictureUploadUrl = async (
   downloadUrl: string;
   key: string;
 }> => {
-  const user = await User.findById(userId);
+  const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     throw new Error("User not found");
   }
@@ -819,17 +959,17 @@ export const confirmProfilePictureUpload = async (
   userId: string,
   photoUrl: string,
   photoS3Key: string,
-): Promise<UserDocument> => {
-  const user = await User.findById(userId);
+): Promise<UserWithRelations> => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     throw new Error("User not found");
   }
 
-  user.photoUrl = photoUrl;
-  user.photoS3Key = photoS3Key;
-  await user.save();
-
-  return user;
+  return prisma.user.update({
+    where: { id: userId },
+    data: { photoUrl, photoS3Key },
+    include: USER_INCLUDE,
+  });
 };
 
 /**
@@ -848,44 +988,48 @@ export const addAddress = async (
     postalCode: string;
     country?: string;
   },
-): Promise<UserDocument> => {
-  const user = await User.findById(userId);
+): Promise<UserWithRelations> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { addresses: true },
+  });
   if (!user) {
     throw new Error("User not found");
-  }
-
-  if (!user.addresses) {
-    user.addresses = [];
   }
 
   // Canonicalize on write (Tier 0) so the stored value is consistent even if
   // the request bypassed the UI dropdown.
   const data = normalizeAddressInput(addressData);
 
-  const newAddress: any = {
-    fullName: data.fullName,
-    email: data.email,
-    phone: data.phone,
-    addressLine1: data.addressLine1,
-    ...(data.addressLine2 !== undefined
-      ? { addressLine2: data.addressLine2 }
-      : {}),
-    city: data.city,
-    state: data.state,
-    postalCode: data.postalCode,
-    country: data.country || "IN",
-    isDefault: user.addresses.length === 0, // First address is default
-  };
+  const isDefault = user.addresses.length === 0; // First address is default
 
-  user.addresses.push(newAddress);
+  const created = await prisma.address.create({
+    data: {
+      userId: user.id,
+      fullName: data.fullName!,
+      email: data.email!,
+      phone: data.phone!,
+      addressLine1: data.addressLine1!,
+      ...(data.addressLine2 !== undefined
+        ? { addressLine2: data.addressLine2 }
+        : {}),
+      city: data.city!,
+      state: data.state!,
+      postalCode: data.postalCode!,
+      country: data.country || "IN",
+      isDefault,
+    },
+  });
 
   // Set default address ID if this is the first address
-  if (user.addresses && user.addresses.length === 1 && user.addresses[0]!._id) {
-    user.defaultAddressId = user.addresses[0]!._id as any;
+  if (isDefault) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { defaultAddressId: created.id },
+    });
   }
 
-  await user.save();
-  return user;
+  return loadUserWithRelations(userId);
 };
 
 /**
@@ -905,15 +1049,16 @@ export const updateAddress = async (
     postalCode?: string;
     country?: string;
   },
-): Promise<UserDocument> => {
-  const user = await User.findById(userId);
-  if (!user || !user.addresses) {
+): Promise<UserWithRelations> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { addresses: true },
+  });
+  if (!user) {
     throw new Error("User or address not found");
   }
 
-  const address = user.addresses.find(
-    (addr) => addr._id?.toString() === addressId,
-  );
+  const address = user.addresses.find((addr) => addr.id === addressId);
   if (!address) {
     throw new Error("Address not found");
   }
@@ -922,20 +1067,22 @@ export const updateAddress = async (
   const data = normalizeAddressInput(addressData);
 
   // Update address fields
-  if (data.fullName) address.fullName = data.fullName;
-  if (data.email) address.email = data.email;
-  if (data.phone) address.phone = data.phone;
-  if (data.addressLine1) address.addressLine1 = data.addressLine1;
-  if (data.addressLine2 !== undefined) address.addressLine2 = data.addressLine2;
-  if (data.city) address.city = data.city;
-  if (data.state) address.state = data.state;
-  if (data.postalCode) address.postalCode = data.postalCode;
-  if (data.country) address.country = data.country;
+  const updateData: Prisma.AddressUpdateInput = {};
+  if (data.fullName) updateData.fullName = data.fullName;
+  if (data.email) updateData.email = data.email;
+  if (data.phone) updateData.phone = data.phone;
+  if (data.addressLine1) updateData.addressLine1 = data.addressLine1;
+  if (data.addressLine2 !== undefined)
+    updateData.addressLine2 = data.addressLine2;
+  if (data.city) updateData.city = data.city;
+  if (data.state) updateData.state = data.state;
+  if (data.postalCode) updateData.postalCode = data.postalCode;
+  if (data.country) updateData.country = data.country;
 
-  address.updatedAt = new Date();
+  // `updatedAt` is maintained automatically by the `@updatedAt` column.
+  await prisma.address.update({ where: { id: addressId }, data: updateData });
 
-  await user.save();
-  return user;
+  return loadUserWithRelations(userId);
 };
 
 /**
@@ -944,42 +1091,50 @@ export const updateAddress = async (
 export const deleteAddress = async (
   userId: string,
   addressId: string,
-): Promise<UserDocument> => {
-  const user = await User.findById(userId);
-  if (!user || !user.addresses) {
+): Promise<UserWithRelations> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { addresses: true },
+  });
+  if (!user) {
     throw new Error("User or address not found");
   }
 
-  const addressIndex = user.addresses.findIndex(
-    (addr) => addr._id?.toString() === addressId,
-  );
-  if (addressIndex === -1) {
+  const address = user.addresses.find((addr) => addr.id === addressId);
+  if (!address) {
     throw new Error("Address not found");
   }
 
-  user.addresses.splice(addressIndex, 1);
+  await prisma.address.delete({ where: { id: addressId } });
 
-  // If deleted address was default, set new default
-  if (
-    user.defaultAddressId?.toString() === addressId &&
-    user.addresses &&
-    user.addresses.length > 0
-  ) {
-    user.defaultAddressId = user.addresses[0]!._id as any;
-    user.addresses[0]!.isDefault = true;
-  } else if (user.addresses && user.addresses.length === 0) {
-    user.defaultAddressId = undefined as any;
+  const remaining = user.addresses.filter((addr) => addr.id !== addressId);
+
+  // If deleted address was default, promote the first remaining one.
+  let newDefaultId: string | null = user.defaultAddressId ?? null;
+  if (user.defaultAddressId === addressId && remaining.length > 0) {
+    newDefaultId = remaining[0]!.id;
+    await prisma.address.update({
+      where: { id: remaining[0]!.id },
+      data: { isDefault: true },
+    });
+  } else if (remaining.length === 0) {
+    newDefaultId = null;
   }
 
-  // Clear isDefault flag if no default is set
-  user.addresses.forEach((addr) => {
-    if (!user.defaultAddressId) {
-      addr.isDefault = false;
-    }
+  // Mirror the old "clear isDefault flag if no default is set" cleanup.
+  if (!newDefaultId) {
+    await prisma.address.updateMany({
+      where: { userId },
+      data: { isDefault: false },
+    });
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { defaultAddressId: newDefaultId },
   });
 
-  await user.save();
-  return user;
+  return loadUserWithRelations(userId);
 };
 
 /**
@@ -988,30 +1143,35 @@ export const deleteAddress = async (
 export const setDefaultAddress = async (
   userId: string,
   addressId: string,
-): Promise<UserDocument> => {
-  const user = await User.findById(userId);
-  if (!user || !user.addresses) {
+): Promise<UserWithRelations> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { addresses: true },
+  });
+  if (!user) {
     throw new Error("User or address not found");
   }
 
-  const address = user.addresses.find(
-    (addr) => addr._id?.toString() === addressId,
-  );
+  const address = user.addresses.find((addr) => addr.id === addressId);
   if (!address) {
     throw new Error("Address not found");
   }
 
-  // Clear previous default
-  user.addresses.forEach((addr) => {
-    addr.isDefault = false;
+  // Clear previous default, then set new default.
+  await prisma.address.updateMany({
+    where: { userId },
+    data: { isDefault: false },
+  });
+  await prisma.address.update({
+    where: { id: addressId },
+    data: { isDefault: true },
+  });
+  await prisma.user.update({
+    where: { id: userId },
+    data: { defaultAddressId: addressId },
   });
 
-  // Set new default
-  address.isDefault = true;
-  user.defaultAddressId = address._id as any;
-
-  await user.save();
-  return user;
+  return loadUserWithRelations(userId);
 };
 
 /**
@@ -1019,13 +1179,16 @@ export const setDefaultAddress = async (
  */
 export const getUserAddresses = async (
   userId: string,
-): Promise<UserDocument["addresses"]> => {
-  const user = await User.findById(userId).select("addresses defaultAddressId");
+): Promise<Address[]> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { addresses: { orderBy: { createdAt: "asc" } } },
+  });
   if (!user) {
     throw new Error("User not found");
   }
 
-  return user.addresses || [];
+  return user.addresses;
 };
 
 /**
@@ -1034,24 +1197,29 @@ export const getUserAddresses = async (
 export const linkGoogleAccount = async (
   userId: string,
   credential: string,
-): Promise<UserDocument> => {
+): Promise<UserWithRelations> => {
   const identity = await verifyGoogleCredential(credential);
 
-  const existingGoogleUser = await User.findOne({ googleId: identity.googleId });
-  if (existingGoogleUser && existingGoogleUser._id.toString() !== userId) {
+  const existingGoogleUser = await prisma.user.findFirst({
+    where: { googleId: identity.googleId },
+  });
+  if (existingGoogleUser && existingGoogleUser.id !== userId) {
     throw new Error("This Google account is already linked to another user.");
   }
 
-  const user = await User.findById(userId);
+  const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     throw new Error("User not found");
   }
 
-  user.googleId = identity.googleId;
+  const data: Prisma.UserUpdateInput = { googleId: identity.googleId };
   if (!user.photoUrl && identity.photoUrl) {
-    user.photoUrl = identity.photoUrl;
+    data.photoUrl = identity.photoUrl;
   }
 
-  await user.save();
-  return user;
+  return prisma.user.update({
+    where: { id: userId },
+    data,
+    include: USER_INCLUDE,
+  });
 };

@@ -2,10 +2,8 @@ import { Request, Response } from "express";
 import crypto from "crypto";
 import { PaymentService, RefundService } from "../services/PaymentService";
 import { OrderService } from "../../shop/services/EcommerceService";
-import {
-  Order as OrderModel,
-  PaymentTransaction as PaymentTransactionModel,
-} from "../../shop/models/Ecommerce";
+import { ShopPaymentStatus } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { NotificationService } from "../../client/services/NotificationService";
 import { sendEmail } from "../../utils/email";
 import { PaymentGateway, PaymentStatus } from "../../types/ecommerce";
@@ -293,8 +291,8 @@ export class WebhookController {
 
     try {
       // Find order by payment ID and mark as refunded
-      const order = await OrderModel.findOne({
-        paymentGatewayPaymentId: paymentId,
+      const order = await prisma.order.findFirst({
+        where: { paymentGatewayPaymentId: paymentId },
       });
 
       if (!order) {
@@ -305,12 +303,9 @@ export class WebhookController {
       }
 
       // Update order status
-      await this.refundService.confirmRefundCompletion(
-        order._id.toString(),
-        refund.id,
-      );
+      await this.refundService.confirmRefundCompletion(order.id, refund.id);
 
-      console.log(`[Webhook:Refund] Order ${order._id} marked as refunded`);
+      console.log(`[Webhook:Refund] Order ${order.id} marked as refunded`);
 
       // Emit notification
       await NotificationService.send({
@@ -318,7 +313,7 @@ export class WebhookController {
         type: "PAYMENT_REFUND",
         title: "Refund Processed",
         message: `Refund of INR ${refund.amount / 100} has been processed for order ${order.orderNumber}.`,
-        data: { orderId: order._id.toString(), orderNumber: order.orderNumber },
+        data: { orderId: order.id, orderNumber: order.orderNumber },
       });
 
       // Emit socket event
@@ -356,14 +351,14 @@ export class WebhookController {
 
     try {
       // Find order and log failure for manual review
-      const order = await OrderModel.findOne({
-        paymentGatewayPaymentId: paymentId,
+      const order = await prisma.order.findFirst({
+        where: { paymentGatewayPaymentId: paymentId },
       });
 
       if (order) {
         // Log the failure with full context
         console.error(
-          `[Webhook:Refund Failed] Order ${order._id} refund failed:`,
+          `[Webhook:Refund Failed] Order ${order.id} refund failed:`,
           refund.reason_code,
         );
 
@@ -377,7 +372,7 @@ export class WebhookController {
               <h2 style="color:#ef4444;">&#x274c; Refund Failed</h2>
               <p>A refund has failed and requires manual review by the support team.</p>
               <table style="border-collapse:collapse;width:100%;">
-                <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;">Order ID</td><td style="padding:8px;border:1px solid #e5e7eb;">${order._id}</td></tr>
+                <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;">Order ID</td><td style="padding:8px;border:1px solid #e5e7eb;">${order.id}</td></tr>
                 <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;">Order Number</td><td style="padding:8px;border:1px solid #e5e7eb;">${order.orderNumber}</td></tr>
                 <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;">Refund ID</td><td style="padding:8px;border:1px solid #e5e7eb;">${refund.id}</td></tr>
                 <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;">Payment ID</td><td style="padding:8px;border:1px solid #e5e7eb;">${paymentId}</td></tr>
@@ -403,7 +398,7 @@ export class WebhookController {
             title: "Refund Failed",
             message: `Unfortunately, the refund for order ${order.orderNumber} could not be processed automatically. Our support team has been notified and will resolve this within 1-2 business days.`,
             data: {
-              orderId: order._id.toString(),
+              orderId: order.id,
               orderNumber: order.orderNumber,
               refundId: refund.id,
               reasonCode: refund.reason_code,
@@ -532,7 +527,9 @@ export class WebhookRecoveryService {
     try {
       if (entry.eventType === "payment.captured") {
         // Re-confirm payment for the order referenced
-        const order = await OrderModel.findById(entry.reference);
+        const order = await prisma.order.findUnique({
+          where: { id: entry.reference },
+        });
         if (order && order.paymentGatewayPaymentId) {
           await orderService.confirmPayment(
             entry.reference,
@@ -571,7 +568,7 @@ export class WebhookRecoveryService {
    * gateway payment status is consistent with the stored order status.
    */
   async reconcileOrderPayment(orderId: string): Promise<boolean> {
-    const order = await OrderModel.findById(orderId);
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order) {
       throw new Error(`Order not found: ${orderId}`);
     }
@@ -597,12 +594,14 @@ export class WebhookRecoveryService {
       return false;
     }
 
-    const dbPaymentTx = await PaymentTransactionModel.findOne({ orderId });
+    const dbPaymentTx = await prisma.shopPaymentTransaction.findFirst({
+      where: { orderId },
+    });
     const dbStatus = dbPaymentTx?.status;
 
     if (
       gatewayStatus === PaymentStatus.CAPTURED &&
-      dbStatus !== PaymentStatus.CAPTURED
+      dbStatus !== ShopPaymentStatus.CAPTURED
     ) {
       console.warn(
         `[WebhookRecovery] Discrepancy detected for order ${orderId}: gateway=CAPTURED, db=${dbStatus}. Fixing...`,
@@ -621,7 +620,7 @@ export class WebhookRecoveryService {
 
     if (
       gatewayStatus === PaymentStatus.FAILED &&
-      dbStatus !== PaymentStatus.FAILED
+      dbStatus !== ShopPaymentStatus.FAILED
     ) {
       console.warn(
         `[WebhookRecovery] Discrepancy for order ${orderId}: gateway=FAILED, db=${dbStatus}. Fixing...`,
@@ -643,7 +642,9 @@ export class WebhookRecoveryService {
    * the gateway refund status and fixes any discrepancies.
    */
   async reconcileOrderRefund(orderId: string): Promise<boolean> {
-    const paymentTx = await PaymentTransactionModel.findOne({ orderId });
+    const paymentTx = await prisma.shopPaymentTransaction.findFirst({
+      where: { orderId },
+    });
     if (!paymentTx) {
       throw new Error(`No payment transaction found for order: ${orderId}`);
     }
@@ -656,7 +657,7 @@ export class WebhookRecoveryService {
     }
 
     // If no refund has been initiated, nothing to reconcile
-    if (paymentTx.status !== PaymentStatus.REFUND_INITIATED) {
+    if (paymentTx.status !== ShopPaymentStatus.REFUND_INITIATED) {
       console.log(
         `[WebhookRecovery] No pending refund to reconcile for order ${orderId}`,
       );
@@ -683,13 +684,17 @@ export class WebhookRecoveryService {
       console.warn(
         `[WebhookRecovery] Refund discrepancy for order ${orderId}: gateway=REFUNDED, db=${paymentTx.status}. Fixing...`,
       );
-      paymentTx.status = PaymentStatus.REFUNDED;
-      await paymentTx.save();
+      await prisma.shopPaymentTransaction.update({
+        where: { id: paymentTx.id },
+        data: { status: ShopPaymentStatus.REFUNDED },
+      });
 
-      const order = await OrderModel.findById(orderId);
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
       if (order) {
-        order.paymentStatus = PaymentStatus.REFUNDED;
-        await order.save();
+        await prisma.order.update({
+          where: { id: orderId },
+          data: { paymentStatus: ShopPaymentStatus.REFUNDED },
+        });
       }
 
       console.log(`[WebhookRecovery] Fixed refund status for order ${orderId}`);

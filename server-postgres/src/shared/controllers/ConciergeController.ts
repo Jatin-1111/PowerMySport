@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
 import path from "path";
 import { s3Service } from "../services/S3Service";
-import { ConciergeRequest } from "../models/ConciergeRequest";
+import prisma from "../../lib/prisma";
 import { sendEmail } from "../../utils/email";
-import { User } from "../../client/models/User";
 
 const escHtml = (str: unknown): string =>
   String(str ?? "")
@@ -113,23 +112,30 @@ export const submitConciergeRequest = async (
       return;
     }
 
-    const request = new ConciergeRequest({
-      userId,
-      sportSlug,
-      itemType,
-      itemId: itemId || tournamentId,
-      itemName: itemName || tournamentName,
-      tournamentId,
-      tournamentName,
-      prerequisiteId,
-      prerequisiteName,
-      documents,
+    const request = await prisma.conciergeRequest.create({
+      data: {
+        userId,
+        sportSlug,
+        itemType,
+        itemId: itemId || tournamentId,
+        itemName: itemName || tournamentName,
+        tournamentId,
+        tournamentName,
+        prerequisiteId,
+        prerequisiteName,
+        // Embedded doc array -> ConciergeRequestDocument child rows.
+        documents: {
+          create: documents.map((doc: any) => ({
+            documentName: doc.documentName,
+            s3Key: doc.s3Key ?? doc.key ?? "",
+          })),
+        },
+      },
+      include: { documents: true },
     });
 
-    await request.save();
-
     // Fetch user details for email
-    const user = await User.findById(userId);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
 
     // Format documents list for email
     const docsListHtml = documents
@@ -195,12 +201,14 @@ export const getUserConciergeRequests = async (
     const skip = (page - 1) * limit;
 
     const [requests, total] = await Promise.all([
-      ConciergeRequest.find({ userId })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      ConciergeRequest.countDocuments({ userId }),
+      prisma.conciergeRequest.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        include: { documents: true },
+      }),
+      prisma.conciergeRequest.count({ where: { userId } }),
     ]);
 
     res.status(200).json({
