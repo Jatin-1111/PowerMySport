@@ -166,7 +166,9 @@ export default function CreateCommunityModal({
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <Users size={32} className="text-slate-300" />
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-power-orange/20 to-power-orange/5 text-3xl font-bold text-power-orange">
+                          {name ? name.charAt(0).toUpperCase() : <Users size={32} className="text-power-orange/40" />}
+                        </div>
                       )}
                     </div>
                     <div className="flex flex-col items-center sm:items-start">

@@ -3,16 +3,21 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
+  AlertTriangle,
   ArrowBigDown,
   ArrowBigUp,
   CalendarDays,
   Dumbbell,
+  Filter,
   LoaderCircle,
   MapPin,
   MessageCircle,
   Plus,
   Search,
+  SlidersHorizontal,
+  Sparkles,
   Trash2,
   Trophy,
   X,
@@ -22,6 +27,7 @@ import {
   COMMUNITY_POST_CATEGORIES,
   CommunityActivityItem,
   CommunityFeedSort,
+  CommunityFeedSortDirection,
   CommunityPost,
   CommunityReputationSummary,
 } from "@/modules/community/types";
@@ -38,10 +44,18 @@ import {
   SelectDropdown,
 } from "@/modules/community/components/page/FilterControls";
 
-const SORT_OPTIONS: Array<{ value: CommunityFeedSort; label: string }> = [
+const QUICK_FILTERS: Array<{ value: CommunityFeedSort; label: string }> = [
   { value: "NEW", label: "New" },
-  { value: "TOP", label: "Top" },
   { value: "UNANSWERED", label: "Unanswered" },
+  { value: "ANSWERED", label: "Answered" },
+];
+
+const SORT_DIRECTION_OPTIONS: Array<{
+  value: CommunityFeedSortDirection;
+  label: string;
+}> = [
+  { value: "DESC", label: "Newest to Oldest" },
+  { value: "ASC", label: "Oldest to Newest" },
 ];
 
 const toRelativeTime = (value: string): string => {
@@ -204,6 +218,8 @@ export default function QnAFeedClient() {
     },
   );
   const [sort, setSort] = useState<CommunityFeedSort>("NEW");
+  const [direction, setDirection] =
+    useState<CommunityFeedSortDirection>("DESC");
   const [q, setQ] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [activeTag, setActiveTag] = useState<string>("");
@@ -213,6 +229,8 @@ export default function QnAFeedClient() {
   const [sportOptions, setSportOptions] = useState<string[]>([]);
   const [cityOptions, setCityOptions] = useState<string[]>([]);
   const [showAskForm, setShowAskForm] = useState(false);
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [filterPanelSettled, setFilterPanelSettled] = useState(false);
   const [isUrlHydrated, setIsUrlHydrated] = useState(false);
   const [followedTopics, setFollowedTopics] = useState<string[]>([]);
 
@@ -223,10 +241,17 @@ export default function QnAFeedClient() {
     const cityParam = (urlSearchParams.get("city") || "").trim();
     const askParam = urlSearchParams.get("ask") === "1";
     const sortParam = (urlSearchParams.get("sort") || "").toUpperCase();
+    const dirParam = (urlSearchParams.get("dir") || "").toUpperCase();
     const mineParam = urlSearchParams.get("mine") === "1";
 
     const nextSort: CommunityFeedSort =
-      sortParam === "TOP" || sortParam === "UNANSWERED" ? sortParam : "NEW";
+      sortParam === "TOP" ||
+      sortParam === "UNANSWERED" ||
+      sortParam === "ANSWERED"
+        ? sortParam
+        : "NEW";
+    const nextDirection: CommunityFeedSortDirection =
+      dirParam === "ASC" ? "ASC" : "DESC";
 
     const parseCsv = (value: string): string[] =>
       value
@@ -240,6 +265,7 @@ export default function QnAFeedClient() {
     setSelectedSports(parseCsv(sportParam));
     setSelectedCities(parseCsv(cityParam));
     setSort(nextSort);
+    setDirection(nextDirection);
     setViewMode(mineParam ? "MINE" : "ALL");
     if (askParam) {
       setShowAskForm(true);
@@ -266,6 +292,7 @@ export default function QnAFeedClient() {
         const [postData, rep] = await Promise.all([
           communityService.listPosts(targetPage, 20, {
             sort,
+            direction,
             q,
             tag: activeTag || undefined,
             sport: selectedSports.length ? selectedSports.join(",") : undefined,
@@ -309,6 +336,7 @@ export default function QnAFeedClient() {
     },
     [
       sort,
+      direction,
       q,
       activeTag,
       selectedSports,
@@ -454,6 +482,9 @@ export default function QnAFeedClient() {
     const currentSport = (urlSearchParams.get("sport") || "").trim();
     const currentCity = (urlSearchParams.get("city") || "").trim();
     const currentSort = (urlSearchParams.get("sort") || "").toUpperCase();
+    const currentDirection = (
+      urlSearchParams.get("dir") || ""
+    ).toUpperCase();
     const currentMine = urlSearchParams.get("mine") === "1" ? "MINE" : "ALL";
 
     const desiredQ = q.trim();
@@ -461,6 +492,7 @@ export default function QnAFeedClient() {
     const desiredSport = selectedSports.join(",");
     const desiredCity = selectedCities.join(",");
     const desiredSort = sort;
+    const desiredDirection = direction;
     const desiredMine = viewMode;
 
     if (
@@ -469,6 +501,7 @@ export default function QnAFeedClient() {
       currentSport === desiredSport &&
       currentCity === desiredCity &&
       (currentSort || "NEW") === desiredSort &&
+      (currentDirection || "DESC") === desiredDirection &&
       currentMine === desiredMine
     ) {
       return;
@@ -480,6 +513,7 @@ export default function QnAFeedClient() {
     if (desiredSport) nextParams.set("sport", desiredSport);
     if (desiredCity) nextParams.set("city", desiredCity);
     if (desiredSort !== "NEW") nextParams.set("sort", desiredSort);
+    if (desiredDirection !== "DESC") nextParams.set("dir", desiredDirection);
     if (desiredMine === "MINE") nextParams.set("mine", "1");
 
     const nextQuery = nextParams.toString();
@@ -494,6 +528,7 @@ export default function QnAFeedClient() {
     q,
     router,
     sort,
+    direction,
     selectedSports,
     urlSearchParams,
     viewMode,
@@ -687,52 +722,59 @@ export default function QnAFeedClient() {
       </div>
 
       <div className="mx-auto w-full max-w-7xl space-y-5 px-4 py-5 sm:space-y-6 sm:px-6 sm:py-8 lg:px-8">
-        <section className="relative overflow-hidden rounded-3xl border border-white/80 bg-[linear-gradient(125deg,#fafdff_0%,#eaf4ff_36%,#fff1dc_100%)] px-4 py-7 text-slate-900 shadow-sm sm:rounded-4xl sm:px-10 sm:py-12">
-          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-sky-300/25 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 left-0 h-72 w-72 rounded-full bg-amber-200/30 blur-3xl" />
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: "easeOut" }}
+          className="relative overflow-hidden rounded-3xl border border-white/80 bg-[linear-gradient(125deg,#fafdff_0%,#eaf4ff_36%,#fff1dc_100%)] px-4 py-8 text-slate-900 shadow-sm sm:rounded-4xl sm:px-10 sm:py-14"
+        >
+          <motion.div
+            aria-hidden="true"
+            animate={{ x: [0, -10, 0], y: [0, 10, 0] }}
+            transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+            className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-sky-300/25 blur-3xl"
+          />
+          <motion.div
+            aria-hidden="true"
+            animate={{ x: [0, 12, 0], y: [0, -8, 0] }}
+            transition={{ duration: 17, repeat: Infinity, ease: "easeInOut" }}
+            className="pointer-events-none absolute -bottom-24 left-0 h-72 w-72 rounded-full bg-amber-200/30 blur-3xl"
+          />
 
-          <div className="relative flex flex-wrap items-start justify-between gap-6">
+          <div className="relative flex flex-wrap items-center justify-between gap-6">
             <div className="max-w-3xl">
-              <p className="inline-flex rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+              <p className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+                <Sparkles size={12} className="text-power-orange" />
                 Community Knowledge Exchange
               </p>
               <h1 className="font-title mt-4 text-3xl font-semibold leading-[1.08] tracking-tight sm:text-4xl lg:text-5xl">
                 Ask Better Questions. Share Better Answers.
               </h1>
-              <p className="mt-4 max-w-2xl text-sm text-slate-700 sm:text-base">
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
                 A player-to-player learning space where practical advice wins.
               </p>
-
-              <div className="mt-5 flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-700">
-                  {posts.length} live threads
-                </span>
-                <span className="rounded-full border border-amber-200 bg-amber-50/90 px-3 py-1 text-xs font-semibold text-amber-700">
-                  {spotlight.unansweredCount} unanswered
-                </span>
-                <span className="rounded-full border border-emerald-200 bg-emerald-50/90 px-3 py-1 text-xs font-semibold text-emerald-700">
-                  {spotlight.answeredCount} solved
-                </span>
-              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 self-end sm:gap-3">
               <Link
-                href="/chats"
-                className="rounded-xl border border-slate-200 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-white"
+                href="/contributors"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
               >
-                Back to Chat
+                <Trophy size={16} className="text-amber-500" />
+                Leaderboard
               </Link>
-              <button
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => setShowAskForm((v) => !v)}
                 className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700"
               >
                 <Plus size={16} />
                 Ask Question
-              </button>
+              </motion.button>
             </div>
           </div>
-        </section>
+        </motion.section>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
           <div className="space-y-6">
@@ -742,10 +784,10 @@ export default function QnAFeedClient() {
               onSuccess={() => void handleQuestionSuccess()}
             />
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-              {/* Row 1: View toggle + Sort */}
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="inline-flex items-center self-start rounded-xl border border-slate-200 bg-slate-50 p-1">
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              {/* Row 1: View toggle + Search + Filter button */}
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+                <div className="inline-flex items-center self-start rounded-xl border border-slate-200 bg-slate-50 p-1 shrink-0">
                   <button
                     onClick={() => setViewMode("ALL")}
                     className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
@@ -768,29 +810,7 @@ export default function QnAFeedClient() {
                   </button>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="hidden text-xs font-semibold uppercase tracking-wide text-slate-400 sm:inline">
-                    Sort
-                  </span>
-                  {SORT_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => setSort(option.value)}
-                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
-                        sort === option.value
-                          ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
-                          : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-white"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Row 2: Search (wide) + Sport + City filters */}
-              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-[2.4fr_1fr_1fr]">
-                <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 transition focus-within:border-power-orange focus-within:bg-white sm:col-span-2 lg:col-span-1">
+                <div className="flex flex-1 items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 transition focus-within:border-power-orange focus-within:bg-white focus-within:shadow-sm">
                   <Search size={16} className="shrink-0 text-slate-500" />
                   <input
                     value={searchInput}
@@ -798,78 +818,144 @@ export default function QnAFeedClient() {
                     placeholder="Search questions, keywords, topics…"
                     className="w-full bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none"
                   />
-                  {searchInput ? (
-                    <button
-                      onClick={() => {
-                        setSearchInput("");
-                        setQ("");
-                      }}
-                      className="shrink-0 rounded-full p-0.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-600"
-                      title="Clear search"
-                    >
-                      <X size={14} />
-                    </button>
-                  ) : null}
+                  <AnimatePresence>
+                    {searchInput ? (
+                      <motion.button
+                        initial={{ opacity: 0, scale: 0.6 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.6 }}
+                        onClick={() => {
+                          setSearchInput("");
+                          setQ("");
+                        }}
+                        className="shrink-0 rounded-full p-0.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-600"
+                        title="Clear search"
+                      >
+                        <X size={14} />
+                      </motion.button>
+                    ) : null}
+                  </AnimatePresence>
                 </div>
 
-                <MultiCheckboxDropdown
-                  label="Sport"
-                  icon={<Dumbbell size={15} className="text-blue-500" />}
-                  options={sportOptions}
-                  selected={selectedSports}
-                  onToggle={toggleSport}
-                  emptyHint="No sports tagged yet"
-                />
-                <MultiCheckboxDropdown
-                  label="City"
-                  icon={<MapPin size={15} className="text-rose-500" />}
-                  options={cityOptions}
-                  selected={selectedCities}
-                  onToggle={toggleCity}
-                  emptyHint="No cities tagged yet"
-                />
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setShowFilterPanel((v) => !v)}
+                  className={`inline-flex shrink-0 items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-semibold uppercase tracking-wide transition ${
+                    showFilterPanel || hasActiveFilters
+                      ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
+                      : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-white"
+                  }`}
+                >
+                  <motion.span
+                    animate={showFilterPanel ? { rotate: 180 } : { rotate: 0 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    <Filter size={16} />
+                  </motion.span>
+                  <span className="hidden sm:inline">Filters</span>
+                  {hasActiveFilters && (
+                    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-power-orange px-1 text-[9px] font-bold text-white">
+                      {selectedSports.length +
+                        selectedCities.length +
+                        (categoryFilter ? 1 : 0) +
+                        (activeTag ? 1 : 0)}
+                    </span>
+                  )}
+                </motion.button>
               </div>
 
-              {/* Row 3: Category + Popular Topics dropdowns */}
-              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <div>
-                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                    Category
-                  </p>
-                  <SelectDropdown
-                    options={categoryOptions}
-                    value={categoryFilter}
-                    onChange={setCategoryFilter}
-                  />
-                </div>
-                <div>
-                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                    Popular Topics
-                  </p>
-                  <SelectDropdown
-                    options={topicOptions}
-                    value={activeTag}
-                    onChange={setActiveTag}
-                    renderSuffix={(value) =>
-                      value ? (
-                        <button
-                          type="button"
-                          onClick={() => toggleTopicFollow(value)}
-                          className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition ${
-                            followedTopics.includes(value.toLowerCase())
-                              ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                              : "border-slate-200 bg-white text-slate-500 hover:bg-slate-100"
-                          }`}
-                        >
-                          {followedTopics.includes(value.toLowerCase())
-                            ? "Following"
-                            : "Follow"}
-                        </button>
-                      ) : null
-                    }
-                  />
-                </div>
+              {/* Row 2: Quick filter capsules */}
+              <div className="mt-4 flex flex-wrap items-center gap-1.5">
+                {QUICK_FILTERS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setSort(option.value)}
+                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide transition ${
+                      sort === option.value
+                        ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
+                        : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-white"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
+
+              {/* Collapsible advanced filter panel */}
+              <AnimatePresence onExitComplete={() => setFilterPanelSettled(false)}>
+                {showFilterPanel && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                    animate={{ opacity: 1, height: "auto", marginTop: 12 }}
+                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                    transition={{ type: "spring", damping: 26, stiffness: 300 }}
+                    onAnimationComplete={() => setFilterPanelSettled(true)}
+                    className={filterPanelSettled ? "overflow-visible" : "overflow-hidden"}
+                  >
+                    <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+                      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                        <SelectDropdown
+                          label="Sort"
+                          icon={<SlidersHorizontal size={14} className="text-slate-500" />}
+                          options={SORT_DIRECTION_OPTIONS}
+                          value={direction}
+                          onChange={(value) =>
+                            setDirection(value as CommunityFeedSortDirection)
+                          }
+                        />
+                        <MultiCheckboxDropdown
+                          label="Sport"
+                          icon={<Dumbbell size={15} className="text-blue-500" />}
+                          options={sportOptions}
+                          selected={selectedSports}
+                          onToggle={toggleSport}
+                          emptyHint="No sports tagged yet"
+                        />
+                        <MultiCheckboxDropdown
+                          label="City"
+                          icon={<MapPin size={15} className="text-rose-500" />}
+                          options={cityOptions}
+                          selected={selectedCities}
+                          onToggle={toggleCity}
+                          emptyHint="No cities tagged yet"
+                        />
+                      </div>
+                      <div className="mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                        <SelectDropdown
+                          label="Category"
+                          options={categoryOptions}
+                          value={categoryFilter}
+                          onChange={setCategoryFilter}
+                        />
+                        <SelectDropdown
+                          label="Topic"
+                          options={topicOptions}
+                          value={activeTag}
+                          onChange={setActiveTag}
+                          renderSuffix={(value) =>
+                            value ? (
+                              <button
+                                type="button"
+                                onClick={() => toggleTopicFollow(value)}
+                                className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition ${
+                                  followedTopics.includes(value.toLowerCase())
+                                    ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                                    : "border-slate-200 bg-white text-slate-500 hover:bg-slate-100"
+                                }`}
+                              >
+                                {followedTopics.includes(value.toLowerCase())
+                                  ? "Following"
+                                  : "Follow"}
+                              </button>
+                            ) : null
+                          }
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Active filter capsules + Clear all */}
               {hasActiveFilters ? (
@@ -940,30 +1026,6 @@ export default function QnAFeedClient() {
               </div>
             ) : (
               <section className="space-y-4">
-                {urgentUnanswered.length > 0 ? (
-                  <div className="grid gap-3">
-                    <div className="rounded-2xl border border-amber-200/80 bg-[linear-gradient(120deg,#fff9ed_0%,#fff3dc_100%)] p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">
-                        Help Needed Now
-                      </p>
-                      <div className="mt-2 space-y-2">
-                        {urgentUnanswered.map((item) => (
-                          <Link
-                            key={`urgent-${item.id}`}
-                            href={`/q/${item.id}`}
-                            className="block rounded-xl border border-amber-200/60 bg-white/90 px-3 py-2 text-sm font-medium text-slate-800 transition hover:border-amber-300 hover:bg-white"
-                          >
-                            <span className="line-clamp-1">{item.title}</span>
-                            <span className="mt-1 inline-flex items-center gap-2 text-xs font-semibold text-amber-700">
-                              <MessageCircle size={12} /> 0 answers
-                            </span>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-
                 {featuredPost ? (
                   <article className="group relative flex gap-0 overflow-hidden rounded-xl border-2 border-power-orange/30 bg-linear-to-br from-power-orange/5 via-white to-white shadow-lg transition-all hover:border-power-orange/50 hover:shadow-xl">
                     {/* Voting Sidebar */}
@@ -1249,73 +1311,59 @@ export default function QnAFeedClient() {
           </div>
 
           <aside className="space-y-4 xl:sticky xl:top-24 xl:h-fit">
-            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <div className="rounded-2xl border border-white/85 bg-white/92 p-4 shadow-sm backdrop-blur-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Total Points
-                </p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">
-                  {summary.points}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-white/85 bg-white/92 p-4 shadow-sm backdrop-blur-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Questions
-                </p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">
-                  {summary.q}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-white/85 bg-white/92 p-4 shadow-sm backdrop-blur-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Answers
-                </p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">
-                  {summary.a}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-white/85 bg-white/92 p-4 shadow-sm backdrop-blur-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Received Upvotes
-                </p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">
-                  {summary.upvotes}
-                </p>
-              </div>
-            </section>
+            {/* Stat tiles — 2x2 grid */}
+            <motion.section
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="grid grid-cols-2 gap-3"
+            >
+              {[
+                { label: "Total Points", value: summary.points },
+                { label: "Questions", value: summary.q },
+                { label: "Answers", value: summary.a },
+                { label: "Received Upvotes", value: summary.upvotes },
+              ].map((stat) => (
+                <motion.div
+                  key={stat.label}
+                  whileHover={{ y: -3 }}
+                  transition={{ duration: 0.18 }}
+                  className="rounded-2xl border border-white/85 bg-white/92 p-4 shadow-sm backdrop-blur-sm"
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    {stat.label}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">
+                    {stat.value}
+                  </p>
+                </motion.div>
+              ))}
+            </motion.section>
 
-            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <div className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                  Knowledge Opportunities
-                </p>
-                <p className="mt-1 text-sm text-blue-900">
-                  {spotlight.unansweredCount} questions still need helpful
-                  answers.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                  Solved Discussions
-                </p>
-                <p className="mt-1 text-sm text-emerald-900">
-                  {spotlight.answeredCount} questions already have shared
-                  solutions.
-                </p>
-              </div>
-            </section>
-
-            <section className="rounded-3xl border border-white/90 bg-white/90 p-4 shadow-sm backdrop-blur-md sm:p-5">
+            {/* Your Activity — scrollable feed */}
+            <motion.section
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut", delay: 0.05 }}
+              className="rounded-3xl border border-white/90 bg-white/90 p-4 shadow-sm backdrop-blur-md sm:p-5"
+            >
               <div className="mb-3 flex items-center justify-between gap-2">
                 <h3 className="font-title text-lg font-semibold text-slate-900">
-                  Activity On Your Knowledge
+                  Your Activity
                 </h3>
                 <div className="flex items-center gap-2">
-                  {activityUnreadCount > 0 ? (
-                    <span className="rounded-full bg-power-orange/10 px-2.5 py-1 text-[11px] font-semibold text-power-orange">
-                      {activityUnreadCount} unread
-                    </span>
-                  ) : null}
+                  <AnimatePresence>
+                    {activityUnreadCount > 0 ? (
+                      <motion.span
+                        initial={{ opacity: 0, scale: 0.7 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.7 }}
+                        className="rounded-full bg-power-orange/10 px-2.5 py-1 text-[11px] font-semibold text-power-orange"
+                      >
+                        {activityUnreadCount} unread
+                      </motion.span>
+                    ) : null}
+                  </AnimatePresence>
                   <button
                     onClick={() => void handleMarkAllActivityRead()}
                     disabled={
@@ -1336,50 +1384,128 @@ export default function QnAFeedClient() {
                   content, it will show up here.
                 </p>
               ) : (
-                <div className="space-y-2">
-                  {activity.map((item, index) => {
-                    const postLink = item.data?.postId
-                      ? `/q/${item.data.postId}`
-                      : null;
+                <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                  <AnimatePresence initial={false}>
+                    {activity.map((item) => {
+                      const postLink = item.data?.postId
+                        ? `/q/${item.data.postId}`
+                        : null;
 
-                    return (
-                      <div
-                        key={item.id}
-                        className={`rounded-2xl border p-3 ${
-                          index % 2 === 0 ? "xl:mr-3" : "xl:ml-3"
-                        } ${
-                          item.isRead
-                            ? "border-slate-200 bg-white"
-                            : "border-power-orange/30 bg-power-orange/5"
-                        }`}
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            {getActivityLabel(item)}
+                      return (
+                        <motion.div
+                          key={item.id}
+                          layout
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className={`rounded-2xl border p-3 ${
+                            item.isRead
+                              ? "border-slate-200 bg-white"
+                              : "border-power-orange/30 bg-power-orange/5"
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              {getActivityLabel(item)}
+                            </p>
+                            <span className="text-xs text-slate-500">
+                              {toRelativeTime(item.createdAt)} ago
+                            </span>
+                          </div>
+                          <p className="mt-1 text-sm text-slate-700">
+                            {item.message}
                           </p>
-                          <span className="text-xs text-slate-500">
-                            {toRelativeTime(item.createdAt)} ago
-                          </span>
-                        </div>
-                        <p className="mt-1 text-sm text-slate-700">
-                          {item.message}
-                        </p>
-                        {postLink ? (
-                          <Link
-                            href={postLink}
-                            onClick={() => {
-                              void handleActivityOpen(item);
-                            }}
-                            className="mt-2 inline-flex text-xs font-semibold text-power-orange hover:underline"
-                          >
-                            Open thread
-                          </Link>
-                        ) : null}
-                      </div>
-                    );
-                  })}
+                          {postLink ? (
+                            <Link
+                              href={postLink}
+                              onClick={() => {
+                                void handleActivityOpen(item);
+                              }}
+                              className="mt-2 inline-flex text-xs font-semibold text-power-orange hover:underline"
+                            >
+                              Open thread
+                            </Link>
+                          ) : null}
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
                 </div>
               )}
+            </motion.section>
+
+            {/* Help Needed Now — highlighted, urgent */}
+            <AnimatePresence>
+              {urgentUnanswered.length > 0 ? (
+                <motion.section
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
+                  className="relative overflow-hidden rounded-3xl border-2 border-amber-300/70 bg-[linear-gradient(135deg,#fff9ed_0%,#fff2d8_100%)] p-4 shadow-md sm:p-5"
+                >
+                  <motion.div
+                    aria-hidden="true"
+                    animate={{ opacity: [0.25, 0.5, 0.25] }}
+                    transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                    className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-amber-300/30 blur-2xl"
+                  />
+                  <div className="relative mb-2 flex items-center gap-1.5">
+                    <motion.span
+                      animate={{ scale: [1, 1.15, 1] }}
+                      transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-400/25 text-amber-700"
+                    >
+                      <AlertTriangle size={13} />
+                    </motion.span>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-800">
+                      Help Needed Now
+                    </p>
+                  </div>
+                  <div className="relative space-y-2">
+                    {urgentUnanswered.map((item) => (
+                      <Link
+                        key={`urgent-${item.id}`}
+                        href={`/q/${item.id}`}
+                        className="block rounded-xl border border-amber-200/70 bg-white/90 px-3 py-2 text-sm font-medium text-slate-800 transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-white hover:shadow-sm"
+                      >
+                        <span className="line-clamp-1">{item.title}</span>
+                        <span className="mt-1 inline-flex items-center gap-2 text-xs font-semibold text-amber-700">
+                          <MessageCircle size={12} /> 0 answers
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </motion.section>
+              ) : null}
+            </AnimatePresence>
+
+            {/* Knowledge Opportunities + Solved Discussions */}
+            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+              <motion.div
+                whileHover={{ y: -3 }}
+                className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                  Knowledge Opportunities
+                </p>
+                <p className="mt-1 text-sm text-blue-900">
+                  {spotlight.unansweredCount} questions still need helpful
+                  answers.
+                </p>
+              </motion.div>
+              <motion.div
+                whileHover={{ y: -3 }}
+                className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4"
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                  Solved Discussions
+                </p>
+                <p className="mt-1 text-sm text-emerald-900">
+                  {spotlight.answeredCount} questions already have shared
+                  solutions.
+                </p>
+              </motion.div>
             </section>
           </aside>
         </div>

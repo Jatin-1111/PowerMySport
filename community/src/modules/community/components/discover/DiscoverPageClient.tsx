@@ -219,13 +219,19 @@ export default function DiscoverPageClient() {
     }
   };
 
+  const communityGroupRank = (c: CommunityGroupSummary): number => {
+    if (c.isOwner) return 0;
+    if (c.isMember) return 1;
+    return 2;
+  };
+
   const filteredCommunities = communities
     .filter((c) => {
       if (selectedSport !== "All" && c.sport !== selectedSport) return false;
       if (selectedCity !== "All" && c.city !== selectedCity) return false;
       return true;
     })
-    .sort((a, b) => (b.isAdmin ? 1 : 0) - (a.isAdmin ? 1 : 0));
+    .sort((a, b) => communityGroupRank(a) - communityGroupRank(b));
 
   const filteredPlayers = players.filter((p) => {
     if (activeTab === "PARENTS") {
@@ -249,14 +255,15 @@ export default function DiscoverPageClient() {
           title="Discover"
           subtitle="Find local sports communities, coaches, and connect with other sports parents."
           badge="Explore"
+          size="lg"
         />
 
         <div className="mt-8 flex flex-col gap-6">
           {/* Search Bar & Filters Toggle */}
-          <div className="mx-auto flex w-full max-w-2xl flex-col gap-3">
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
             <div className="flex w-full gap-3">
               <div className="relative flex-1 group">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 transition-colors group-focus-within:text-power-orange">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 transition-colors duration-200 group-focus-within:text-power-orange group-focus-within:scale-110">
                   <Search size={18} />
                 </div>
                 <input
@@ -266,33 +273,53 @@ export default function DiscoverPageClient() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="discover-search"
                 />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-power-orange transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
+                <AnimatePresence>
+                  {searchQuery && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.6 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.6 }}
+                      transition={{ duration: 0.15 }}
+                      onClick={() => setSearchQuery("")}
+                      className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-power-orange transition-colors"
+                    >
+                      <X size={16} />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
               </div>
-              <button
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => setShowFilters(!showFilters)}
                 style={
                   showFilters || selectedSport !== "All" || selectedCity !== "All"
-                    ? { border: '1px solid rgba(233, 115, 22, 0.3)', background: 'rgba(233, 115, 22, 0.05)', color: '#E97316' }
-                    : { border: '1px solid rgba(255, 255, 255, 0.6)', background: 'rgba(255, 255, 255, 0.7)', color: '#64748b' }
+                    ? { border: '1px solid rgba(233, 115, 22, 0.35)', background: 'rgba(233, 115, 22, 0.08)', color: '#E97316' }
+                    : { border: '1px solid rgba(226, 232, 240, 0.7)', background: 'rgba(255, 255, 255, 0.85)', color: '#64748b' }
                 }
-                className="shrink-0 flex items-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-semibold backdrop-blur transition-all duration-300 shadow-sm hover:opacity-90"
+                className="shrink-0 flex items-center gap-1.5 rounded-full px-4 py-3 text-[13px] font-semibold backdrop-blur transition-colors duration-300 shadow-sm hover:shadow-md"
               >
-                <Filter size={18} />
+                <motion.span
+                  animate={showFilters ? { rotate: 180 } : { rotate: 0 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                >
+                  <Filter size={16} />
+                </motion.span>
                 <span className="hidden sm:inline">Filters</span>
-                {(selectedSport !== "All" || selectedCity !== "All") && (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-power-orange/15 text-[10px] text-power-orange font-bold">
-                    {(selectedSport !== "All" ? 1 : 0) +
-                      (selectedCity !== "All" ? 1 : 0)}
-                  </span>
-                )}
-              </button>
+                <AnimatePresence>
+                  {(selectedSport !== "All" || selectedCity !== "All") && (
+                    <motion.span
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.5 }}
+                      className="flex h-5 w-5 items-center justify-center rounded-full bg-power-orange/15 text-[10px] text-power-orange font-bold"
+                    >
+                      {(selectedSport !== "All" ? 1 : 0) +
+                        (selectedCity !== "All" ? 1 : 0)}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </motion.button>
             </div>
 
             <AnimatePresence>
@@ -367,7 +394,7 @@ export default function DiscoverPageClient() {
 
           {/* Tabs */}
           <div
-            className="mx-auto flex w-full max-w-2xl rounded-2xl p-1 shadow-inner backdrop-blur-md"
+            className="mx-auto flex w-full max-w-3xl rounded-2xl p-1 shadow-inner backdrop-blur-md"
             style={{ background: 'rgba(241, 245, 249, 0.8)', boxShadow: '0 0 0 1px rgba(226, 232, 240, 0.5) inset' }}
           >
             {["COMMUNITIES", "PARENTS", "PLAYERS", "COACHES"].map((tab) => {
@@ -393,7 +420,7 @@ export default function DiscoverPageClient() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab as any)}
-                  className={`relative flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-colors duration-200 ${
+                  className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-[13px] font-semibold transition-colors duration-200 ${
                     isActive ? "text-power-orange" : "text-slate-400 hover:text-slate-600"
                   }`}
                 >

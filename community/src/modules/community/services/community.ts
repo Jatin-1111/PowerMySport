@@ -17,6 +17,7 @@ import {
   ConversationItem,
   ConversationMessage,
   CommunityFeedSort,
+  CommunityFeedSortDirection,
   MessagePrivacy,
 } from "../types";
 
@@ -157,6 +158,7 @@ const buildPostsKey = (
   limit: number,
   params?: {
     sort?: CommunityFeedSort;
+    direction?: CommunityFeedSortDirection;
     q?: string;
     tag?: string;
     sport?: string;
@@ -170,6 +172,7 @@ const buildPostsKey = (
     String(page),
     String(limit),
     params?.sort || "",
+    params?.direction || "",
     params?.q || "",
     params?.tag || "",
     params?.sport || "",
@@ -353,6 +356,15 @@ export const communityService = {
           hasMore: Boolean(raw?.pagination?.hasMore),
         },
       };
+    });
+  },
+
+  async getUnreadConversationCount(): Promise<number> {
+    return withRequestCache("conversations-unread-count", async () => {
+      const response = await axiosInstance.get<ApiResponse<{ count: number }>>(
+        "/community/conversations/unread-count",
+      );
+      return response.data.data?.count || 0;
     });
   },
 
@@ -830,6 +842,7 @@ export const communityService = {
     limit = 20,
     params?: {
       sort?: CommunityFeedSort;
+      direction?: CommunityFeedSortDirection;
       q?: string;
       tag?: string;
       sport?: string;
@@ -847,6 +860,7 @@ export const communityService = {
           page,
           limit,
           ...(params?.sort ? { sort: params.sort } : {}),
+          ...(params?.direction ? { direction: params.direction } : {}),
           ...(params?.q ? { q: params.q } : {}),
           ...(params?.tag ? { tag: params.tag } : {}),
           ...(params?.sport ? { sport: params.sport } : {}),

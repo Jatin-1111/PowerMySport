@@ -87,6 +87,26 @@ const resolveUserPhotoUrl = async (user?: {
   }
 };
 
+const resolveGroupPhotoUrl = async (group: {
+  profilePicture?: string | null;
+  profilePictureKey?: string | null;
+}): Promise<string> => {
+  if (!group.profilePictureKey) {
+    return group.profilePicture || "";
+  }
+
+  try {
+    return await s3Service.generateDownloadUrl(
+      group.profilePictureKey,
+      "images",
+      604800,
+    );
+  } catch (error) {
+    console.error("Failed to refresh community group photo URL:", error);
+    return group.profilePicture || "";
+  }
+};
+
 const calculateAge = (dob?: Date | string | null): number | null => {
   if (!dob) {
     return null;
@@ -297,7 +317,8 @@ export const CommunityService = {
     page = 1,
     limit = 20,
     filters?: {
-      sort?: "NEW" | "TOP" | "UNANSWERED";
+      sort?: "NEW" | "TOP" | "UNANSWERED" | "ANSWERED";
+      direction?: "ASC" | "DESC";
       q?: string;
       tag?: string;
       sport?: string;
@@ -314,7 +335,9 @@ export const CommunityService = {
     const safeLimit = Math.min(50, Math.max(1, limit));
     const skip = (safePage - 1) * safeLimit;
     const sort = (filters?.sort || "NEW").toUpperCase() as
-      "NEW" | "TOP" | "UNANSWERED";
+      "NEW" | "TOP" | "UNANSWERED" | "ANSWERED";
+    const direction = (filters?.direction || "DESC").toUpperCase() as
+      "ASC" | "DESC";
 
     const query: Record<string, unknown> = {
       isDeleted: false,
@@ -356,12 +379,15 @@ export const CommunityService = {
 
     if (sort === "UNANSWERED") {
       query.answerCount = 0;
+    } else if (sort === "ANSWERED") {
+      query.answerCount = { $gt: 0 };
     }
 
+    const createdAtOrder = direction === "ASC" ? (1 as const) : (-1 as const);
     const sortClause =
       sort === "TOP"
-        ? ({ voteScore: -1 as const, createdAt: -1 as const } as const)
-        : { createdAt: -1 as const };
+        ? ({ voteScore: -1 as const, createdAt: createdAtOrder } as const)
+        : { createdAt: createdAtOrder };
 
     const [posts, total] = await Promise.all([
       CommunityPost.find(query)
@@ -1384,24 +1410,28 @@ export const CommunityService = {
       .limit(safeLimit)
       .lean();
 
-    return groups.map((group) => {
-      const memberIds = group.members.map((memberId) => String(memberId));
-      const adminIds = group.admins.map((adminId) => String(adminId));
-      return {
-        id: String(group._id),
-        name: group.name,
-        description: group.description || "",
-        visibility: group.visibility,
-        audience: group.audience || COMMUNITY_DEFAULT_GROUP_AUDIENCE,
-        sport: group.sport || "",
-        city: group.city || "",
-        createdBy: String(group.createdBy),
-        memberCount: memberIds.length,
-        isMember: memberIds.includes(userId),
-        isAdmin: adminIds.includes(userId),
-        memberAddPolicy: group.memberAddPolicy || "ADMIN_ONLY",
-      };
-    });
+    return Promise.all(
+      groups.map(async (group) => {
+        const memberIds = group.members.map((memberId) => String(memberId));
+        const adminIds = group.admins.map((adminId) => String(adminId));
+        return {
+          id: String(group._id),
+          name: group.name,
+          description: group.description || "",
+          visibility: group.visibility,
+          audience: group.audience || COMMUNITY_DEFAULT_GROUP_AUDIENCE,
+          sport: group.sport || "",
+          city: group.city || "",
+          createdBy: String(group.createdBy),
+          profilePicture: await resolveGroupPhotoUrl(group),
+          memberCount: memberIds.length,
+          isMember: memberIds.includes(userId),
+          isAdmin: adminIds.includes(userId),
+          isOwner: String(group.createdBy) === userId,
+          memberAddPolicy: group.memberAddPolicy || "ADMIN_ONLY",
+        };
+      }),
+    );
   },
 
   async createGroup(
@@ -1477,9 +1507,13 @@ export const CommunityService = {
       audience: group.audience || COMMUNITY_DEFAULT_GROUP_AUDIENCE,
       sport: group.sport || "",
       city: group.city || "",
-      profilePicture: group.profilePicture || "",
+      createdBy: String(group.createdBy),
+      profilePicture: await resolveGroupPhotoUrl(group),
       memberAddPolicy: group.memberAddPolicy || "ADMIN_ONLY",
       memberCount: group.members.length,
+      isMember: true,
+      isAdmin: true,
+      isOwner: true,
       conversationId: String(conversation._id),
     };
   },
@@ -1521,13 +1555,25 @@ export const CommunityService = {
 
     await group.save();
 
+    const memberIds = group.members.map((memberId) => String(memberId));
+    const adminIds = group.admins.map((adminId) => String(adminId));
+
     return {
+      id: String(group._id),
       groupId: String(group._id),
       name: group.name,
-      description: group.description,
-      sport: group.sport,
-      city: group.city,
-      audience: group.audience,
+      description: group.description || "",
+      visibility: group.visibility,
+      audience: group.audience || COMMUNITY_DEFAULT_GROUP_AUDIENCE,
+      sport: group.sport || "",
+      city: group.city || "",
+      createdBy: String(group.createdBy),
+      profilePicture: await resolveGroupPhotoUrl(group),
+      memberAddPolicy: group.memberAddPolicy || "ADMIN_ONLY",
+      memberCount: memberIds.length,
+      isMember: memberIds.includes(userId),
+      isAdmin: adminIds.includes(userId),
+      isOwner: String(group.createdBy) === userId,
     };
   },
 
@@ -2031,6 +2077,31 @@ export const CommunityService = {
     ]);
 
     return { rejected: true };
+  },
+
+  async getUnreadConversationCount(userId: string): Promise<number> {
+    const conversations = await CommunityConversation.find({
+      participants: userId,
+    })
+      .select("_id")
+      .lean();
+
+    if (!conversations.length) {
+      return 0;
+    }
+
+    const result = await CommunityMessage.aggregate([
+      {
+        $match: {
+          conversationId: { $in: conversations.map((c) => c._id) },
+          senderId: { $ne: new mongoose.Types.ObjectId(userId) },
+          readBy: { $ne: new mongoose.Types.ObjectId(userId) },
+        },
+      },
+      { $count: "count" },
+    ]);
+
+    return result[0]?.count || 0;
   },
 
   async listConversations(
