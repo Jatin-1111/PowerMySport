@@ -26,7 +26,6 @@ import { InputsSummaryBar } from "@/modules/guidance/components/shared/InputsSum
 import { PastRoadmapsDropdown } from "@/modules/guidance/components/shared/PastRoadmapsDropdown";
 import { ResultSkeleton } from "@/modules/guidance/components/shared/Skeletons";
 import { StepIndicator } from "@/modules/guidance/components/shared/StepIndicator";
-import { Step1ParentInfo } from "@/modules/guidance/components/wizard/Step1ParentInfo";
 import { Step1Profile } from "@/modules/guidance/components/wizard/Step1Profile";
 import { Step2Goals } from "@/modules/guidance/components/wizard/Step2Goals";
 import { Step3Lifestyle } from "@/modules/guidance/components/wizard/Step3Lifestyle";
@@ -389,15 +388,8 @@ function GuidancePageInner() {
 
                   <AnimatePresence mode="wait">
                     {step === 1 && (
-                      <Step1ParentInfo
-                        key="step1"
-                        form={form}
-                        update={update}
-                      />
-                    )}
-                    {step === 2 && (
                       <Step1Profile
-                        key="step2"
+                        key="step1"
                         form={form}
                         update={update}
                         players={players}
@@ -406,19 +398,19 @@ function GuidancePageInner() {
                         levelContext={levelContext}
                       />
                     )}
-                    {step === 3 && (
-                      <Step2Goals key="step3" form={form} update={update} />
+                    {step === 2 && (
+                      <Step2Goals key="step2" form={form} update={update} />
                     )}
-                    {step === 4 && (
+                    {step === 3 && (
                       <Step3Lifestyle
-                        key="step4"
+                        key="step3"
                         form={form}
                         update={update}
                         autofillFields={autofillFields}
                       />
                     )}
-                    {step === 5 && (
-                      <Step4Details key="step5" form={form} update={update} />
+                    {step === 4 && (
+                      <Step4Details key="step4" form={form} update={update} />
                     )}
                   </AnimatePresence>
 
@@ -440,7 +432,7 @@ function GuidancePageInner() {
                         Back
                       </button>
                     )}
-                    {step < 5 ? (
+                    {step < 4 ? (
                       <button
                         type="button"
                         onClick={nextStep}
@@ -494,8 +486,8 @@ function GuidancePageInner() {
 
                   <p className="mt-3 text-center text-xs text-slate-400">
                     Step {step} of {STEPS.length}
-                    {step < 5 ? " · " : " · Ready to generate "}
-                    {step < 5 && `${STEPS.length - step} more to go`}
+                    {step < 4 ? " · " : " · Ready to generate "}
+                    {step < 4 && `${STEPS.length - step} more to go`}
                   </p>
                 </div>
               </motion.div>

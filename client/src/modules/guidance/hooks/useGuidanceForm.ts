@@ -211,14 +211,13 @@ export function useGuidanceForm({
   const nextStep = () => {
     const messages = [
       "Great start! ✨",
-      "Step Complete!",
       "Keep Going! ⚡",
       "Almost There! 🔥",
       "Final Step! 🏆",
     ];
     setAchievement(messages[step - 1] || "Progress!");
     setTimeout(() => setAchievement(null), 2000);
-    setStep((s) => Math.min(s + 1, 5));
+    setStep((s) => Math.min(s + 1, 4));
   };
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
