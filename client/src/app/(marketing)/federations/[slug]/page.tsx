@@ -105,12 +105,21 @@ export async function generateMetadata({
 
 export default async function FederationDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { slug } = await params;
+  const { tab } = await searchParams;
   const fed = await fetchFederation(slug);
   if (!fed) notFound();
 
-  return <FederationDetailClient federation={fed} />;
+  const validTabs = ["overview", "tournaments", "eligibility", "register"] as const;
+  type TabId = (typeof validTabs)[number];
+  const initialTab: TabId = validTabs.includes(tab as TabId)
+    ? (tab as TabId)
+    : "overview";
+
+  return <FederationDetailClient federation={fed} initialTab={initialTab} />;
 }

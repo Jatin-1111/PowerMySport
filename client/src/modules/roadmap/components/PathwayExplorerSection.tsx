@@ -9,8 +9,6 @@ import RoadmapIntroModal from "./RoadmapIntroModal";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { PathwayConciergeModal } from "@/modules/sports/components/PathwayConciergeModal";
 import { RoadmapChatDrawer } from "@/modules/sports/components/RoadmapChatDrawer";
-import { TournamentModal } from "@/modules/sports/components/TournamentDetailModal";
-import { TournamentRecommendationPanel } from "@/modules/sports/components/TournamentRecommendationPanel";
 import {
     groupLevelsIntoMacro,
 } from "@/modules/sports/config/macroLevels";
@@ -58,8 +56,8 @@ import {
     Wallet,
     X,
 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import {
     fadeUp,
@@ -138,7 +136,6 @@ export function PathwayExplorerSection() {
     item: any;
     type: "tournament" | "scholarship" | "university";
   } | null>(null);
-  const [detailTournament, setDetailTournament] = useState<any | null>(null);
   const [federations, setFederations] = useState<Federation[]>([]);
 
   // P1: progress tracker state
@@ -169,14 +166,44 @@ export function PathwayExplorerSection() {
   const [showReengagePrompt, setShowReengagePrompt] = useState(false);
   const [hasRunMatchThisSession, setHasRunMatchThisSession] = useState(false);
   const hasShownReengageRef = useRef(false);
+  const _cacheRestoredRef = useRef(false);
   const INTRO_KEY = "pms_roadmap_intro_v2";
 
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [contextBanner, setContextBanner] = useState<{
     age: string;
     budget: string;
     state: string;
   } | null>(null);
+
+  // Restore cached pathway result before the browser paints — prevents any
+  // loading/idle flash when the user navigates back from a federation or
+  // tournament page. useLayoutEffect fires client-only, before first paint.
+  useLayoutEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sport = params.get("sport");
+    if (!sport) return;
+    try {
+      const raw = sessionStorage.getItem("pms_pathway_cache");
+      if (!raw) return;
+      const { key, data, ts } = JSON.parse(raw);
+      const state =
+        params.get("state") ||
+        localStorage.getItem("pms_pathway_state") ||
+        "";
+      if (
+        key === `${sport.toLowerCase()}|${state}` &&
+        Date.now() - ts < 5 * 60 * 1000
+      ) {
+        setResult(data);
+        setQuery(data.pathway.sportName);
+        setStatus("success");
+        setEntitiesStatus("ready");
+        _cacheRestoredRef.current = true;
+      }
+    } catch {}
+  }, []);
 
   // Load from DB or fallback to localStorage
   useEffect(() => {
@@ -353,6 +380,19 @@ export function PathwayExplorerSection() {
       setQuery(pr.pathway.sportName);
       setStatus("success");
 
+      // Cache for instant back-navigation restore
+      try {
+        sessionStorage.setItem(
+          "pms_pathway_cache",
+          JSON.stringify({ key: `${name.toLowerCase()}|${state}`, data: pr, ts: Date.now() }),
+        );
+      } catch {}
+
+      // Update URL so "back" from detail pages restores the search
+      const returnUrl = `/roadmap?sport=${encodeURIComponent(pr.pathway.sportName)}${state ? `&state=${encodeURIComponent(state)}` : ""}`;
+      router.replace(returnUrl, { scroll: false });
+      localStorage.setItem("pms_roadmap_return_url", returnUrl);
+
       // Fetch governing federation for this sport (fire-and-forget)
       federationApi
         .listBySport(pr.pathway.sportSlug ?? pr.pathway.sportName.toLowerCase())
@@ -372,7 +412,7 @@ export function PathwayExplorerSection() {
             }
             setResult((prev: any) => {
               if (!prev) return prev;
-              return {
+              const updated = {
                 ...prev,
                 pathway: {
                   ...prev.pathway,
@@ -381,6 +421,14 @@ export function PathwayExplorerSection() {
                   universities: entities.universities,
                 },
               };
+              // Keep cache fresh with full entities
+              try {
+                sessionStorage.setItem(
+                  "pms_pathway_cache",
+                  JSON.stringify({ key: `${name.toLowerCase()}|${state}`, data: updated, ts: Date.now() }),
+                );
+              } catch {}
+              return updated;
             });
             setEntitiesStatus("ready");
           })
@@ -407,6 +455,8 @@ export function PathwayExplorerSection() {
     setNotSupportedSport("");
     setSuggestions([]);
     setShowSuggestions(false);
+    router.replace("/roadmap", { scroll: false });
+    localStorage.removeItem("pms_roadmap_return_url");
     inputRef.current?.focus();
     if (savedItems.length > 0) setActiveTab("saved");
     else if (applications.length > 0) setActiveTab("applications");
@@ -422,16 +472,30 @@ export function PathwayExplorerSection() {
     const budget = searchParams.get("budget");
 
     if (state) handleStateChange(state);
+
     if (sport) {
-      // Resolve the state synchronously (URL param, else whatever's already
-      // saved in localStorage) instead of trusting `selectedState`, which
-      // won't reflect the "load saved state" effect's update until after
-      // this mount-time effect has already run.
       const effectiveState = state || loadState();
-      handleSearch(sport, effectiveState).then(() => {
+
+      if (_cacheRestoredRef.current) {
+        // useLayoutEffect already restored state from cache — just wire up
+        // federations (fire-and-forget) and apply the level param.
+        const cached = JSON.parse(sessionStorage.getItem("pms_pathway_cache") || "{}");
+        federationApi
+          .listBySport(
+            cached.data?.pathway?.sportSlug ??
+              cached.data?.pathway?.sportName?.toLowerCase() ??
+              sport.toLowerCase(),
+          )
+          .then((feds) => setFederations(feds))
+          .catch(() => {});
         if (level) setActiveIdx(Math.max(0, parseInt(level, 10) - 1));
-      });
+      } else {
+        handleSearch(sport, effectiveState).then(() => {
+          if (level) setActiveIdx(Math.max(0, parseInt(level, 10) - 1));
+        });
+      }
     }
+
     if (age && budget) {
       setContextBanner({ age, budget, state: state || "" });
     }
@@ -1391,7 +1455,6 @@ export function PathwayExplorerSection() {
                             <FederationCard
                               key={fed.slug}
                               federation={fed}
-                              tournamentCount={result.pathway.tournaments?.length}
                             />
                           ))}
                         </div>
@@ -1406,20 +1469,6 @@ export function PathwayExplorerSection() {
                         </div>
                       )}
 
-                      {/* Tournament recommendations — kept for the personalised plan */}
-                      {result.pathway.tournaments?.length > 0 && (
-                        <div className="mt-6">
-                          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">
-                            Tournament recommendations
-                          </p>
-                          <TournamentRecommendationPanel
-                            tournaments={result.pathway.tournaments}
-                            currentLevel={progress.currentLevel}
-                            sportName={result.pathway.sportName}
-                            onViewTournament={(t) => setDetailTournament(t)}
-                          />
-                        </div>
-                      )}
                     </div>
 
                     {/* Scholarships */}
@@ -1972,134 +2021,10 @@ export function PathwayExplorerSection() {
                 )}
               </AnimatePresence>
 
-              {/* ── Persistent tab navigation ── */}
-              {result && (
-                <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {[
-                    {
-                      id: "journey" as const,
-                      icon: <Flag className="h-5 w-5" />,
-                      label: "The Journey",
-                      desc: "3-stage development map",
-                      badge: undefined,
-                      activeColor: "text-power-orange",
-                      activeBg: "bg-orange-50 border-orange-200",
-                      activeIcon: "bg-power-orange text-white",
-                      inactiveIcon: "bg-orange-100 text-power-orange",
-                    },
-                    {
-                      id: "opportunities" as const,
-                      icon: <Trophy className="h-5 w-5" />,
-                      label: "Opportunities",
-                      desc: "Tournaments & scholarships",
-                      badge: entitiesStatus === "ready" && totalOpportunities > 0 ? totalOpportunities : undefined,
-                      activeColor: "text-emerald-700",
-                      activeBg: "bg-emerald-50 border-emerald-200",
-                      activeIcon: "bg-emerald-600 text-white",
-                      inactiveIcon: "bg-emerald-100 text-emerald-600",
-                    },
-                    {
-                      id: "plan" as const,
-                      icon: <Calculator className="h-5 w-5" />,
-                      label: "The Plan",
-                      desc: "Budget & gear checklist",
-                      badge: undefined,
-                      activeColor: "text-amber-700",
-                      activeBg: "bg-amber-50 border-amber-200",
-                      activeIcon: "bg-amber-500 text-white",
-                      inactiveIcon: "bg-amber-100 text-amber-600",
-                    },
-                    {
-                      id: "inspire" as const,
-                      icon: <Sparkles className="h-5 w-5" />,
-                      label: "Inspire",
-                      desc: "Stories & career paths",
-                      badge: undefined,
-                      activeColor: "text-indigo-700",
-                      activeBg: "bg-indigo-50 border-indigo-200",
-                      activeIcon: "bg-indigo-600 text-white",
-                      inactiveIcon: "bg-indigo-100 text-indigo-600",
-                    },
-                  ].map((tab) => {
-                    const isActive = activeTab === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`group flex flex-col items-center gap-3 rounded-2xl border px-4 py-5 text-center transition-all duration-200 ${
-                          isActive
-                            ? `${tab.activeBg} shadow-sm`
-                            : "border-slate-200 bg-white/70 hover:bg-white hover:border-slate-300 hover:shadow-sm"
-                        }`}
-                      >
-                        <span
-                          className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 ${
-                            isActive ? tab.activeIcon : `${tab.inactiveIcon} group-hover:scale-105`
-                          }`}
-                        >
-                          {tab.icon}
-                        </span>
-                        <div className="space-y-0.5">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <span className={`text-sm font-bold transition-colors ${isActive ? tab.activeColor : "text-slate-700"}`}>
-                              {tab.label}
-                            </span>
-                            {tab.badge !== undefined && (
-                              <span className={`rounded-full px-1.5 py-px text-[9px] font-bold ${isActive ? "bg-white/80 text-slate-700" : "bg-slate-100 text-slate-500"}`}>
-                                {tab.badge}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[10px] text-slate-400 leading-snug">{tab.desc}</p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Tournament modal — detail view + concierge flow in one panel */}
-        {detailTournament && (
-          <TournamentModal
-            isOpen={!!detailTournament}
-            tournament={detailTournament}
-            onClose={() => setDetailTournament(null)}
-            currentLevel={progress.currentLevel}
-            sportName={result?.pathway.sportName || ""}
-            type="tournament"
-            isSaved={savedItems.some(
-              (s) =>
-                s.id ===
-                `tournament:${detailTournament?.name || ""}:${result?.pathway.sportName || ""}`,
-            )}
-            onToggleSave={() => {
-              if (!detailTournament || !result) return;
-              const id = `tournament:${detailTournament.name}:${result.pathway.sportName}`;
-              const isSaved = savedItems.some((s) => s.id === id);
-              const updated = isSaved
-                ? savedItems.filter((s) => s.id !== id)
-                : [
-                    ...savedItems,
-                    {
-                      id,
-                      type: "tournament" as const,
-                      name: detailTournament.name,
-                      sport: result.pathway.sportName,
-                      data: detailTournament,
-                      savedAt: new Date().toISOString(),
-                    },
-                  ];
-              handleSavedChange(updated);
-            }}
-            onSubmitSuccess={(record) => {
-              handleApplicationsChange([...applications, record]);
-            }}
-          />
-        )}
 
         <RoadmapIntroModal
           isOpen={introModalOpen}

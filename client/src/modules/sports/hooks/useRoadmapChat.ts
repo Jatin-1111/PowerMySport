@@ -13,14 +13,31 @@ interface ChatSessionMeta {
   totalMessageCount: number;
 }
 
+export interface RoadmapSessionSummary {
+  _id: string;
+  sportSlug: string;
+  title: string | null;
+  totalMessageCount: number;
+  updatedAt: string;
+  createdAt: string;
+}
+
 interface UseRoadmapChatOptions {
   sportSlug: string;
-  /** Current pathway level (1-5) the parent is viewing — sent with each message for context */
   level?: number;
+}
+
+function authHeaders(): Record<string, string> {
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<RoadmapSessionSummary[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -35,40 +52,132 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
   const levelRef = useRef(level);
   levelRef.current = level;
 
+  // ── Load session list ──────────────────────────────────────────────────────
+
+  const loadSessions = useCallback(async () => {
+    setIsLoadingSessions(true);
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/roadmap-chat/sessions?sportSlug=${encodeURIComponent(sportSlug)}`,
+        { headers: authHeaders(), credentials: "include" },
+      );
+      const data = await res.json();
+      if (data.success) setSessions(data.data);
+    } catch {
+      // silently ignore — history panel just shows empty
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  }, [sportSlug]);
+
+  // ── Initialize (load latest session or create one) ────────────────────────
+
   const initialize = useCallback(async () => {
     if (!sportSlug) return;
     setIsInitializing(true);
     setError(null);
     try {
-      const token =
-        typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const res = await fetch(
         `${API_BASE_URL}/roadmap-chat/${encodeURIComponent(sportSlug)}`,
-        {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          credentials: "include",
-        },
+        { headers: authHeaders(), credentials: "include" },
       );
       const data = await res.json();
       if (data.success) {
         setMessages(data.data.messages);
+        setCurrentSessionId(data.data.sessionId ?? null);
         setMeta({
           dailyRemaining: data.data.dailyRemaining,
           lifetimeRemaining: data.data.lifetimeRemaining,
-          dailyMessageCount: data.data.dailyMessageCount,
+          dailyMessageCount: data.data.dailyMessageCount ?? 0,
           totalMessageCount: data.data.totalMessageCount,
         });
+        loadSessions();
       } else {
         setError(data.message || "Failed to load chat session");
       }
-    } catch (err) {
+    } catch {
+      setError("Failed to connect to chat service");
+    } finally {
+      setIsInitializing(false);
+    }
+  }, [sportSlug, loadSessions]);
+
+  // ── Create a brand-new session ─────────────────────────────────────────────
+
+  const createNewSession = useCallback(async () => {
+    setIsInitializing(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/roadmap-chat/sessions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        credentials: "include",
+        body: JSON.stringify({ sportSlug }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessages(data.data.messages);
+        setCurrentSessionId(data.data.sessionId ?? null);
+        setMeta({
+          dailyRemaining: data.data.dailyRemaining,
+          lifetimeRemaining: data.data.lifetimeRemaining,
+          dailyMessageCount: data.data.dailyMessageCount ?? 0,
+          totalMessageCount: data.data.totalMessageCount,
+        });
+        // Prepend to local session list
+        setSessions((prev) => [
+          {
+            _id: data.data.sessionId,
+            sportSlug,
+            title: null,
+            totalMessageCount: 0,
+            updatedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+          },
+          ...prev,
+        ]);
+      } else {
+        setError(data.message || "Failed to create session");
+      }
+    } catch {
       setError("Failed to connect to chat service");
     } finally {
       setIsInitializing(false);
     }
   }, [sportSlug]);
+
+  // ── Switch to an existing session ─────────────────────────────────────────
+
+  const switchToSession = useCallback(async (sessionId: string) => {
+    if (sessionId === currentSessionId) return;
+    setIsInitializing(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/roadmap-chat/sessions/${sessionId}`,
+        { headers: authHeaders(), credentials: "include" },
+      );
+      const data = await res.json();
+      if (data.success) {
+        setMessages(data.data.messages);
+        setCurrentSessionId(sessionId);
+        setMeta({
+          dailyRemaining: data.data.dailyRemaining,
+          lifetimeRemaining: data.data.lifetimeRemaining,
+          dailyMessageCount: data.data.dailyMessageCount ?? 0,
+          totalMessageCount: data.data.totalMessageCount,
+        });
+      } else {
+        setError(data.message || "Failed to load session");
+      }
+    } catch {
+      setError("Failed to connect to chat service");
+    } finally {
+      setIsInitializing(false);
+    }
+  }, [currentSessionId]);
+
+  // ── Send a message ────────────────────────────────────────────────────────
 
   const sendMessage = useCallback(
     async (userContent: string) => {
@@ -94,46 +203,32 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
 
       abortRef.current = new AbortController();
 
-      try {
-        const token =
-          typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      // Determine endpoint: prefer session-specific, fall back to sport slug
+      const endpoint = currentSessionId
+        ? `${API_BASE_URL}/roadmap-chat/sessions/${currentSessionId}`
+        : `${API_BASE_URL}/roadmap-chat/${encodeURIComponent(sportSlug)}`;
 
-        const res = await fetch(
-          `${API_BASE_URL}/roadmap-chat/${encodeURIComponent(sportSlug)}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            credentials: "include",
-            body: JSON.stringify({
-              message: userContent.trim(),
-              level: levelRef.current,
-            }),
-            signal: abortRef.current.signal,
-          },
-        );
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          credentials: "include",
+          body: JSON.stringify({ message: userContent.trim(), level: levelRef.current }),
+          signal: abortRef.current.signal,
+        });
 
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
-          const errMsg =
-            errData.message || `Chat request failed (${res.status})`;
+          const errMsg = errData.message || `Chat request failed (${res.status})`;
           setMessages((prev) => prev.slice(0, -1));
           setError(errMsg);
-          if (res.status === 429) {
-            setMeta((m) => ({ ...m, dailyRemaining: 0 }));
-          }
+          if (res.status === 429) setMeta((m) => ({ ...m, dailyRemaining: 0 }));
           return;
         }
 
         const reader = res.body?.getReader();
         const decoder = new TextDecoder();
-
-        if (!reader) {
-          setError("No response stream available");
-          return;
-        }
+        if (!reader) { setError("No response stream available"); return; }
 
         let buffer = "";
         let fullContent = "";
@@ -150,7 +245,6 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
             if (!line.startsWith("data: ")) continue;
             const jsonStr = line.slice(6).trim();
             if (!jsonStr) continue;
-
             try {
               const parsed = JSON.parse(jsonStr);
               if (parsed.chunk) {
@@ -158,11 +252,8 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
                 setMessages((prev) => {
                   const updated = [...prev];
                   const last = updated[updated.length - 1];
-                  if (last && last.role === "assistant") {
-                    updated[updated.length - 1] = {
-                      ...last,
-                      content: fullContent,
-                    };
+                  if (last?.role === "assistant") {
+                    updated[updated.length - 1] = { ...last, content: fullContent };
                   }
                   return updated;
                 });
@@ -174,6 +265,20 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
                   dailyRemaining: Math.max(0, m.dailyRemaining - 1),
                   lifetimeRemaining: Math.max(0, m.lifetimeRemaining - 1),
                 }));
+                // Update title in sessions list if this was the first user message
+                if (currentSessionId) {
+                  setSessions((prev) =>
+                    prev.map((s) =>
+                      s._id === currentSessionId
+                        ? {
+                            ...s,
+                            title: s.title ?? (userContent.trim().slice(0, 60) + (userContent.trim().length > 60 ? "…" : "")),
+                            updatedAt: new Date().toISOString(),
+                          }
+                        : s,
+                    ),
+                  );
+                }
               } else if (parsed.error) {
                 setError(parsed.error);
               }
@@ -191,7 +296,7 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
         setIsLoading(false);
       }
     },
-    [sportSlug, isStreaming],
+    [sportSlug, isStreaming, currentSessionId],
   );
 
   const cancelStream = useCallback(() => {
@@ -204,12 +309,18 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
 
   return {
     messages,
+    currentSessionId,
+    sessions,
+    isLoadingSessions,
     isLoading,
     isInitializing,
     isStreaming,
     meta,
     error,
     initialize,
+    loadSessions,
+    createNewSession,
+    switchToSession,
     sendMessage,
     cancelStream,
     clearError,

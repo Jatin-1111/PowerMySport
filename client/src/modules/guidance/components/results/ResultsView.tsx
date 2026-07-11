@@ -6,10 +6,12 @@ import { useAuthStore } from "@/modules/auth/store/authStore";
 import { motion } from "framer-motion";
 import {
     ArrowRight,
+    CalendarCheck,
     Download,
     Loader2,
     MessageCircle,
     Route,
+    Sparkles,
     TrendingUp,
     Trophy,
     UserPlus,
@@ -171,92 +173,91 @@ export function ResultsView({
       {r.costBreakdown && <CostBreakdownCard c={r.costBreakdown} />}
 
       {/* Do This Next */}
-      <div className="rounded-3xl border border-emerald-200 bg-emerald-50/50 p-5 sm:p-6 shadow-sm">
+      <div className="rounded-3xl border border-slate-200/60 bg-white p-5 sm:p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100/80">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
             <TrendingUp className="h-5 w-5 text-emerald-600" />
           </div>
           <div>
-            <h3 className="font-title text-lg font-bold text-emerald-900 leading-tight">
+            <h3 className="font-title text-lg font-bold text-slate-900 leading-tight">
               Do This Next
             </h3>
-            <p className="text-xs text-emerald-700/70 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Immediate actions on PowerMySport
             </p>
           </div>
         </div>
-        <ul className="space-y-3">
-          {actions ? (
-            <>
-              <li className="flex items-center gap-2.5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white">1</span>
-                <div className="flex flex-1 items-center justify-between gap-3 min-w-0">
-                  <span className="text-sm leading-relaxed text-emerald-900/90 font-medium">
-                    Book a 1-on-1 session with a certified coach for personalised guidance.
-                  </span>
-                  <Link
-                    href="/experts"
-                    className="shrink-0 flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 transition whitespace-nowrap"
-                  >
-                    Go <ArrowRight className="h-3 w-3" />
-                  </Link>
-                </div>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white">2</span>
-                <div className="flex flex-1 items-center justify-between gap-3 min-w-0">
-                  <span className="text-sm leading-relaxed text-emerald-900/90 font-medium">
-                    Ask PowerMySport AI follow-up questions about any part of this plan.
-                  </span>
-                  <button
-                    id="chat-with-coach-btn"
-                    type="button"
-                    onClick={actions.onChatClick}
-                    className="shrink-0 flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 transition whitespace-nowrap"
-                  >
-                    Go <ArrowRight className="h-3 w-3" />
-                  </button>
-                </div>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white">3</span>
-                <div className="flex flex-1 items-center justify-between gap-3 min-w-0">
-                  <span className="text-sm leading-relaxed text-emerald-900/90 font-medium">
-                    Message our team on WhatsApp — a specialist will reply personally.
-                  </span>
-                  <a
-                    href={actions.waUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 transition whitespace-nowrap"
-                  >
-                    Go <ArrowRight className="h-3 w-3" />
-                  </a>
-                </div>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white">4</span>
-                <div className="flex flex-1 items-center justify-between gap-3 min-w-0">
-                  <span className="text-sm leading-relaxed text-emerald-900/90 font-medium">
-                    Download this roadmap as a PDF to save or share offline.
-                  </span>
-                  <button
-                    type="button"
-                    onClick={actions.onDownloadPdf}
-                    disabled={actions.downloadingPdf}
-                    className="shrink-0 flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 transition whitespace-nowrap disabled:opacity-50"
-                  >
-                    {actions.downloadingPdf ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <>Go <ArrowRight className="h-3 w-3" /></>
-                    )}
-                  </button>
-                </div>
-              </li>
-            </>
-          ) : (
-            nextSteps.map((step, i) => {
+        {actions ? (
+          <div className="grid grid-cols-2 gap-3">
+            {/* Book an Expert */}
+            <Link
+              href="/experts"
+              className="group flex flex-col items-start gap-3 rounded-2xl border border-orange-100 bg-orange-50 p-4 transition hover:border-orange-200 hover:bg-orange-100/60 cursor-pointer"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 group-hover:bg-orange-200/70 transition">
+                <CalendarCheck className="h-4 w-4 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold leading-tight text-slate-800">Book an Expert</p>
+                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">1-on-1 with a certified expert</p>
+              </div>
+            </Link>
+
+            {/* Ask AI Coach */}
+            <button
+              id="chat-with-coach-btn"
+              type="button"
+              onClick={actions.onChatClick}
+              className="group flex flex-col items-start gap-3 rounded-2xl border border-violet-100 bg-violet-50 p-4 text-left transition hover:border-violet-200 hover:bg-violet-100/60 cursor-pointer"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 group-hover:bg-violet-200/70 transition">
+                <Sparkles className="h-4 w-4 text-violet-600" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold leading-tight text-slate-800">Ask PowerMySport AI</p>
+                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">Follow-up on any part of this plan</p>
+              </div>
+            </button>
+
+            {/* WhatsApp Us */}
+            <a
+              href={actions.waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex flex-col items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 transition hover:border-emerald-200 hover:bg-emerald-100/60 cursor-pointer"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 group-hover:bg-emerald-200/70 transition">
+                <WhatsAppIcon className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold leading-tight text-slate-800">WhatsApp Us</p>
+                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">A specialist replies personally</p>
+              </div>
+            </a>
+
+            {/* Download PDF */}
+            <button
+              type="button"
+              onClick={actions.onDownloadPdf}
+              disabled={actions.downloadingPdf}
+              className="group flex flex-col items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-slate-300 hover:bg-slate-100/60 disabled:opacity-50 cursor-pointer"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-200 group-hover:bg-slate-300/70 transition">
+                {actions.downloadingPdf ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-slate-600" />
+                ) : (
+                  <Download className="h-4 w-4 text-slate-600" />
+                )}
+              </div>
+              <div>
+                <p className="text-[13px] font-bold leading-tight text-slate-800">Download PDF</p>
+                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">Save or share offline</p>
+              </div>
+            </button>
+          </div>
+        ) : (
+          <ul className="space-y-3">
+            {nextSteps.map((step, i) => {
               const actionUrl = getActionUrl(step, submission.query.sport);
               return (
                 <li key={i} className="flex items-start gap-2.5">
@@ -278,9 +279,9 @@ export function ResultsView({
                   </div>
                 </li>
               );
-            })
-          )}
-        </ul>
+            })}
+          </ul>
+        )}
       </div>
 
       {/* Burnout risk — self-hides when risk level is low */}

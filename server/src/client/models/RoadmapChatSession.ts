@@ -4,6 +4,7 @@ import { ChatMessage } from "./GuidanceChatSession";
 export interface RoadmapChatSessionDocument extends Document {
   userId: mongoose.Types.ObjectId;
   sportSlug: string;
+  title: string | null;
   messages: ChatMessage[];
   totalMessageCount: number;
   createdAt: Date;
@@ -27,14 +28,16 @@ const roadmapChatSessionSchema = new Schema<RoadmapChatSessionDocument>(
       required: true,
     },
     sportSlug: { type: String, required: true },
+    title: { type: String, default: null },
     messages: { type: [chatMessageSchema], default: [] },
     totalMessageCount: { type: Number, default: 0 },
   },
   { timestamps: true },
 );
 
-// One running conversation per (user, sport) — spans every level of that sport
-roadmapChatSessionSchema.index({ userId: 1, sportSlug: 1 }, { unique: true });
+// Non-unique index — multiple sessions per (user, sport) are allowed
+roadmapChatSessionSchema.index({ userId: 1, sportSlug: 1 });
+roadmapChatSessionSchema.index({ userId: 1, updatedAt: -1 });
 
 export const RoadmapChatSession = mongoose.model<RoadmapChatSessionDocument>(
   "RoadmapChatSession",

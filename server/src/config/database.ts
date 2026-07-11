@@ -58,6 +58,17 @@ export const connectDB = async (): Promise<void> => {
     console.log(
       `🔌 Database Pool initialized: Min ${options.minPoolSize} / Max ${options.maxPoolSize} connections`,
     );
+
+    // Drop the old unique index on RoadmapChatSession so multiple sessions per
+    // user+sport are allowed. Safe to call repeatedly — errors are ignored.
+    try {
+      await mongoose.connection.db
+        ?.collection("roadmapchatsessions")
+        .dropIndex("userId_1_sportSlug_1");
+      console.log("✅ Dropped unique RoadmapChatSession index (if present)");
+    } catch {
+      // Index already dropped or never existed — fine
+    }
   } catch (error) {
     connectionPromise = null;
     console.error("❌ MongoDB connection failed:", error);

@@ -29,8 +29,8 @@ const SEED_DATA = [
       "The All India Tennis Association (AITA) is the national governing body for tennis in India, recognised by the International Tennis Federation (ITF) and the Olympic Committee of India. Founded in 1920, AITA administers all competitive tennis in India — from junior grassroots tournaments to the Davis Cup and Billie Jean King Cup national teams. All competitive players must be registered with their state tennis association, which is affiliated to AITA, before they can participate in any AITA-sanctioned event.",
     founded: 1920,
     headquarters: "New Delhi",
-    website: "https://www.aita.in",
-    officialCalendarUrl: "https://www.aita.in/tournament-calendar",
+    website: "https://aitatennis.com",
+    officialCalendarUrl: "https://aitatennis.com/management/calendar.php",
     affiliations: [
       "International Tennis Federation (ITF)",
       "Asian Tennis Federation (ATF)",

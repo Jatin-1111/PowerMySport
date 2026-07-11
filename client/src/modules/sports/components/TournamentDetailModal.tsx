@@ -34,6 +34,30 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function toDocumentTypeEnum(label: string): string {
+  const l = label.toLowerCase();
+  if (l.includes("aita")) return "AITA_ID";
+  if (l.includes("bcci")) return "BCCI_ID";
+  if (l.includes("birth") || l.includes("proof of age") || l.includes("aadhaar"))
+    return "BIRTH_CERTIFICATE";
+  if (l.includes("noc") || l.includes("school") || l.includes("college"))
+    return "SCHOOL_CERTIFICATE";
+  if (l.includes("passport") || l.includes("identity") || l.includes("id card"))
+    return "ID_PROOF";
+  if (l.includes("address")) return "ADDRESS_PROOF";
+  if (
+    l.includes("certificate") ||
+    l.includes("federation") ||
+    l.includes("membership") ||
+    l.includes("registration") ||
+    l.includes("association")
+  )
+    return "SPORTS_CERTIFICATE";
+  return "OTHER";
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Step =
@@ -376,7 +400,7 @@ export function TournamentModal({
           const res = await axiosInstance.post("/concierge/presigned-url", {
             fileName: file.name,
             contentType: file.type,
-            documentType: docName,
+            documentType: toDocumentTypeEnum(docName),
           });
           await fetch(res.data.uploadUrl, {
             method: "PUT",
@@ -387,7 +411,7 @@ export function TournamentModal({
         }),
       );
       await axiosInstance.post("/concierge/request", {
-        sportSlug: tournament.sportName || "sport",
+        sportSlug: tournament.sportSlug || tournament.sportName || "sport",
         itemType: type,
         itemId: tournament._id || "unknown",
         itemName: tournament.name,

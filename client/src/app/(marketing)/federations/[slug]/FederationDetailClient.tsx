@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArrowLeft,
   ArrowRight,
   BadgeCheck,
   Calendar,
@@ -22,6 +21,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
+import { BackToRoadmapLink } from "@/components/BackToRoadmapLink";
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { FederationDetail } from "./page";
 import type { Tournament } from "@/modules/sports/services/pathway";
@@ -43,9 +43,9 @@ const SPORT_LABEL: Record<string, string> = {
 };
 
 const TYPE_META = {
-  govt: { label: "Government Body", bg: "bg-blue-100/80", text: "text-blue-300", border: "border-blue-400/20" },
-  national: { label: "National Federation", bg: "bg-emerald-100/80", text: "text-emerald-300", border: "border-emerald-400/20" },
-  hybrid: { label: "Public-Private Body", bg: "bg-violet-100/80", text: "text-violet-300", border: "border-violet-400/20" },
+  govt: { label: "Government Body", bg: "bg-blue-500/20", text: "text-blue-200", border: "border-blue-400/30" },
+  national: { label: "National Federation", bg: "bg-emerald-500/20", text: "text-emerald-200", border: "border-emerald-400/30" },
+  hybrid: { label: "Public-Private Body", bg: "bg-violet-500/20", text: "text-violet-200", border: "border-violet-400/30" },
 } as const;
 
 const LEVEL_COLORS: Record<string, { pill: string; dot: string }> = {
@@ -73,8 +73,14 @@ const LEVEL_FILTERS = ["All", "International", "National", "State", "District", 
 
 // ─── Main client component ────────────────────────────────────────────────────
 
-export function FederationDetailClient({ federation: fed }: { federation: FederationDetail }) {
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
+export function FederationDetailClient({
+  federation: fed,
+  initialTab = "overview",
+}: {
+  federation: FederationDetail;
+  initialTab?: TabId;
+}) {
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const tabBarRef = useRef<HTMLDivElement>(null);
 
   // Tournaments tab state
@@ -131,13 +137,7 @@ export function FederationDetailClient({ federation: fed }: { federation: Federa
 
           {/* Breadcrumb */}
           <div className="pt-5 pb-4 border-b border-white/[0.07]">
-            <Link
-              href="/roadmap"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-white/35 hover:text-white/65 transition"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Back to Pathway Explorer
-            </Link>
+            <BackToRoadmapLink />
           </div>
 
           {/* Header content */}
@@ -479,7 +479,7 @@ export function FederationDetailClient({ federation: fed }: { federation: Federa
                   return (
                     <Link
                       key={i}
-                      href={t.slug ? `/tournaments/${t.slug}` : "#"}
+                      href={t.slug ? `/federations/${fed.slug}/${t.slug}` : "#"}
                       className="group relative rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm transition-all duration-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.09)] hover:border-orange-200 hover:-translate-y-0.5"
                     >
                       <div className="h-[3px] w-full bg-gradient-to-r from-power-orange to-amber-400" />
@@ -626,7 +626,7 @@ export function FederationDetailClient({ federation: fed }: { federation: Federa
                         Always confirm the exact cutoff dates in the official tournament circular before entering.
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {fed.sourceUrls.map((url, i) => {
+                        {[...new Set(fed.sourceUrls)].map((url, i) => {
                           let hostname = url;
                           try { hostname = new URL(url).hostname; } catch {}
                           return (

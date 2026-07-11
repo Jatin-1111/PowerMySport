@@ -30,6 +30,28 @@ interface PathwayConciergeModalProps {
   }) => void;
 }
 
+function toDocumentTypeEnum(label: string): string {
+  const l = label.toLowerCase();
+  if (l.includes("aita")) return "AITA_ID";
+  if (l.includes("bcci")) return "BCCI_ID";
+  if (l.includes("birth") || l.includes("proof of age") || l.includes("aadhaar"))
+    return "BIRTH_CERTIFICATE";
+  if (l.includes("noc") || l.includes("school") || l.includes("college"))
+    return "SCHOOL_CERTIFICATE";
+  if (l.includes("passport") || l.includes("identity") || l.includes("id card"))
+    return "ID_PROOF";
+  if (l.includes("address")) return "ADDRESS_PROOF";
+  if (
+    l.includes("certificate") ||
+    l.includes("federation") ||
+    l.includes("membership") ||
+    l.includes("registration") ||
+    l.includes("association")
+  )
+    return "SPORTS_CERTIFICATE";
+  return "OTHER";
+}
+
 export function PathwayConciergeModal({
   isOpen,
   onClose,
@@ -166,7 +188,7 @@ export function PathwayConciergeModal({
         const res = await axiosInstance.post("/concierge/presigned-url", {
           fileName: file.name,
           contentType: file.type,
-          documentType: docName,
+          documentType: toDocumentTypeEnum(docName),
         });
 
         // 2. Upload directly to S3
@@ -186,7 +208,7 @@ export function PathwayConciergeModal({
 
       // 3. Submit request to backend
       await axiosInstance.post("/concierge/request", {
-        sportSlug: item.sportName || "sport", // Fallback
+        sportSlug: item.sportSlug || item.sportName || "sport",
         itemType: type,
         itemId: item._id || "unknown",
         itemName: item.name,
@@ -561,10 +583,7 @@ export function PathwayConciergeModal({
 
       <div className="flex gap-3">
         <button
-          onClick={() => {
-            setApplyTarget("prerequisite");
-            setStep("upload");
-          }}
+          onClick={() => setStep("upload")}
           className="flex-1 rounded-xl bg-power-orange py-3.5 text-sm font-bold text-white shadow-md hover:bg-orange-600 transition-colors"
         >
           Yes, I do

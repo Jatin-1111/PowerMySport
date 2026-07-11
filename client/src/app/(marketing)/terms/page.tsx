@@ -21,7 +21,7 @@ export default function TermsOfServicePage() {
                 Terms of Service
               </h1>
               <p className="text-slate-200 text-base sm:text-lg max-w-2xl">
-                Last updated: July 9, 2026 | Effective: July 9, 2026
+                Last updated: July 11, 2026 | Effective: July 11, 2026
               </p>
             </div>
             <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-power-orange/20 blur-3xl" />
@@ -33,7 +33,36 @@ export default function TermsOfServicePage() {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card className="bg-white p-8 prose prose-slate max-w-none">
-          <section className="mb-8">
+
+          {/* Table of Contents */}
+          <section className="mb-8 bg-slate-50 rounded-xl p-6 border border-slate-200 not-prose">
+            <h2 className="text-lg font-bold text-slate-900 mb-4">Table of Contents</h2>
+            <ol className="list-decimal pl-5 text-slate-600 space-y-1 text-sm sm:columns-2">
+              <li><a href="#agreement" className="text-power-orange hover:underline">Agreement to Terms</a></li>
+              <li><a href="#services" className="text-power-orange hover:underline">Description of Services</a></li>
+              <li><a href="#account" className="text-power-orange hover:underline">Account Registration</a></li>
+              <li><a href="#responsibilities" className="text-power-orange hover:underline">User Responsibilities</a></li>
+              <li><a href="#expert-verification" className="text-power-orange hover:underline">Expert Verification &amp; Onboarding</a></li>
+              <li><a href="#booking" className="text-power-orange hover:underline">Booking and Payments</a></li>
+              <li><a href="#expert-sessions" className="text-power-orange hover:underline">Expert Sessions</a></li>
+              <li><a href="#commission" className="text-power-orange hover:underline">Commission and Fees</a></li>
+              <li><a href="#ip" className="text-power-orange hover:underline">Intellectual Property</a></li>
+              <li><a href="#prohibited" className="text-power-orange hover:underline">Prohibited Activities</a></li>
+              <li><a href="#warranties" className="text-power-orange hover:underline">Disclaimer of Warranties</a></li>
+              <li><a href="#liability" className="text-power-orange hover:underline">Limitation of Liability</a></li>
+              <li><a href="#indemnification" className="text-power-orange hover:underline">Indemnification</a></li>
+              <li><a href="#dispute" className="text-power-orange hover:underline">Dispute Resolution and Arbitration</a></li>
+              <li><a href="#grievance" className="text-power-orange hover:underline">Grievance Redressal</a></li>
+              <li><a href="#termination" className="text-power-orange hover:underline">Termination</a></li>
+              <li><a href="#relationship" className="text-power-orange hover:underline">Relationship of Parties</a></li>
+              <li><a href="#force-majeure" className="text-power-orange hover:underline">Force Majeure</a></li>
+              <li><a href="#general" className="text-power-orange hover:underline">General Provisions</a></li>
+              <li><a href="#governing-law" className="text-power-orange hover:underline">Governing Law</a></li>
+              <li><a href="#contact" className="text-power-orange hover:underline">Contact Information</a></li>
+            </ol>
+          </section>
+
+          <section id="agreement" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Agreement to Terms
             </h2>
@@ -62,12 +91,13 @@ export default function TermsOfServicePage() {
             <p className="text-slate-600 leading-relaxed">
               These Terms apply to all users of the Platform, including
               without limitation players, guardians, venue listers, coaches,
-              academies, and visitors, and supersede all prior agreements,
-              representations, and understandings, whether written or oral.
+              academies, experts, and visitors, and supersede all prior
+              agreements, representations, and understandings, whether written
+              or oral.
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="services" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Description of Services
             </h2>
@@ -99,32 +129,37 @@ export default function TermsOfServicePage() {
                 players
               </li>
               <li>
-                <strong>Experts:</strong> Professionals offering guidance,
-                consultation, or advisory services through the Platform
+                <strong>Experts:</strong> Elite or experienced sports
+                professionals — including ex-professional players, certified
+                analysts, and senior-level coaches — who offer paid,
+                one-on-one guidance, mentorship, career advice, and advisory
+                sessions to clients through the Platform, in online or
+                in-person format. Expert profiles are subject to verification
+                and approval by PowerMySport before going live
               </li>
             </ul>
             <p className="text-slate-600 leading-relaxed mt-4">
-              Academies, Coaches, and Experts may be subject to additional
-              onboarding terms specific to their category, which are
-              incorporated into these Terms by reference. Parents/guardians
-              are fully responsible for all activity conducted through
-              dependent profiles they create.
+              Academies, Coaches, and Experts are subject to additional
+              onboarding, verification, and role-specific terms incorporated
+              into these Terms by reference. Parents/guardians are fully
+              responsible for all activity conducted through dependent profiles
+              they create.
             </p>
             <p className="text-slate-600 leading-relaxed mt-4">
               PowerMySport is strictly an intermediary technology platform. We
               do not own, operate, control, employ, or supervise any venue,
-              coach, or academy listed on the Platform, and we are not a party
-              to any agreement formed between users. We do not guarantee the
-              quality, safety, legality, suitability, availability, or
-              accuracy of any listing, service, or user, and we expressly
-              disclaim any responsibility for the acts, omissions, or conduct
-              of any third party. We reserve the right to modify, suspend,
-              restrict, or discontinue any feature of the Platform, in whole
-              or in part, at any time and without liability or notice.
+              coach, expert, or academy listed on the Platform, and we are not
+              a party to any agreement formed between users. We do not
+              guarantee the quality, safety, legality, suitability,
+              availability, or accuracy of any listing, service, or user, and
+              we expressly disclaim any responsibility for the acts, omissions,
+              or conduct of any third party. We reserve the right to modify,
+              suspend, restrict, or discontinue any feature of the Platform,
+              in whole or in part, at any time and without liability or notice.
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="account" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Account Registration
             </h2>
@@ -164,7 +199,7 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="responsibilities" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               User Responsibilities
             </h2>
@@ -232,7 +267,10 @@ export default function TermsOfServicePage() {
             </h3>
             <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
               <li>Provide accurate, current venue information and photographs</li>
-              <li>Maintain facilities in safe, good, and legally compliant condition at all times</li>
+              <li>
+                Maintain facilities in safe, good, and legally compliant
+                condition at all times
+              </li>
               <li>Honor every confirmed booking without exception</li>
               <li>
                 Provide authentic, verifiable documentation during onboarding
@@ -253,7 +291,7 @@ export default function TermsOfServicePage() {
             <h3 className="text-xl font-semibold text-slate-900 mb-3">
               For Coaches
             </h3>
-            <ul className="list-disc pl-6 text-slate-600 space-y-2">
+            <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
               <li>
                 Provide valid, verifiable certifications and credentials, and
                 promptly furnish proof upon request
@@ -266,9 +304,230 @@ export default function TermsOfServicePage() {
               </li>
               <li>Update availability and rates promptly and accurately</li>
             </ul>
+
+            <h3 className="text-xl font-semibold text-slate-900 mb-3">
+              For Experts
+            </h3>
+            <div className="bg-orange-50 border-l-4 border-power-orange p-4 mb-5 rounded-r-lg not-prose">
+              <p className="text-slate-700 text-sm font-medium">
+                These obligations apply specifically to users registered as an
+                Expert. Experts are independently contracted service providers,
+                not employees of PowerMySport.
+              </p>
+            </div>
+            <ul className="list-disc pl-6 text-slate-600 space-y-3">
+              <li>
+                <strong>Accurate profile:</strong> Maintain a truthful, current,
+                and complete profile at all times, including bio, sports,
+                expertise areas, achievements, qualifications, session fee,
+                session mode (online / in-person / both), session duration,
+                languages, city, and weekly availability schedule.
+                Misleading profile information is grounds for immediate
+                suspension
+              </li>
+              <li>
+                <strong>Credentials:</strong> Provide only verifiable, authentic
+                credentials, qualifications, and achievement claims. Furnish
+                documentary proof upon request by PowerMySport or, where
+                required, to clients. Misrepresentation of credentials
+                constitutes a material breach entitling us to immediately
+                terminate your Expert account
+              </li>
+              <li>
+                <strong>Booking acceptance:</strong> Respond to new booking
+                requests (accept or decline) within 24 hours of notification.
+                Failure to respond may be treated as automatic acceptance or
+                system-driven cancellation at PowerMySport&apos;s sole
+                discretion. Repeated non-responses may result in account
+                suspension
+              </li>
+              <li>
+                <strong>Honor accepted sessions:</strong> Once you accept a
+                booking and it reaches SCHEDULED status you must conduct the
+                session as agreed. Cancelling an accepted session entitles the
+                client to a full refund and may result in payout forfeiture,
+                account warnings, or suspension
+              </li>
+              <li>
+                <strong>Cancellation notice:</strong> If you must cancel an
+                accepted session, notify both the client and PowerMySport as
+                early as possible and in any case no less than 24 hours before
+                the scheduled start time. Late cancellations (under 24 hours)
+                or no-shows are treated as breaches and may result in payout
+                forfeiture and/or account action
+              </li>
+              <li>
+                <strong>Online sessions — meeting link:</strong> For online
+                sessions you must provide a valid, working meeting link in the
+                Platform at least 2 hours before the scheduled start time.
+                Failure to do so may entitle the client to a full refund and
+                will be treated as a cancellation by you
+              </li>
+              <li>
+                <strong>In-person sessions — location accuracy:</strong> The
+                in-person address you provide must be accurate, accessible,
+                safe, and compliant with all applicable local laws. You are
+                solely responsible for the suitability and safety of any
+                in-person session venue. The address is shared only with
+                clients who have a confirmed booking; you must not alter it
+                after confirmation without the client&apos;s express agreement
+                and notification to PowerMySport
+              </li>
+              <li>
+                <strong>Availability &amp; blackout dates:</strong> Keep your
+                weekly availability schedule and blackout dates accurate and
+                up to date. You are solely responsible for conflicts arising
+                from inaccurate availability settings; double-booking or
+                failing to honor sessions due to inaccurate settings will be
+                treated as an expert-side cancellation
+              </li>
+              <li>
+                <strong>Session conduct:</strong> Conduct every session
+                professionally, punctually, and within the scope of sports
+                guidance, mentorship, or advisory services represented in
+                your profile. Sessions must be lawful, respectful, and
+                appropriate at all times
+              </li>
+              <li>
+                <strong>Client confidentiality:</strong> Do not disclose the
+                identity, session content, personal details, or communications
+                of any client to any third party without the client&apos;s
+                prior written consent, except where required by law
+              </li>
+              <li>
+                <strong>No circumvention:</strong> Do not solicit, arrange, or
+                complete any session or payment with a client you met through
+                the Platform outside the Platform to avoid commission or fees.
+                Circumvention constitutes a material breach entitling us to
+                immediately terminate your account and recover unpaid commission
+              </li>
+              <li>
+                <strong>Payout methods:</strong> Maintain at least one valid,
+                verified payout method (bank transfer or UPI) on the Platform.
+                PowerMySport is not liable for payout failures arising from
+                incorrect or outdated payout details you provide
+              </li>
+              <li>
+                <strong>Tax compliance:</strong> You are solely responsible for
+                reporting and remitting all taxes (including GST, income tax,
+                and TDS, as applicable) on income earned through the Platform.
+                PowerMySport may deduct TDS as required by applicable Indian
+                law and will issue the relevant statutory certificate
+              </li>
+              <li>
+                <strong>Insurance and liability:</strong> For in-person
+                sessions, you are solely responsible for maintaining adequate
+                personal liability insurance. PowerMySport bears no
+                responsibility for any injury, loss, or damage occurring during
+                or arising from any session you conduct
+              </li>
+              <li>
+                <strong>Regulatory compliance:</strong> Comply with all
+                applicable laws, including the Consumer Protection Act, 2019,
+                the Digital Personal Data Protection Act, 2023, and any
+                sector-specific regulations governing your area of expertise
+              </li>
+            </ul>
           </section>
 
-          <section className="mb-8">
+          <section id="expert-verification" className="mb-8">
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">
+              Expert Verification &amp; Onboarding
+            </h2>
+            <p className="text-slate-600 leading-relaxed mb-4">
+              All Expert accounts are subject to a mandatory verification
+              process before going live on the Platform. By applying to become
+              an Expert, you agree to the following:
+            </p>
+
+            <h3 className="text-xl font-semibold text-slate-900 mb-3">
+              Verification Stages
+            </h3>
+            <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
+              <li>
+                <strong>UNVERIFIED:</strong> Your account is created but your
+                profile is not visible to clients and you cannot receive
+                bookings. You must complete the onboarding wizard and submit
+                for review
+              </li>
+              <li>
+                <strong>PENDING:</strong> Your application has been submitted
+                and is under review by the PowerMySport team. We aim to complete
+                the review within 5–7 business days, though this may take
+                longer. You will be notified of the outcome via email and
+                in-platform notification
+              </li>
+              <li>
+                <strong>APPROVED:</strong> Your profile is live and visible to
+                clients; you can receive and accept booking requests
+              </li>
+              <li>
+                <strong>REJECTED:</strong> Your application did not meet our
+                requirements. You will receive a reason for rejection and may
+                resubmit after addressing the identified issues. Repeated
+                misrepresentation during verification may result in a permanent
+                ban from the Expert programme
+              </li>
+            </ul>
+
+            <h3 className="text-xl font-semibold text-slate-900 mb-3">
+              Verification Obligations
+            </h3>
+            <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
+              <li>
+                You must provide honest, accurate, and complete information
+                during onboarding, including government-issued identity proof,
+                sports credentials, certifications, achievements, and any
+                other documents we reasonably request
+              </li>
+              <li>
+                You must promptly update your profile if any submitted
+                information changes after approval (e.g., if certifications
+                lapse or credentials are revoked)
+              </li>
+              <li>
+                PowerMySport may conduct background checks, reference checks,
+                or credential verification through third-party services at
+                any time, including after initial approval
+              </li>
+              <li>
+                PowerMySport reserves the right to revoke Expert APPROVED
+                status at any time if submitted information is found to be
+                false, if conduct falls below expected standards, or for any
+                other reason at our sole discretion
+              </li>
+              <li>
+                Admin-provisioned Expert accounts (created directly by
+                PowerMySport staff) bypass the self-registration verification
+                flow but remain subject to all Expert obligations in these Terms
+              </li>
+            </ul>
+
+            <h3 className="text-xl font-semibold text-slate-900 mb-3">
+              Profile Standards
+            </h3>
+            <ul className="list-disc pl-6 text-slate-600 space-y-2">
+              <li>
+                Expert profile photos must be a clear, professional image of
+                yourself. Use of stock photos, logos, or images of other
+                persons is prohibited and grounds for rejection or removal
+              </li>
+              <li>
+                Bio and expertise descriptions must accurately represent your
+                actual qualifications and experience. Superlative or
+                unverifiable claims without supporting evidence may be removed
+                at our discretion
+              </li>
+              <li>
+                Session fees must be set in good faith and reflect the actual
+                service offered. Artificially inflating fees and privately
+                offering discounts outside the Platform constitutes
+                circumvention
+              </li>
+            </ul>
+          </section>
+
+          <section id="booking" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Booking and Payments
             </h2>
@@ -277,8 +536,13 @@ export default function TermsOfServicePage() {
               Booking Process
             </h3>
             <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
-              <li>All bookings are subject to availability and are not guaranteed until confirmed</li>
-              <li>Bookings are confirmed only after successful payment capture</li>
+              <li>
+                All bookings are subject to availability and are not guaranteed
+                until confirmed
+              </li>
+              <li>
+                Bookings are confirmed only after successful payment capture
+              </li>
               <li>
                 You will receive a confirmation email with booking details;
                 you are solely responsible for verifying its accuracy
@@ -300,19 +564,29 @@ export default function TermsOfServicePage() {
               Payment Terms
             </h3>
             <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
-              <li>All prices are displayed in Indian Rupees (INR) and are inclusive of applicable taxes unless stated otherwise</li>
-              <li>Full payment must be completed at the time of booking; no booking is held without payment</li>
+              <li>
+                All prices are displayed in Indian Rupees (INR) and are
+                inclusive of applicable taxes unless stated otherwise
+              </li>
+              <li>
+                Full payment must be completed at the time of booking; no
+                booking is held without payment
+              </li>
               <li>
                 We accept major credit/debit cards, UPI, and digital wallets
                 through our authorized payment partners; we are not liable for
                 any failure, delay, or error caused by such third-party
                 payment providers
               </li>
-              <li>Service charges and platform fees are disclosed before payment and are strictly non-negotiable</li>
               <li>
-                Venue listers and coaches receive payouts only after booking
-                completion and only in accordance with our then-current
-                payout schedule, which we may change at our sole discretion
+                Service charges and platform fees are disclosed before payment
+                and are strictly non-negotiable
+              </li>
+              <li>
+                Venue listers, coaches, and experts receive payouts only after
+                booking/session completion and only in accordance with our
+                then-current payout schedule, which we may change at our sole
+                discretion
               </li>
             </ul>
 
@@ -331,20 +605,183 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="expert-sessions" className="mb-8">
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">
+              Expert Sessions
+            </h2>
+            <p className="text-slate-600 leading-relaxed mb-4">
+              Expert sessions are paid one-on-one sessions booked by clients
+              directly with an Expert through the Platform. The following terms
+              govern the expert session lifecycle in addition to the general
+              booking and payment terms above.
+            </p>
+
+            <h3 className="text-xl font-semibold text-slate-900 mb-3">
+              Session Lifecycle
+            </h3>
+            <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
+              <li>
+                <strong>PENDING_PAYMENT:</strong> A client initiates a booking
+                and a slot hold is placed on the Expert&apos;s calendar while
+                payment is in progress. The hold expires if payment is not
+                completed within the prescribed window, automatically freeing
+                the slot
+              </li>
+              <li>
+                <strong>SCHEDULED:</strong> Payment has been successfully
+                captured and the Expert has accepted the booking. The session
+                is confirmed for both parties
+              </li>
+              <li>
+                <strong>COMPLETED:</strong> The session has concluded.
+                Completion may be triggered automatically once the scheduled
+                end time passes or manually by an admin. Clients may submit a
+                rating and review after completion
+              </li>
+              <li>
+                <strong>CANCELLED:</strong> The session was cancelled by the
+                client, the Expert, an admin, or the system (e.g., payment
+                hold expired or Expert declined). Refund eligibility depends
+                on who cancelled and when, as set out in our Cancellation,
+                Refund &amp; Dispute Policy
+              </li>
+            </ul>
+
+            <h3 className="text-xl font-semibold text-slate-900 mb-3">
+              Expert Acceptance
+            </h3>
+            <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
+              <li>
+                Upon a client completing payment, the Expert receives a booking
+                notification and must accept or decline within 24 hours
+              </li>
+              <li>
+                If the Expert declines, the client receives a full refund.
+                Repeated declines without valid reason may result in account
+                action
+              </li>
+              <li>
+                Silence beyond 24 hours may be treated as acceptance or as a
+                system-driven cancellation with refund, at PowerMySport&apos;s
+                sole discretion
+              </li>
+              <li>
+                Once a booking is accepted (SCHEDULED), the Expert may not
+                unilaterally alter the session time or mode without the
+                client&apos;s prior consent and PowerMySport&apos;s approval
+              </li>
+            </ul>
+
+            <h3 className="text-xl font-semibold text-slate-900 mb-3">
+              Expert Payouts
+            </h3>
+            <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
+              <li>
+                Expert payouts are released 24 hours after a session reaches
+                COMPLETED status (whether by auto-completion or admin action).
+                This window allows for post-session disputes or refund requests
+                to be raised before funds are disbursed
+              </li>
+              <li>
+                Payouts are credited to the Expert&apos;s default payout
+                method (bank transfer or UPI) on file at the time of release.
+                PowerMySport is not responsible for failed payouts due to
+                incorrect or outdated payout details
+              </li>
+              <li>
+                The applicable platform commission is deducted from the session
+                fee before payout. The net payout amount is visible to the
+                Expert in their dashboard so that they may price their services
+                accordingly
+              </li>
+              <li>
+                PowerMySport may withhold or offset any payout if: (a) the
+                session is under dispute; (b) the Expert has outstanding amounts
+                owed to us; (c) the session was cancelled by the Expert; or
+                (d) we have reason to suspect fraud or policy violation
+              </li>
+              <li>
+                TDS (Tax Deducted at Source) will be applied to Expert payouts
+                as required by applicable Indian tax law. The Expert is
+                responsible for their own tax filings and compliance obligations
+              </li>
+            </ul>
+
+            <h3 className="text-xl font-semibold text-slate-900 mb-3">
+              Reviews and Ratings
+            </h3>
+            <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
+              <li>
+                Clients may submit a rating (1–5 stars) and a written review
+                within a specified window after a session is marked COMPLETED.
+                Reviews are displayed publicly on the Expert&apos;s profile
+              </li>
+              <li>
+                Clients may choose to submit reviews anonymously; the
+                reviewer&apos;s identity will not be disclosed to the Expert
+                or other users
+              </li>
+              <li>
+                PowerMySport reserves the right to hide or remove reviews that
+                violate our content policies, but does not edit review content.
+                Experts may flag a review as inappropriate; flagged reviews are
+                subject to admin discretion
+              </li>
+              <li>
+                Experts must not solicit fake, paid, or coerced reviews, or
+                request removal of genuine negative reviews. Doing so is a
+                prohibited activity and grounds for account termination
+              </li>
+              <li>
+                An Expert&apos;s average rating and review count are calculated
+                on verified completed sessions only
+              </li>
+            </ul>
+
+            <h3 className="text-xl font-semibold text-slate-900 mb-3">
+              Session Reminders and Notifications
+            </h3>
+            <ul className="list-disc pl-6 text-slate-600 space-y-2">
+              <li>
+                PowerMySport will send automated reminder notifications to both
+                parties before scheduled sessions. Experts are responsible for
+                monitoring their notifications and ensuring session readiness
+              </li>
+              <li>
+                For online sessions, Experts will receive a nudge to add a
+                meeting link if one has not been provided close to the session
+                start time. Failure to act on this nudge is the Expert&apos;s
+                sole responsibility
+              </li>
+              <li>
+                Both parties will receive a &quot;session starting soon&quot;
+                reminder containing the meeting link (online sessions) or the
+                confirmed in-person address (in-person sessions)
+              </li>
+            </ul>
+          </section>
+
+          <section id="commission" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Commission and Fees
             </h2>
             <p className="text-slate-600 leading-relaxed mb-4">
-              PowerMySport reserves the right to charge venue listers and
-              coaches a commission on successful bookings:
+              PowerMySport reserves the right to charge venue listers, coaches,
+              and experts a commission on successful bookings and completed
+              sessions:
             </p>
             <ul className="list-disc pl-6 text-slate-600 space-y-2">
               <li>
                 Where a commission is charged, the applicable rate will be
-                disclosed to the affected venue lister or coach in advance
-                through the Platform, and may be introduced, revised, or
-                removed by us at any time upon notice
+                disclosed to the affected venue lister, coach, or expert in
+                advance through the Platform, and may be introduced, revised,
+                or removed by us at any time upon notice
+              </li>
+              <li>
+                For Expert sessions specifically, the platform commission is
+                deducted from the session fee before the 24-hour
+                post-completion payout is released. The net payout amount is
+                displayed in the Expert&apos;s dashboard
               </li>
               <li>
                 Academies and coaches may separately offer paid subscription
@@ -353,18 +790,24 @@ export default function TermsOfServicePage() {
                 unrelated to any commission charged on venue or coaching
                 bookings
               </li>
-              <li>Payment processing fees levied by third-party gateways are non-refundable and may be passed on to you</li>
+              <li>
+                Payment processing fees levied by third-party gateways are
+                non-refundable and may be passed on to you
+              </li>
               <li>
                 We reserve the right to withhold, offset, or recover any
                 amount owed to us (including commissions, penalties, or
                 chargeback costs) from current or future payouts due to a
-                venue lister or coach
+                venue lister, coach, or expert
               </li>
-              <li>Commission structure and fee schedules may be updated at our sole discretion with notice via the Platform</li>
+              <li>
+                Commission structure and fee schedules may be updated at our
+                sole discretion with notice via the Platform
+              </li>
             </ul>
           </section>
 
-          <section className="mb-8">
+          <section id="ip" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Intellectual Property
             </h2>
@@ -397,7 +840,7 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="prohibited" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Prohibited Activities
             </h2>
@@ -405,23 +848,63 @@ export default function TermsOfServicePage() {
               You agree not to, and shall not permit any third party to:
             </p>
             <ul className="list-disc pl-6 text-slate-600 space-y-2">
-              <li>Use the Platform for any illegal, fraudulent, or unauthorized purpose</li>
-              <li>Harass, threaten, abuse, defame, or harm any other user</li>
-              <li>Submit false, misleading, or manipulated information, reviews, or ratings</li>
-              <li>Attempt to bypass, disable, or circumvent any security, verification, or payment feature</li>
-              <li>Scrape, harvest, crawl, or extract data from the Platform by automated means</li>
-              <li>Introduce viruses, malware, or any harmful code, or interfere with the proper functioning of the Platform</li>
-              <li>Impersonate any person or entity, or misrepresent your affiliation with any person or entity</li>
+              <li>
+                Use the Platform for any illegal, fraudulent, or unauthorized
+                purpose
+              </li>
+              <li>
+                Harass, threaten, abuse, defame, or harm any other user
+              </li>
+              <li>
+                Submit false, misleading, or manipulated information, reviews,
+                or ratings
+              </li>
+              <li>
+                Attempt to bypass, disable, or circumvent any security,
+                verification, or payment feature
+              </li>
+              <li>
+                Scrape, harvest, crawl, or extract data from the Platform by
+                automated means
+              </li>
+              <li>
+                Introduce viruses, malware, or any harmful code, or interfere
+                with the proper functioning of the Platform
+              </li>
+              <li>
+                Impersonate any person or entity, or misrepresent your
+                affiliation with any person or entity
+              </li>
               <li>
                 Solicit, arrange, or complete any booking or payment outside
-                the Platform to avoid commission or fees (&quot;circumvention&quot;),
-                which constitutes a material breach entitling us to
-                immediately terminate your account and pursue recovery of
-                unpaid commission
+                the Platform to avoid commission or fees
+                (&quot;circumvention&quot;), which constitutes a material
+                breach entitling us to immediately terminate your account and
+                pursue recovery of unpaid commission
               </li>
-              <li>Post content that is obscene, defamatory, discriminatory, or infringes any third party&apos;s rights</li>
-              <li>Use the Platform to collect or store personal data of other users except as strictly necessary to complete a booking</li>
-              <li>Engage in money laundering, tax evasion, or any activity in violation of applicable financial regulations</li>
+              <li>
+                Post content that is obscene, defamatory, discriminatory, or
+                infringes any third party&apos;s rights
+              </li>
+              <li>
+                Use the Platform to collect or store personal data of other
+                users except as strictly necessary to complete a booking
+              </li>
+              <li>
+                Engage in money laundering, tax evasion, or any activity in
+                violation of applicable financial regulations
+              </li>
+              <li>
+                As an Expert, conduct or facilitate sessions outside the scope
+                of lawful sports guidance, mentorship, or advisory services,
+                or engage in any conduct during a session that is illegal,
+                abusive, sexually inappropriate, or otherwise harmful to the
+                client
+              </li>
+              <li>
+                Solicit, encourage, or offer incentives for fake, paid, or
+                coerced reviews or ratings on the Platform
+              </li>
             </ul>
             <p className="text-slate-600 leading-relaxed mt-4">
               Violation of this section entitles us to immediately suspend or
@@ -430,7 +913,7 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="warranties" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Disclaimer of Warranties
             </h2>
@@ -443,19 +926,35 @@ export default function TermsOfServicePage() {
               LIMITING THE FOREGOING, WE DO NOT WARRANT THAT:
             </p>
             <ul className="list-disc pl-6 text-slate-600 space-y-2">
-              <li>The Platform will be uninterrupted, timely, secure, or error-free</li>
+              <li>
+                The Platform will be uninterrupted, timely, secure, or
+                error-free
+              </li>
               <li>Any defects or errors will be corrected</li>
-              <li>The Platform is free of viruses or other harmful components</li>
-              <li>Any listing, review, rating, or information provided by any user or third party is accurate, complete, or reliable</li>
-              <li>Any booking will be honored, or that any venue, coach, or academy will meet your expectations</li>
+              <li>
+                The Platform is free of viruses or other harmful components
+              </li>
+              <li>
+                Any listing, review, rating, or information provided by any
+                user or third party is accurate, complete, or reliable
+              </li>
+              <li>
+                Any booking or expert session will be honored, or that any
+                venue, coach, expert, or academy will meet your expectations
+              </li>
+              <li>
+                Any Expert&apos;s credentials, qualifications, or expertise
+                claims are accurate, current, or sufficient for your
+                particular needs
+              </li>
             </ul>
             <p className="text-slate-600 leading-relaxed mt-4">
-              You use the Platform, and engage with any venue, coach, or other
-              user, entirely at your own risk.
+              You use the Platform, and engage with any venue, coach, expert,
+              or other user, entirely at your own risk.
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="liability" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Limitation of Liability
             </h2>
@@ -470,41 +969,47 @@ export default function TermsOfServicePage() {
             </p>
             <p className="text-slate-600 leading-relaxed mb-4">
               WE ARE NOT LIABLE FOR THE ACTS, OMISSIONS, NEGLIGENCE, OR
-              MISCONDUCT OF ANY VENUE LISTER, COACH, ACADEMY, OR OTHER USER,
-              INCLUDING ANY PERSONAL INJURY, PROPERTY DAMAGE, OR FINANCIAL LOSS
-              ARISING FROM A BOOKING OR IN-PERSON INTERACTION FACILITATED
-              THROUGH THE PLATFORM.
+              MISCONDUCT OF ANY VENUE LISTER, COACH, EXPERT, ACADEMY, OR OTHER
+              USER, INCLUDING ANY PERSONAL INJURY, PROPERTY DAMAGE, OR
+              FINANCIAL LOSS ARISING FROM A BOOKING, EXPERT SESSION, OR
+              IN-PERSON INTERACTION FACILITATED THROUGH THE PLATFORM. THIS
+              INCLUDES, WITHOUT LIMITATION, ANY CLAIM ARISING FROM THE QUALITY,
+              ACCURACY, OR OUTCOME OF ADVICE OR GUIDANCE PROVIDED BY AN EXPERT
+              DURING A SESSION.
             </p>
             <p className="text-slate-600 leading-relaxed">
               IN ANY EVENT, OUR AGGREGATE LIABILITY ARISING OUT OF OR RELATING
               TO THESE TERMS OR YOUR USE OF THE PLATFORM SHALL NOT EXCEED THE
               LESSER OF (A) THE AMOUNT YOU ACTUALLY PAID TO US IN THE THREE
               (3) MONTHS IMMEDIATELY PRECEDING THE EVENT GIVING RISE TO THE
-              CLAIM, OR (B) TEN THOUSAND RUPEES (₹10,000).
+              CLAIM, OR (B) TEN THOUSAND RUPEES (&#8377;10,000).
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="indemnification" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Indemnification
             </h2>
             <p className="text-slate-600 leading-relaxed">
               You agree to indemnify, defend, and hold harmless PowerMySport,
               its officers, directors, employees, and agents from and against
-              any and all claims, demands, losses, liabilities, damages,
-              costs, and expenses (including reasonable legal fees) arising
-              out of or in any way connected with: (a) your use or misuse of
-              the Platform; (b) your violation of these Terms or any
-              applicable law; (c) your infringement of any right of a third
-              party, including intellectual property or privacy rights; (d)
-              any content, listing, or information you submit; or (e) any
-              dispute, injury, or damage arising between you and another user.
-              This obligation survives termination of your account or these
-              Terms.
+              any and all claims, demands, losses, liabilities, damages, costs,
+              and expenses (including reasonable legal fees) arising out of or
+              in any way connected with: (a) your use or misuse of the
+              Platform; (b) your violation of these Terms or any applicable
+              law; (c) your infringement of any right of a third party,
+              including intellectual property or privacy rights; (d) any
+              content, listing, or information you submit; (e) any dispute,
+              injury, or damage arising between you and another user; or (f)
+              for Experts specifically, any advice, guidance, or service
+              provided during a session and any claim by a client arising
+              therefrom, including any claim based on the Expert&apos;s
+              credentials, representations, or conduct. This obligation
+              survives termination of your account or these Terms.
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="dispute" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Dispute Resolution and Arbitration
             </h2>
@@ -513,23 +1018,32 @@ export default function TermsOfServicePage() {
               of or relating to these Terms or the use of the Platform:
             </p>
             <ul className="list-disc pl-6 text-slate-600 space-y-2">
-              <li>You must first raise the issue with our support team in writing and allow thirty (30) days for resolution before pursuing any other remedy</li>
+              <li>
+                You must first raise the issue with our support team in writing
+                and allow thirty (30) days for resolution before pursuing any
+                other remedy
+              </li>
               <li>
                 If unresolved, the dispute shall be referred to and finally
                 resolved by binding arbitration conducted by a sole arbitrator
                 appointed by PowerMySport, in accordance with the Arbitration
                 and Conciliation Act, 1996 (as amended)
               </li>
-              <li>The seat and venue of arbitration shall be Mullanpur, Punjab, India, and the proceedings shall be conducted in English</li>
-              <li>Each party shall bear its own costs of arbitration unless the arbitrator directs otherwise</li>
+              <li>
+                The seat and venue of arbitration shall be Mullanpur, Punjab,
+                India, and the proceedings shall be conducted in English
+              </li>
+              <li>
+                Each party shall bear its own costs of arbitration unless the
+                arbitrator directs otherwise
+              </li>
               <li>The arbitration award shall be final and binding on both parties</li>
               <li>
                 To the extent permitted by law, you agree not to bring or
-                participate in any class, collective, or representative
-                action against PowerMySport; this does not affect any
-                non-waivable right you have to file a complaint jointly with
-                other consumers under Section 35 of the Consumer Protection
-                Act, 2019
+                participate in any class, collective, or representative action
+                against PowerMySport; this does not affect any non-waivable
+                right you have to file a complaint jointly with other consumers
+                under Section 35 of the Consumer Protection Act, 2019
               </li>
             </ul>
             <p className="text-slate-600 leading-relaxed mt-4">
@@ -542,7 +1056,7 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="grievance" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Grievance Redressal
             </h2>
@@ -559,7 +1073,7 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="termination" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Termination
             </h2>
@@ -573,6 +1087,12 @@ export default function TermsOfServicePage() {
               <li>Fraudulent, deceptive, or illegal activity</li>
               <li>Non-payment, repeated failed payments, or chargebacks</li>
               <li>Abusive behavior toward other users or staff</li>
+              <li>
+                For Experts specifically: misrepresentation during verification,
+                repeated session cancellations or no-shows, soliciting reviews
+                or payments outside the Platform, breach of client
+                confidentiality, or failure to maintain a valid payout method
+              </li>
               <li>Extended inactivity</li>
               <li>Any other reason, at our sole and absolute discretion</li>
             </ul>
@@ -582,27 +1102,30 @@ export default function TermsOfServicePage() {
               investigation, and no fees already paid will be refunded except
               as strictly required by our Cancellation, Refund &amp; Dispute
               Policy. You may request deletion of your account at any time,
-              subject to our right to retain information as required for
-              legal, accounting, fraud-prevention, or dispute-resolution
-              purposes.
+              subject to our right to retain information as required for legal,
+              accounting, fraud-prevention, or dispute-resolution purposes.
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="relationship" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Relationship of Parties
             </h2>
             <p className="text-slate-600 leading-relaxed">
               Nothing in these Terms creates an employment, partnership,
               joint-venture, franchise, or agency relationship between
-              PowerMySport and any user. Venue listers, coaches, and academies
-              act solely as independent contractors and are exclusively
-              responsible for their own tax, statutory, licensing, and legal
-              obligations arising from their use of the Platform.
+              PowerMySport and any user. Venue listers, coaches, experts, and
+              academies act solely as independent contractors and are
+              exclusively responsible for their own tax, statutory, licensing,
+              and legal obligations arising from their use of the Platform.
+              PowerMySport exercises no control over the manner, means, or
+              outcome of any session conducted by an Expert; the Expert is the
+              sole service provider and bears all responsibility for the
+              quality, safety, and legality of the services they deliver.
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="force-majeure" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Force Majeure
             </h2>
@@ -615,15 +1138,15 @@ export default function TermsOfServicePage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="general" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               General Provisions
             </h2>
             <ul className="list-disc pl-6 text-slate-600 space-y-2">
               <li>
-                <strong>Severability:</strong> If any provision of these
-                Terms is held invalid or unenforceable, the remaining
-                provisions shall continue in full force and effect
+                <strong>Severability:</strong> If any provision of these Terms
+                is held invalid or unenforceable, the remaining provisions
+                shall continue in full force and effect
               </li>
               <li>
                 <strong>No Waiver:</strong> Our failure to enforce any
@@ -651,7 +1174,7 @@ export default function TermsOfServicePage() {
             </ul>
           </section>
 
-          <section className="mb-8">
+          <section id="governing-law" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Governing Law
             </h2>
@@ -661,22 +1184,22 @@ export default function TermsOfServicePage() {
               provisions. Subject to the arbitration clause above, the courts
               located in Mullanpur, Punjab, India shall have exclusive
               jurisdiction over any matter not subject to arbitration. The
-              Platform additionally operates subject to the Consumer
-              Protection Act, 2019, the Consumer Protection (E-Commerce)
-              Rules, 2020, the Information Technology Act, 2000 and rules
-              made thereunder, and the Digital Personal Data Protection Act,
-              2023, each as in force and applicable from time to time.
+              Platform additionally operates subject to the Consumer Protection
+              Act, 2019, the Consumer Protection (E-Commerce) Rules, 2020, the
+              Information Technology Act, 2000 and rules made thereunder, and
+              the Digital Personal Data Protection Act, 2023, each as in force
+              and applicable from time to time.
             </p>
           </section>
 
-          <section>
+          <section id="contact">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Contact Information
             </h2>
             <p className="text-slate-600 leading-relaxed mb-4">
               For questions about these Terms of Service, please contact us:
             </p>
-            <div className="bg-slate-50 p-4 rounded-lg">
+            <div className="bg-slate-50 p-4 rounded-lg not-prose">
               <p className="text-slate-700 flex items-center gap-2 mb-2">
                 <Mail size={18} className="text-power-orange" />
                 <strong>Email:</strong> teams@powermysport.com

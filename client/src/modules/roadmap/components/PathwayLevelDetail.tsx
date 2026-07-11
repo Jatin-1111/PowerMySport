@@ -392,17 +392,6 @@ export function PathwayLevelDetail({
                             <span className="flex-1 min-w-0 text-sm leading-relaxed text-slate-700">
                               {step}
                             </span>
-                            {discUrl && (
-                              <Link
-                                href={discUrl}
-                                onClick={(e) => e.stopPropagation()}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={`shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity flex items-center gap-1 rounded-lg border ${colors.badge} px-2 py-0.5 text-[10px] font-bold whitespace-nowrap`}
-                              >
-                                <ExternalLink className="h-2.5 w-2.5" /> Go
-                              </Link>
-                            )}
                           </li>
                         );
                       })}
@@ -1223,6 +1212,8 @@ export function PathwayLevelDetail({
         <div className="flex flex-col sm:flex-row gap-3">
           <Link
             href={`${communityUrl}/discover?tab=COMMUNITIES${sName ? `&sport=${encodeURIComponent(sName)}&level=${encodeURIComponent(lLabel)}` : ""}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-sm transition-all hover:opacity-90 bg-gradient-to-r ${colors.gradient}`}
           >
             <Users className="h-4 w-4" /> Find Communities
