@@ -1,7 +1,29 @@
-import mongoose from "mongoose";
-import { Booking } from "../models/Booking";
-import { Coach } from "../models/Coach";
-import { Review } from "../models/Review";
+import type { Prisma } from "@prisma/client";
+import prisma from "../../lib/prisma";
+
+// NOTE(prisma): the original Mongo service used `.find().lean()` and aggregated
+// in JS — no `$aggregate` pipelines — so this is a mechanical query swap. The old
+// embedded `payments[]` sub-array is now the `BookingPaymentLeg` child table
+// (hydrated via `include: { payments: true }`), and `.populate("userId", ...)` is
+// replaced by the user-attach helper below.
+
+/**
+ * Replace each booking's `userId` (a String FK) with the populated user object,
+ * mirroring the old Mongoose `.populate("userId", "name photoUrl")`.
+ * NOTE(prisma): the populated object exposes `id` instead of Mongo's `_id`.
+ */
+const attachUserToBookings = async (bookings: any[]): Promise<any[]> => {
+  const ids = [
+    ...new Set(bookings.map((b) => b.userId).filter(Boolean) as string[]),
+  ];
+  if (ids.length === 0) return bookings;
+  const users = await prisma.user.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true, photoUrl: true },
+  });
+  const byId = new Map(users.map((u) => [u.id, u]));
+  return bookings.map((b) => ({ ...b, userId: byId.get(b.userId) ?? b.userId }));
+};
 
 // ── Earnings ─────────────────────────────────────────────────────────────────
 
@@ -30,7 +52,10 @@ export interface EarningsData {
 export const getCoachEarnings = async (
   coachUserId: string,
 ): Promise<EarningsData> => {
-  const coach = await Coach.findOne({ userId: coachUserId }).select("_id");
+  const coach = await prisma.coach.findFirst({
+    where: { userId: coachUserId },
+    select: { id: true },
+  });
   if (!coach) throw new Error("Coach profile not found");
 
   const now = new Date();
@@ -46,25 +71,27 @@ export const getCoachEarnings = async (
   );
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-  const [completedBookings, pendingBookings, recentBookings] =
+  const [completedBookings, pendingBookings, recentBookingsRaw] =
     await Promise.all([
-      Booking.find({
-        coachId: coach._id,
-        status: "COMPLETED",
-      }).lean(),
-      Booking.find({
-        coachId: coach._id,
-        status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
-      }).lean(),
-      Booking.find({
-        coachId: coach._id,
-        status: "COMPLETED",
-      })
-        .sort({ date: -1 })
-        .limit(10)
-        .populate("userId", "name photoUrl")
-        .lean(),
+      prisma.booking.findMany({
+        where: { coachId: coach.id, status: "COMPLETED" },
+        include: { payments: true },
+      }),
+      prisma.booking.findMany({
+        where: {
+          coachId: coach.id,
+          status: { in: ["CONFIRMED", "IN_PROGRESS"] },
+        },
+        include: { payments: true },
+      }),
+      prisma.booking.findMany({
+        where: { coachId: coach.id, status: "COMPLETED" },
+        orderBy: { date: "desc" },
+        take: 10,
+        include: { payments: true },
+      }),
     ]);
+  const recentBookings = await attachUserToBookings(recentBookingsRaw);
 
   // Calculate coach share from payments or use totalAmount as fallback
   const getCoachAmount = (b: any): number => {
@@ -206,28 +233,35 @@ export interface AnalyticsData {
 export const getCoachAnalytics = async (
   coachUserId: string,
 ): Promise<AnalyticsData> => {
-  const coach = await Coach.findOne({ userId: coachUserId }).select(
-    "_id rating reviewCount",
-  );
+  const coach = await prisma.coach.findFirst({
+    where: { userId: coachUserId },
+    select: { id: true, rating: true, reviewCount: true },
+  });
   if (!coach) throw new Error("Coach profile not found");
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+  const baseWhere: Prisma.BookingWhereInput = {
+    coachId: coach.id,
+    status: { not: "CANCELLED" },
+  };
+
   const [allBookings, recentBookings] = await Promise.all([
-    Booking.find({
-      coachId: coach._id,
-      status: { $nin: ["CANCELLED"] },
-    })
-      .select("userId sport date startTime status")
-      .lean(),
-    Booking.find({
-      coachId: coach._id,
-      status: { $nin: ["CANCELLED"] },
-      date: { $gte: thirtyDaysAgo },
-    })
-      .select("date status")
-      .lean(),
+    prisma.booking.findMany({
+      where: baseWhere,
+      select: {
+        userId: true,
+        sport: true,
+        date: true,
+        startTime: true,
+        status: true,
+      },
+    }),
+    prisma.booking.findMany({
+      where: { ...baseWhere, date: { gte: thirtyDaysAgo } },
+      select: { date: true, status: true },
+    }),
   ]);
 
   const completed = allBookings.filter((b: any) => b.status === "COMPLETED");

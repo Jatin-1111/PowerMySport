@@ -1,16 +1,12 @@
-import mongoose from "mongoose";
-import { CoachSubscriptionPackage } from "../models/CoachSubscriptionPackage";
-import {
+import type {
+  CoachSubscriptionPackage,
   SubscriptionFrequency,
-  CoachSubscriptionPackageDocument,
-} from "../models/CoachSubscriptionPackage";
+} from "@prisma/client";
+import prisma from "../../lib/prisma";
 
-const toObjectId = (id: string): mongoose.Types.ObjectId => {
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw new Error("Invalid ID format");
-  }
-  return new mongoose.Types.ObjectId(id);
-};
+// Legacy alias — the Mongoose document type is replaced by the Prisma row type.
+type CoachSubscriptionPackageDocument = CoachSubscriptionPackage;
+export type { SubscriptionFrequency };
 
 /**
  * Create a new subscription package for a coach
@@ -34,16 +30,18 @@ export const createCoachSubscriptionPackage = async (payload: {
     throw new Error("Invalid frequency. Must be MONTHLY, QUARTERLY, or YEARLY");
   }
 
-  return CoachSubscriptionPackage.create({
-    coachId: toObjectId(payload.coachId),
-    name: payload.name.trim(),
-    description: payload.description?.trim() || "",
-    frequency: payload.frequency,
-    price: payload.price,
-    features: payload.features || [],
-    maxStudents: payload.maxStudents !== undefined ? payload.maxStudents : null,
-    maxSessions: payload.maxSessions !== undefined ? payload.maxSessions : null,
-    isActive: payload.isActive !== false,
+  return prisma.coachSubscriptionPackage.create({
+    data: {
+      coachId: payload.coachId,
+      name: payload.name.trim(),
+      description: payload.description?.trim() || "",
+      frequency: payload.frequency,
+      price: payload.price,
+      features: payload.features || [],
+      maxStudents: payload.maxStudents !== undefined ? payload.maxStudents : null,
+      maxSessions: payload.maxSessions !== undefined ? payload.maxSessions : null,
+      isActive: payload.isActive !== false,
+    },
   });
 };
 
@@ -54,17 +52,20 @@ export const getCoachSubscriptionPackages = async (
   coachId: string,
   options?: { isActive?: boolean },
 ): Promise<CoachSubscriptionPackageDocument[]> => {
-  const filters: Record<string, any> = {
-    coachId: toObjectId(coachId),
-  };
+  const where: { coachId: string; isActive?: boolean } = { coachId };
 
   if (typeof options?.isActive === "boolean") {
-    filters.isActive = options.isActive;
+    where.isActive = options.isActive;
   }
 
-  return CoachSubscriptionPackage.find(filters)
-    .sort({ isActive: -1, frequency: 1, createdAt: -1 })
-    .lean();
+  return prisma.coachSubscriptionPackage.findMany({
+    where,
+    orderBy: [
+      { isActive: "desc" },
+      { frequency: "asc" },
+      { createdAt: "desc" },
+    ],
+  });
 };
 
 /**
@@ -73,7 +74,9 @@ export const getCoachSubscriptionPackages = async (
 export const getCoachSubscriptionPackageById = async (
   packageId: string,
 ): Promise<CoachSubscriptionPackageDocument | null> => {
-  return CoachSubscriptionPackage.findById(toObjectId(packageId)).lean();
+  return prisma.coachSubscriptionPackage.findUnique({
+    where: { id: packageId },
+  });
 };
 
 /**
@@ -82,9 +85,20 @@ export const getCoachSubscriptionPackageById = async (
 export const getCoachSubscriptionPackageWithCoach = async (
   packageId: string,
 ): Promise<CoachSubscriptionPackageDocument | null> => {
-  return CoachSubscriptionPackage.findById(toObjectId(packageId))
-    .populate("coachId", "bio sports rating reviewCount")
-    .lean();
+  // NOTE: CoachSubscriptionPackage.coachId is a plain String FK (no Prisma
+  // relation defined), so the old .populate("coachId", ...) is done as a
+  // second lookup and attached in code to preserve the return shape.
+  const pkg = await prisma.coachSubscriptionPackage.findUnique({
+    where: { id: packageId },
+  });
+  if (!pkg) return null;
+
+  const coach = await prisma.coach.findUnique({
+    where: { id: pkg.coachId },
+    select: { id: true, bio: true, sports: true, rating: true, reviewCount: true },
+  });
+
+  return { ...pkg, coachId: coach ?? pkg.coachId } as unknown as CoachSubscriptionPackageDocument;
 };
 
 /**
@@ -106,7 +120,7 @@ export const updateCoachSubscriptionPackage = async (
     throw new Error("Price cannot be negative");
   }
 
-  const updateData: Record<string, any> = {};
+  const updateData: Record<string, unknown> = {};
 
   if (payload.name !== undefined) {
     updateData.name = payload.name.trim();
@@ -130,11 +144,17 @@ export const updateCoachSubscriptionPackage = async (
     updateData.isActive = payload.isActive;
   }
 
-  return CoachSubscriptionPackage.findByIdAndUpdate(
-    toObjectId(packageId),
-    updateData,
-    { new: true, runValidators: true },
-  ).lean();
+  // findByIdAndUpdate returned null when the doc was missing; mirror that by
+  // guarding against Prisma's throw-on-missing update.
+  const existing = await prisma.coachSubscriptionPackage.findUnique({
+    where: { id: packageId },
+  });
+  if (!existing) return null;
+
+  return prisma.coachSubscriptionPackage.update({
+    where: { id: packageId },
+    data: updateData,
+  });
 };
 
 /**
@@ -143,10 +163,10 @@ export const updateCoachSubscriptionPackage = async (
 export const deleteCoachSubscriptionPackage = async (
   packageId: string,
 ): Promise<boolean> => {
-  const result = await CoachSubscriptionPackage.deleteOne({
-    _id: toObjectId(packageId),
+  const result = await prisma.coachSubscriptionPackage.deleteMany({
+    where: { id: packageId },
   });
-  return result.deletedCount > 0;
+  return result.count > 0;
 };
 
 /**
@@ -156,11 +176,13 @@ export const getCoachPackagesByFrequency = async (
   coachId: string,
   frequency: SubscriptionFrequency,
 ): Promise<CoachSubscriptionPackageDocument | null> => {
-  return CoachSubscriptionPackage.findOne({
-    coachId: toObjectId(coachId),
-    frequency,
-    isActive: true,
-  }).lean();
+  return prisma.coachSubscriptionPackage.findFirst({
+    where: {
+      coachId,
+      frequency,
+      isActive: true,
+    },
+  });
 };
 
 /**
@@ -173,10 +195,12 @@ export const getCoachAllPackagesByFrequency = async (
   quarterly: CoachSubscriptionPackageDocument | undefined;
   yearly: CoachSubscriptionPackageDocument | undefined;
 }> => {
-  const packages = await CoachSubscriptionPackage.find({
-    coachId: toObjectId(coachId),
-    isActive: true,
-  }).lean();
+  const packages = await prisma.coachSubscriptionPackage.findMany({
+    where: {
+      coachId,
+      isActive: true,
+    },
+  });
 
   return {
     monthly: packages.find((p) => p.frequency === "MONTHLY"),
@@ -191,9 +215,11 @@ export const getCoachAllPackagesByFrequency = async (
 export const countCoachSubscriptionPackages = async (
   coachId: string,
 ): Promise<number> => {
-  return CoachSubscriptionPackage.countDocuments({
-    coachId: toObjectId(coachId),
-    isActive: true,
+  return prisma.coachSubscriptionPackage.count({
+    where: {
+      coachId,
+      isActive: true,
+    },
   });
 };
 
@@ -204,9 +230,14 @@ export const validateCoachOwnsPackage = async (
   coachId: string,
   packageId: string,
 ): Promise<boolean> => {
-  const result = await CoachSubscriptionPackage.exists({
-    _id: toObjectId(packageId),
-    coachId: toObjectId(coachId),
+  const result = await prisma.coachSubscriptionPackage.findFirst({
+    where: {
+      id: packageId,
+      coachId,
+    },
+    select: { id: true },
   });
   return !!result;
 };
+
+export type { CoachSubscriptionPackageDocument };

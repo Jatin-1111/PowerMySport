@@ -1,7 +1,5 @@
-import { Booking } from "../models/Booking";
-import { Review } from "../models/Review";
-import { Dispute } from "../models/Dispute";
-import { User } from "../models/User";
+import type { Booking, BookingPaymentLeg, Review } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { sendDisputeStatusEmail } from "../../utils/email";
 
 /**
@@ -18,6 +16,9 @@ export interface DisputeAnalysis {
   requiresManualReview: boolean;
 }
 
+// Booking joined with its payment legs (was an embedded array in Mongo).
+type BookingWithPayments = Booking & { payments: BookingPaymentLeg[] };
+
 /**
  * Analyze a dispute and provide recommended resolution
  * Uses booking status, reviews, and timing to determine appropriate action
@@ -27,14 +28,17 @@ export const analyzeDispute = async (
   disputeType: "NO_SHOW" | "POOR_QUALITY" | "PAYMENT_ISSUE" | "OTHER",
   disputeDetails?: string,
 ): Promise<DisputeAnalysis> => {
-  const booking = await Booking.findById(bookingId);
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { payments: true },
+  });
 
   if (!booking) {
     throw new Error("Booking not found");
   }
 
   // Check if there's a review for this booking
-  const review = await Review.findOne({ bookingId });
+  const review = await prisma.review.findFirst({ where: { bookingId } });
 
   // Analyze based on dispute type
   switch (disputeType) {
@@ -70,26 +74,29 @@ export const openDispute = async (
 ) => {
   const analysis = await analyzeDispute(bookingId, disputeType, disputeDetails);
 
-  const dispute = await Dispute.create({
-    bookingId,
-    userId,
-    disputeType,
-    ...(disputeDetails !== undefined && { disputeDetails }),
-    status: analysis.requiresManualReview ? "OPEN" : "RESOLVED",
-    resolutionMethod: "AUTO",
-    recommendedAction: analysis.recommendedAction,
-    refundPercentage: analysis.refundPercentage,
-    reasoning: analysis.reasoning,
-    confidence: analysis.confidence,
-    requiresManualReview: analysis.requiresManualReview,
+  const dispute = await prisma.dispute.create({
+    data: {
+      bookingId,
+      userId,
+      disputeType,
+      ...(disputeDetails !== undefined && { disputeDetails }),
+      status: analysis.requiresManualReview ? "OPEN" : "RESOLVED",
+      resolutionMethod: "AUTO",
+      recommendedAction: analysis.recommendedAction,
+      refundPercentage: analysis.refundPercentage,
+      reasoning: analysis.reasoning,
+      confidence: analysis.confidence,
+      requiresManualReview: analysis.requiresManualReview,
+    },
   });
 
   // Notify the user their dispute was logged (fire-and-forget).
   void (async () => {
     try {
-      const disputeUser = await User.findById(userId)
-        .select("name email")
-        .lean();
+      const disputeUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true },
+      });
       if (disputeUser?.email) {
         await sendDisputeStatusEmail({
           name: disputeUser.name,
@@ -128,7 +135,10 @@ const analyzeNoShowDispute = async (
   }
 
   // If booking is COMPLETED with good review, player likely showed up
-  if (booking.status === "COMPLETED" && review && review.venueRating >= 4) {
+  // TODO(prisma): the normalized Review model uses a single `rating` field
+  // (the old venue-specific `venueRating` was collapsed into it — see
+  // SCHEMA_CHANGES). Reads here use `rating` accordingly.
+  if (booking.status === "COMPLETED" && review && review.rating >= 4) {
     return {
       disputeType: "NO_SHOW",
       recommendedAction: "NO_REFUND",
@@ -172,7 +182,8 @@ const analyzePoorQualityDispute = async (
   review: any,
 ): Promise<DisputeAnalysis> => {
   // If there's a review with low rating, likely legitimate complaint
-  if (review && review.venueRating <= 2) {
+  // TODO(prisma): `rating` replaces the old `venueRating` (see analyzeNoShow).
+  if (review && review.rating <= 2) {
     return {
       disputeType: "POOR_QUALITY",
       recommendedAction: "PARTIAL_REFUND",
@@ -185,7 +196,7 @@ const analyzePoorQualityDispute = async (
   }
 
   // If high rating, dispute seems questionable
-  if (review && review.venueRating >= 4) {
+  if (review && review.rating >= 4) {
     return {
       disputeType: "POOR_QUALITY",
       recommendedAction: "NO_REFUND",
@@ -213,10 +224,10 @@ const analyzePoorQualityDispute = async (
  * Analyze payment disputes
  */
 const analyzePaymentDispute = async (
-  booking: any,
+  booking: BookingWithPayments,
 ): Promise<DisputeAnalysis> => {
   // Check if all payments are marked PAID
-  const allPaid = booking.payments.every((p: any) => p.status === "PAID");
+  const allPaid = booking.payments.every((p) => p.status === "PAID");
 
   if (!allPaid) {
     return {
@@ -232,7 +243,7 @@ const analyzePaymentDispute = async (
 
   // Check for duplicate payments (same user, multiple PAID records)
   const paymentCounts = new Map<string, number>();
-  booking.payments.forEach((p: any) => {
+  booking.payments.forEach((p) => {
     const key = p.userId.toString();
     paymentCounts.set(key, (paymentCounts.get(key) || 0) + 1);
   });
@@ -287,13 +298,15 @@ export const getDisputeStats = async (): Promise<{
     paymentIssueDisputes,
     otherDisputes,
   ] = await Promise.all([
-    Dispute.countDocuments(),
-    Dispute.countDocuments({ resolutionMethod: "AUTO", status: "RESOLVED" }),
-    Dispute.countDocuments({ requiresManualReview: true }),
-    Dispute.countDocuments({ disputeType: "NO_SHOW" }),
-    Dispute.countDocuments({ disputeType: "POOR_QUALITY" }),
-    Dispute.countDocuments({ disputeType: "PAYMENT_ISSUE" }),
-    Dispute.countDocuments({ disputeType: "OTHER" }),
+    prisma.dispute.count(),
+    prisma.dispute.count({
+      where: { resolutionMethod: "AUTO", status: "RESOLVED" },
+    }),
+    prisma.dispute.count({ where: { requiresManualReview: true } }),
+    prisma.dispute.count({ where: { disputeType: "NO_SHOW" } }),
+    prisma.dispute.count({ where: { disputeType: "POOR_QUALITY" } }),
+    prisma.dispute.count({ where: { disputeType: "PAYMENT_ISSUE" } }),
+    prisma.dispute.count({ where: { disputeType: "OTHER" } }),
   ]);
 
   return {

@@ -1,6 +1,31 @@
-import mongoose from "mongoose";
-import { Booking } from "../models/Booking";
-import Academy from "../../admin/models/Academy";
+import type { Prisma } from "@prisma/client";
+import prisma from "../../lib/prisma";
+
+// NOTE(prisma): the original Mongo service used `.find().lean()` and did all the
+// aggregation in JS (reduce/map/Map) — there were no `$aggregate` pipelines — so
+// this port is a mechanical query swap. The only relational detail is that the
+// old embedded `payments[]` sub-array is now the `BookingPaymentLeg` child table,
+// hydrated via `include: { payments: true }`, and `.populate("userId", ...)` is
+// replaced by a small user-attach helper that overwrites the `userId` field with
+// the resolved { id, name, photoUrl } object (same shape the frontend reads).
+
+/**
+ * Replace each booking's `userId` (a String FK) with the populated user object,
+ * mirroring the old Mongoose `.populate("userId", "name photoUrl")` behavior.
+ * NOTE(prisma): the populated object now exposes `id` instead of Mongo's `_id`.
+ */
+const attachUserToBookings = async (bookings: any[]): Promise<any[]> => {
+  const ids = [
+    ...new Set(bookings.map((b) => b.userId).filter(Boolean) as string[]),
+  ];
+  if (ids.length === 0) return bookings;
+  const users = await prisma.user.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true, photoUrl: true },
+  });
+  const byId = new Map(users.map((u) => [u.id, u]));
+  return bookings.map((b) => ({ ...b, userId: byId.get(b.userId) ?? b.userId }));
+};
 
 export interface AcademyEarningsData {
   allTime: { total: number; sessions: number };
@@ -25,14 +50,14 @@ export const getAcademyEarnings = async (
     recentBookings: [],
   };
 
-  const academy = await Academy.findOne({ ownerId: ownerUserId })
-    .select("venueIds coachIds")
-    .lean();
+  const academy = await prisma.academy.findFirst({
+    where: { ownerId: ownerUserId },
+    select: { venueIds: true, coachIds: true },
+  });
   if (!academy) return empty;
-  const academyAny = academy as any;
 
-  const venueIds: mongoose.Types.ObjectId[] = academyAny.venueIds ?? [];
-  const coachIds: mongoose.Types.ObjectId[] = academyAny.coachIds ?? [];
+  const venueIds: string[] = academy.venueIds ?? [];
+  const coachIds: string[] = academy.coachIds ?? [];
   if (venueIds.length === 0 && coachIds.length === 0) return empty;
 
   const now = new Date();
@@ -48,34 +73,43 @@ export const getAcademyEarnings = async (
   );
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-  const query: any = { status: { $nin: ["CANCELLED"] } };
-  if (venueIds.length > 0 && coachIds.length > 0) {
-    query.$or = [
-      { venueId: { $in: venueIds } },
-      { coachId: { $in: coachIds } },
-    ];
-  } else if (venueIds.length > 0) {
-    query.venueId = { $in: venueIds };
-  } else {
-    query.coachId = { $in: coachIds };
-  }
+  // Scope bookings to this academy's venues and/or coaches (was Mongo $or / $in).
+  const scopeWhere: Prisma.BookingWhereInput =
+    venueIds.length > 0 && coachIds.length > 0
+      ? {
+          OR: [{ venueId: { in: venueIds } }, { coachId: { in: coachIds } }],
+        }
+      : venueIds.length > 0
+        ? { venueId: { in: venueIds } }
+        : { coachId: { in: coachIds } };
 
-  const completedQuery = { ...query, status: "COMPLETED" };
-  const pendingQuery = {
-    ...query,
-    status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
+  const completedWhere: Prisma.BookingWhereInput = {
+    ...scopeWhere,
+    status: "COMPLETED",
+  };
+  const pendingWhere: Prisma.BookingWhereInput = {
+    ...scopeWhere,
+    status: { in: ["CONFIRMED", "IN_PROGRESS"] },
   };
 
-  const [completedBookings, pendingBookings, recentBookings] =
+  const [completedBookings, pendingBookings, recentBookingsRaw] =
     await Promise.all([
-      Booking.find(completedQuery).lean(),
-      Booking.find(pendingQuery).lean(),
-      Booking.find(completedQuery)
-        .sort({ date: -1 })
-        .limit(10)
-        .populate("userId", "name photoUrl")
-        .lean(),
+      prisma.booking.findMany({
+        where: completedWhere,
+        include: { payments: true },
+      }),
+      prisma.booking.findMany({
+        where: pendingWhere,
+        include: { payments: true },
+      }),
+      prisma.booking.findMany({
+        where: completedWhere,
+        orderBy: { date: "desc" },
+        take: 10,
+        include: { payments: true },
+      }),
     ]);
+  const recentBookings = await attachUserToBookings(recentBookingsRaw);
 
   const getAmount = (b: any): number => {
     if (Array.isArray(b.payments)) {
@@ -204,14 +238,14 @@ export const getAcademyAnalytics = async (
     studentRetention: { newStudents: 0, returningStudents: 0 },
   };
 
-  const academy = await Academy.findOne({ ownerId: ownerUserId })
-    .select("venueIds coachIds")
-    .lean();
+  const academy = await prisma.academy.findFirst({
+    where: { ownerId: ownerUserId },
+    select: { venueIds: true, coachIds: true },
+  });
   if (!academy) return empty;
-  const academyAny = academy as any;
 
-  const venueIds: mongoose.Types.ObjectId[] = academyAny.venueIds ?? [];
-  const coachIds: mongoose.Types.ObjectId[] = academyAny.coachIds ?? [];
+  const venueIds: string[] = academy.venueIds ?? [];
+  const coachIds: string[] = academy.coachIds ?? [];
   if (venueIds.length === 0 && coachIds.length === 0)
     return {
       ...empty,
@@ -222,25 +256,37 @@ export const getAcademyAnalytics = async (
       },
     };
 
-  const query: any = { status: { $nin: ["CANCELLED"] } };
-  if (venueIds.length > 0 && coachIds.length > 0) {
-    query.$or = [
-      { venueId: { $in: venueIds } },
-      { coachId: { $in: coachIds } },
-    ];
-  } else if (venueIds.length > 0) {
-    query.venueId = { $in: venueIds };
-  } else {
-    query.coachId = { $in: coachIds };
-  }
+  const scopeWhere: Prisma.BookingWhereInput =
+    venueIds.length > 0 && coachIds.length > 0
+      ? {
+          OR: [{ venueId: { in: venueIds } }, { coachId: { in: coachIds } }],
+        }
+      : venueIds.length > 0
+        ? { venueId: { in: venueIds } }
+        : { coachId: { in: coachIds } };
+
+  const query: Prisma.BookingWhereInput = {
+    ...scopeWhere,
+    status: { not: "CANCELLED" },
+  };
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const [allBookings, recentBookings] = await Promise.all([
-    Booking.find(query).select("userId sport date startTime status").lean(),
-    Booking.find({ ...query, date: { $gte: thirtyDaysAgo } })
-      .select("date status")
-      .lean(),
+    prisma.booking.findMany({
+      where: query,
+      select: {
+        userId: true,
+        sport: true,
+        date: true,
+        startTime: true,
+        status: true,
+      },
+    }),
+    prisma.booking.findMany({
+      where: { ...query, date: { gte: thirtyDaysAgo } },
+      select: { date: true, status: true },
+    }),
   ]);
 
   const completed = allBookings.filter((b: any) => b.status === "COMPLETED");

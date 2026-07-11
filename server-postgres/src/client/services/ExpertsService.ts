@@ -1,12 +1,8 @@
 import crypto from "crypto";
-import mongoose from "mongoose";
-import { User } from "../models/User";
-import { Expert } from "../models/ExpertProfile";
-import {
-  ExpertSession,
-  ExpertSessionDocument,
-  ExpertSessionCanceller,
-} from "../models/ExpertBooking";
+import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
+import type { ExpertSession, ExpertVerificationStatus } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import {
   initiatePhonePePayment,
   getPhonePeOrderStatus,
@@ -19,11 +15,15 @@ import {
   OpenSlot,
 } from "./ExpertAvailabilityService";
 
-const toObjectId = (id: string) => new mongoose.Types.ObjectId(id);
 const frontendUrl = () => process.env.FRONTEND_URL || "http://localhost:3000";
 const toPaise = (rupees: number) => Math.round(rupees * 100);
 const HOLD_MINUTES = 15;
-const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// bcrypt work factor (mirrors AuthService; was a Mongoose pre-save hook on User,
+// relocated to the app layer per PORTING_GUIDE §3 — hash before user.create).
+const BCRYPT_ROUNDS = 12;
+const hashPassword = (plain: string): Promise<string> =>
+  bcrypt.hash(plain, BCRYPT_ROUNDS);
 
 export const generateTemporaryPassword = (): string =>
   crypto
@@ -32,10 +32,38 @@ export const generateTemporaryPassword = (): string =>
     .replace(/[^a-zA-Z0-9]/g, "")
     .slice(0, 10) + "A1";
 
+// ── User attach helpers (String-FK ref → manual join, see PORTING_GUIDE §1) ───
+
+type ExpertUser = { id: string; name: string; email: string };
+
+/** Attach the referenced User (name/email) to a batch of expert rows. */
+const attachExpertUsers = async <T extends { userId: string }>(
+  experts: T[],
+): Promise<(T & { user: ExpertUser | null })[]> => {
+  const ids = [...new Set(experts.map((e) => e.userId))];
+  const users = await prisma.user.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true, email: true },
+  });
+  const byId = new Map(users.map((u) => [u.id, u]));
+  return experts.map((e) => ({ ...e, user: byId.get(e.userId) ?? null }));
+};
+
+/** Attach the referenced User (name/email) to a single expert row. */
+const attachExpertUser = async <T extends { userId: string }>(
+  expert: T,
+): Promise<T & { user: ExpertUser | null }> => {
+  const user = await prisma.user.findUnique({
+    where: { id: expert.userId },
+    select: { id: true, name: true, email: true },
+  });
+  return { ...expert, user: user ?? null };
+};
+
 // ── Serialization ────────────────────────────────────────────────────────────
 
 const expertUserName = (expert: any): { name?: string; email?: string } => {
-  const u = expert?.userId;
+  const u = expert?.user;
   if (u && typeof u === "object") return { name: u.name, email: u.email };
   return {};
 };
@@ -43,8 +71,8 @@ const expertUserName = (expert: any): { name?: string; email?: string } => {
 const serializeExpert = (expert: any) => {
   const { name, email } = expertUserName(expert);
   return {
-    id: expert._id?.toString(),
-    _id: expert._id?.toString(),
+    id: expert.id?.toString(),
+    _id: expert.id?.toString(),
     name,
     email,
     bio: expert.bio,
@@ -86,8 +114,8 @@ const serializeSession = (
     expertInPersonAddress?: string;
   } = {},
 ) => ({
-  id: session._id?.toString(),
-  _id: session._id?.toString(),
+  id: session.id?.toString(),
+  _id: session.id?.toString(),
   expertId: session.expertId?.toString(),
   userId: session.userId?.toString(),
   amount: session.amount,
@@ -130,7 +158,7 @@ const serializeSession = (
 // ── Notification helpers (best-effort; never throw) ──────────────────────────
 
 const notify = (
-  userId: mongoose.Types.ObjectId | string,
+  userId: string,
   type: any,
   title: string,
   message: string,
@@ -143,11 +171,12 @@ const notify = (
   ).catch((err) => console.error("[experts] notification failed:", err));
 };
 
-const expertUserIdOf = async (
-  expertId: mongoose.Types.ObjectId,
-): Promise<string | null> => {
-  const e = await Expert.findById(expertId).select("userId").lean();
-  return e ? (e.userId as mongoose.Types.ObjectId).toString() : null;
+const expertUserIdOf = async (expertId: string): Promise<string | null> => {
+  const e = await prisma.expert.findUnique({
+    where: { id: expertId },
+    select: { userId: true },
+  });
+  return e ? e.userId : null;
 };
 
 // ── Admin: create / list ─────────────────────────────────────────────────────
@@ -176,48 +205,67 @@ export interface CreateExpertPayload {
 
 export const createExpertByAdmin = async (payload: CreateExpertPayload) => {
   const email = payload.email.trim().toLowerCase();
-  const existing = await User.findOne({ email });
+  const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) throw new Error("A user with this email already exists");
   if (payload.sessionFee == null || payload.sessionFee < 0) {
     throw new Error("A valid session fee is required");
   }
 
   const temporaryPassword = generateTemporaryPassword();
-  const user = new User({
-    name: payload.name.trim(),
-    email,
-    phone: payload.phone.trim(),
-    role: "EXPERT",
-    password: temporaryPassword,
-    isActive: true,
-  });
-  await user.save();
+  const hashedPassword = await hashPassword(temporaryPassword);
 
-  const expert = await Expert.create({
-    userId: user._id,
-    bio: payload.bio?.trim() || "",
-    sports: payload.sports || [],
-    expertise: payload.expertise || [],
-    achievements: payload.achievements?.trim(),
-    sessionFee: payload.sessionFee,
-    sessionMode: payload.sessionMode || "ONLINE",
-    ...(payload.sessionDurationMinutes
-      ? { sessionDurationMinutes: payload.sessionDurationMinutes }
-      : {}),
-    ...(payload.timezone ? { timezone: payload.timezone } : {}),
-    ...(Array.isArray(payload.weeklyAvailability)
-      ? { weeklyAvailability: payload.weeklyAvailability }
-      : {}),
-    ...(Array.isArray(payload.blackoutDates)
-      ? { blackoutDates: payload.blackoutDates }
-      : {}),
-    city: payload.city?.trim(),
-    languages: payload.languages || [],
-    photoUrl: payload.photoUrl,
-    photoKey: payload.photoKey,
-    isActive: true,
-    verificationStatus: "APPROVED",
-    ...(payload.createdBy ? { createdBy: toObjectId(payload.createdBy) } : {}),
+  // User + Expert (with its child availability windows) are written together.
+  const { user, expert } = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        name: payload.name.trim(),
+        email,
+        phone: payload.phone.trim(),
+        role: "EXPERT",
+        password: hashedPassword,
+        isActive: true,
+      },
+    });
+
+    const expert = await tx.expert.create({
+      data: {
+        userId: user.id,
+        bio: payload.bio?.trim() || "",
+        sports: payload.sports || [],
+        expertise: payload.expertise || [],
+        achievements: payload.achievements?.trim(),
+        sessionFee: payload.sessionFee,
+        sessionMode: payload.sessionMode || "ONLINE",
+        ...(payload.sessionDurationMinutes
+          ? { sessionDurationMinutes: payload.sessionDurationMinutes }
+          : {}),
+        ...(payload.timezone ? { timezone: payload.timezone } : {}),
+        ...(Array.isArray(payload.weeklyAvailability)
+          ? {
+              weeklyAvailability: {
+                create: payload.weeklyAvailability.map((w) => ({
+                  dayOfWeek: w.dayOfWeek,
+                  start: w.start,
+                  end: w.end,
+                })),
+              },
+            }
+          : {}),
+        ...(Array.isArray(payload.blackoutDates)
+          ? { blackoutDates: payload.blackoutDates }
+          : {}),
+        city: payload.city?.trim(),
+        languages: payload.languages || [],
+        photoUrl: payload.photoUrl,
+        photoKey: payload.photoKey,
+        isActive: true,
+        verificationStatus: "APPROVED",
+        ...(payload.createdBy ? { createdBy: payload.createdBy } : {}),
+      },
+      include: { weeklyAvailability: true },
+    });
+
+    return { user, expert };
   });
 
   return { user, expert, temporaryPassword };
@@ -230,21 +278,27 @@ export const listExpertsForAdmin = async (params: {
 }) => {
   const page = Math.max(1, params.page || 1);
   const limit = Math.min(100, Math.max(1, params.limit || 20));
-  const filter: Record<string, unknown> = {};
-  if (params.verificationStatus) filter.verificationStatus = params.verificationStatus;
+  const where: Prisma.ExpertWhereInput = {};
+  if (params.verificationStatus)
+    where.verificationStatus =
+      params.verificationStatus as ExpertVerificationStatus;
   const [experts, total] = await Promise.all([
-    Expert.find(filter)
-      .populate("userId", "name email")
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean(),
-    Expert.countDocuments(filter),
+    prisma.expert.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: { weeklyAvailability: true },
+    }),
+    prisma.expert.count({ where }),
   ]);
   // Always include pending count for the badge
-  const pendingCount = await Expert.countDocuments({ verificationStatus: "PENDING" });
+  const pendingCount = await prisma.expert.count({
+    where: { verificationStatus: "PENDING" },
+  });
+  const withUsers = await attachExpertUsers(experts);
   return {
-    data: experts.map(serializeExpertFull),
+    data: withUsers.map(serializeExpertFull),
     pagination: { total, page, totalPages: Math.ceil(total / limit) },
     pendingCount,
   };
@@ -298,75 +352,116 @@ const sanitizeProfilePatch = (patch: Record<string, unknown>) => {
   return out;
 };
 
+/**
+ * Translate a sanitized profile patch into a Prisma update payload. The
+ * `weeklyAvailability` array (formerly an embedded Mongo array) becomes a full
+ * replace of the child `ExpertAvailabilityWindow` rows (deleteMany + create).
+ */
+const buildExpertUpdateData = (
+  update: Record<string, unknown>,
+): Prisma.ExpertUpdateInput => {
+  const { weeklyAvailability, ...rest } = update;
+  const data: Prisma.ExpertUpdateInput = { ...(rest as Prisma.ExpertUpdateInput) };
+  if (Array.isArray(weeklyAvailability)) {
+    data.weeklyAvailability = {
+      deleteMany: {},
+      create: (weeklyAvailability as any[]).map((w) => ({
+        dayOfWeek: w.dayOfWeek,
+        start: w.start,
+        end: w.end,
+      })),
+    };
+  }
+  return data;
+};
+
 export const updateExpertByAdmin = async (
   expertId: string,
   patch: Record<string, unknown>,
 ) => {
   const update = sanitizeProfilePatch(patch);
   if (patch.isActive !== undefined) update.isActive = Boolean(patch.isActive);
-  const expert = await Expert.findByIdAndUpdate(expertId, update, { new: true })
-    .populate("userId", "name email")
-    .lean();
-  if (!expert) throw new Error("Expert not found");
-  return serializeExpertFull(expert);
+  const existing = await prisma.expert.findUnique({ where: { id: expertId } });
+  if (!existing) throw new Error("Expert not found");
+  const expert = await prisma.expert.update({
+    where: { id: expertId },
+    data: buildExpertUpdateData(update),
+    include: { weeklyAvailability: true },
+  });
+  const withUser = await attachExpertUser(expert);
+  return serializeExpertFull(withUser);
 };
 
 export const setExpertActive = async (expertId: string, isActive: boolean) => {
-  const expert = await Expert.findByIdAndUpdate(
-    expertId,
-    { isActive },
-    { new: true },
-  )
-    .populate("userId", "name email")
-    .lean();
-  if (!expert) throw new Error("Expert not found");
-  return serializeExpertFull(expert);
+  const existing = await prisma.expert.findUnique({ where: { id: expertId } });
+  if (!existing) throw new Error("Expert not found");
+  const expert = await prisma.expert.update({
+    where: { id: expertId },
+    data: { isActive },
+    include: { weeklyAvailability: true },
+  });
+  const withUser = await attachExpertUser(expert);
+  return serializeExpertFull(withUser);
 };
 
 export const submitExpertForReview = async (userId: string) => {
-  const expert = await Expert.findOneAndUpdate(
-    { userId: toObjectId(userId), verificationStatus: { $in: ["UNVERIFIED", "REJECTED"] } },
-    { verificationStatus: "PENDING" },
-    { new: true },
-  )
-    .populate("userId", "name email")
-    .lean();
-  if (!expert) throw new Error("Expert profile not found or not eligible for review submission");
-  return serializeExpertFull(expert);
+  const target = await prisma.expert.findFirst({
+    where: {
+      userId,
+      verificationStatus: { in: ["UNVERIFIED", "REJECTED"] },
+    },
+  });
+  if (!target)
+    throw new Error(
+      "Expert profile not found or not eligible for review submission",
+    );
+  const expert = await prisma.expert.update({
+    where: { id: target.id },
+    data: { verificationStatus: "PENDING" },
+    include: { weeklyAvailability: true },
+  });
+  const withUser = await attachExpertUser(expert);
+  return serializeExpertFull(withUser);
 };
 
 export const approveExpert = async (expertId: string) => {
-  const expert = await Expert.findByIdAndUpdate(
-    expertId,
-    { verificationStatus: "APPROVED", isActive: true, $unset: { rejectionReason: 1 } },
-    { new: true },
-  )
-    .populate("userId", "name email")
-    .lean();
-  if (!expert) throw new Error("Expert not found");
-  return serializeExpertFull(expert);
+  const existing = await prisma.expert.findUnique({ where: { id: expertId } });
+  if (!existing) throw new Error("Expert not found");
+  const expert = await prisma.expert.update({
+    where: { id: expertId },
+    data: { verificationStatus: "APPROVED", isActive: true, rejectionReason: null },
+    include: { weeklyAvailability: true },
+  });
+  const withUser = await attachExpertUser(expert);
+  return serializeExpertFull(withUser);
 };
 
 export const rejectExpert = async (expertId: string, reason: string) => {
-  const expert = await Expert.findByIdAndUpdate(
-    expertId,
-    { verificationStatus: "REJECTED", isActive: false, rejectionReason: reason.trim() },
-    { new: true },
-  )
-    .populate("userId", "name email")
-    .lean();
-  if (!expert) throw new Error("Expert not found");
-  return serializeExpertFull(expert);
+  const existing = await prisma.expert.findUnique({ where: { id: expertId } });
+  if (!existing) throw new Error("Expert not found");
+  const expert = await prisma.expert.update({
+    where: { id: expertId },
+    data: {
+      verificationStatus: "REJECTED",
+      isActive: false,
+      rejectionReason: reason.trim(),
+    },
+    include: { weeklyAvailability: true },
+  });
+  const withUser = await attachExpertUser(expert);
+  return serializeExpertFull(withUser);
 };
 
 // ── Expert self-service profile ──────────────────────────────────────────────
 
 export const getMyExpertProfile = async (userId: string) => {
-  const expert = await Expert.findOne({ userId: toObjectId(userId) })
-    .populate("userId", "name email")
-    .lean();
+  const expert = await prisma.expert.findUnique({
+    where: { userId },
+    include: { weeklyAvailability: true },
+  });
   if (!expert) throw new Error("Expert profile not found");
-  return serializeExpertFull(expert);
+  const withUser = await attachExpertUser(expert);
+  return serializeExpertFull(withUser);
 };
 
 export const updateMyExpertProfile = async (
@@ -374,15 +469,15 @@ export const updateMyExpertProfile = async (
   patch: Record<string, unknown>,
 ) => {
   const update = sanitizeProfilePatch(patch);
-  const expert = await Expert.findOneAndUpdate(
-    { userId: toObjectId(userId) },
-    update,
-    { new: true },
-  )
-    .populate("userId", "name email")
-    .lean();
-  if (!expert) throw new Error("Expert profile not found");
-  return serializeExpertFull(expert);
+  const target = await prisma.expert.findUnique({ where: { userId } });
+  if (!target) throw new Error("Expert profile not found");
+  const expert = await prisma.expert.update({
+    where: { id: target.id },
+    data: buildExpertUpdateData(update),
+    include: { weeklyAvailability: true },
+  });
+  const withUser = await attachExpertUser(expert);
+  return serializeExpertFull(withUser);
 };
 
 // ── Public discovery ─────────────────────────────────────────────────────────
@@ -395,45 +490,55 @@ export const listActiveExperts = async (params: {
 }) => {
   const page = Math.max(1, params.page || 1);
   const limit = Math.min(60, Math.max(1, params.limit || 30));
-  const query: Record<string, unknown> = { isActive: true };
-  if (params.sport) query.sports = params.sport;
+  const where: Prisma.ExpertWhereInput = { isActive: true };
+  if (params.sport) where.sports = { has: params.sport };
 
   if (params.search && params.search.trim()) {
-    const rx = new RegExp(escapeRegex(params.search.trim()), "i");
-    const matchingUsers = await User.find({ role: "EXPERT", name: rx })
-      .select("_id")
-      .lean();
-    query.$or = [
-      { bio: rx },
-      { city: rx },
-      { sports: rx },
-      { expertise: rx },
-      { userId: { $in: matchingUsers.map((u) => u._id) } },
+    const term = params.search.trim();
+    const matchingUsers = await prisma.user.findMany({
+      where: { role: "EXPERT", name: { contains: term, mode: "insensitive" } },
+      select: { id: true },
+    });
+    // TODO(prisma): full-text — add tsvector/GIN index and query via $queryRaw.
+    // `bio`/`city` use case-insensitive contains; the `sports`/`expertise`
+    // String[] columns only support exact-element `has` (no partial/ILIKE
+    // element match as the old Mongo regex did), so a proper search index is
+    // still owed here.
+    where.OR = [
+      { bio: { contains: term, mode: "insensitive" } },
+      { city: { contains: term, mode: "insensitive" } },
+      { sports: { has: term } },
+      { expertise: { has: term } },
+      { userId: { in: matchingUsers.map((u) => u.id) } },
     ];
   }
 
   const [experts, total] = await Promise.all([
-    Expert.find(query)
-      .populate("userId", "name email")
-      .sort({ rating: -1, createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean(),
-    Expert.countDocuments(query),
+    prisma.expert.findMany({
+      where,
+      orderBy: [{ rating: "desc" }, { createdAt: "desc" }],
+      skip: (page - 1) * limit,
+      take: limit,
+      include: { weeklyAvailability: true },
+    }),
+    prisma.expert.count({ where }),
   ]);
 
+  const withUsers = await attachExpertUsers(experts);
   return {
-    data: experts.map(serializeExpert),
+    data: withUsers.map(serializeExpert),
     pagination: { total, page, totalPages: Math.ceil(total / limit) },
   };
 };
 
 export const getExpertById = async (expertId: string) => {
-  const expert = await Expert.findById(expertId)
-    .populate("userId", "name email")
-    .lean();
+  const expert = await prisma.expert.findUnique({
+    where: { id: expertId },
+    include: { weeklyAvailability: true },
+  });
   if (!expert || !expert.isActive) throw new Error("Expert not found");
-  return serializeExpert(expert);
+  const withUser = await attachExpertUser(expert);
+  return serializeExpert(withUser);
 };
 
 export const getExpertOpenSlots = async (
@@ -441,35 +546,43 @@ export const getExpertOpenSlots = async (
   from?: string,
   to?: string,
 ): Promise<OpenSlot[]> => {
-  const expert = await Expert.findById(expertId);
+  const expert = await prisma.expert.findUnique({
+    where: { id: expertId },
+    include: { weeklyAvailability: true },
+  });
   if (!expert || !expert.isActive) throw new Error("Expert not found");
   return computeOpenSlots(expert, from, to);
 };
 
 export const getExpertReviews = async (expertId: string) => {
-  const sessions = await ExpertSession.find({
-    expertId: toObjectId(expertId),
-    reviewed: true,
-    reviewHidden: { $ne: true },
-  })
-    .populate("userId", "name")
-    .sort({ reviewedAt: -1 })
-    .lean();
-  return sessions.map((s) => {
-    const u = s.userId as unknown as { name?: string } | null;
-    return {
-      rating: s.rating,
-      review: s.review,
-      reviewerName: s.reviewAnonymous ? "Anonymous" : u?.name || "A player",
-      reviewedAt: s.reviewedAt,
-    };
+  const sessions = await prisma.expertSession.findMany({
+    where: {
+      expertId,
+      reviewed: true,
+      reviewHidden: { not: true },
+    },
+    orderBy: { reviewedAt: "desc" },
   });
+  const userIds = [...new Set(sessions.map((s) => s.userId))];
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, name: true },
+  });
+  const byId = new Map(users.map((u) => [u.id, u]));
+  return sessions.map((s) => ({
+    rating: s.rating,
+    review: s.review,
+    reviewerName: s.reviewAnonymous
+      ? "Anonymous"
+      : byId.get(s.userId)?.name || "A player",
+    reviewedAt: s.reviewedAt,
+  }));
 };
 
 // ── Session lifecycle ────────────────────────────────────────────────────────
 
-const assertSessionOwner = (session: ExpertSessionDocument, userId: string) => {
-  if (session.userId.toString() !== userId) {
+const assertSessionOwner = (session: ExpertSession, userId: string) => {
+  if (session.userId !== userId) {
     throw new Error("You are not authorized to modify this session");
   }
 };
@@ -482,9 +595,12 @@ export const initiateExpertSession = async (params: {
   mode?: "ONLINE" | "IN_PERSON";
   userPhone?: string;
 }) => {
-  const expert = await Expert.findById(params.expertId);
+  const expert = await prisma.expert.findUnique({
+    where: { id: params.expertId },
+    include: { weeklyAvailability: true },
+  });
   if (!expert || !expert.isActive) throw new Error("Expert not found");
-  if (params.userId === (expert.userId as mongoose.Types.ObjectId).toString()) {
+  if (params.userId === expert.userId) {
     throw new Error("You cannot book a session with yourself");
   }
 
@@ -499,29 +615,31 @@ export const initiateExpertSession = async (params: {
         ? "IN_PERSON"
         : "ONLINE";
 
-  const session = await ExpertSession.create({
-    expertId: expert._id,
-    userId: toObjectId(params.userId),
-    amount: expert.sessionFee,
-    status: "PENDING_PAYMENT",
-    paymentStatus: "PENDING",
-    merchantOrderId,
-    scheduledAt,
-    durationMinutes: expert.sessionDurationMinutes || 60,
-    holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60_000),
-    mode: resolvedMode,
-    clientNote: params.clientNote?.trim(),
+  const session = await prisma.expertSession.create({
+    data: {
+      expertId: expert.id,
+      userId: params.userId,
+      amount: expert.sessionFee,
+      status: "PENDING_PAYMENT",
+      paymentStatus: "PENDING",
+      merchantOrderId,
+      scheduledAt,
+      durationMinutes: expert.sessionDurationMinutes || 60,
+      holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60_000),
+      mode: resolvedMode,
+      clientNote: params.clientNote?.trim(),
+    },
   });
 
   const payment = await initiatePhonePePayment({
     merchantOrderId,
     amount: toPaise(expert.sessionFee),
-    redirectUrl: `${frontendUrl()}/experts/sessions/${session._id}`,
+    redirectUrl: `${frontendUrl()}/experts/sessions/${session.id}`,
     ...(params.userPhone ? { userPhone: params.userPhone } : {}),
   });
 
   return {
-    sessionId: session._id.toString(),
+    sessionId: session.id.toString(),
     redirectUrl: payment.redirectUrl,
   };
 };
@@ -529,22 +647,34 @@ export const initiateExpertSession = async (params: {
 /**
  * Idempotently transition a session to a paid+scheduled state and fire the
  * one-time confirmation notifications. Safe to call from both the client-driven
- * reconcile and the webhook path.
+ * reconcile and the webhook path. Optional `extraData` is merged into the same
+ * atomic write (used by the webhook to persist the callback payload).
  */
 const applyExpertPaymentSuccess = async (
-  session: ExpertSessionDocument,
-): Promise<ExpertSessionDocument> => {
+  session: ExpertSession,
+  extraData: Prisma.ExpertSessionUpdateInput = {},
+): Promise<ExpertSession> => {
   const wasPaid = session.paymentStatus === "COMPLETED";
-  session.paymentStatus = "COMPLETED";
-  session.set("holdExpiresAt", undefined);
-  if (session.status === "PENDING_PAYMENT") {
-    session.status = session.scheduledAt ? "SCHEDULED" : "PAID";
-  }
-  await session.save();
+  const nextStatus =
+    session.status === "PENDING_PAYMENT"
+      ? session.scheduledAt
+        ? "SCHEDULED"
+        : "PAID"
+      : session.status;
+
+  const updated = await prisma.expertSession.update({
+    where: { id: session.id },
+    data: {
+      paymentStatus: "COMPLETED",
+      holdExpiresAt: null,
+      status: nextStatus,
+      ...extraData,
+    },
+  });
 
   if (!wasPaid) {
-    const when = session.scheduledAt
-      ? new Date(session.scheduledAt).toLocaleString("en-IN", {
+    const when = updated.scheduledAt
+      ? new Date(updated.scheduledAt).toLocaleString("en-IN", {
           timeZone: "Asia/Kolkata",
           dateStyle: "medium",
           timeStyle: "short",
@@ -552,34 +682,36 @@ const applyExpertPaymentSuccess = async (
       : "a time you choose";
     // Client receipt.
     notify(
-      session.userId,
+      updated.userId,
       "PAYMENT_CONFIRMED",
       "Session booked",
-      `Your payment of ₹${session.amount} is confirmed. Your session is set for ${when}.`,
-      { sessionId: session._id.toString(), amount: session.amount },
+      `Your payment of ₹${updated.amount} is confirmed. Your session is set for ${when}.`,
+      { sessionId: updated.id.toString(), amount: updated.amount },
       true,
     );
     // Expert alert.
-    const expertUserId = await expertUserIdOf(session.expertId);
+    const expertUserId = await expertUserIdOf(updated.expertId);
     if (expertUserId) {
       notify(
         expertUserId,
         "BOOKING_CONFIRMED",
         "New session booked",
         `A client booked a paid session with you for ${when}.`,
-        { sessionId: session._id.toString() },
+        { sessionId: updated.id.toString() },
         true,
       );
     }
   }
-  return session;
+  return updated;
 };
 
 export const reconcileExpertSession = async (params: {
   sessionId: string;
   userId: string;
-}): Promise<ExpertSessionDocument> => {
-  const session = await ExpertSession.findById(params.sessionId);
+}): Promise<ExpertSession> => {
+  const session = await prisma.expertSession.findUnique({
+    where: { id: params.sessionId },
+  });
   if (!session) throw new Error("Session not found");
   assertSessionOwner(session, params.userId);
   if (session.paymentStatus === "COMPLETED") return session;
@@ -589,15 +721,21 @@ export const reconcileExpertSession = async (params: {
   if (["COMPLETED", "SUCCESS", "PAYMENT_SUCCESS"].includes(state)) {
     return applyExpertPaymentSuccess(session);
   } else if (["FAILED", "PAYMENT_ERROR", "PAYMENT_DECLINED"].includes(state)) {
-    session.paymentStatus = "FAILED";
-    if (session.status === "PENDING_PAYMENT") {
-      session.status = "CANCELLED";
-      session.cancelledBy = "SYSTEM";
-      session.cancelReason = "Payment failed";
-      session.cancelledAt = new Date();
-      session.set("holdExpiresAt", undefined);
-    }
-    await session.save();
+    return prisma.expertSession.update({
+      where: { id: session.id },
+      data: {
+        paymentStatus: "FAILED",
+        ...(session.status === "PENDING_PAYMENT"
+          ? {
+              status: "CANCELLED",
+              cancelledBy: "SYSTEM",
+              cancelReason: "Payment failed",
+              cancelledAt: new Date(),
+              holdExpiresAt: null,
+            }
+          : {}),
+      },
+    });
   }
   return session;
 };
@@ -609,32 +747,41 @@ export const scheduleExpertSession = async (params: {
   scheduledAt: string;
   mode?: "ONLINE" | "IN_PERSON";
 }) => {
-  const session = await ExpertSession.findById(params.sessionId);
+  const session = await prisma.expertSession.findUnique({
+    where: { id: params.sessionId },
+  });
   if (!session) throw new Error("Session not found");
   assertSessionOwner(session, params.userId);
   if (!["PAID", "SCHEDULED"].includes(session.status)) {
     throw new Error("Only a paid session can be scheduled");
   }
-  const expert = await Expert.findById(session.expertId);
+  const expert = await prisma.expert.findUnique({
+    where: { id: session.expertId },
+    include: { weeklyAvailability: true },
+  });
   if (!expert) throw new Error("Expert not found");
 
   const when = new Date(params.scheduledAt);
-  await assertSlotBookable(expert, when, session._id.toString());
+  await assertSlotBookable(expert, when, session.id);
 
-  session.scheduledAt = when;
-  session.status = "SCHEDULED";
-  if (params.mode) session.mode = params.mode;
-  await session.save();
+  const updated = await prisma.expertSession.update({
+    where: { id: session.id },
+    data: {
+      scheduledAt: when,
+      status: "SCHEDULED",
+      ...(params.mode ? { mode: params.mode } : {}),
+    },
+  });
 
-  const expertUserId = (expert.userId as mongoose.Types.ObjectId).toString();
+  const expertUserId = expert.userId;
   notify(
     expertUserId,
     "BOOKING_STATUS_UPDATED",
     "Session scheduled",
     `A session was scheduled for ${when.toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}.`,
-    { sessionId: session._id.toString() },
+    { sessionId: updated.id.toString() },
   );
-  return session;
+  return updated;
 };
 
 export const completeExpertSession = async (params: {
@@ -642,30 +789,36 @@ export const completeExpertSession = async (params: {
   actorUserId: string;
   isAdmin?: boolean;
 }) => {
-  const session = await ExpertSession.findById(params.sessionId);
+  const session = await prisma.expertSession.findUnique({
+    where: { id: params.sessionId },
+  });
   if (!session) throw new Error("Session not found");
   if (!params.isAdmin) {
-    const expert = await Expert.findById(session.expertId).select("userId");
-    if (!expert || expert.userId.toString() !== params.actorUserId) {
+    const expert = await prisma.expert.findUnique({
+      where: { id: session.expertId },
+      select: { userId: true },
+    });
+    if (!expert || expert.userId !== params.actorUserId) {
       throw new Error("Only the expert or an admin can complete this session");
     }
   }
   if (!["PAID", "SCHEDULED"].includes(session.status)) {
     throw new Error("Session cannot be completed from its current state");
   }
-  session.status = "COMPLETED";
-  session.completedAt = new Date();
-  await session.save();
+  const updated = await prisma.expertSession.update({
+    where: { id: session.id },
+    data: { status: "COMPLETED", completedAt: new Date() },
+  });
 
   notify(
-    session.userId,
+    updated.userId,
     "REVIEW_REMINDER",
     "How was your session?",
     "Your expert session is complete. Leave a rating and feedback to help others.",
-    { sessionId: session._id.toString() },
+    { sessionId: updated.id.toString() },
     true,
   );
-  return session;
+  return updated;
 };
 
 export const setSessionMeetingLink = async (params: {
@@ -674,11 +827,16 @@ export const setSessionMeetingLink = async (params: {
   isAdmin?: boolean;
   meetingLink: string;
 }) => {
-  const session = await ExpertSession.findById(params.sessionId);
+  const session = await prisma.expertSession.findUnique({
+    where: { id: params.sessionId },
+  });
   if (!session) throw new Error("Session not found");
   if (!params.isAdmin) {
-    const expert = await Expert.findById(session.expertId).select("userId");
-    if (!expert || expert.userId.toString() !== params.actorUserId) {
+    const expert = await prisma.expert.findUnique({
+      where: { id: session.expertId },
+      select: { userId: true },
+    });
+    if (!expert || expert.userId !== params.actorUserId) {
       throw new Error("Only the expert or an admin can set the meeting link");
     }
   }
@@ -686,18 +844,20 @@ export const setSessionMeetingLink = async (params: {
   if (link && !/^https?:\/\//i.test(link)) {
     throw new Error("Meeting link must be a valid URL");
   }
-  session.meetingLink = link;
-  await session.save();
+  const updated = await prisma.expertSession.update({
+    where: { id: session.id },
+    data: { meetingLink: link },
+  });
 
   notify(
-    session.userId,
+    updated.userId,
     "BOOKING_STATUS_UPDATED",
     "Meeting link added",
     "Your expert added a meeting link for your upcoming session.",
-    { sessionId: session._id.toString() },
+    { sessionId: updated.id.toString() },
     true,
   );
-  return session;
+  return updated;
 };
 
 /**
@@ -714,15 +874,16 @@ export const respondToExpertSession = async (params: {
   scheduledAt?: string | undefined;
   reason?: string | undefined;
 }) => {
-  const session = await ExpertSession.findById(params.sessionId);
+  const session = await prisma.expertSession.findUnique({
+    where: { id: params.sessionId },
+  });
   if (!session) throw new Error("Session not found");
-  const expert = await Expert.findById(session.expertId);
+  const expert = await prisma.expert.findUnique({
+    where: { id: session.expertId },
+    include: { weeklyAvailability: true },
+  });
   if (!expert) throw new Error("Expert not found");
-  if (
-    !params.isAdmin &&
-    (expert.userId as mongoose.Types.ObjectId).toString() !==
-      params.expertUserId
-  ) {
+  if (!params.isAdmin && expert.userId !== params.expertUserId) {
     throw new Error("Only the expert or an admin can respond to this session");
   }
   if (!["PAID", "SCHEDULED"].includes(session.status)) {
@@ -731,72 +892,85 @@ export const respondToExpertSession = async (params: {
   const tz = expert.timezone || "Asia/Kolkata";
 
   if (params.action === "ACCEPT") {
-    session.expertAcceptance = "ACCEPTED";
-    session.expertRespondedAt = new Date();
-    if (session.scheduledAt) session.status = "SCHEDULED";
-    await session.save();
+    const updated = await prisma.expertSession.update({
+      where: { id: session.id },
+      data: {
+        expertAcceptance: "ACCEPTED",
+        expertRespondedAt: new Date(),
+        ...(session.scheduledAt ? { status: "SCHEDULED" } : {}),
+      },
+    });
     notify(
-      session.userId,
+      updated.userId,
       "BOOKING_CONFIRMED",
       "Session confirmed",
       "Your expert confirmed your session time.",
-      { sessionId: session._id.toString() },
+      { sessionId: updated.id.toString() },
       true,
     );
-    return session;
+    return updated;
   }
 
   if (params.action === "DECLINE") {
     const declinedAt = new Date();
-    session.status = "CANCELLED";
-    session.cancelledAt = declinedAt;
-    session.cancelledBy = "EXPERT";
-    session.cancelReason =
-      params.reason?.trim() || "The expert is unavailable at this time";
-    session.expertAcceptance = "DECLINED";
-    session.expertRespondedAt = declinedAt;
+    const data: Prisma.ExpertSessionUpdateInput = {
+      status: "CANCELLED",
+      cancelledAt: declinedAt,
+      cancelledBy: "EXPERT",
+      cancelReason:
+        params.reason?.trim() || "The expert is unavailable at this time",
+      expertAcceptance: "DECLINED",
+      expertRespondedAt: declinedAt,
+    };
     if (session.paymentStatus === "COMPLETED") {
-      session.refundStatus = "REQUIRED";
+      data.refundStatus = "REQUIRED";
       if (session.scheduledAt) {
-        session.cancellationNoticeHours = Math.round(
+        data.cancellationNoticeHours = Math.round(
           (session.scheduledAt.getTime() - declinedAt.getTime()) /
             (60 * 60 * 1000),
         );
       }
     }
-    await session.save();
+    const updated = await prisma.expertSession.update({
+      where: { id: session.id },
+      data,
+    });
     notify(
-      session.userId,
+      updated.userId,
       "BOOKING_CANCELLED",
       "Session declined",
-      session.paymentStatus === "COMPLETED"
+      updated.paymentStatus === "COMPLETED"
         ? "Your expert couldn't take this session. A refund will be processed manually by our team."
         : "Your expert couldn't take this session.",
-      { sessionId: session._id.toString() },
+      { sessionId: updated.id.toString() },
       true,
     );
-    return session;
+    return updated;
   }
 
   // RESCHEDULE
   if (!params.scheduledAt)
     throw new Error("A new time is required to reschedule");
   const when = new Date(params.scheduledAt);
-  await assertSlotBookable(expert, when, session._id.toString());
-  session.scheduledAt = when;
-  session.status = "SCHEDULED";
-  session.expertAcceptance = "ACCEPTED";
-  session.expertRespondedAt = new Date();
-  await session.save();
+  await assertSlotBookable(expert, when, session.id);
+  const updated = await prisma.expertSession.update({
+    where: { id: session.id },
+    data: {
+      scheduledAt: when,
+      status: "SCHEDULED",
+      expertAcceptance: "ACCEPTED",
+      expertRespondedAt: new Date(),
+    },
+  });
   notify(
-    session.userId,
+    updated.userId,
     "BOOKING_STATUS_UPDATED",
     "Session rescheduled",
     `Your expert moved your session to ${when.toLocaleString("en-IN", { timeZone: tz })}.`,
-    { sessionId: session._id.toString() },
+    { sessionId: updated.id.toString() },
     true,
   );
-  return session;
+  return updated;
 };
 
 export const cancelExpertSession = async (params: {
@@ -805,13 +979,18 @@ export const cancelExpertSession = async (params: {
   role?: string | undefined;
   reason?: string | undefined;
 }) => {
-  const session = await ExpertSession.findById(params.sessionId);
+  const session = await prisma.expertSession.findUnique({
+    where: { id: params.sessionId },
+  });
   if (!session) throw new Error("Session not found");
 
   const isAdmin = params.role === "Admin";
-  const expert = await Expert.findById(session.expertId).select("userId");
-  const isExpert = expert?.userId?.toString() === params.actorUserId;
-  const isClient = session.userId.toString() === params.actorUserId;
+  const expert = await prisma.expert.findUnique({
+    where: { id: session.expertId },
+    select: { userId: true },
+  });
+  const isExpert = expert?.userId === params.actorUserId;
+  const isClient = session.userId === params.actorUserId;
   if (!isAdmin && !isExpert && !isClient) {
     throw new Error("You are not authorized to cancel this session");
   }
@@ -819,31 +998,32 @@ export const cancelExpertSession = async (params: {
     throw new Error("A completed session cannot be cancelled");
   if (session.status === "CANCELLED") return session;
 
-  const by: ExpertSessionCanceller = isAdmin
-    ? "ADMIN"
-    : isExpert
-      ? "EXPERT"
-      : "CLIENT";
+  const by = isAdmin ? "ADMIN" : isExpert ? "EXPERT" : "CLIENT";
   const cancelledAt = new Date();
-  session.status = "CANCELLED";
-  session.cancelledAt = cancelledAt;
-  session.cancelledBy = by;
-  session.cancelReason = params.reason?.trim();
+  const data: Prisma.ExpertSessionUpdateInput = {
+    status: "CANCELLED",
+    cancelledAt,
+    cancelledBy: by,
+    cancelReason: params.reason?.trim(),
+  };
   // Paid sessions require a manual refund (handled by admin/finance). We record
   // how much notice was given so admin can apply their own late-cancellation
   // judgment when processing it — the app never auto-forfeits the payment.
   if (session.paymentStatus === "COMPLETED") {
-    session.refundStatus = "REQUIRED";
+    data.refundStatus = "REQUIRED";
     if (session.scheduledAt) {
-      session.cancellationNoticeHours = Math.round(
+      data.cancellationNoticeHours = Math.round(
         (session.scheduledAt.getTime() - cancelledAt.getTime()) /
           (60 * 60 * 1000),
       );
     }
   }
-  await session.save();
+  const updated = await prisma.expertSession.update({
+    where: { id: session.id },
+    data,
+  });
 
-  const expertUserId = expert?.userId?.toString();
+  const expertUserId = expert?.userId;
   // Notify the other party.
   if (isClient && expertUserId) {
     notify(
@@ -851,47 +1031,43 @@ export const cancelExpertSession = async (params: {
       "BOOKING_CANCELLED",
       "Session cancelled",
       "A client cancelled their session with you.",
-      { sessionId: session._id.toString() },
+      { sessionId: updated.id.toString() },
       true,
     );
   } else {
     notify(
-      session.userId,
+      updated.userId,
       "BOOKING_CANCELLED",
       "Session cancelled",
-      session.paymentStatus === "COMPLETED"
+      updated.paymentStatus === "COMPLETED"
         ? "Your session was cancelled. A refund will be processed manually by our team."
         : "Your session was cancelled.",
-      { sessionId: session._id.toString() },
+      { sessionId: updated.id.toString() },
       true,
     );
   }
-  return session;
+  return updated;
 };
 
-const recomputeExpertRating = async (expertId: mongoose.Types.ObjectId) => {
-  const agg = await ExpertSession.aggregate([
-    {
-      $match: {
-        expertId,
-        reviewed: true,
-        reviewHidden: { $ne: true },
-        rating: { $gte: 1 },
-      },
+const recomputeExpertRating = async (expertId: string) => {
+  const agg = await prisma.expertSession.aggregate({
+    where: {
+      expertId,
+      reviewed: true,
+      reviewHidden: { not: true },
+      rating: { gte: 1 },
     },
-    {
-      $group: {
-        _id: "$expertId",
-        avg: { $avg: "$rating" },
-        count: { $sum: 1 },
-      },
+    _avg: { rating: true },
+    _count: { _all: true },
+  });
+  const avg = agg._avg.rating || 0;
+  const count = agg._count._all || 0;
+  await prisma.expert.update({
+    where: { id: expertId },
+    data: {
+      rating: Math.round(avg * 10) / 10,
+      reviewCount: count,
     },
-  ]);
-  const avg = agg[0]?.avg || 0;
-  const count = agg[0]?.count || 0;
-  await Expert.findByIdAndUpdate(expertId, {
-    rating: Math.round(avg * 10) / 10,
-    reviewCount: count,
   });
 };
 
@@ -902,7 +1078,9 @@ export const reviewExpertSession = async (params: {
   review?: string;
   anonymous?: boolean;
 }) => {
-  const session = await ExpertSession.findById(params.sessionId);
+  const session = await prisma.expertSession.findUnique({
+    where: { id: params.sessionId },
+  });
   if (!session) throw new Error("Session not found");
   assertSessionOwner(session, params.userId);
   if (session.status !== "COMPLETED")
@@ -912,41 +1090,51 @@ export const reviewExpertSession = async (params: {
   if (params.rating < 1 || params.rating > 5)
     throw new Error("Rating must be between 1 and 5");
 
-  session.reviewed = true;
-  session.rating = params.rating;
-  session.review = params.review?.trim();
-  session.reviewAnonymous = Boolean(params.anonymous);
-  session.reviewedAt = new Date();
-  await session.save();
+  const updated = await prisma.expertSession.update({
+    where: { id: session.id },
+    data: {
+      reviewed: true,
+      rating: params.rating,
+      review: params.review?.trim(),
+      reviewAnonymous: Boolean(params.anonymous),
+      reviewedAt: new Date(),
+    },
+  });
 
-  await recomputeExpertRating(session.expertId);
+  await recomputeExpertRating(updated.expertId);
 
-  const expertUserId = await expertUserIdOf(session.expertId);
+  const expertUserId = await expertUserIdOf(updated.expertId);
   if (expertUserId) {
     notify(
       expertUserId,
       "REVIEW_POSTED",
       "New review",
       `You received a ${params.rating}-star review.`,
-      { sessionId: session._id.toString() },
+      { sessionId: updated.id.toString() },
     );
   }
-  return session;
+  return updated;
 };
 
 /** Admin: hide/unhide a review and recompute the aggregate rating. */
 export const setReviewHidden = async (sessionId: string, hidden: boolean) => {
-  const session = await ExpertSession.findById(sessionId);
+  const session = await prisma.expertSession.findUnique({
+    where: { id: sessionId },
+  });
   if (!session) throw new Error("Session not found");
-  session.reviewHidden = hidden;
-  await session.save();
-  await recomputeExpertRating(session.expertId);
-  return session;
+  const updated = await prisma.expertSession.update({
+    where: { id: session.id },
+    data: { reviewHidden: hidden },
+  });
+  await recomputeExpertRating(updated.expertId);
+  return updated;
 };
 
 /** Admin/finance: mark a required manual refund as done, triggering a PhonePe reversal where possible. */
 export const markSessionRefundDone = async (sessionId: string) => {
-  const session = await ExpertSession.findById(sessionId);
+  const session = await prisma.expertSession.findUnique({
+    where: { id: sessionId },
+  });
   if (!session) throw new Error("Session not found");
   if (session.refundStatus !== "REQUIRED") {
     throw new Error("This session has no pending refund");
@@ -954,7 +1142,7 @@ export const markSessionRefundDone = async (sessionId: string) => {
 
   if (session.merchantOrderId) {
     try {
-      const refundMerchantId = `EXPERT-REFUND-${Date.now()}-${session._id.toString().slice(-6)}`;
+      const refundMerchantId = `EXPERT-REFUND-${Date.now()}-${session.id.toString().slice(-6)}`;
       await initiatePhonePeRefund({
         merchantRefundId: refundMerchantId,
         originalMerchantOrderId: session.merchantOrderId,
@@ -974,22 +1162,26 @@ export const markSessionRefundDone = async (sessionId: string) => {
     );
   }
 
-  session.refundStatus = "MANUAL_DONE";
-  await session.save();
+  const updated = await prisma.expertSession.update({
+    where: { id: session.id },
+    data: { refundStatus: "MANUAL_DONE" },
+  });
   notify(
-    session.userId,
+    updated.userId,
     "PAYMENT_REFUND",
     "Refund processed",
-    `Your refund of ₹${session.amount.toLocaleString("en-IN")} has been processed.`,
-    { sessionId: session._id.toString() },
+    `Your refund of ₹${updated.amount.toLocaleString("en-IN")} has been processed.`,
+    { sessionId: updated.id.toString() },
     true,
   );
-  return session;
+  return updated;
 };
 
 /** Admin/finance: mark a completed session's payout to the expert as done (early, ahead of the 24h auto-release). */
 export const markSessionPayoutDone = async (sessionId: string) => {
-  const session = await ExpertSession.findById(sessionId);
+  const session = await prisma.expertSession.findUnique({
+    where: { id: sessionId },
+  });
   if (!session) throw new Error("Session not found");
   if (session.status !== "COMPLETED" || session.paymentStatus !== "COMPLETED") {
     throw new Error("This session has no payout to release");
@@ -997,21 +1189,22 @@ export const markSessionPayoutDone = async (sessionId: string) => {
   if (session.payoutStatus === "PAID") {
     throw new Error("This session's payout has already been marked paid");
   }
-  session.payoutStatus = "PAID";
-  session.payoutPaidAt = new Date();
-  await session.save();
-  const expertUserId = await expertUserIdOf(session.expertId);
+  const updated = await prisma.expertSession.update({
+    where: { id: session.id },
+    data: { payoutStatus: "PAID", payoutPaidAt: new Date() },
+  });
+  const expertUserId = await expertUserIdOf(updated.expertId);
   if (expertUserId) {
     notify(
       expertUserId,
       "PAYOUT_PROCESSED",
       "Payout released",
-      `Your payout of ₹${session.amount} for a completed session has been released.`,
-      { sessionId: session._id.toString() },
+      `Your payout of ₹${updated.amount} for a completed session has been released.`,
+      { sessionId: updated.id.toString() },
       true,
     );
   }
-  return session;
+  return updated;
 };
 
 // ── Reads ────────────────────────────────────────────────────────────────────
@@ -1021,69 +1214,90 @@ export const getExpertSessionForUser = async (params: {
   userId: string;
   isAdmin?: boolean;
 }) => {
-  const session = await ExpertSession.findById(params.sessionId).lean();
+  const session = await prisma.expertSession.findUnique({
+    where: { id: params.sessionId },
+  });
   if (!session) throw new Error("Session not found");
 
-  const expert = await Expert.findById(session.expertId)
-    .populate("userId", "name email")
-    .lean();
-  const isClient = session.userId.toString() === params.userId;
-  const isExpert =
-    expert && (expert.userId as any)?._id?.toString() === params.userId;
+  const expertRow = await prisma.expert.findUnique({
+    where: { id: session.expertId },
+    include: { weeklyAvailability: true },
+  });
+  const expert = expertRow ? await attachExpertUser(expertRow) : null;
+  const isClient = session.userId === params.userId;
+  const isExpert = !!expertRow && expertRow.userId === params.userId;
   if (!isClient && !isExpert && !params.isAdmin) {
     throw new Error("You are not authorized to view this session");
   }
   return serializeSession(session, {
     expert: expert ? serializeExpert(expert) : undefined,
-    expertInPersonAddress: expert?.inPersonAddress,
+    expertInPersonAddress: expertRow?.inPersonAddress ?? undefined,
   });
 };
 
 export const listUserExpertSessions = async (userId: string) => {
-  const sessions = await ExpertSession.find({ userId: toObjectId(userId) })
-    .sort({ createdAt: -1 })
-    .lean();
-  const expertIds = [...new Set(sessions.map((s) => s.expertId.toString()))];
-  const experts = await Expert.find({ _id: { $in: expertIds } })
-    .populate("userId", "name email")
-    .lean();
-  const byId = new Map(experts.map((e) => [e._id.toString(), e]));
+  const sessions = await prisma.expertSession.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
+  const expertIds = [...new Set(sessions.map((s) => s.expertId))];
+  const experts = await prisma.expert.findMany({
+    where: { id: { in: expertIds } },
+    include: { weeklyAvailability: true },
+  });
+  const withUsers = await attachExpertUsers(experts);
+  const byId = new Map(withUsers.map((e) => [e.id, e]));
   return sessions.map((s) => {
-    const e = byId.get(s.expertId.toString());
+    const e = byId.get(s.expertId);
     return serializeSession(s, {
       expert: e ? serializeExpert(e) : undefined,
-      expertInPersonAddress: e?.inPersonAddress,
+      expertInPersonAddress: e?.inPersonAddress ?? undefined,
     });
   });
 };
 
 export const listExpertOwnSessions = async (expertUserId: string) => {
-  const expert = await Expert.findOne({
-    userId: toObjectId(expertUserId),
-  }).select("_id timezone");
-  if (!expert) return [];
-  const tz = (expert as any).timezone || "Asia/Kolkata";
-  const sessions = await ExpertSession.find({ expertId: expert._id })
-    .populate("userId", "name")
-    .sort({ createdAt: -1 })
-    .lean();
-  return sessions.map((s) => {
-    const u = s.userId as unknown as { name?: string } | null;
-    return serializeSession(s, {
-      clientName: u?.name || "Client",
-      expertTimezone: tz,
-    });
+  const expert = await prisma.expert.findUnique({
+    where: { userId: expertUserId },
+    select: { id: true, timezone: true },
   });
+  if (!expert) return [];
+  const tz = expert.timezone || "Asia/Kolkata";
+  const sessions = await prisma.expertSession.findMany({
+    where: { expertId: expert.id },
+    orderBy: { createdAt: "desc" },
+  });
+  const userIds = [...new Set(sessions.map((s) => s.userId))];
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, name: true },
+  });
+  const byId = new Map(users.map((u) => [u.id, u]));
+  return sessions.map((s) =>
+    serializeSession(s, {
+      clientName: byId.get(s.userId)?.name || "Client",
+      expertTimezone: tz,
+    }),
+  );
 };
 
 /** Admin: an expert's sessions plus an earnings summary. */
 export const getExpertSessionsForAdmin = async (expertId: string) => {
-  const expertDoc = await Expert.findById(expertId).select("timezone").lean();
-  const tz = (expertDoc as any)?.timezone || "Asia/Kolkata";
-  const sessions = await ExpertSession.find({ expertId: toObjectId(expertId) })
-    .populate("userId", "name email")
-    .sort({ createdAt: -1 })
-    .lean();
+  const expertDoc = await prisma.expert.findUnique({
+    where: { id: expertId },
+    select: { timezone: true },
+  });
+  const tz = expertDoc?.timezone || "Asia/Kolkata";
+  const sessions = await prisma.expertSession.findMany({
+    where: { expertId },
+    orderBy: { createdAt: "desc" },
+  });
+  const userIds = [...new Set(sessions.map((s) => s.userId))];
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, name: true, email: true },
+  });
+  const byId = new Map(users.map((u) => [u.id, u]));
   const paid = sessions.filter((s) => s.paymentStatus === "COMPLETED");
   const grossEarnings = paid.reduce((sum, s) => sum + (s.amount || 0), 0);
   const refundsPending = sessions
@@ -1099,13 +1313,12 @@ export const getExpertSessionsForAdmin = async (expertId: string) => {
     .filter((s) => s.payoutStatus === "PAID")
     .reduce((sum, s) => sum + (s.amount || 0), 0);
   return {
-    sessions: sessions.map((s) => {
-      const u = s.userId as unknown as { name?: string; email?: string } | null;
-      return serializeSession(s, {
-        clientName: u?.name || "Client",
+    sessions: sessions.map((s) =>
+      serializeSession(s, {
+        clientName: byId.get(s.userId)?.name || "Client",
         expertTimezone: tz,
-      });
-    }),
+      }),
+    ),
     summary: {
       total: sessions.length,
       completed: sessions.filter((s) => s.status === "COMPLETED").length,
@@ -1131,11 +1344,13 @@ const pickString = (...vals: unknown[]): string | undefined => {
 /**
  * Reconcile an expert session payment from a PhonePe webhook payload.
  * Only handles merchant order IDs prefixed "EXP_"; returns null otherwise so
- * the shared webhook dispatcher can try other handlers.
+ * the shared webhook dispatcher can try other handlers. Idempotent on the
+ * unique `merchantOrderId` (settlement guarded by the wasPaid check in
+ * applyExpertPaymentSuccess).
  */
 export const reconcileExpertSessionPaymentFromWebhookPayload = async (
   rawPayload: unknown,
-): Promise<ExpertSessionDocument | null> => {
+): Promise<ExpertSession | null> => {
   const payload = asRec(rawPayload);
   const inner = asRec(payload.payload);
   const data = asRec(payload.data);
@@ -1152,7 +1367,9 @@ export const reconcileExpertSessionPaymentFromWebhookPayload = async (
   );
   if (!merchantOrderId || !merchantOrderId.startsWith("EXP_")) return null;
 
-  const session = await ExpertSession.findOne({ merchantOrderId });
+  const session = await prisma.expertSession.findUnique({
+    where: { merchantOrderId },
+  });
   if (!session) return null;
 
   const rawState = pickString(
@@ -1164,31 +1381,42 @@ export const reconcileExpertSessionPaymentFromWebhookPayload = async (
   );
   const upper = (rawState || "").toUpperCase();
 
-  session.callbackPayload = payload;
+  const callbackPayload = payload as Prisma.InputJsonValue;
+
   if (["COMPLETED", "SUCCESS", "PAYMENT_SUCCESS"].includes(upper)) {
-    await session.save();
-    await applyExpertPaymentSuccess(session);
-    console.info(
-      `[ExpertWebhook] payment confirmed for session ${session._id}`,
-    );
+    const updated = await applyExpertPaymentSuccess(session, {
+      callbackPayload,
+    });
+    console.info(`[ExpertWebhook] payment confirmed for session ${session.id}`);
+    return updated;
   } else if (
     ["FAILED", "PAYMENT_ERROR", "PAYMENT_DECLINED"].includes(upper) &&
     session.paymentStatus !== "COMPLETED"
   ) {
-    session.paymentStatus = "FAILED";
-    if (session.status === "PENDING_PAYMENT") {
-      session.status = "CANCELLED";
-      session.cancelledBy = "SYSTEM";
-      session.cancelReason = "Payment failed";
-      session.cancelledAt = new Date();
-      session.set("holdExpiresAt", undefined);
-    }
-    await session.save();
-    console.info(`[ExpertWebhook] payment failed for session ${session._id}`);
-  } else {
-    await session.save();
+    const updated = await prisma.expertSession.update({
+      where: { id: session.id },
+      data: {
+        callbackPayload,
+        paymentStatus: "FAILED",
+        ...(session.status === "PENDING_PAYMENT"
+          ? {
+              status: "CANCELLED",
+              cancelledBy: "SYSTEM",
+              cancelReason: "Payment failed",
+              cancelledAt: new Date(),
+              holdExpiresAt: null,
+            }
+          : {}),
+      },
+    });
+    console.info(`[ExpertWebhook] payment failed for session ${session.id}`);
+    return updated;
   }
-  return session;
+
+  return prisma.expertSession.update({
+    where: { id: session.id },
+    data: { callbackPayload },
+  });
 };
 
 // ── Background maintenance (called by scheduledJobs) ──────────────────────────
@@ -1196,35 +1424,28 @@ export const reconcileExpertSessionPaymentFromWebhookPayload = async (
 /** Expire unpaid holds so their slot frees up. */
 export const expireUnpaidExpertHolds = async (): Promise<number> => {
   const now = new Date();
-  const stale = await ExpertSession.find({
-    status: "PENDING_PAYMENT",
-    holdExpiresAt: { $lte: now },
-  }).select("_id");
-  let count = 0;
-  for (const s of stale) {
-    const updated = await ExpertSession.findOneAndUpdate(
-      { _id: s._id, status: "PENDING_PAYMENT" },
-      {
-        $set: {
-          status: "CANCELLED",
-          cancelledBy: "SYSTEM",
-          cancelledAt: now,
-          cancelReason: "Payment not completed in time",
-        },
-      },
-    );
-    if (updated) count += 1;
-  }
-  return count;
+  const result = await prisma.expertSession.updateMany({
+    where: {
+      status: "PENDING_PAYMENT",
+      holdExpiresAt: { lte: now },
+    },
+    data: {
+      status: "CANCELLED",
+      cancelledBy: "SYSTEM",
+      cancelledAt: now,
+      cancelReason: "Payment not completed in time",
+    },
+  });
+  return result.count;
 };
 
 /** Auto-complete scheduled sessions whose end time has passed. */
 export const autoCompleteExpertSessions = async (): Promise<number> => {
   const now = new Date();
-  const candidates = await ExpertSession.find({
-    status: "SCHEDULED",
-    scheduledAt: { $lte: now },
-  }).select("_id scheduledAt durationMinutes userId");
+  const candidates = await prisma.expertSession.findMany({
+    where: { status: "SCHEDULED", scheduledAt: { lte: now } },
+    select: { id: true, scheduledAt: true, durationMinutes: true, userId: true },
+  });
   let count = 0;
   for (const s of candidates) {
     const end = new Date(
@@ -1232,18 +1453,18 @@ export const autoCompleteExpertSessions = async (): Promise<number> => {
         (s.durationMinutes || 60) * 60_000,
     );
     if (end > now) continue;
-    const updated = await ExpertSession.findOneAndUpdate(
-      { _id: s._id, status: "SCHEDULED" },
-      { $set: { status: "COMPLETED", autoCompleted: true, completedAt: now } },
-    );
-    if (updated) {
+    const updated = await prisma.expertSession.updateMany({
+      where: { id: s.id, status: "SCHEDULED" },
+      data: { status: "COMPLETED", autoCompleted: true, completedAt: now },
+    });
+    if (updated.count > 0) {
       count += 1;
       notify(
         s.userId,
         "REVIEW_REMINDER",
         "How was your session?",
         "Your expert session is complete. Leave a rating and feedback to help others.",
-        { sessionId: s._id.toString() },
+        { sessionId: s.id.toString() },
         true,
       );
     }
@@ -1260,20 +1481,23 @@ export const autoCompleteExpertSessions = async (): Promise<number> => {
 export const sendExpertMeetingLinkNudges = async (): Promise<number> => {
   const now = new Date();
   const soon = new Date(now.getTime() + 3 * 60 * 60_000);
-  const candidates = await ExpertSession.find({
-    status: "SCHEDULED",
-    mode: "ONLINE",
-    meetingLink: { $in: [null, ""] },
-    scheduledAt: { $gte: now, $lte: soon },
-    meetingLinkNudgeSentAt: { $exists: false },
-  }).select("_id expertId scheduledAt");
+  const candidates = await prisma.expertSession.findMany({
+    where: {
+      status: "SCHEDULED",
+      mode: "ONLINE",
+      OR: [{ meetingLink: null }, { meetingLink: "" }],
+      scheduledAt: { gte: now, lte: soon },
+      meetingLinkNudgeSentAt: null,
+    },
+    select: { id: true, expertId: true, scheduledAt: true },
+  });
   let count = 0;
   for (const s of candidates) {
-    const updated = await ExpertSession.findOneAndUpdate(
-      { _id: s._id, meetingLinkNudgeSentAt: { $exists: false } },
-      { $set: { meetingLinkNudgeSentAt: now } },
-    );
-    if (!updated) continue;
+    const updated = await prisma.expertSession.updateMany({
+      where: { id: s.id, meetingLinkNudgeSentAt: null },
+      data: { meetingLinkNudgeSentAt: now },
+    });
+    if (updated.count === 0) continue;
     count += 1;
     const expertUserId = await expertUserIdOf(s.expertId);
     if (expertUserId) {
@@ -1282,7 +1506,7 @@ export const sendExpertMeetingLinkNudges = async (): Promise<number> => {
         "SESSION_LINK_REQUIRED",
         "Add your meeting link",
         `Your session on ${new Date(s.scheduledAt as Date).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })} is coming up and still needs a meeting link.`,
-        { sessionId: s._id.toString() },
+        { sessionId: s.id.toString() },
         true,
       );
     }
@@ -1298,18 +1522,28 @@ export const sendExpertMeetingLinkNudges = async (): Promise<number> => {
 export const sendSessionStartReminders = async (): Promise<number> => {
   const now = new Date();
   const soon = new Date(now.getTime() + 2 * 60 * 60_000);
-  const candidates = await ExpertSession.find({
-    status: "SCHEDULED",
-    scheduledAt: { $gte: now, $lte: soon },
-    startReminderSentAt: { $exists: false },
-  }).select("_id expertId userId scheduledAt mode meetingLink");
+  const candidates = await prisma.expertSession.findMany({
+    where: {
+      status: "SCHEDULED",
+      scheduledAt: { gte: now, lte: soon },
+      startReminderSentAt: null,
+    },
+    select: {
+      id: true,
+      expertId: true,
+      userId: true,
+      scheduledAt: true,
+      mode: true,
+      meetingLink: true,
+    },
+  });
   let count = 0;
   for (const s of candidates) {
-    const updated = await ExpertSession.findOneAndUpdate(
-      { _id: s._id, startReminderSentAt: { $exists: false } },
-      { $set: { startReminderSentAt: now } },
-    );
-    if (!updated) continue;
+    const updated = await prisma.expertSession.updateMany({
+      where: { id: s.id, startReminderSentAt: null },
+      data: { startReminderSentAt: now },
+    });
+    if (updated.count === 0) continue;
     count += 1;
 
     const when = new Date(s.scheduledAt as Date).toLocaleString("en-IN", {
@@ -1327,10 +1561,11 @@ export const sendSessionStartReminders = async (): Promise<number> => {
         ? ` Your meeting link: ${s.meetingLink}`
         : " Don't forget to add a meeting link.";
     } else if (s.mode === "IN_PERSON") {
-      const expertDoc = await Expert.findById(s.expertId)
-        .select("inPersonAddress")
-        .lean();
-      const address = (expertDoc as any)?.inPersonAddress;
+      const expertDoc = await prisma.expert.findUnique({
+        where: { id: s.expertId },
+        select: { inPersonAddress: true },
+      });
+      const address = expertDoc?.inPersonAddress;
       clientDetail = address
         ? ` Location: ${address}`
         : " Contact your expert for the exact location.";
@@ -1341,7 +1576,7 @@ export const sendSessionStartReminders = async (): Promise<number> => {
       "BOOKING_REMINDER",
       "Your session starts soon",
       `Your session is scheduled for ${when}.${clientDetail}`,
-      { sessionId: s._id.toString() },
+      { sessionId: s.id.toString() },
       true,
     );
 
@@ -1352,7 +1587,7 @@ export const sendSessionStartReminders = async (): Promise<number> => {
         "BOOKING_REMINDER",
         "Your session starts soon",
         `Your session is scheduled for ${when}.${expertDetail}`,
-        { sessionId: s._id.toString() },
+        { sessionId: s.id.toString() },
         true,
       );
     }
@@ -1367,20 +1602,23 @@ export const sendSessionStartReminders = async (): Promise<number> => {
  */
 export const releaseExpertSessionPayouts = async (): Promise<number> => {
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const candidates = await ExpertSession.find({
-    status: "COMPLETED",
-    paymentStatus: "COMPLETED",
-    payoutStatus: "PENDING",
-    completedAt: { $lte: cutoff },
-  }).select("_id expertId amount");
+  const candidates = await prisma.expertSession.findMany({
+    where: {
+      status: "COMPLETED",
+      paymentStatus: "COMPLETED",
+      payoutStatus: "PENDING",
+      completedAt: { lte: cutoff },
+    },
+    select: { id: true, expertId: true, amount: true },
+  });
   let count = 0;
   for (const s of candidates) {
     const now = new Date();
-    const updated = await ExpertSession.findOneAndUpdate(
-      { _id: s._id, payoutStatus: "PENDING" },
-      { $set: { payoutStatus: "PAID", payoutPaidAt: now } },
-    );
-    if (updated) {
+    const updated = await prisma.expertSession.updateMany({
+      where: { id: s.id, payoutStatus: "PENDING" },
+      data: { payoutStatus: "PAID", payoutPaidAt: now },
+    });
+    if (updated.count > 0) {
       count += 1;
       const expertUserId = await expertUserIdOf(s.expertId);
       if (expertUserId) {
@@ -1389,7 +1627,7 @@ export const releaseExpertSessionPayouts = async (): Promise<number> => {
           "PAYOUT_PROCESSED",
           "Payout released",
           `Your payout of ₹${s.amount} for a completed session has been released.`,
-          { sessionId: s._id.toString() },
+          { sessionId: s.id.toString() },
           true,
         );
       }
@@ -1401,12 +1639,15 @@ export const releaseExpertSessionPayouts = async (): Promise<number> => {
 /** Nudge clients who completed a session but haven't reviewed (once). */
 export const sendExpertReviewReminders = async (): Promise<number> => {
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const sessions = await ExpertSession.find({
-    status: "COMPLETED",
-    reviewed: false,
-    reviewReminderSentAt: { $exists: false },
-    updatedAt: { $lte: cutoff },
-  }).select("_id userId");
+  const sessions = await prisma.expertSession.findMany({
+    where: {
+      status: "COMPLETED",
+      reviewed: false,
+      reviewReminderSentAt: null,
+      updatedAt: { lte: cutoff },
+    },
+    select: { id: true, userId: true },
+  });
   let count = 0;
   for (const s of sessions) {
     notify(
@@ -1414,13 +1655,13 @@ export const sendExpertReviewReminders = async (): Promise<number> => {
       "REVIEW_REMINDER",
       "Rate your expert session",
       "You haven't reviewed your recent expert session yet — your feedback helps other players.",
-      { sessionId: s._id.toString() },
+      { sessionId: s.id.toString() },
       true,
     );
-    await ExpertSession.updateOne(
-      { _id: s._id },
-      { $set: { reviewReminderSentAt: new Date() } },
-    );
+    await prisma.expertSession.updateMany({
+      where: { id: s.id },
+      data: { reviewReminderSentAt: new Date() },
+    });
     count += 1;
   }
   return count;

@@ -1,13 +1,46 @@
-import mongoose from "mongoose";
-import Notification, {
-  INotification,
-  NotificationCategory,
-  NotificationType,
-} from "../models/Notification";
-import { User } from "../models/User";
 import { Server } from "socket.io";
+import prisma from "../../lib/prisma";
+import { Prisma } from "@prisma/client";
+import type { Notification, NotificationCategory } from "@prisma/client";
 import { sendEmail } from "../../utils/email";
 import * as pushNotificationService from "./pushNotificationService";
+
+// `type` is kept as a validated string column in Postgres (the enum was too
+// large for a DB enum — see SCHEMA_CHANGES). The union is preserved here so the
+// TYPE_TO_* maps and public signatures stay strongly typed exactly as before.
+export type NotificationType =
+  | "FRIEND_REQUEST"
+  | "FRIEND_REQUEST_ACCEPTED"
+  | "FRIEND_REQUEST_DECLINED"
+  | "FRIEND_REMOVED"
+  | "BOOKING_INVITATION"
+  | "BOOKING_CONFIRMED"
+  | "BOOKING_CANCELLED"
+  | "BOOKING_STATUS_UPDATED"
+  | "BOOKING_REMINDER"
+  | "SESSION_LINK_REQUIRED"
+  | "INVITATION_EXPIRY"
+  | "PAYMENT_FAILED"
+  | "PAYMENT_CONFIRMED"
+  | "PAYMENT_REFUND"
+  | "PAYMENT_SPLIT_RECEIVED"
+  | "PAYOUT_PROCESSED"
+  | "REVIEW_POSTED"
+  | "REVIEW_RESPONSE"
+  | "REVIEW_REMINDER"
+  | "COACH_VERIFICATION_PENDING"
+  | "COACH_VERIFICATION_REVIEW"
+  | "COACH_VERIFICATION_VERIFIED"
+  | "COACH_VERIFICATION_REJECTED"
+  | "VENUE_APPROVAL_PENDING"
+  | "VENUE_APPROVAL_APPROVED"
+  | "VENUE_APPROVAL_REJECTED"
+  | "VENUE_MARKED_FOR_REVIEW"
+  | "ACADEMY_APPROVED"
+  | "ACADEMY_REJECTED"
+  | "DISPUTE_FILED"
+  | "DISPUTE_RESOLVED"
+  | "MESSAGE_RECEIVED";
 
 export interface NotificationData {
   userId: string;
@@ -25,6 +58,14 @@ export interface SendOptions {
   sendPush?: boolean;
   emailTemplate?: string;
   emailData?: Record<string, unknown>;
+}
+
+// Shape of the notificationPreferences Json config (read/written wholesale).
+type PreferenceChannel = Partial<Record<string, boolean>>;
+interface NotificationPreferences {
+  inApp?: PreferenceChannel;
+  email?: PreferenceChannel;
+  push?: PreferenceChannel;
 }
 
 // Notification type to category mapping
@@ -120,17 +161,19 @@ export class NotificationService {
   /**
    * Create and persist a notification to the database
    */
-  static async create(data: NotificationData): Promise<INotification> {
+  static async create(data: NotificationData): Promise<Notification> {
     const category = data.category || TYPE_TO_CATEGORY[data.type];
 
-    const notification = await Notification.create({
-      userId: new mongoose.Types.ObjectId(data.userId),
-      type: data.type,
-      category,
-      title: data.title,
-      message: data.message,
-      data: data.data || {},
-      isRead: false,
+    const notification = await prisma.notification.create({
+      data: {
+        userId: data.userId,
+        type: data.type,
+        category,
+        title: data.title,
+        message: data.message,
+        data: (data.data || {}) as Prisma.InputJsonValue,
+        isRead: false,
+      },
     });
 
     return notification;
@@ -143,7 +186,7 @@ export class NotificationService {
   static async send(
     data: NotificationData,
     options: SendOptions = {},
-  ): Promise<INotification | null> {
+  ): Promise<Notification | null> {
     const {
       persistToDb = true,
       sendSocket: shouldSendSocket = true,
@@ -154,19 +197,26 @@ export class NotificationService {
     } = options;
 
     // Get user preferences
-    const user = await User.findById(data.userId).select(
-      "email name notificationPreferences pushSubscriptions",
-    );
+    const user = await prisma.user.findUnique({
+      where: { id: data.userId },
+      select: {
+        email: true,
+        name: true,
+        notificationPreferences: true,
+      },
+    });
     if (!user) {
       console.error(`User ${data.userId} not found for notification`);
       return null;
     }
 
-    const preferences = user.notificationPreferences;
+    const preferences = (user.notificationPreferences ?? undefined) as
+      | NotificationPreferences
+      | undefined;
     const preferenceKey = TYPE_TO_PREFERENCE_KEY[data.type];
 
     // Persist to database (in-app notifications)
-    let notification: INotification | null = null;
+    let notification: Notification | null = null;
     if (persistToDb) {
       // In-app notifications respect preferences (except always enabled by default)
       const inAppEnabled = preferences?.inApp?.[preferenceKey] !== false;
@@ -180,7 +230,7 @@ export class NotificationService {
       const socketEnabled = preferences?.inApp?.[preferenceKey] !== false;
       if (socketEnabled && notification) {
         await this.sendSocket(data.userId, data.type, {
-          notificationId: notification._id.toString(),
+          notificationId: notification.id,
           title: data.title,
           message: data.message,
           data: data.data,
@@ -299,7 +349,10 @@ export class NotificationService {
         return;
       }
 
-      const user = await User.findById(userId).select("pushSubscriptions");
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { pushSubscriptions: true },
+      });
       const subscriptions = user?.pushSubscriptions || [];
 
       if (!subscriptions.length) {
@@ -318,19 +371,20 @@ export class NotificationService {
       };
 
       const result = await pushService.sendPushNotificationToMultiple(
-        subscriptions as Array<{
-          endpoint: string;
-          keys: { p256dh: string; auth: string };
-        }>,
+        // PushSubscription rows are flattened in Postgres; reshape to the
+        // { endpoint, keys: { p256dh, auth } } contract the push service expects.
+        subscriptions.map((sub) => ({
+          endpoint: sub.endpoint,
+          keys: { p256dh: sub.p256dh, auth: sub.auth },
+        })),
         payload,
       );
 
       if (result.expiredEndpoints.length > 0) {
-        await User.findByIdAndUpdate(userId, {
-          $pull: {
-            pushSubscriptions: {
-              endpoint: { $in: result.expiredEndpoints },
-            },
+        await prisma.pushSubscription.deleteMany({
+          where: {
+            userId,
+            endpoint: { in: result.expiredEndpoints },
           },
         });
       }
@@ -345,39 +399,38 @@ export class NotificationService {
   static async markRead(
     notificationId: string,
     userId: string,
-  ): Promise<INotification | null> {
-    const notification = await Notification.findOneAndUpdate(
-      {
-        _id: new mongoose.Types.ObjectId(notificationId),
-        userId: new mongoose.Types.ObjectId(userId),
-      },
-      {
-        isRead: true,
-        readAt: new Date(),
-      },
-      { new: true },
-    );
+  ): Promise<Notification | null> {
+    // Ownership is enforced in the where clause (id + userId); updateMany lets us
+    // scope by the non-unique userId. Re-fetch to return the updated row.
+    const result = await prisma.notification.updateMany({
+      where: { id: notificationId, userId },
+      data: { isRead: true, readAt: new Date() },
+    });
 
-    return notification;
+    if (result.count === 0) {
+      return null;
+    }
+
+    return prisma.notification.findUnique({ where: { id: notificationId } });
   }
 
   /**
    * Mark all notifications as read for a user
    */
   static async markAllRead(userId: string): Promise<number> {
-    const result = await Notification.updateMany(
-      {
-        userId: new mongoose.Types.ObjectId(userId),
+    const result = await prisma.notification.updateMany({
+      where: {
+        userId,
         isRead: false,
         deletedAt: null,
       },
-      {
+      data: {
         isRead: true,
         readAt: new Date(),
       },
-    );
+    });
 
-    return result.modifiedCount;
+    return result.count;
   }
 
   /**
@@ -391,33 +444,34 @@ export class NotificationService {
       category?: NotificationCategory;
       isRead?: boolean;
     },
-  ): Promise<{ notifications: INotification[]; total: number; pages: number }> {
-    const query: Record<string, unknown> = {
-      userId: new mongoose.Types.ObjectId(userId),
+  ): Promise<{ notifications: Notification[]; total: number; pages: number }> {
+    const where: Prisma.NotificationWhereInput = {
+      userId,
       deletedAt: null,
     };
 
     if (filters?.category) {
-      query.category = filters.category;
+      where.category = filters.category;
     }
 
     if (filters?.isRead !== undefined) {
-      query.isRead = filters.isRead;
+      where.isRead = filters.isRead;
     }
 
     const skip = (page - 1) * limit;
 
     const [notifications, total] = await Promise.all([
-      Notification.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Notification.countDocuments(query),
+      prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.notification.count({ where }),
     ]);
 
     return {
-      notifications: notifications as INotification[],
+      notifications,
       total,
       pages: Math.ceil(total / limit),
     };
@@ -430,17 +484,17 @@ export class NotificationService {
     userId: string,
     category?: NotificationCategory,
   ): Promise<number> {
-    const query: Record<string, unknown> = {
-      userId: new mongoose.Types.ObjectId(userId),
+    const where: Prisma.NotificationWhereInput = {
+      userId,
       isRead: false,
       deletedAt: null,
     };
 
     if (category) {
-      query.category = category;
+      where.category = category;
     }
 
-    const count = await Notification.countDocuments(query);
+    const count = await prisma.notification.count({ where });
     return count;
   }
 
@@ -450,29 +504,29 @@ export class NotificationService {
   static async deleteNotification(
     notificationId: string,
     userId: string,
-  ): Promise<INotification | null> {
-    const notification = await Notification.findOneAndUpdate(
-      {
-        _id: new mongoose.Types.ObjectId(notificationId),
-        userId: new mongoose.Types.ObjectId(userId),
-      },
-      {
-        deletedAt: new Date(),
-      },
-      { new: true },
-    );
+  ): Promise<Notification | null> {
+    const result = await prisma.notification.updateMany({
+      where: { id: notificationId, userId },
+      data: { deletedAt: new Date() },
+    });
 
-    return notification;
+    if (result.count === 0) {
+      return null;
+    }
+
+    return prisma.notification.findUnique({ where: { id: notificationId } });
   }
 
   /**
    * Delete old notifications (cleanup job)
    */
   static async cleanupExpiredNotifications(): Promise<number> {
-    const result = await Notification.deleteMany({
-      expiresAt: { $lte: new Date() },
+    const result = await prisma.notification.deleteMany({
+      where: {
+        expiresAt: { lte: new Date() },
+      },
     });
 
-    return result.deletedCount;
+    return result.count;
   }
 }

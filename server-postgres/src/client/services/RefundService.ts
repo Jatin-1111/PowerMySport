@@ -6,9 +6,9 @@
  * 3. Store credit (instant wallet credit)
  */
 
-import { Booking } from "../models/Booking";
-import { BookingPaymentTransaction } from "../models/BookingPayment";
-import { User } from "../models/User";
+import { Prisma } from "@prisma/client";
+import type { BookingPaymentTransaction } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { WalletService } from "./WalletService";
 import {
   initiatePhonePeRefund,
@@ -44,6 +44,13 @@ export interface RefundStatusResponse {
   failureReason?: string;
 }
 
+// Shape stored in the `refundResponse` Json column (method-tagged payload).
+type RefundResponseJson = {
+  method?: RefundMethod;
+  completedAt?: Date;
+  failureReason?: string;
+} | null;
+
 /**
  * Initiate a refund to a player
  * Creates a refund transaction and initiates based on selected method
@@ -59,9 +66,9 @@ export async function initiateRefund(
   } = payload;
 
   // Get the payment transaction
-  const transaction = await BookingPaymentTransaction.findById(
-    bookingPaymentTransactionId,
-  );
+  const transaction = await prisma.bookingPaymentTransaction.findUnique({
+    where: { id: bookingPaymentTransactionId },
+  });
   if (!transaction) {
     throw new Error("Payment transaction not found");
   }
@@ -114,7 +121,7 @@ export async function initiateRefund(
  * Refund via PhonePe to original card (default method)
  */
 async function initiateCardRefund(
-  transaction: any,
+  transaction: BookingPaymentTransaction,
   amount: number,
 ): Promise<RefundStatusResponse> {
   if (!transaction.merchantOrderId) {
@@ -135,15 +142,19 @@ async function initiateCardRefund(
     });
 
     // Update transaction with refund details
-    transaction.refundMerchantId = refundMerchantId;
-    transaction.refundId = refundResult.refundId;
-    transaction.refundState = refundResult.state || "INITIATED";
-    transaction.refundAmount = amount;
-    transaction.refundResponse = refundResult.raw;
-    await transaction.save();
+    await prisma.bookingPaymentTransaction.update({
+      where: { id: transaction.id },
+      data: {
+        refundMerchantId,
+        refundId: refundResult.refundId,
+        refundState: refundResult.state || "INITIATED",
+        refundAmount: amount,
+        refundResponse: refundResult.raw as Prisma.InputJsonValue,
+      },
+    });
 
     const response: RefundStatusResponse = {
-      transactionId: transaction._id.toString(),
+      transactionId: transaction.id,
       state: refundResult.state || "INITIATED",
       amount,
       method: "ORIGINAL_CARD",
@@ -156,9 +167,10 @@ async function initiateCardRefund(
     return response;
   } catch (error) {
     console.error("PhonePe refund initiation failed:", error);
-    transaction.refundState = "FAILED";
-    transaction.refundAmount = amount;
-    await transaction.save();
+    await prisma.bookingPaymentTransaction.update({
+      where: { id: transaction.id },
+      data: { refundState: "FAILED", refundAmount: amount },
+    });
     throw error;
   }
 }
@@ -168,7 +180,7 @@ async function initiateCardRefund(
  * Stores bank details but requires manual transfer by finance team
  */
 async function initiateBankTransferRefund(
-  transaction: any,
+  transaction: BookingPaymentTransaction,
   amount: number,
   bankDetails: {
     accountHolderName: string;
@@ -180,16 +192,20 @@ async function initiateBankTransferRefund(
   const bankTransferId = `BANK-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
   // Store bank transfer details
-  transaction.refundMerchantId = bankTransferId;
-  transaction.refundState = "INITIATED"; // Awaiting manual transfer
-  transaction.refundAmount = amount;
-  transaction.refundResponse = {
-    method: "BANK_TRANSFER",
-    bankDetails,
-    initiatedAt: new Date(),
-    status: "PENDING_MANUAL_TRANSFER",
-  };
-  await transaction.save();
+  await prisma.bookingPaymentTransaction.update({
+    where: { id: transaction.id },
+    data: {
+      refundMerchantId: bankTransferId,
+      refundState: "INITIATED", // Awaiting manual transfer
+      refundAmount: amount,
+      refundResponse: {
+        method: "BANK_TRANSFER",
+        bankDetails,
+        initiatedAt: new Date().toISOString(),
+        status: "PENDING_MANUAL_TRANSFER",
+      } as Prisma.InputJsonValue,
+    },
+  });
 
   // Send notification to finance team for manual processing
   try {
@@ -220,7 +236,7 @@ async function initiateBankTransferRefund(
             <table class="detail-table">
               <tr><td>Refund ID</td><td>${bankTransferId}</td></tr>
               <tr><td>Amount</td><td>₹${(amount / 100).toLocaleString("en-IN")}</td></tr>
-              <tr><td>Transaction ID</td><td>${transaction._id.toString()}</td></tr>
+              <tr><td>Transaction ID</td><td>${transaction.id}</td></tr>
               <tr><td>Account Holder</td><td>${bankDetails.accountHolderName}</td></tr>
               <tr><td>Account Number</td><td>${bankDetails.accountNumber}</td></tr>
               <tr><td>IFSC Code</td><td>${bankDetails.ifscCode}</td></tr>
@@ -255,7 +271,7 @@ async function initiateBankTransferRefund(
           refundId: bankTransferId,
           amount,
           method: "BANK_TRANSFER",
-          transactionId: transaction._id.toString(),
+          transactionId: transaction.id,
         },
       });
     }
@@ -264,7 +280,7 @@ async function initiateBankTransferRefund(
   }
 
   return {
-    transactionId: transaction._id.toString(),
+    transactionId: transaction.id,
     refundId: bankTransferId,
     state: "INITIATED",
     amount,
@@ -276,34 +292,43 @@ async function initiateBankTransferRefund(
  * Refund via instant store credit to player's wallet
  */
 async function initiateStoreCreditRefund(
-  transaction: any,
+  transaction: BookingPaymentTransaction,
   amount: number,
 ): Promise<RefundStatusResponse> {
   try {
     // amount is in paise; wallet balance is denominated in rupees — convert before crediting
     const amountInRupees = amount / 100;
+    // NOTE: WalletService.creditWallet runs its own $transaction (atomic wallet
+    // balance increment + WalletTransaction insert). The refund-state write below
+    // follows it. TODO(prisma): a fully single-transaction credit+refund-state
+    // write would require WalletService.creditWallet to accept an external tx
+    // client; kept as service reuse to preserve existing wallet behavior.
     const { transaction: walletTx } = await WalletService.creditWallet(
       transaction.userId.toString(),
       amountInRupees,
       "Booking Refund",
-      transaction._id.toString(),
+      transaction.id,
     );
     const storeCreditId = walletTx.id;
 
     // Update transaction
-    transaction.refundMerchantId = storeCreditId;
-    transaction.refundId = storeCreditId;
-    transaction.refundState = "COMPLETED";
-    transaction.refundAmount = amount;
-    transaction.refundResponse = {
-      method: "STORE_CREDIT",
-      walletCredited: true,
-      completedAt: new Date(),
-    };
-    await transaction.save();
+    await prisma.bookingPaymentTransaction.update({
+      where: { id: transaction.id },
+      data: {
+        refundMerchantId: storeCreditId,
+        refundId: storeCreditId,
+        refundState: "COMPLETED",
+        refundAmount: amount,
+        refundResponse: {
+          method: "STORE_CREDIT",
+          walletCredited: true,
+          completedAt: new Date().toISOString(),
+        } as Prisma.InputJsonValue,
+      },
+    });
 
     const response: RefundStatusResponse = {
-      transactionId: transaction._id.toString(),
+      transactionId: transaction.id,
       state: "COMPLETED",
       amount,
       method: "STORE_CREDIT",
@@ -314,9 +339,10 @@ async function initiateStoreCreditRefund(
     return response;
   } catch (error) {
     console.error("Store credit refund failed:", error);
-    transaction.refundState = "FAILED";
-    transaction.refundAmount = amount;
-    await transaction.save();
+    await prisma.bookingPaymentTransaction.update({
+      where: { id: transaction.id },
+      data: { refundState: "FAILED", refundAmount: amount },
+    });
     throw error;
   }
 }
@@ -327,7 +353,9 @@ async function initiateStoreCreditRefund(
 export async function checkRefundStatus(
   transactionId: string,
 ): Promise<RefundStatusResponse> {
-  const transaction = await BookingPaymentTransaction.findById(transactionId);
+  const transaction = await prisma.bookingPaymentTransaction.findUnique({
+    where: { id: transactionId },
+  });
 
   if (!transaction) {
     throw new Error("Payment transaction not found");
@@ -339,17 +367,19 @@ export async function checkRefundStatus(
     throw new Error("No refund found for this transaction");
   }
 
+  const refundResponse = transaction.refundResponse as RefundResponseJson;
+
   // Handle store credit refunds (already completed)
   if (
-    transaction.refundResponse?.method === "STORE_CREDIT" &&
+    refundResponse?.method === "STORE_CREDIT" &&
     transaction.refundState === "COMPLETED"
   ) {
     const response: RefundStatusResponse = {
-      transactionId: transaction._id.toString(),
+      transactionId: transaction.id,
       state: "COMPLETED",
       amount: transaction.refundAmount || 0,
       method: "STORE_CREDIT",
-      completedAt: transaction.refundResponse.completedAt,
+      completedAt: refundResponse.completedAt,
     };
 
     if (transaction.refundId) {
@@ -360,13 +390,13 @@ export async function checkRefundStatus(
   }
 
   // Handle bank transfers (manual process)
-  if (transaction.refundResponse?.method === "BANK_TRANSFER") {
+  if (refundResponse?.method === "BANK_TRANSFER") {
     const response: RefundStatusResponse = {
-      transactionId: transaction._id.toString(),
+      transactionId: transaction.id,
       state: transaction.refundState || "INITIATED",
       amount: transaction.refundAmount || 0,
       method: "BANK_TRANSFER",
-      failureReason: transaction.refundResponse?.failureReason,
+      failureReason: refundResponse?.failureReason,
     };
 
     if (transaction.refundId) {
@@ -384,17 +414,16 @@ export async function checkRefundStatus(
   try {
     const status = await getPhonePeRefundStatus(transaction.refundMerchantId);
 
-    // Update transaction with latest status
-    if (status.state) {
-      transaction.refundState = status.state;
-    }
-    if (status.state === "COMPLETED") {
-      transaction.updatedAt = new Date();
-    }
-    await transaction.save();
+    // Update transaction with latest status (updatedAt is bumped automatically).
+    await prisma.bookingPaymentTransaction.update({
+      where: { id: transaction.id },
+      data: {
+        ...(status.state ? { refundState: status.state } : {}),
+      },
+    });
 
     const response: RefundStatusResponse = {
-      transactionId: transaction._id.toString(),
+      transactionId: transaction.id,
       state: status.state || "INITIATED",
       amount: status.amount || transaction.refundAmount || 0,
       method: "ORIGINAL_CARD",
@@ -409,7 +438,7 @@ export async function checkRefundStatus(
   } catch (error) {
     console.error("Error checking refund status:", error);
     const response: RefundStatusResponse = {
-      transactionId: transaction._id.toString(),
+      transactionId: transaction.id,
       state: transaction.refundState || "INITIATED",
       amount: transaction.refundAmount || 0,
       method: "ORIGINAL_CARD",
@@ -433,12 +462,15 @@ export async function updatePendingRefundStatuses(): Promise<{
   completed: number;
   failed: number;
 }> {
-  const pendingRefunds = await BookingPaymentTransaction.find({
-    refundState: "INITIATED",
-    $or: [
-      { "refundResponse.method": { $ne: "BANK_TRANSFER" } },
-      { "refundResponse.method": { $exists: false } },
-    ],
+  // TODO(prisma): the old Mongo query filtered out BANK_TRANSFER refunds via a
+  // JSON-path condition ("refundResponse.method"). Fetch INITIATED refunds and
+  // exclude bank transfers in application code to preserve behavior.
+  const initiatedRefunds = await prisma.bookingPaymentTransaction.findMany({
+    where: { refundState: "INITIATED" },
+  });
+  const pendingRefunds = initiatedRefunds.filter((t) => {
+    const method = (t.refundResponse as RefundResponseJson)?.method;
+    return method !== "BANK_TRANSFER";
   });
 
   let completed = 0;
@@ -446,31 +478,37 @@ export async function updatePendingRefundStatuses(): Promise<{
 
   for (const transaction of pendingRefunds) {
     try {
-      const status = await checkRefundStatus(transaction._id.toString());
+      const status = await checkRefundStatus(transaction.id);
 
       if (status.state === "COMPLETED") {
         completed++;
         // Flip the parent booking to PROCESSED so admin panel and player UI update.
         if (transaction.bookingId) {
-          const { Booking } = await import("../../client/models/Booking");
-          await Booking.updateOne(
-            { _id: transaction.bookingId, refundStatus: { $ne: "PROCESSED" } },
-            { $set: { refundStatus: "PROCESSED" } },
-          ).catch(() => {});
+          await prisma.booking
+            .updateMany({
+              where: {
+                id: transaction.bookingId,
+                refundStatus: { not: "PROCESSED" },
+              },
+              data: { refundStatus: "PROCESSED" },
+            })
+            .catch(() => {});
         }
         // Send completion notification
-        const user = await User.findById(transaction.userId);
+        const user = await prisma.user.findUnique({
+          where: { id: transaction.userId },
+        });
         if (user) {
           await NotificationService.send(
             {
-              userId: user._id.toString(),
+              userId: user.id,
               type: "PAYMENT_REFUND",
               title: "Refund completed",
               message: `Your refund of ₹${((transaction.refundAmount || 0) / 100).toLocaleString("en-IN")} has been completed.`,
               data: {
                 amount: transaction.refundAmount || 0,
                 method: "ORIGINAL_CARD",
-                transactionId: transaction._id.toString(),
+                transactionId: transaction.id,
               },
             },
             { sendEmail: true, sendPush: true },
@@ -480,7 +518,7 @@ export async function updatePendingRefundStatuses(): Promise<{
         failed++;
       }
     } catch (error) {
-      console.error(`Error updating refund ${transaction._id}:`, error);
+      console.error(`Error updating refund ${transaction.id}:`, error);
     }
   }
 

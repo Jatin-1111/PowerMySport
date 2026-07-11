@@ -1,6 +1,5 @@
-import mongoose from "mongoose";
-import { ExpertDocument } from "../models/ExpertProfile";
-import { ExpertSession } from "../models/ExpertBooking";
+import type { Expert, ExpertAvailabilityWindow } from "@prisma/client";
+import prisma from "../../lib/prisma";
 
 /**
  * Availability + slot computation for expert sessions.
@@ -16,6 +15,15 @@ import { ExpertSession } from "../models/ExpertBooking";
  * India (Asia/Kolkata, the default) has no DST so the offset is stable; the
  * generic `Intl`-based offset lookup below keeps other timezones correct too.
  */
+
+/**
+ * Expert row with its (formerly embedded) weekly availability windows loaded.
+ * Callers must fetch with `include: { weeklyAvailability: true }` before
+ * passing the expert into the slot-computation helpers below.
+ */
+export type ExpertWithAvailability = Expert & {
+  weeklyAvailability: ExpertAvailabilityWindow[];
+};
 
 const MS_PER_MIN = 60_000;
 const MAX_RANGE_DAYS = 62;
@@ -101,30 +109,30 @@ interface Interval {
 
 /** Busy intervals (booked or held) for an expert within [from,to]. */
 const getBusyIntervals = async (
-  expertId: mongoose.Types.ObjectId,
+  expertId: string,
   from: Date,
   to: Date,
   excludeSessionId?: string,
 ): Promise<Interval[]> => {
   const now = new Date();
-  const query: Record<string, unknown> = {
-    expertId,
-    scheduledAt: {
-      $gte: new Date(from.getTime() - 12 * 60 * MS_PER_MIN),
-      $lte: to,
+  const sessions = await prisma.expertSession.findMany({
+    where: {
+      expertId,
+      scheduledAt: {
+        gte: new Date(from.getTime() - 12 * 60 * MS_PER_MIN),
+        lte: to,
+      },
+      OR: [
+        { status: { in: ["PAID", "SCHEDULED", "COMPLETED"] } },
+        // Unexpired holds still block the slot.
+        { status: "PENDING_PAYMENT", holdExpiresAt: { gt: now } },
+      ],
+      // cuid ids are opaque strings; a truthy exclude id is always applied
+      // (the old mongoose.isValidObjectId guard no longer applies).
+      ...(excludeSessionId ? { id: { not: excludeSessionId } } : {}),
     },
-    $or: [
-      { status: { $in: ["PAID", "SCHEDULED", "COMPLETED"] } },
-      // Unexpired holds still block the slot.
-      { status: "PENDING_PAYMENT", holdExpiresAt: { $gt: now } },
-    ],
-  };
-  if (excludeSessionId && mongoose.isValidObjectId(excludeSessionId)) {
-    query._id = { $ne: new mongoose.Types.ObjectId(excludeSessionId) };
-  }
-  const sessions = await ExpertSession.find(query)
-    .select("scheduledAt durationMinutes")
-    .lean();
+    select: { scheduledAt: true, durationMinutes: true },
+  });
   return sessions
     .filter((s) => s.scheduledAt)
     .map((s) => {
@@ -146,7 +154,7 @@ export interface OpenSlot {
  * capped at MAX_RANGE_DAYS.
  */
 export const computeOpenSlots = async (
-  expert: ExpertDocument,
+  expert: ExpertWithAvailability,
   fromISO?: string,
   toISO?: string,
 ): Promise<OpenSlot[]> => {
@@ -165,11 +173,7 @@ export const computeOpenSlots = async (
   );
   if (to > maxTo) to = maxTo;
 
-  const busy = await getBusyIntervals(
-    expert._id as mongoose.Types.ObjectId,
-    from,
-    to,
-  );
+  const busy = await getBusyIntervals(expert.id, from, to);
   const blackout = new Set(expert.blackoutDates || []);
 
   const slots: OpenSlot[] = [];
@@ -220,7 +224,7 @@ export const computeOpenSlots = async (
  * Throws with a user-facing message when not bookable.
  */
 export const assertSlotBookable = async (
-  expert: ExpertDocument,
+  expert: ExpertWithAvailability,
   scheduledAt: Date,
   excludeSessionId?: string,
 ): Promise<void> => {
@@ -277,7 +281,7 @@ export const assertSlotBookable = async (
 
   const slotEnd = new Date(scheduledAt.getTime() + duration * MS_PER_MIN);
   const busy = await getBusyIntervals(
-    expert._id as mongoose.Types.ObjectId,
+    expert.id,
     scheduledAt,
     slotEnd,
     excludeSessionId,

@@ -1,17 +1,17 @@
-import {
-  ScheduledNotification,
-  ReminderInterval,
-  ScheduledNotificationStatus,
-} from "../models/ScheduledNotification";
+import prisma from "../../lib/prisma";
+import { Prisma } from "@prisma/client";
 import { NotificationService } from "./NotificationService";
-import { NotificationCategory } from "../models/Notification";
 import pushNotificationService from "./pushNotificationService";
 import { sendBookingReminderEmail } from "../../utils/email";
-import mongoose from "mongoose";
+
+// Was imported from the Mongoose model; kept as a local union now that
+// `interval` is a validated String column in Postgres.
+type ReminderInterval = "24_HOURS" | "1_HOUR" | "15_MINUTES";
 
 interface BookingReminderData {
-  bookingId: mongoose.Types.ObjectId;
-  userId: mongoose.Types.ObjectId;
+  // IDs are cuid strings in Postgres (were ObjectIds under Mongoose).
+  bookingId: string;
+  userId: string;
   bookingDate: Date;
   startTime: string;
   endTime: string;
@@ -109,26 +109,27 @@ export class ScheduledNotificationService {
           bookingData.startTime,
         );
 
-        await ScheduledNotification.create({
-          userId: bookingData.userId,
-          type: "BOOKING_REMINDER",
-          interval: reminder.interval,
-          scheduledFor,
-          status: "PENDING",
-          bookingId: bookingData.bookingId,
-          title,
-          body,
+        await prisma.scheduledNotification.create({
           data: {
-            bookingId: bookingData.bookingId.toString(),
-            url: `/bookings/${bookingData.bookingId}`,
-            sport: bookingData.sport,
-            startTime: bookingData.startTime,
-            endTime: bookingData.endTime,
-          },
-          channels: {
-            email: channels.email,
-            push: channels.push,
-            inApp: channels.inApp,
+            userId: bookingData.userId,
+            type: "BOOKING_REMINDER",
+            interval: reminder.interval,
+            scheduledFor,
+            status: "PENDING",
+            bookingId: bookingData.bookingId,
+            title,
+            body,
+            data: {
+              bookingId: bookingData.bookingId.toString(),
+              url: `/bookings/${bookingData.bookingId}`,
+              sport: bookingData.sport,
+              startTime: bookingData.startTime,
+              endTime: bookingData.endTime,
+            } as Prisma.InputJsonValue,
+            // channels (embedded obj) flattened -> chEmail/chPush/chInApp
+            chEmail: channels.email,
+            chPush: channels.push,
+            chInApp: channels.inApp,
           },
         });
 
@@ -145,24 +146,20 @@ export class ScheduledNotificationService {
   /**
    * Cancel all pending reminders for a booking (when booking is cancelled)
    */
-  static async cancelBookingReminders(
-    bookingId: mongoose.Types.ObjectId,
-  ): Promise<number> {
+  static async cancelBookingReminders(bookingId: string): Promise<number> {
     try {
-      const result = await ScheduledNotification.updateMany(
-        {
+      const result = await prisma.scheduledNotification.updateMany({
+        where: {
           bookingId,
           status: "PENDING",
         },
-        {
-          $set: { status: "CANCELLED" as ScheduledNotificationStatus },
-        },
-      );
+        data: { status: "CANCELLED" },
+      });
 
       console.log(
-        `Cancelled ${result.modifiedCount} reminders for booking ${bookingId}`,
+        `Cancelled ${result.count} reminders for booking ${bookingId}`,
       );
-      return result.modifiedCount;
+      return result.count;
     } catch (error) {
       console.error("Error cancelling booking reminders:", error);
       throw error;
@@ -181,16 +178,37 @@ export class ScheduledNotificationService {
       const now = new Date();
 
       // Find pending reminders that are due
-      const pendingReminders = await ScheduledNotification.find({
-        status: "PENDING",
-        scheduledFor: { $lte: now },
-      })
-        .limit(batchSize)
-        .populate(
-          "userId",
-          "email name notificationPreferences pushSubscriptions",
-        )
-        .populate("bookingId", "status date startTime sport");
+      const pendingReminders = await prisma.scheduledNotification.findMany({
+        where: {
+          status: "PENDING",
+          scheduledFor: { lte: now },
+        },
+        take: batchSize,
+      });
+
+      // String-FK "populate": batch-load the referenced users + bookings and
+      // join in code (no relation is defined for these ref columns).
+      const userIds = [...new Set(pendingReminders.map((r) => r.userId))];
+      const bookingIds = [
+        ...new Set(
+          pendingReminders
+            .map((r) => r.bookingId)
+            .filter((b): b is string => !!b),
+        ),
+      ];
+
+      const users = userIds.length
+        ? await prisma.user.findMany({
+            where: { id: { in: userIds } },
+            include: { pushSubscriptions: true },
+          })
+        : [];
+      const userById = new Map(users.map((u) => [u.id, u]));
+
+      const bookings = bookingIds.length
+        ? await prisma.booking.findMany({ where: { id: { in: bookingIds } } })
+        : [];
+      const bookingById = new Map(bookings.map((b) => [b.id, b]));
 
       const stats = {
         processed: pendingReminders.length,
@@ -200,26 +218,32 @@ export class ScheduledNotificationService {
 
       for (const reminder of pendingReminders) {
         try {
-          let booking: any = null;
+          let booking: (typeof bookings)[number] | null = null;
           if (reminder.type === "BOOKING_REMINDER") {
-            booking = reminder.bookingId as any;
+            booking = reminder.bookingId
+              ? bookingById.get(reminder.bookingId) ?? null
+              : null;
             if (!booking || booking.status === "CANCELLED") {
-              await ScheduledNotification.findByIdAndUpdate(reminder._id, {
-                status: "CANCELLED",
+              await prisma.scheduledNotification.update({
+                where: { id: reminder.id },
+                data: { status: "CANCELLED" },
               });
               console.log(
-                `Cancelled reminder ${reminder._id} - booking no longer valid`,
+                `Cancelled reminder ${reminder.id} - booking no longer valid`,
               );
               continue;
             }
           }
 
-          const user = reminder.userId as any;
+          const user = userById.get(reminder.userId) ?? null;
           if (!user) {
-            await ScheduledNotification.findByIdAndUpdate(reminder._id, {
-              status: "FAILED",
-              failedAt: new Date(),
-              failureReason: "User not found",
+            await prisma.scheduledNotification.update({
+              where: { id: reminder.id },
+              data: {
+                status: "FAILED",
+                failedAt: new Date(),
+                failureReason: "User not found",
+              },
             });
             stats.failed++;
             continue;
@@ -229,54 +253,62 @@ export class ScheduledNotificationService {
           const sendPromises: Promise<any>[] = [];
 
           // In-app notification
-          if (reminder.channels.inApp) {
+          if (reminder.chInApp) {
             sendPromises.push(
               NotificationService.create({
-                userId: reminder.userId._id.toString(),
+                userId: reminder.userId,
                 type: "BOOKING_REMINDER",
                 category: "BOOKING",
                 title: reminder.title,
                 message: reminder.body,
-                data: reminder.data || {},
+                data: (reminder.data || {}) as Record<string, unknown>,
               }),
             );
           }
 
           // Push notification
           if (
-            reminder.channels.push &&
+            reminder.chPush &&
             user.pushSubscriptions &&
             user.pushSubscriptions.length > 0
           ) {
             sendPromises.push(
               pushNotificationService.sendPushNotificationToMultiple(
-                user.pushSubscriptions,
+                // Flattened rows -> { endpoint, keys: { p256dh, auth } }.
+                user.pushSubscriptions.map((sub) => ({
+                  endpoint: sub.endpoint,
+                  keys: { p256dh: sub.p256dh, auth: sub.auth },
+                })),
                 {
                   title: reminder.title,
                   body: reminder.body,
                   icon: "/icon-192x192.png",
                   badge: "/badge-72x72.png",
-                  data: reminder.data || {},
+                  data: (reminder.data || {}) as Record<string, unknown>,
                 },
               ),
             );
           }
 
           // Email notification
-          if (reminder.channels.email) {
+          if (reminder.chEmail) {
             if (reminder.type === "BOOKING_REMINDER" && booking) {
               sendPromises.push(
                 sendBookingReminderEmail({
                   email: user.email,
                   name: user.name,
-                  venueName: booking.venue?.name || "the venue",
+                  // The original populate never selected the venue name, so this
+                  // always fell back to "the venue" in this flow.
+                  venueName: "the venue",
                   sport: booking.sport,
                   date: booking.date,
                   startTime: booking.startTime,
                   endTime: booking.endTime,
                   interval: reminder.interval as
-                    "24_HOURS" | "1_HOUR" | "15_MINUTES",
-                  bookingId: reminder.bookingId?.toString() || "",
+                    | "24_HOURS"
+                    | "1_HOUR"
+                    | "15_MINUTES",
+                  bookingId: reminder.bookingId ?? "",
                 }).catch((err) => {
                   console.error("Failed to send reminder email:", err);
                   // Return rejected promise to count as failure
@@ -289,24 +321,27 @@ export class ScheduledNotificationService {
           await Promise.allSettled(sendPromises);
 
           // Mark as sent
-          await ScheduledNotification.findByIdAndUpdate(reminder._id, {
-            status: "SENT",
-            sentAt: new Date(),
+          await prisma.scheduledNotification.update({
+            where: { id: reminder.id },
+            data: { status: "SENT", sentAt: new Date() },
           });
 
           stats.sent++;
           console.log(
-            `Sent reminder ${reminder._id} for booking ${booking._id}`,
+            `Sent reminder ${reminder.id} for booking ${booking?.id}`,
           );
         } catch (error) {
-          console.error(`Error processing reminder ${reminder._id}:`, error);
+          console.error(`Error processing reminder ${reminder.id}:`, error);
 
-          await ScheduledNotification.findByIdAndUpdate(reminder._id, {
-            status: "FAILED",
-            failedAt: new Date(),
-            failureReason:
-              error instanceof Error ? error.message : String(error),
-            $inc: { retryCount: 1 },
+          await prisma.scheduledNotification.update({
+            where: { id: reminder.id },
+            data: {
+              status: "FAILED",
+              failedAt: new Date(),
+              failureReason:
+                error instanceof Error ? error.message : String(error),
+              retryCount: { increment: 1 },
+            },
           });
 
           stats.failed++;
@@ -327,37 +362,52 @@ export class ScheduledNotificationService {
   /**
    * Get upcoming reminders for a user
    */
-  static async getUserUpcomingReminders(
-    userId: mongoose.Types.ObjectId,
-    limit: number = 10,
-  ) {
-    return ScheduledNotification.find({
-      userId,
-      status: "PENDING",
-      scheduledFor: { $gt: new Date() },
-    })
-      .sort({ scheduledFor: 1 })
-      .limit(limit)
-      .populate("bookingId", "date startTime sport");
+  static async getUserUpcomingReminders(userId: string, limit: number = 10) {
+    const reminders = await prisma.scheduledNotification.findMany({
+      where: {
+        userId,
+        status: "PENDING",
+        scheduledFor: { gt: new Date() },
+      },
+      orderBy: { scheduledFor: "asc" },
+      take: limit,
+    });
+
+    // TODO(prisma): the Mongo version populated `bookingId` in place with
+    // { date, startTime, sport }. There is no relation for this String-FK ref,
+    // so we attach the booking under a separate `booking` key instead.
+    const bookingIds = [
+      ...new Set(
+        reminders.map((r) => r.bookingId).filter((b): b is string => !!b),
+      ),
+    ];
+    const bookings = bookingIds.length
+      ? await prisma.booking.findMany({
+          where: { id: { in: bookingIds } },
+          select: { id: true, date: true, startTime: true, sport: true },
+        })
+      : [];
+    const bookingById = new Map(bookings.map((b) => [b.id, b]));
+
+    return reminders.map((r) => ({
+      ...r,
+      booking: r.bookingId ? bookingById.get(r.bookingId) ?? null : null,
+    }));
   }
 
   /**
    * Get reminder statistics for a user
    */
-  static async getUserReminderStats(userId: mongoose.Types.ObjectId) {
-    const stats = await ScheduledNotification.aggregate([
-      { $match: { userId: new mongoose.Types.ObjectId(userId.toString()) } },
-      {
-        $group: {
-          _id: "$status",
-          count: { $sum: 1 },
-        },
-      },
-    ]);
+  static async getUserReminderStats(userId: string) {
+    const grouped = await prisma.scheduledNotification.groupBy({
+      by: ["status"],
+      where: { userId },
+      _count: { _all: true },
+    });
 
-    return stats.reduce(
+    return grouped.reduce(
       (acc, stat) => {
-        acc[stat._id.toLowerCase()] = stat.count;
+        acc[stat.status.toLowerCase()] = stat._count._all;
         return acc;
       },
       {
@@ -365,7 +415,7 @@ export class ScheduledNotificationService {
         sent: 0,
         failed: 0,
         cancelled: 0,
-      },
+      } as Record<string, number>,
     );
   }
 

@@ -1,18 +1,63 @@
-import mongoose from "mongoose";
-import { Booking } from "../models/Booking";
-import {
-  Coach,
-  CoachDocument,
-  CoachDocumentFile,
-  CoachVerificationStatus,
-} from "../models/Coach";
+import { Prisma } from "@prisma/client";
+import type { CoachVerificationStatus } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { s3Service } from "../../shared/services/S3Service";
 import { ICoach, IOwnVenueDetails, ServiceMode } from "../../types/index";
 
-const COACH_LISTING_SELECT =
-  "_id userId photoUrl profileImage bio sports hourlyRate sportPricing serviceMode ownVenueDetails rating reviewCount verificationStatus isVerified verifiedAt baseLocation serviceRadiusKm";
+// The Mongoose "CoachDocument" (whole-coach document) is replaced by a mapped
+// legacy shape: the Prisma Coach row with its normalized child tables folded
+// back into the embedded fields the API/frontends expect (sportPricing as a
+// record, ownVenueDetails/baseLocation as GeoJSON-ish objects, availability
+// arrays, verificationDocuments, and a populated `userId`). Kept loose (`any`)
+// because the reshape diverges from the raw Prisma type.
+type CoachDocument = any;
 
-const COACH_LISTING_USER_SELECT = "_id name photoUrl photoS3Key";
+// Sub-file shape preserved for the verification-submission signature.
+interface CoachDocumentFile {
+  id?: string;
+  type: "CERTIFICATION" | "ID_PROOF" | "BACKGROUND_CHECK" | "INSURANCE" | "OTHER";
+  url: string;
+  s3Key?: string;
+  fileName: string;
+  uploadedAt: Date;
+}
+
+export type { CoachVerificationStatus };
+
+const COACH_INCLUDE = {
+  ownVenue: true,
+  sportPricing: true,
+  availability: true,
+  sportAvailability: true,
+  documents: true,
+  blockedDates: true,
+  payoutMethods: true,
+} satisfies Prisma.CoachInclude;
+
+type CoachWithRelations = Prisma.CoachGetPayload<{ include: typeof COACH_INCLUDE }>;
+
+const SCALAR_UPDATE_KEYS = new Set<string>([
+  "bio",
+  "certifications",
+  "sports",
+  "hourlyRate",
+  "serviceMode",
+  "serviceRadiusKm",
+  "travelBufferTime",
+  "onboardingProgressStep",
+  "isVerified",
+  "rating",
+  "reviewCount",
+  "verificationStatus",
+  "verificationNotes",
+  "verificationSubmittedAt",
+  "lastVerificationReminderAt",
+  "verifiedAt",
+  "verifiedBy",
+  "activeSubscriptionId",
+  "subscriptionStatus",
+  "subscriptionExpiresAt",
+]);
 
 const resolveCoachVenueImageUrl = async (key: string): Promise<string> => {
   try {
@@ -150,6 +195,83 @@ const buildCoachRelevanceScore = (params: {
   );
 };
 
+/**
+ * Fold the normalized Prisma child tables back into the embedded document
+ * shape the rest of the app + frontends expect, and (optionally) attach the
+ * populated user object as `userId` (mirrors the old .populate("userId")).
+ */
+const mapCoachRecord = (
+  coach: CoachWithRelations | null,
+  user?: unknown,
+): CoachDocument => {
+  if (!coach) return coach;
+
+  const sportPricing: Record<string, number> = {};
+  for (const sp of coach.sportPricing ?? []) {
+    sportPricing[sp.sport] = sp.price;
+  }
+
+  const availabilityBySport: Record<string, any[]> = {};
+  for (const sa of coach.sportAvailability ?? []) {
+    (availabilityBySport[sa.sport] ??= []).push({
+      dayOfWeek: sa.dayOfWeek,
+      startTime: sa.startTime,
+      endTime: sa.endTime,
+    });
+  }
+
+  const ownVenueDetails = coach.ownVenue
+    ? {
+        name: coach.ownVenue.name,
+        address: coach.ownVenue.address,
+        location: {
+          type: "Point" as const,
+          coordinates: [coach.ownVenue.lng ?? 0, coach.ownVenue.lat ?? 0] as [
+            number,
+            number,
+          ],
+        },
+        sports: coach.ownVenue.sports,
+        amenities: coach.ownVenue.amenities,
+        pricePerHour: coach.ownVenue.pricePerHour,
+        description: coach.ownVenue.description,
+        images: coach.ownVenue.images,
+        imageS3Keys: coach.ownVenue.imageS3Keys,
+        openingHours: coach.ownVenue.openingHours,
+      }
+    : undefined;
+
+  const baseLocation =
+    coach.baseLng != null && coach.baseLat != null
+      ? {
+          type: "Point" as const,
+          coordinates: [coach.baseLng, coach.baseLat] as [number, number],
+        }
+      : undefined;
+
+  return {
+    ...coach,
+    sportPricing,
+    ownVenueDetails,
+    baseLocation,
+    availability: (coach.availability ?? []).map((a) => ({
+      id: a.id,
+      dayOfWeek: a.dayOfWeek,
+      startTime: a.startTime,
+      endTime: a.endTime,
+    })),
+    availabilityBySport,
+    verificationDocuments: (coach.documents ?? []).map((d) => ({
+      type: d.type,
+      url: d.url,
+      s3Key: d.s3Key ?? undefined,
+      fileName: d.fileName,
+      uploadedAt: d.uploadedAt,
+    })),
+    userId: user ?? coach.userId,
+  };
+};
+
 const refreshCoachMediaUrls = async <T extends Record<string, any>>(
   coach: T,
   options?: {
@@ -197,6 +319,63 @@ const refreshCoachMediaUrls = async <T extends Record<string, any>>(
   return coach;
 };
 
+/** Attach populated user objects (String-FK ref, no Prisma relation). */
+const attachCoachUsers = async (
+  coaches: CoachWithRelations[],
+  select: Prisma.UserSelect,
+): Promise<CoachDocument[]> => {
+  const userIds = [...new Set(coaches.map((c) => c.userId))];
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select,
+  });
+  const byId = new Map(users.map((u: any) => [u.id, u]));
+  return coaches.map((c) => mapCoachRecord(c, byId.get(c.userId) ?? null));
+};
+
+const mapOwnVenueColumns = (venueData: any, fallback?: {
+  images?: string[];
+  imageS3Keys?: string[];
+}) => {
+  const rawCoords = Array.isArray(venueData.location?.coordinates)
+    ? venueData.location.coordinates
+    : Array.isArray(venueData.coordinates)
+      ? venueData.coordinates
+      : null;
+
+  if (!rawCoords || rawCoords.length !== 2) {
+    throw new Error(
+      "ownVenueDetails.location.coordinates ([longitude, latitude]) is required",
+    );
+  }
+
+  return {
+    name: venueData.name ?? null,
+    address: venueData.address ?? null,
+    lng: Number(rawCoords[0]),
+    lat: Number(rawCoords[1]),
+    sports: venueData.sports || [],
+    amenities: venueData.amenities || [],
+    pricePerHour: venueData.pricePerHour ?? null,
+    description: venueData.description ?? null,
+    images: venueData.images || fallback?.images || [],
+    imageS3Keys: venueData.imageS3Keys || fallback?.imageS3Keys || [],
+    openingHours: venueData.openingHours ?? null,
+  };
+};
+
+const flattenSportAvailability = (
+  bySport: Record<string, Array<{ dayOfWeek: number; startTime: string; endTime: string }>>,
+) =>
+  Object.entries(bySport || {}).flatMap(([sport, slots]) =>
+    (slots || []).map((s) => ({
+      sport,
+      dayOfWeek: s.dayOfWeek,
+      startTime: s.startTime,
+      endTime: s.endTime,
+    })),
+  );
+
 export interface CreateCoachPayload {
   userId: string;
   bio: string;
@@ -236,29 +415,76 @@ export interface CreateCoachPayload {
 export const createCoach = async (
   payload: CreateCoachPayload,
 ): Promise<CoachDocument> => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  // Relocated pre-save hook: default serviceRadiusKm/travelBufferTime for
+  // FREELANCE/HYBRID coaches (see PORTING_GUIDE §3).
+  const isFreelanceOrHybrid =
+    payload.serviceMode === "FREELANCE" || payload.serviceMode === "HYBRID";
+  const serviceRadiusKm =
+    payload.serviceRadiusKm ?? (isFreelanceOrHybrid ? 10 : undefined);
+  const travelBufferTime =
+    payload.travelBufferTime ?? (isFreelanceOrHybrid ? 30 : undefined);
 
-  try {
-    // Create the coach profile with venue details embedded (no separate Venue document)
-    const coach = new Coach(payload);
+  const coach = await prisma.coach.create({
+    data: {
+      userId: payload.userId,
+      bio: payload.bio,
+      certifications: payload.certifications,
+      sports: payload.sports,
+      hourlyRate: payload.hourlyRate,
+      serviceMode: payload.serviceMode as any,
+      ...(serviceRadiusKm !== undefined ? { serviceRadiusKm } : {}),
+      ...(travelBufferTime !== undefined ? { travelBufferTime } : {}),
+      ...(payload.baseLocation
+        ? {
+            baseLng: payload.baseLocation.coordinates[0],
+            baseLat: payload.baseLocation.coordinates[1],
+          }
+        : {}),
+      ...(payload.sportPricing
+        ? {
+            sportPricing: {
+              create: Object.entries(payload.sportPricing).map(
+                ([sport, price]) => ({ sport, price }),
+              ),
+            },
+          }
+        : {}),
+      ...(payload.availability?.length
+        ? {
+            availability: {
+              create: payload.availability.map((a) => ({
+                dayOfWeek: a.dayOfWeek,
+                startTime: a.startTime,
+                endTime: a.endTime,
+              })),
+            },
+          }
+        : {}),
+      ...(payload.availabilityBySport
+        ? {
+            sportAvailability: {
+              create: flattenSportAvailability(payload.availabilityBySport),
+            },
+          }
+        : {}),
+      ...(payload.ownVenueDetails
+        ? { ownVenue: { create: mapOwnVenueColumns(payload.ownVenueDetails) } }
+        : {}),
+    },
+    include: COACH_INCLUDE,
+  });
 
-    // Validation is handled by the Coach model's pre-save hook
-    await coach.save({ session });
-
-    await session.commitTransaction();
-    return coach;
-  } catch (error) {
-    await session.abortTransaction();
-    throw error;
-  } finally {
-    session.endSession();
-  }
+  return mapCoachRecord(coach);
 };
 
 /**
- * Find coaches near a location (for FREELANCE and HYBRID coaches)
- * Uses MongoDB aggregation pipeline for efficient geo-filtering
+ * Find coaches near a location (for FREELANCE and HYBRID coaches).
+ *
+ * TODO(prisma): geo — MongoDB's $geoNear aggregation has NO Prisma equivalent.
+ * A true radius query needs PostGIS or the earthdistance/cube extension via
+ * prisma.$queryRaw (ST_DWithin / earth_box). Interim implementation: a
+ * bounding-box prefilter on baseLng/baseLat, then a haversine refine + sort in
+ * code. Swap this for a $queryRaw geo query when the extension is provisioned.
  */
 export const findCoachesNearby = async (
   lat: number,
@@ -269,61 +495,54 @@ export const findCoachesNearby = async (
   skip: number = 0,
 ): Promise<CoachDocument[]> => {
   try {
-    const radiusMeters = radiusKm * 1000;
+    // ~111.32 km per degree of latitude; longitude scaled by cos(lat).
+    const latDelta = radiusKm / 111.32;
+    const lngDelta = radiusKm / (111.32 * Math.cos(toRadians(lat)) || 1);
 
-    const pipeline: any[] = [
-      {
-        $geoNear: {
-          near: { type: "Point", coordinates: [lng, lat] },
-          distanceField: "distanceMeters",
-          maxDistance: radiusMeters,
-          spherical: true,
-          query: {
-            isVerified: true,
-            verificationStatus: "VERIFIED",
-            serviceMode: { $in: ["FREELANCE", "HYBRID"] },
-            ...(sport ? { sports: sport } : {}),
-          },
-        },
+    const candidates = await prisma.coach.findMany({
+      where: {
+        isVerified: true,
+        verificationStatus: "VERIFIED",
+        serviceMode: { in: ["FREELANCE", "HYBRID"] as any },
+        ...(sport ? { sports: { has: sport } } : {}),
+        baseLat: { gte: lat - latDelta, lte: lat + latDelta },
+        baseLng: { gte: lng - lngDelta, lte: lng + lngDelta },
       },
-      {
-        $sort: { rating: -1, reviewCount: -1, distanceMeters: 1, _id: 1 },
-      },
-      { $skip: skip },
-      { $limit: limit },
-      {
-        $project: {
-          _id: 1,
-          userId: 1,
-          photoUrl: 1,
-          profileImage: 1,
-          bio: 1,
-          sports: 1,
-          hourlyRate: 1,
-          sportPricing: 1,
-          serviceMode: 1,
-          ownVenueDetails: 1,
-          rating: 1,
-          reviewCount: 1,
-          verificationStatus: 1,
-          isVerified: 1,
-          verifiedAt: 1,
-          baseLocation: 1,
-          serviceRadiusKm: 1,
-        },
-      },
-    ];
+      include: COACH_INCLUDE,
+    });
 
-    const coaches = await Coach.aggregate(pipeline);
+    const withDistance = candidates
+      .filter((c) => c.baseLng != null && c.baseLat != null)
+      .map((c) => ({
+        coach: c,
+        distanceKm: calculateDistanceKm(
+          [lng, lat],
+          [c.baseLng as number, c.baseLat as number],
+        ),
+      }))
+      .filter((x) => x.distanceKm <= radiusKm)
+      .sort(
+        (a, b) =>
+          b.coach.rating - a.coach.rating ||
+          b.coach.reviewCount - a.coach.reviewCount ||
+          a.distanceKm - b.distanceKm ||
+          a.coach.id.localeCompare(b.coach.id),
+      )
+      .slice(skip, skip + limit);
 
-    // Populate the final documents (aggregate doesn't return full mongoose documents)
-    const populatedCoaches = (await Coach.populate(coaches, {
-      path: "userId",
-      select: COACH_LISTING_USER_SELECT,
-    })) as CoachDocument[];
+    const userIds = [...new Set(withDistance.map((x) => x.coach.userId))];
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, photoUrl: true, photoS3Key: true },
+    });
+    const byId = new Map(users.map((u) => [u.id, u]));
+
+    const mapped = withDistance.map((x) =>
+      mapCoachRecord(x.coach, byId.get(x.coach.userId) ?? null),
+    );
 
     return Promise.all(
-      populatedCoaches.map((coach) =>
+      mapped.map((coach) =>
         refreshCoachMediaUrls(coach, { includeVenueImages: false }),
       ),
     );
@@ -340,27 +559,27 @@ export const getAllCoaches = async (
   skip: number = 0,
 ): Promise<CoachDocument[]> => {
   try {
-    const query: any = {
-      isVerified: true,
-      verificationStatus: "VERIFIED",
-    };
+    const coaches = await prisma.coach.findMany({
+      where: {
+        isVerified: true,
+        verificationStatus: "VERIFIED",
+        ...(sport ? { sports: { has: sport } } : {}),
+      },
+      orderBy: [{ rating: "desc" }, { reviewCount: "desc" }, { id: "asc" }],
+      skip,
+      take: limit,
+      include: COACH_INCLUDE,
+    });
 
-    if (sport) {
-      query.sports = sport;
-    }
-
-    const coaches = await Coach.find(query)
-      .select(COACH_LISTING_SELECT)
-      .sort({ rating: -1, reviewCount: -1, _id: 1 })
-      .skip(skip)
-      .limit(limit)
-      .populate({
-        path: "userId",
-        select: COACH_LISTING_USER_SELECT,
-      });
+    const mapped = await attachCoachUsers(coaches, {
+      id: true,
+      name: true,
+      photoUrl: true,
+      photoS3Key: true,
+    });
 
     return Promise.all(
-      coaches.map((coach) =>
+      mapped.map((coach) =>
         refreshCoachMediaUrls(coach, { includeVenueImages: false }),
       ),
     );
@@ -383,13 +602,16 @@ export const submitCoachVerification = async (
   userId: string,
   payload: CoachVerificationSubmission,
 ): Promise<CoachDocument> => {
-  const coach = await Coach.findOne({ userId });
+  const coach = await prisma.coach.findFirst({
+    where: { userId },
+    include: COACH_INCLUDE,
+  });
   if (!coach) {
     throw new Error("Coach profile not found");
   }
 
   if (coach.serviceMode === "OWN_VENUE") {
-    const venueImagesCount = coach.ownVenueDetails?.images?.length || 0;
+    const venueImagesCount = coach.ownVenue?.images?.length || 0;
     if (venueImagesCount < 3) {
       throw new Error(
         "OWN_VENUE coaches must upload at least 3 venue images before verification submission",
@@ -399,19 +621,34 @@ export const submitCoachVerification = async (
 
   const documents = payload.documents || [];
 
-  coach.verificationDocuments = documents.map((doc) => ({
-    ...doc,
-    uploadedAt: doc.uploadedAt || new Date(),
-  }));
-  coach.verificationStatus = "PENDING";
-  coach.isVerified = false;
-  coach.verificationNotes = "";
-  coach.onboardingProgressStep = 3;
-  coach.verificationSubmittedAt = new Date();
-  coach.verifiedAt = null;
-  coach.verifiedBy = null;
+  const updated = await prisma.$transaction(async (tx) => {
+    // verificationDocuments was an embedded array; replace the child rows.
+    await tx.coachDocument.deleteMany({ where: { coachId: coach.id } });
+    return tx.coach.update({
+      where: { id: coach.id },
+      data: {
+        verificationStatus: "PENDING",
+        isVerified: false,
+        verificationNotes: "",
+        onboardingProgressStep: 3,
+        verificationSubmittedAt: new Date(),
+        verifiedAt: null,
+        verifiedBy: null,
+        documents: {
+          create: documents.map((doc) => ({
+            type: doc.type as any,
+            url: doc.url,
+            s3Key: doc.s3Key ?? null,
+            fileName: doc.fileName,
+            uploadedAt: doc.uploadedAt || new Date(),
+          })),
+        },
+      },
+      include: COACH_INCLUDE,
+    });
+  });
 
-  return coach.save();
+  return mapCoachRecord(updated);
 };
 
 export const listCoachVerificationRequests = async (
@@ -424,21 +661,28 @@ export const listCoachVerificationRequests = async (
   page: number;
   totalPages: number;
 }> => {
-  const query: Record<string, unknown> = {};
+  const where: Prisma.CoachWhereInput = {};
   if (status) {
-    query.verificationStatus = status;
+    where.verificationStatus = status;
   }
 
   const skip = (page - 1) * limit;
-  const total = await Coach.countDocuments(query);
-  const coaches = await Coach.find(query)
-    .populate("userId")
-    .sort({ updatedAt: -1 })
-    .skip(skip)
-    .limit(limit);
+  const [total, coaches] = await Promise.all([
+    prisma.coach.count({ where }),
+    prisma.coach.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      skip,
+      take: limit,
+      include: COACH_INCLUDE,
+    }),
+  ]);
+
+  // .populate("userId") with no projection -> full user objects.
+  const mapped = await attachCoachUsers(coaches, undefined as any);
 
   return {
-    coaches,
+    coaches: mapped,
     total,
     page,
     totalPages: Math.ceil(total / limit),
@@ -451,29 +695,39 @@ export const updateCoachVerificationStatus = async (
   adminId: string,
   notes?: string,
 ): Promise<CoachDocument> => {
-  const coach = await Coach.findById(coachId);
+  const coach = await prisma.coach.findUnique({ where: { id: coachId } });
   if (!coach) {
     throw new Error("Coach not found");
   }
 
-  coach.verificationStatus = status;
-  coach.verificationNotes = notes || "";
-  coach.onboardingProgressStep = Math.max(
+  const onboardingProgressStep = Math.max(
     Number(coach.onboardingProgressStep || 1),
     3,
-  ) as 1 | 2 | 3;
+  );
+
+  const data: Prisma.CoachUpdateInput = {
+    verificationStatus: status,
+    verificationNotes: notes || "",
+    onboardingProgressStep,
+  };
 
   if (status === "VERIFIED") {
-    coach.isVerified = true;
-    coach.verifiedAt = new Date();
-    coach.verifiedBy = new mongoose.Types.ObjectId(adminId);
+    data.isVerified = true;
+    data.verifiedAt = new Date();
+    data.verifiedBy = adminId;
   } else {
-    coach.isVerified = false;
-    coach.verifiedAt = null;
-    coach.verifiedBy = null;
+    data.isVerified = false;
+    data.verifiedAt = null;
+    data.verifiedBy = null;
   }
 
-  return coach.save();
+  const updated = await prisma.coach.update({
+    where: { id: coachId },
+    data,
+    include: COACH_INCLUDE,
+  });
+
+  return mapCoachRecord(updated);
 };
 
 /**
@@ -486,7 +740,10 @@ export const checkCoachAvailability = async (
   endTime: string,
 ): Promise<boolean> => {
   try {
-    const coach = await Coach.findById(coachId);
+    const coach = await prisma.coach.findUnique({
+      where: { id: coachId },
+      include: { availability: true },
+    });
     if (!coach) {
       throw new Error("Coach not found");
     }
@@ -511,28 +768,38 @@ export const checkCoachAvailability = async (
 
     // Check for existing bookings
     // Only active bookings block slots: PENDING_CONFIRMATION, PENDING_INVITES, CONFIRMED, IN_PROGRESS
-    const existingBooking = await Booking.findOne({
-      coachId,
-      date: {
-        $gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
-        $lt: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1),
-      },
-      status: {
-        $in: [
-          "PENDING_CONFIRMATION",
-          "PENDING_INVITES",
-          "CONFIRMED",
-          "IN_PROGRESS",
+    const startOfDay = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+    );
+    const endOfDay = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate() + 1,
+    );
+
+    const existingBooking = await prisma.booking.findFirst({
+      where: {
+        coachId,
+        date: { gte: startOfDay, lt: endOfDay },
+        status: {
+          in: [
+            "PENDING_CONFIRMATION",
+            "PENDING_INVITES",
+            "CONFIRMED",
+            "IN_PROGRESS",
+          ],
+        },
+        OR: [
+          // Requested slot starts during existing booking
+          { startTime: { lte: startTime }, endTime: { gt: startTime } },
+          // Requested slot ends during existing booking
+          { startTime: { lt: endTime }, endTime: { gte: endTime } },
+          // Requested slot completely contains existing booking
+          { startTime: { gte: startTime }, endTime: { lte: endTime } },
         ],
       },
-      $or: [
-        // Requested slot starts during existing booking
-        { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
-        // Requested slot ends during existing booking
-        { startTime: { $lt: endTime }, endTime: { $gte: endTime } },
-        // Requested slot completely contains existing booking
-        { startTime: { $gte: startTime }, endTime: { $lte: endTime } },
-      ],
     });
 
     return !existingBooking;
@@ -553,12 +820,16 @@ export const getCoachById = async (
   if (!coachId || coachId === "undefined") {
     return null;
   }
-  const coach = await Coach.findById(coachId).populate("userId");
+  const coach = await prisma.coach.findUnique({
+    where: { id: coachId },
+    include: COACH_INCLUDE,
+  });
   if (!coach) {
     return null;
   }
 
-  return refreshCoachMediaUrls(coach);
+  const user = await prisma.user.findUnique({ where: { id: coach.userId } });
+  return refreshCoachMediaUrls(mapCoachRecord(coach, user));
 };
 
 /**
@@ -567,17 +838,24 @@ export const getCoachById = async (
 export const getCoachByUserId = async (
   userId: string,
 ): Promise<CoachDocument | null> => {
-  const coach = await Coach.findOne({ userId }).populate("userId");
+  const coach = await prisma.coach.findUnique({
+    where: { userId },
+    include: COACH_INCLUDE,
+  });
   if (!coach) {
     return null;
   }
 
-  return refreshCoachMediaUrls(coach);
+  const user = await prisma.user.findUnique({ where: { id: coach.userId } });
+  return refreshCoachMediaUrls(mapCoachRecord(coach, user));
 };
 
 /**
- * Update coach profile
- * Uses load-then-save to ensure full validation runs on all nested objects
+ * Update coach profile.
+ * Scalars go straight onto the coach row; the previously-embedded fields
+ * (ownVenueDetails, baseLocation, sportPricing, availability,
+ * availabilityBySport, verificationDocuments) are written to their child
+ * tables inside one transaction.
  */
 export const updateCoach = async (
   coachId: string,
@@ -588,89 +866,134 @@ export const updateCoach = async (
     throw new Error("Invalid coach ID");
   }
 
-  // Load the full document
-  const coach = await Coach.findById(coachId);
+  const coach = await prisma.coach.findUnique({
+    where: { id: coachId },
+    include: { ownVenue: true },
+  });
   if (!coach) {
     return null;
   }
 
-  // Update each field individually - this allows Mongoose to properly cast nested types
+  const coachData: Record<string, unknown> = {};
+  const childOps: Array<(tx: Prisma.TransactionClient) => Promise<unknown>> = [];
+
   for (const [key, value] of Object.entries(updates)) {
-    if (value !== undefined) {
-      // For ownVenueDetails, rebuild it completely to ensure proper type casting
-      if (key === "ownVenueDetails" && value) {
-        const venueData = value as any;
-
-        // Extract coordinates from either location or flat structure
-        const rawCoords = Array.isArray(venueData.location?.coordinates)
-          ? venueData.location.coordinates
-          : Array.isArray(venueData.coordinates)
-            ? venueData.coordinates
-            : null;
-
-        if (!rawCoords || rawCoords.length !== 2) {
-          throw new Error(
-            "ownVenueDetails.location.coordinates ([longitude, latitude]) is required",
-          );
-        }
-
-        const coordinates = rawCoords;
-
-        coach.ownVenueDetails = {
-          name: venueData.name,
-          address: venueData.address,
-          location: {
-            type: "Point",
-            coordinates: [Number(coordinates[0]), Number(coordinates[1])],
-          },
-          sports: venueData.sports || [],
-          amenities: venueData.amenities || [],
-          pricePerHour: venueData.pricePerHour,
-          description: venueData.description,
-          images: venueData.images || coach.ownVenueDetails?.images || [],
-          imageS3Keys:
-            venueData.imageS3Keys || coach.ownVenueDetails?.imageS3Keys || [],
-          openingHours: venueData.openingHours,
-        };
-
-        // Mark this nested path as modified so Mongoose re-validates it
-        coach.markModified("ownVenueDetails");
-      } else {
-        (coach as any)[key] = value;
-      }
+    if (value === undefined) {
+      continue;
     }
+
+    if (key === "ownVenueDetails" && value) {
+      const columns = mapOwnVenueColumns(value as any, {
+        images: coach.ownVenue?.images,
+        imageS3Keys: coach.ownVenue?.imageS3Keys,
+      });
+      childOps.push((tx) =>
+        tx.coachOwnVenue.upsert({
+          where: { coachId: coach.id },
+          create: { coachId: coach.id, ...columns },
+          update: columns,
+        }),
+      );
+    } else if (key === "baseLocation" && value) {
+      const coords = (value as any).coordinates || [];
+      coachData.baseLng = coords[0] != null ? Number(coords[0]) : null;
+      coachData.baseLat = coords[1] != null ? Number(coords[1]) : null;
+    } else if (key === "sportPricing" && value) {
+      const rec = value as Record<string, number>;
+      childOps.push(async (tx) => {
+        await tx.coachSportPricing.deleteMany({ where: { coachId: coach.id } });
+        await tx.coachSportPricing.createMany({
+          data: Object.entries(rec).map(([sport, price]) => ({
+            coachId: coach.id,
+            sport,
+            price,
+          })),
+        });
+      });
+    } else if (key === "availability" && Array.isArray(value)) {
+      childOps.push(async (tx) => {
+        await tx.coachAvailability.deleteMany({ where: { coachId: coach.id } });
+        await tx.coachAvailability.createMany({
+          data: (value as any[]).map((a) => ({
+            coachId: coach.id,
+            dayOfWeek: a.dayOfWeek,
+            startTime: a.startTime,
+            endTime: a.endTime,
+          })),
+        });
+      });
+    } else if (key === "availabilityBySport" && value) {
+      const rows = flattenSportAvailability(value as any);
+      childOps.push(async (tx) => {
+        await tx.coachSportAvailability.deleteMany({
+          where: { coachId: coach.id },
+        });
+        await tx.coachSportAvailability.createMany({
+          data: rows.map((r) => ({ coachId: coach.id, ...r })),
+        });
+      });
+    } else if (key === "verificationDocuments" && Array.isArray(value)) {
+      childOps.push(async (tx) => {
+        await tx.coachDocument.deleteMany({ where: { coachId: coach.id } });
+        await tx.coachDocument.createMany({
+          data: (value as any[]).map((d) => ({
+            coachId: coach.id,
+            type: d.type,
+            url: d.url,
+            s3Key: d.s3Key ?? null,
+            fileName: d.fileName,
+            uploadedAt: d.uploadedAt || new Date(),
+          })),
+        });
+      });
+    } else if (SCALAR_UPDATE_KEYS.has(key)) {
+      coachData[key] = value;
+    }
+    // TODO(prisma): any Coach field outside SCALAR_UPDATE_KEYS / the child
+    // handlers above is intentionally ignored — extend the set if a new
+    // updatable field is added to the model.
   }
 
-  // Save with validation
-  await coach.save();
+  const updated = await prisma.$transaction(async (tx) => {
+    for (const op of childOps) {
+      await op(tx);
+    }
+    return tx.coach.update({
+      where: { id: coach.id },
+      data: coachData,
+      include: COACH_INCLUDE,
+    });
+  });
 
-  return coach;
+  return mapCoachRecord(updated);
 };
 
 /**
  * Delete coach profile (with cascade: delete all associated bookings)
  */
 export const deleteCoach = async (coachId: string): Promise<boolean> => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
   try {
-    await Booking.deleteMany({ coachId }, { session });
-    const result = await Coach.findByIdAndDelete(coachId, { session });
-    await session.commitTransaction();
-    return !!result;
+    return await prisma.$transaction(async (tx) => {
+      await tx.booking.deleteMany({ where: { coachId } });
+      const existing = await tx.coach.findUnique({ where: { id: coachId } });
+      if (!existing) {
+        return false;
+      }
+      // Child tables (sportPricing, availability, documents, ...) cascade via
+      // onDelete: Cascade in the schema.
+      await tx.coach.delete({ where: { id: coachId } });
+      return true;
+    });
   } catch (error) {
-    await session.abortTransaction();
     throw new Error(
       `Failed to delete coach: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
-  } finally {
-    session.endSession();
   }
 };
 
 /**
  * Get coach calendar data for a date range.
- * Returns bookings + blocked dates, optimized with a single aggregation.
+ * Returns bookings + blocked dates.
  */
 export const getCoachCalendar = async (
   coachUserId: string,
@@ -683,28 +1006,51 @@ export const getCoachCalendar = async (
   availabilityBySport: Record<string, any[]>;
   travelBufferTime: number;
 }> => {
-  const coach = await Coach.findOne({ userId: coachUserId }).select(
-    "blockedDates availability availabilityBySport travelBufferTime",
-  );
+  const coach = await prisma.coach.findUnique({
+    where: { userId: coachUserId },
+    select: {
+      id: true,
+      travelBufferTime: true,
+      blockedDates: true,
+      availability: true,
+      sportAvailability: true,
+    },
+  });
   if (!coach) throw new Error("Coach profile not found");
 
-  // Lean query — fast for read-only calendar data
-  const bookings = await Booking.find({
-    coachId: coach._id,
-    date: { $gte: startDate, $lte: endDate },
-    status: { $nin: ["CANCELLED"] },
-  })
-    .populate("userId", "name photoUrl email")
-    .sort({ date: 1, startTime: 1 })
-    .lean();
+  const bookings = await prisma.booking.findMany({
+    where: {
+      coachId: coach.id,
+      date: { gte: startDate, lte: endDate },
+      status: { not: "CANCELLED" },
+    },
+    orderBy: [{ date: "asc" }, { startTime: "asc" }],
+  });
 
-  const availabilityBySport = coach.availabilityBySport
-    ? Object.fromEntries(coach.availabilityBySport as any)
-    : {};
+  // Populate booking users (name/photoUrl/email) into `userId` (was .populate).
+  const userIds = [...new Set(bookings.map((b) => b.userId))];
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, name: true, photoUrl: true, email: true },
+  });
+  const byId = new Map(users.map((u) => [u.id, u]));
+  const bookingsWithUser = bookings.map((b) => ({
+    ...b,
+    userId: byId.get(b.userId) ?? b.userId,
+  }));
+
+  const availabilityBySport: Record<string, any[]> = {};
+  for (const sa of coach.sportAvailability) {
+    (availabilityBySport[sa.sport] ??= []).push({
+      dayOfWeek: sa.dayOfWeek,
+      startTime: sa.startTime,
+      endTime: sa.endTime,
+    });
+  }
 
   return {
-    bookings,
-    blockedDates: (coach.blockedDates as any[]) ?? [],
+    bookings: bookingsWithUser,
+    blockedDates: coach.blockedDates ?? [],
     availability: coach.availability ?? [],
     availabilityBySport,
     travelBufferTime: coach.travelBufferTime ?? 0,
@@ -723,43 +1069,44 @@ export const blockCoachDates = async (
     allDay?: boolean;
   },
 ): Promise<any> => {
-  const coach = await Coach.findOne({ userId: coachUserId });
+  const coach = await prisma.coach.findFirst({
+    where: { userId: coachUserId },
+    select: { id: true },
+  });
   if (!coach) throw new Error("Coach profile not found");
 
-  const newBlock = {
-    startDate: payload.startDate,
-    endDate: payload.endDate,
-    reason: payload.reason?.trim() || undefined,
-    allDay: payload.allDay ?? true,
-    blockedAt: new Date(),
-  };
+  const created = await prisma.coachBlockedDate.create({
+    data: {
+      coachId: coach.id,
+      startDate: payload.startDate,
+      endDate: payload.endDate,
+      reason: payload.reason?.trim() || null,
+      allDay: payload.allDay ?? true,
+      blockedAt: new Date(),
+    },
+  });
 
-  if (!coach.blockedDates) coach.blockedDates = [];
-  (coach.blockedDates as any[]).push(newBlock);
-  coach.markModified("blockedDates");
-  await coach.save();
-
-  return (coach.blockedDates as any[]).slice(-1)[0];
+  return created;
 };
 
 /**
- * Remove a blocked date entry by its subdocument id.
+ * Remove a blocked date entry by its id.
  */
 export const unblockCoachDate = async (
   coachUserId: string,
   blockId: string,
 ): Promise<void> => {
-  const coach = await Coach.findOne({ userId: coachUserId });
+  const coach = await prisma.coach.findFirst({
+    where: { userId: coachUserId },
+    select: { id: true },
+  });
   if (!coach) throw new Error("Coach profile not found");
 
-  if (!coach.blockedDates) return;
-
-  const idx = (coach.blockedDates as any[]).findIndex(
-    (b: any) => b._id?.toString() === blockId,
-  );
-  if (idx === -1) throw new Error("Blocked date entry not found");
-
-  (coach.blockedDates as any[]).splice(idx, 1);
-  coach.markModified("blockedDates");
-  await coach.save();
+  const result = await prisma.coachBlockedDate.deleteMany({
+    where: { id: blockId, coachId: coach.id },
+  });
+  if (result.count === 0) throw new Error("Blocked date entry not found");
 };
+
+// Retained for parity with the original module (non-DB scoring helper).
+void buildCoachRelevanceScore;

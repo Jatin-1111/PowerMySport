@@ -1,5 +1,6 @@
-import { PromoCode, PromoCodeDocument } from "../../shared/models/PromoCode";
-import { User } from "../models/User";
+import { Prisma } from "@prisma/client";
+import type { PromoCode } from "@prisma/client";
+import prisma from "../../lib/prisma";
 
 export interface CreatePromoCodePayload {
   code: string;
@@ -21,7 +22,7 @@ export interface CreatePromoCodePayload {
  */
 export const createPromoCode = async (
   payload: CreatePromoCodePayload,
-): Promise<PromoCodeDocument> => {
+): Promise<PromoCode> => {
   // Validate discount value
   if (payload.discountType === "PERCENTAGE") {
     if (payload.discountValue < 0 || payload.discountValue > 100) {
@@ -34,15 +35,21 @@ export const createPromoCode = async (
   }
 
   // Check if code already exists
-  const existing = await PromoCode.findOne({
-    code: payload.code.toUpperCase(),
+  const existing = await prisma.promoCode.findUnique({
+    where: { code: payload.code.toUpperCase() },
   });
   if (existing) {
     throw new Error("Promo code already exists");
   }
 
-  const promoCode = new PromoCode(payload);
-  await promoCode.save();
+  // Codes are stored uppercased (was a Mongoose uppercase setter); all lookups
+  // normalize via toUpperCase() to match.
+  const promoCode = await prisma.promoCode.create({
+    data: {
+      ...payload,
+      code: payload.code.toUpperCase(),
+    },
+  });
 
   return promoCode;
 };
@@ -67,7 +74,9 @@ export const validatePromoCode = async (
   const hasCoach = options?.hasCoach ?? false;
   const context = options?.context ?? "BOOKING";
 
-  const promoCode = await PromoCode.findOne({ code: code.toUpperCase() });
+  const promoCode = await prisma.promoCode.findUnique({
+    where: { code: code.toUpperCase() },
+  });
 
   if (!promoCode) {
     return { isValid: false, discountAmount: 0, message: "Invalid promo code" };
@@ -120,10 +129,10 @@ export const validatePromoCode = async (
     };
   }
 
-  // Check per-user usage limit
-  const userUsageCount = promoCode.usedBy.filter(
-    (usage) => usage.userId.toString() === userId,
-  ).length;
+  // Check per-user usage limit (usedBy is now the normalized PromoCodeUsage table)
+  const userUsageCount = await prisma.promoCodeUsage.count({
+    where: { promoCodeId: promoCode.id, userId },
+  });
 
   if (
     promoCode.maxUsagePerUser &&
@@ -221,39 +230,50 @@ export const applyPromoCode = async (
     usagePayload.orderId = orderId;
   }
 
-  await PromoCode.findOneAndUpdate(
-    { code: code.toUpperCase() },
-    {
-      $inc: { currentUsageCount: 1 },
-      $push: {
-        usedBy: usagePayload,
+  // $inc -> { increment }; $push -> nested create on the PromoCodeUsage child.
+  // Single atomic update over the parent + its new usage row. If the code no
+  // longer exists this throws P2025 (was a silent no-op with findOneAndUpdate);
+  // applyPromoCode is always called after a successful validate, so the code
+  // exists in practice.
+  await prisma.promoCode.update({
+    where: { code: code.toUpperCase() },
+    data: {
+      currentUsageCount: { increment: 1 },
+      usedBy: {
+        create: usagePayload,
       },
     },
-  );
+  });
 };
 
 /**
  * Get all promo codes (admin only)
  */
-export const getAllPromoCodes = async (): Promise<PromoCodeDocument[]> => {
-  return PromoCode.find().sort({ createdAt: -1 });
+export const getAllPromoCodes = async (): Promise<PromoCode[]> => {
+  return prisma.promoCode.findMany({ orderBy: { createdAt: "desc" } });
 };
 
 /**
  * Get active promo codes for users
  */
-export const getActivePromoCodes = async (): Promise<PromoCodeDocument[]> => {
+export const getActivePromoCodes = async (): Promise<PromoCode[]> => {
   const now = new Date();
 
-  return PromoCode.find({
-    isActive: true,
-    validFrom: { $lte: now },
-    validUntil: { $gte: now },
-    $or: [
-      { maxUsageTotal: { $exists: false } },
-      { $expr: { $lt: ["$currentUsageCount", "$maxUsageTotal"] } },
-    ],
-  }).sort({ createdAt: -1 });
+  // TODO(prisma): the old query used $expr to compare two columns
+  // (currentUsageCount < maxUsageTotal). Prisma has no column-to-column
+  // comparison in `where`, so filter the usage-limit condition in app code.
+  const candidates = await prisma.promoCode.findMany({
+    where: {
+      isActive: true,
+      validFrom: { lte: now },
+      validUntil: { gte: now },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return candidates.filter(
+    (p) => p.maxUsageTotal == null || p.currentUsageCount < p.maxUsageTotal,
+  );
 };
 
 /**
@@ -261,12 +281,22 @@ export const getActivePromoCodes = async (): Promise<PromoCodeDocument[]> => {
  */
 export const deactivatePromoCode = async (
   codeId: string,
-): Promise<PromoCodeDocument | null> => {
-  return PromoCode.findByIdAndUpdate(
-    codeId,
-    { isActive: false },
-    { new: true },
-  );
+): Promise<PromoCode | null> => {
+  try {
+    return await prisma.promoCode.update({
+      where: { id: codeId },
+      data: { isActive: false },
+    });
+  } catch (error) {
+    // Preserve findByIdAndUpdate semantics: return null when not found.
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return null;
+    }
+    throw error;
+  }
 };
 
 /**
@@ -287,7 +317,10 @@ export const getPromoCodeStats = async (
     usedAt: Date;
   }>;
 }> => {
-  const promoCode = await PromoCode.findById(codeId);
+  const promoCode = await prisma.promoCode.findUnique({
+    where: { id: codeId },
+    include: { usedBy: { orderBy: { usedAt: "asc" } } },
+  });
 
   if (!promoCode) {
     throw new Error("Promo code not found");
@@ -303,12 +336,11 @@ export const getPromoCodeStats = async (
 
   const recentRaw = promoCode.usedBy.slice(-10).reverse();
 
-  const users = await User.find({
-    _id: { $in: recentRaw.map((usage) => usage.userId) },
-  })
-    .select("name email")
-    .lean();
-  const userById = new Map(users.map((user) => [String(user._id), user]));
+  const users = await prisma.user.findMany({
+    where: { id: { in: recentRaw.map((usage) => usage.userId) } },
+    select: { id: true, name: true, email: true },
+  });
+  const userById = new Map(users.map((user) => [String(user.id), user]));
 
   const recentUsages = recentRaw.map((usage) => {
     const user = userById.get(usage.userId.toString());

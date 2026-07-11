@@ -1,5 +1,4 @@
-import mongoose from "mongoose";
-import { ScheduledNotification } from "../models/ScheduledNotification";
+import prisma from "../../lib/prisma";
 import { sendEmail } from "../../utils/email";
 
 interface MonitoringStats {
@@ -44,24 +43,16 @@ export class ReminderMonitoringService {
     const now = new Date();
     const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    // Get counts by status for last 24 hours
-    const stats = await ScheduledNotification.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: last24Hours },
-        },
-      },
-      {
-        $group: {
-          _id: "$status",
-          count: { $sum: 1 },
-        },
-      },
-    ]);
+    // Get counts by status for last 24 hours (aggregate $group -> groupBy)
+    const stats = await prisma.scheduledNotification.groupBy({
+      by: ["status"],
+      where: { createdAt: { gte: last24Hours } },
+      _count: { _all: true },
+    });
 
     const statusCounts = stats.reduce(
       (acc, stat) => {
-        acc[stat._id.toLowerCase()] = stat.count;
+        acc[String(stat.status).toLowerCase()] = stat._count._all;
         return acc;
       },
       { pending: 0, sent: 0, failed: 0, cancelled: 0 } as Record<
@@ -81,11 +72,11 @@ export class ReminderMonitoringService {
         : 0;
 
     // Get last processed reminder
-    const lastProcessed = await ScheduledNotification.findOne({
-      status: { $in: ["SENT", "FAILED"] },
-    })
-      .sort({ updatedAt: -1 })
-      .select("updatedAt");
+    const lastProcessed = await prisma.scheduledNotification.findFirst({
+      where: { status: { in: ["SENT", "FAILED"] } },
+      orderBy: { updatedAt: "desc" },
+      select: { updatedAt: true },
+    });
 
     return {
       total,
@@ -111,13 +102,12 @@ export class ReminderMonitoringService {
       : null;
 
     // Get pending and overdue counts
-    const pendingCount = await ScheduledNotification.countDocuments({
-      status: "PENDING",
+    const pendingCount = await prisma.scheduledNotification.count({
+      where: { status: "PENDING" },
     });
 
-    const overdueCount = await ScheduledNotification.countDocuments({
-      status: "PENDING",
-      scheduledFor: { $lte: now },
+    const overdueCount = await prisma.scheduledNotification.count({
+      where: { status: "PENDING", scheduledFor: { lte: now } },
     });
 
     // Determine health issues
@@ -167,30 +157,37 @@ export class ReminderMonitoringService {
   ): Promise<FailedReminderInfo[]> {
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    const failedReminders = await ScheduledNotification.find({
-      status: "FAILED",
-      failedAt: { $gte: last24Hours },
-    })
-      .sort({ failedAt: -1 })
-      .limit(limit)
-      .select("userId bookingId interval failedAt failureReason retryCount")
-      .populate("userId", "name email");
+    const failedReminders = await prisma.scheduledNotification.findMany({
+      where: { status: "FAILED", failedAt: { gte: last24Hours } },
+      orderBy: { failedAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        userId: true,
+        bookingId: true,
+        interval: true,
+        failedAt: true,
+        failureReason: true,
+        retryCount: true,
+      },
+    });
+
+    // userId is a plain String FK (no relation defined) — resolve names/emails
+    // via a single follow-up query (replaces the old .populate("userId")).
+    const users = await prisma.user.findMany({
+      where: { id: { in: [...new Set(failedReminders.map((r) => r.userId))] } },
+      select: { id: true, name: true, email: true },
+    });
+    const userById = new Map(users.map((u) => [u.id, u]));
 
     return failedReminders.map((reminder) => {
-      const user = reminder.userId as unknown as
-        | { _id: unknown; name?: string; email?: string }
-        | mongoose.Types.ObjectId;
-      const isPopulated = typeof user === "object" && "name" in user;
+      const user = userById.get(reminder.userId);
 
       return {
-        _id: reminder._id.toString(),
-        userId: isPopulated
-          ? String((user as { _id: unknown })._id)
-          : String(user),
-        userName: isPopulated
-          ? (user as { name?: string }).name || "Unknown user"
-          : "Unknown user",
-        userEmail: isPopulated ? (user as { email?: string }).email || "" : "",
+        _id: reminder.id,
+        userId: reminder.userId,
+        userName: user?.name || "Unknown user",
+        userEmail: user?.email || "",
         bookingId: reminder.bookingId?.toString() || "unknown",
         interval: reminder.interval,
         failedAt: reminder.failedAt!,
@@ -456,7 +453,9 @@ export class ReminderMonitoringService {
     reminderId: string,
   ): Promise<{ success: boolean; message: string }> {
     try {
-      const reminder = await ScheduledNotification.findById(reminderId);
+      const reminder = await prisma.scheduledNotification.findUnique({
+        where: { id: reminderId },
+      });
 
       if (!reminder) {
         return { success: false, message: "Reminder not found" };
@@ -469,15 +468,17 @@ export class ReminderMonitoringService {
         };
       }
 
-      // Reset reminder to pending status and reschedule for immediate processing
-      reminder.status = "PENDING";
-      reminder.scheduledFor = new Date(); // Schedule for immediate processing
-      if (reminder.failureReason) {
-        delete (reminder as any).failureReason;
-      }
-      // Don't reset retry count - keep it to track total attempts
-
-      await reminder.save();
+      // Reset reminder to pending status and reschedule for immediate processing.
+      // Clear the failure reason; don't reset retry count - keep it to track
+      // total attempts.
+      await prisma.scheduledNotification.update({
+        where: { id: reminderId },
+        data: {
+          status: "PENDING",
+          scheduledFor: new Date(), // Schedule for immediate processing
+          failureReason: null,
+        },
+      });
 
       console.log(
         `✅ Reminder ${reminderId} reset to PENDING for retry (total attempts: ${reminder.retryCount})`,

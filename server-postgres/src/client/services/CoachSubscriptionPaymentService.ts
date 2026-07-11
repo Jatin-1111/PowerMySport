@@ -1,8 +1,10 @@
-import {
-  CoachSubscriptionPaymentDocument,
-  CoachSubscriptionPaymentTransaction,
-} from "../models/CoachSubscriptionPayment";
+import type { CoachSubscriptionPaymentTransaction } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { subscribeToCoachPackage } from "./CoachSubscriptionService";
+
+// Legacy alias — the Mongoose document type is replaced by the Prisma row type.
+type CoachSubscriptionPaymentDocument = CoachSubscriptionPaymentTransaction;
 
 type PaymentState = "PENDING" | "COMPLETED" | "FAILED";
 
@@ -82,23 +84,28 @@ const readPhonePeOrderIdFromPayload = (
   );
 };
 
+/**
+ * Activate the coach subscription tied to a completed payment transaction.
+ * Returns the id of the linked subscription (idempotent — if the transaction
+ * is already linked it returns the existing id without re-subscribing).
+ */
 const applySubscriptionActivation = async (
   transaction: CoachSubscriptionPaymentDocument,
-): Promise<void> => {
+): Promise<string> => {
   if (transaction.linkedSubscriptionId) {
-    return;
+    return transaction.linkedSubscriptionId;
   }
 
   const subscription = await subscribeToCoachPackage({
-    userId: transaction.userId.toString(),
+    userId: transaction.userId,
     ...(transaction.dependentId
-      ? { dependentId: transaction.dependentId.toString() }
+      ? { dependentId: transaction.dependentId }
       : {}),
-    coachId: transaction.coachId.toString(),
-    packageId: transaction.packageId.toString(),
+    coachId: transaction.coachId,
+    packageId: transaction.packageId,
   });
 
-  transaction.linkedSubscriptionId = subscription._id;
+  return subscription.id;
 };
 
 export const reconcileCoachSubscriptionPaymentByIdentifiers = async (params: {
@@ -121,31 +128,36 @@ export const reconcileCoachSubscriptionPaymentByIdentifiers = async (params: {
     return null;
   }
 
-  const query = merchantOrderId ? { merchantOrderId } : { phonepeOrderId };
-  const transaction = await CoachSubscriptionPaymentTransaction.findOne(query);
+  const where = merchantOrderId ? { merchantOrderId } : { phonepeOrderId };
+  const transaction =
+    await prisma.coachSubscriptionPaymentTransaction.findFirst({ where });
   if (!transaction) {
     return null;
   }
 
+  const data: Prisma.CoachSubscriptionPaymentTransactionUpdateInput = {};
+
   if (params.callbackPayload) {
-    transaction.callbackPayload = params.callbackPayload;
+    data.callbackPayload = params.callbackPayload as Prisma.InputJsonValue;
   }
 
   const state = normalizeState(params.state);
-  transaction.state = state;
+  data.state = state;
 
   if (state === "COMPLETED") {
-    transaction.status = "COMPLETED";
+    data.status = "COMPLETED";
 
     if (params.allowActivation) {
-      await applySubscriptionActivation(transaction);
+      data.linkedSubscriptionId = await applySubscriptionActivation(transaction);
     }
   } else if (state === "FAILED") {
-    transaction.status = "FAILED";
+    data.status = "FAILED";
   }
 
-  await transaction.save();
-  return transaction;
+  return prisma.coachSubscriptionPaymentTransaction.update({
+    where: { id: transaction.id },
+    data,
+  });
 };
 
 export const reconcileCoachSubscriptionPaymentFromWebhookPayload = async (
@@ -181,3 +193,5 @@ export const reconcileCoachSubscriptionPaymentFromWebhookPayload = async (
 
   return reconcileCoachSubscriptionPaymentByIdentifiers(reconcileParams);
 };
+
+export type { CoachSubscriptionPaymentDocument };

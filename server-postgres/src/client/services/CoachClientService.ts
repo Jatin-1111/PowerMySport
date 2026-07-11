@@ -1,12 +1,9 @@
-import mongoose from "mongoose";
-import { Booking } from "../models/Booking";
-import { Coach } from "../models/Coach";
-import { User } from "../models/User";
-import {
-  CoachClientNote,
-  NoteType,
-  CoachClientNoteDocument,
-} from "../models/CoachClientNote";
+import type { CoachClientNote, NoteType } from "@prisma/client";
+import prisma from "../../lib/prisma";
+
+// Legacy alias — the Mongoose document type is replaced by the Prisma row type.
+type CoachClientNoteDocument = CoachClientNote;
+export type { NoteType };
 
 export interface ClientSummary {
   clientId: string;
@@ -29,76 +26,98 @@ export interface ClientDetails extends ClientSummary {
 
 const ACTIVE_THRESHOLD_DAYS = 60;
 
+const PENDING_STATUSES = ["PENDING_CONFIRMATION", "CONFIRMED", "IN_PROGRESS"];
+
 export const getCoachClients = async (
   coachUserId: string,
 ): Promise<ClientSummary[]> => {
-  const coach = await Coach.findOne({ userId: coachUserId }).select("_id");
+  const coach = await prisma.coach.findFirst({
+    where: { userId: coachUserId },
+    select: { id: true },
+  });
   if (!coach) throw new Error("Coach profile not found");
 
-  // Aggregate unique clients with session counts using MongoDB aggregation
-  const clientAgg = await Booking.aggregate([
-    {
-      $match: {
-        coachId: coach._id,
-        status: { $nin: ["CANCELLED"] },
-      },
+  // The old MongoDB $group aggregation is done in code: fetch the (small)
+  // per-coach booking set and fold it into per-client session summaries.
+  const bookings = await prisma.booking.findMany({
+    where: {
+      coachId: coach.id,
+      status: { not: "CANCELLED" },
     },
-    {
-      $group: {
-        _id: "$userId",
-        totalSessions: { $sum: 1 },
-        completedSessions: {
-          $sum: { $cond: [{ $eq: ["$status", "COMPLETED"] }, 1, 0] },
-        },
-        pendingSessions: {
-          $sum: {
-            $cond: [
-              {
-                $in: [
-                  "$status",
-                  ["PENDING_CONFIRMATION", "CONFIRMED", "IN_PROGRESS"],
-                ],
-              },
-              1,
-              0,
-            ],
-          },
-        },
-        sports: { $addToSet: "$sport" },
-        firstSessionDate: { $min: "$date" },
-        lastSessionDate: { $max: "$date" },
-      },
-    },
-    { $sort: { lastSessionDate: -1 } },
-  ]);
+    select: { userId: true, status: true, sport: true, date: true },
+  });
 
-  if (clientAgg.length === 0) return [];
+  if (bookings.length === 0) return [];
+
+  type Agg = {
+    _id: string;
+    totalSessions: number;
+    completedSessions: number;
+    pendingSessions: number;
+    sports: Set<string>;
+    firstSessionDate: Date | null;
+    lastSessionDate: Date | null;
+  };
+
+  const aggMap = new Map<string, Agg>();
+  for (const b of bookings) {
+    let agg = aggMap.get(b.userId);
+    if (!agg) {
+      agg = {
+        _id: b.userId,
+        totalSessions: 0,
+        completedSessions: 0,
+        pendingSessions: 0,
+        sports: new Set<string>(),
+        firstSessionDate: null,
+        lastSessionDate: null,
+      };
+      aggMap.set(b.userId, agg);
+    }
+    agg.totalSessions += 1;
+    if (b.status === "COMPLETED") agg.completedSessions += 1;
+    if (PENDING_STATUSES.includes(b.status)) agg.pendingSessions += 1;
+    if (b.sport) agg.sports.add(b.sport);
+    if (!agg.firstSessionDate || b.date < agg.firstSessionDate) {
+      agg.firstSessionDate = b.date;
+    }
+    if (!agg.lastSessionDate || b.date > agg.lastSessionDate) {
+      agg.lastSessionDate = b.date;
+    }
+  }
+
+  const clientAgg = Array.from(aggMap.values()).sort((a, b) => {
+    const at = a.lastSessionDate ? a.lastSessionDate.getTime() : 0;
+    const bt = b.lastSessionDate ? b.lastSessionDate.getTime() : 0;
+    return bt - at;
+  });
 
   const clientIds = clientAgg.map((c) => c._id);
-  const users = await User.find({ _id: { $in: clientIds } })
-    .select("_id name email photoUrl")
-    .lean();
+  const users = await prisma.user.findMany({
+    where: { id: { in: clientIds } },
+    select: { id: true, name: true, email: true, photoUrl: true },
+  });
 
-  const userMap = new Map(users.map((u: any) => [u._id.toString(), u]));
+  const userMap = new Map(users.map((u) => [u.id, u]));
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - ACTIVE_THRESHOLD_DAYS);
 
   return clientAgg
     .map((agg) => {
-      const user = userMap.get(agg._id.toString()) as any;
+      const user = userMap.get(agg._id);
       if (!user) return null;
       const lastDate = agg.lastSessionDate
         ? new Date(agg.lastSessionDate)
         : null;
       return {
-        clientId: agg._id.toString(),
+        clientId: agg._id,
         name: user.name ?? "Unknown",
         email: user.email ?? "",
-        photoUrl: user.photoUrl,
-        sports: agg.sports as string[],
-        totalSessions: agg.totalSessions as number,
-        completedSessions: agg.completedSessions as number,
-        pendingSessions: agg.pendingSessions as number,
+        photoUrl: user.photoUrl ?? undefined,
+        sports: Array.from(agg.sports),
+        totalSessions: agg.totalSessions,
+        completedSessions: agg.completedSessions,
+        pendingSessions: agg.pendingSessions,
         firstSessionDate: agg.firstSessionDate
           ? new Date(agg.firstSessionDate).toISOString()
           : null,
@@ -113,42 +132,52 @@ export const getClientDetails = async (
   coachUserId: string,
   clientUserId: string,
 ): Promise<ClientDetails> => {
-  const coach = await Coach.findOne({ userId: coachUserId }).select("_id");
+  const coach = await prisma.coach.findFirst({
+    where: { userId: coachUserId },
+    select: { id: true },
+  });
   if (!coach) throw new Error("Coach profile not found");
 
-  if (!mongoose.Types.ObjectId.isValid(clientUserId)) {
+  // TODO(prisma): the old mongoose.Types.ObjectId.isValid() guard is gone —
+  // Postgres ids are cuids. Keep a truthiness guard to preserve the error path.
+  if (!clientUserId) {
     throw new Error("Invalid client ID");
   }
 
   const [user, bookings, notes] = await Promise.all([
-    User.findById(clientUserId).select("_id name email photoUrl").lean(),
-    Booking.find({
-      coachId: coach._id,
-      userId: new mongoose.Types.ObjectId(clientUserId),
-      status: { $nin: ["CANCELLED"] },
-    })
-      .sort({ date: -1 })
-      .limit(50)
-      .lean(),
-    CoachClientNote.find({
-      coachId: coach._id,
-      clientId: new mongoose.Types.ObjectId(clientUserId),
-    })
-      .sort({ createdAt: -1 })
-      .lean(),
+    prisma.user.findUnique({
+      where: { id: clientUserId },
+      select: { id: true, name: true, email: true, photoUrl: true },
+    }),
+    prisma.booking.findMany({
+      where: {
+        coachId: coach.id,
+        userId: clientUserId,
+        status: { not: "CANCELLED" },
+      },
+      orderBy: { date: "desc" },
+      take: 50,
+    }),
+    prisma.coachClientNote.findMany({
+      where: {
+        coachId: coach.id,
+        clientId: clientUserId,
+      },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   if (!user) throw new Error("Client not found");
 
   const totalSessions = bookings.length;
   const completedSessions = bookings.filter(
-    (b: any) => b.status === "COMPLETED",
+    (b) => b.status === "COMPLETED",
   ).length;
-  const pendingSessions = bookings.filter((b: any) =>
-    ["PENDING_CONFIRMATION", "CONFIRMED", "IN_PROGRESS"].includes(b.status),
+  const pendingSessions = bookings.filter((b) =>
+    PENDING_STATUSES.includes(b.status),
   ).length;
   const dates = bookings
-    .map((b: any) => new Date(b.date).getTime())
+    .map((b) => new Date(b.date).getTime())
     .filter(Boolean);
   const firstSessionDate = dates.length
     ? new Date(Math.min(...dates)).toISOString()
@@ -156,17 +185,15 @@ export const getClientDetails = async (
   const lastSessionDate = dates.length
     ? new Date(Math.max(...dates)).toISOString()
     : null;
-  const sports = [...new Set(bookings.map((b: any) => b.sport as string))];
+  const sports = [...new Set(bookings.map((b) => b.sport as string))];
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - ACTIVE_THRESHOLD_DAYS);
 
-  const userAny = user as any;
-
   return {
     clientId: clientUserId,
-    name: userAny.name ?? "Unknown",
-    email: userAny.email ?? "",
-    photoUrl: userAny.photoUrl,
+    name: user.name ?? "Unknown",
+    email: user.email ?? "",
+    photoUrl: user.photoUrl ?? undefined,
     sports,
     totalSessions,
     completedSessions,
@@ -189,24 +216,28 @@ export const addClientNote = async (
     bookingId?: string;
   },
 ): Promise<CoachClientNoteDocument> => {
-  const coach = await Coach.findOne({ userId: coachUserId }).select("_id");
+  const coach = await prisma.coach.findFirst({
+    where: { userId: coachUserId },
+    select: { id: true },
+  });
   if (!coach) throw new Error("Coach profile not found");
 
-  if (!mongoose.Types.ObjectId.isValid(clientUserId)) {
+  // TODO(prisma): ObjectId validity check removed (cuid ids); guard truthiness.
+  if (!clientUserId) {
     throw new Error("Invalid client ID");
   }
 
-  const created = await CoachClientNote.create({
-    coachId: coach._id,
-    clientId: new mongoose.Types.ObjectId(clientUserId),
-    note: payload.note.trim(),
-    noteType: payload.noteType ?? "GENERAL",
-    ...(payload.sessionDate
-      ? { sessionDate: new Date(payload.sessionDate) }
-      : {}),
-    ...(payload.bookingId && mongoose.Types.ObjectId.isValid(payload.bookingId)
-      ? { bookingId: new mongoose.Types.ObjectId(payload.bookingId) }
-      : {}),
+  const created = await prisma.coachClientNote.create({
+    data: {
+      coachId: coach.id,
+      clientId: clientUserId,
+      note: payload.note.trim(),
+      noteType: payload.noteType ?? "GENERAL",
+      ...(payload.sessionDate
+        ? { sessionDate: new Date(payload.sessionDate) }
+        : {}),
+      ...(payload.bookingId ? { bookingId: payload.bookingId } : {}),
+    },
   });
 
   return created;
@@ -217,19 +248,23 @@ export const deleteClientNote = async (
   clientUserId: string,
   noteId: string,
 ): Promise<void> => {
-  const coach = await Coach.findOne({ userId: coachUserId }).select("_id");
+  const coach = await prisma.coach.findFirst({
+    where: { userId: coachUserId },
+    select: { id: true },
+  });
   if (!coach) throw new Error("Coach profile not found");
 
-  if (!mongoose.Types.ObjectId.isValid(noteId))
-    throw new Error("Invalid note ID");
+  if (!noteId) throw new Error("Invalid note ID");
 
-  const result = await CoachClientNote.findOneAndDelete({
-    _id: new mongoose.Types.ObjectId(noteId),
-    coachId: coach._id,
-    clientId: new mongoose.Types.ObjectId(clientUserId),
+  const result = await prisma.coachClientNote.deleteMany({
+    where: {
+      id: noteId,
+      coachId: coach.id,
+      clientId: clientUserId,
+    },
   });
 
-  if (!result) throw new Error("Note not found or not authorized");
+  if (result.count === 0) throw new Error("Note not found or not authorized");
 };
 
 export type { CoachClientNoteDocument };

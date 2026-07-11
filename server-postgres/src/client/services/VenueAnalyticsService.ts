@@ -1,6 +1,29 @@
-import mongoose from "mongoose";
-import { Booking } from "../models/Booking";
-import { Venue } from "../models/Venue";
+import type { Prisma } from "@prisma/client";
+import prisma from "../../lib/prisma";
+
+// NOTE(prisma): the original Mongo service used `.find().lean()` and aggregated
+// in JS — no `$aggregate` pipelines — so this is a mechanical query swap. The old
+// embedded `payments[]` sub-array is now the `BookingPaymentLeg` child table
+// (hydrated via `include: { payments: true }`), and `.populate("userId", ...)` is
+// replaced by the user-attach helper below.
+
+/**
+ * Replace each booking's `userId` (a String FK) with the populated user object,
+ * mirroring the old Mongoose `.populate("userId", "name photoUrl")`.
+ * NOTE(prisma): the populated object exposes `id` instead of Mongo's `_id`.
+ */
+const attachUserToBookings = async (bookings: any[]): Promise<any[]> => {
+  const ids = [
+    ...new Set(bookings.map((b) => b.userId).filter(Boolean) as string[]),
+  ];
+  if (ids.length === 0) return bookings;
+  const users = await prisma.user.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true, photoUrl: true },
+  });
+  const byId = new Map(users.map((u) => [u.id, u]));
+  return bookings.map((b) => ({ ...b, userId: byId.get(b.userId) ?? b.userId }));
+};
 
 // ── Earnings ──────────────────────────────────────────────────────────────────
 
@@ -18,9 +41,10 @@ export const getVenueEarnings = async (
   ownerUserId: string,
 ): Promise<VenueEarningsData> => {
   // Find all venues owned by this user
-  const venues = await Venue.find({ ownerId: ownerUserId })
-    .select("_id")
-    .lean();
+  const venues = await prisma.venue.findMany({
+    where: { ownerId: ownerUserId },
+    select: { id: true },
+  });
   if (venues.length === 0) {
     // Return empty data structure
     return {
@@ -33,7 +57,7 @@ export const getVenueEarnings = async (
       recentBookings: [],
     };
   }
-  const venueIds = venues.map((v: any) => v._id);
+  const venueIds = venues.map((v: any) => v.id);
 
   const now = new Date();
   const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -48,19 +72,27 @@ export const getVenueEarnings = async (
   );
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-  const [completedBookings, pendingBookings, recentBookings] =
+  const [completedBookings, pendingBookings, recentBookingsRaw] =
     await Promise.all([
-      Booking.find({ venueId: { $in: venueIds }, status: "COMPLETED" }).lean(),
-      Booking.find({
-        venueId: { $in: venueIds },
-        status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
-      }).lean(),
-      Booking.find({ venueId: { $in: venueIds }, status: "COMPLETED" })
-        .sort({ date: -1 })
-        .limit(10)
-        .populate("userId", "name photoUrl")
-        .lean(),
+      prisma.booking.findMany({
+        where: { venueId: { in: venueIds }, status: "COMPLETED" },
+        include: { payments: true },
+      }),
+      prisma.booking.findMany({
+        where: {
+          venueId: { in: venueIds },
+          status: { in: ["CONFIRMED", "IN_PROGRESS"] },
+        },
+        include: { payments: true },
+      }),
+      prisma.booking.findMany({
+        where: { venueId: { in: venueIds }, status: "COMPLETED" },
+        orderBy: { date: "desc" },
+        take: 10,
+        include: { payments: true },
+      }),
     ]);
+  const recentBookings = await attachUserToBookings(recentBookingsRaw);
 
   const getVenueAmount = (b: any): number => {
     if (Array.isArray(b.payments)) {
@@ -178,9 +210,10 @@ export interface VenueAnalyticsData {
 export const getVenueAnalytics = async (
   ownerUserId: string,
 ): Promise<VenueAnalyticsData> => {
-  const venues = await Venue.find({ ownerId: ownerUserId })
-    .select("_id rating reviewCount")
-    .lean();
+  const venues = await prisma.venue.findMany({
+    where: { ownerId: ownerUserId },
+    select: { id: true, rating: true, reviewCount: true },
+  });
   if (venues.length === 0) {
     return {
       overview: {
@@ -199,7 +232,7 @@ export const getVenueAnalytics = async (
       customerRetention: { newCustomers: 0, returningCustomers: 0 },
     };
   }
-  const venueIds = venues.map((v: any) => v._id);
+  const venueIds = venues.map((v: any) => v.id);
   const avgRating =
     venues.reduce((s: number, v: any) => s + (v.rating ?? 0), 0) /
     venues.length;
@@ -211,20 +244,26 @@ export const getVenueAnalytics = async (
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+  const baseWhere: Prisma.BookingWhereInput = {
+    venueId: { in: venueIds },
+    status: { not: "CANCELLED" },
+  };
+
   const [allBookings, recentBookings] = await Promise.all([
-    Booking.find({
-      venueId: { $in: venueIds },
-      status: { $nin: ["CANCELLED"] },
-    })
-      .select("userId sport date startTime status")
-      .lean(),
-    Booking.find({
-      venueId: { $in: venueIds },
-      status: { $nin: ["CANCELLED"] },
-      date: { $gte: thirtyDaysAgo },
-    })
-      .select("date status")
-      .lean(),
+    prisma.booking.findMany({
+      where: baseWhere,
+      select: {
+        userId: true,
+        sport: true,
+        date: true,
+        startTime: true,
+        status: true,
+      },
+    }),
+    prisma.booking.findMany({
+      where: { ...baseWhere, date: { gte: thirtyDaysAgo } },
+      select: { date: true, status: true },
+    }),
   ]);
 
   const completed = allBookings.filter((b: any) => b.status === "COMPLETED");

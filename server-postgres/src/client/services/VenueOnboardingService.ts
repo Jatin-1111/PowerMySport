@@ -1,13 +1,15 @@
-import { User } from "../models/User";
-import { Venue, VenueDocument } from "../models/Venue";
+import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
+import type { VenueApprovalStatus, VenueDocumentType } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import {
   IOnboardingUploadUrl,
   IPendingVenue,
-  IVenueDocument,
   IVenueOnboardingStep1,
   IVenueOnboardingStep2,
   IVenueOnboardingStep3,
   IVenueOnboardingStep4,
+  OpeningHours,
 } from "../../types/index";
 import { sendEmail } from "../../utils/email";
 import { s3Service } from "../../shared/services/S3Service";
@@ -22,6 +24,55 @@ import { NotificationService } from "./NotificationService";
  * 3. Venue images (5-20 images with cover photo)
  * 4. Required documents (ownership, registration, tax, insurance, certificates)
  */
+
+// Children hydrated alongside a venue (previously embedded sub-documents /
+// object-maps). Reads that need the children pass this to `include`.
+const venueInclude = {
+  sportPricing: true,
+  sportImages: true,
+  openingHours: true,
+  documents: true,
+  payoutMethods: true,
+} as const;
+
+// The Mongoose `VenueDocument` instance type is gone. Alias it to the Prisma
+// Venue row hydrated with its normalized children so the exported signatures
+// stay identical for callers.
+type VenueDocument = Prisma.VenueGetPayload<{ include: typeof venueInclude }>;
+
+// bcrypt work factor — matches AuthService. Was a Mongoose pre-save hook on the
+// User model; relocated here per PORTING_GUIDE §3 so the tempPassword is hashed
+// explicitly before `prisma.user.create`.
+const BCRYPT_ROUNDS = 12;
+const hashPassword = async (plain: string): Promise<string> =>
+  bcrypt.hash(plain, BCRYPT_ROUNDS);
+
+// Ordered week; VenueOpeningHour is one row per day (slots kept as Json).
+const WEEK_DAYS = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+] as const;
+
+// Convert an OpeningHours object-map into nested `create` rows for the
+// VenueOpeningHour child table (one row per day, slots as a Json array).
+const buildOpeningHourRows = (
+  hours: OpeningHours,
+): Prisma.VenueOpeningHourCreateWithoutVenueInput[] =>
+  WEEK_DAYS.map((day) => {
+    const d = hours[day];
+    return {
+      day,
+      isOpen: d?.isOpen ?? true,
+      openTime: d?.openTime ?? "09:00",
+      closeTime: d?.closeTime ?? "21:00",
+      slots: (d?.slots ?? []) as Prisma.InputJsonValue,
+    };
+  });
 
 // File upload constraints
 export const UPLOAD_CONSTRAINTS = {
@@ -45,9 +96,11 @@ export const startVenueOnboarding = async (
   payload: IVenueOnboardingStep1,
 ): Promise<VenueDocument> => {
   // Check if venue lister already submitted with this email
-  const existingVenue = await Venue.findOne({
-    ownerEmail: payload.ownerEmail,
-    approvalStatus: { $in: ["PENDING", "REVIEW"] },
+  const existingVenue = await prisma.venue.findFirst({
+    where: {
+      ownerEmail: payload.ownerEmail,
+      approvalStatus: { in: ["PENDING", "REVIEW"] },
+    },
   });
 
   if (existingVenue) {
@@ -58,72 +111,38 @@ export const startVenueOnboarding = async (
 
   // Create minimal venue record with only contact info
   // Venue details will be filled in Step 2
-  const venue = new Venue({
-    ownerName: payload.ownerName,
-    ownerEmail: payload.ownerEmail,
-    ownerPhone: payload.ownerPhone,
-    // Placeholder values (will be updated in Step 2)
-    name: "Pending Name",
-    location: {
-      type: "Point",
-      coordinates: [0, 0],
-    },
-    approvalStatus: "PENDING",
-    documents: [],
-    images: [],
-    sports: [],
-    pricePerHour: 0,
-    amenities: [],
-    address: "",
-    openingHours: {
-      monday: {
-        isOpen: true,
-        openTime: "09:00",
-        closeTime: "21:00",
-        slots: [{ startTime: "09:00", endTime: "21:00" }],
-      },
-      tuesday: {
-        isOpen: true,
-        openTime: "09:00",
-        closeTime: "21:00",
-        slots: [{ startTime: "09:00", endTime: "21:00" }],
-      },
-      wednesday: {
-        isOpen: true,
-        openTime: "09:00",
-        closeTime: "21:00",
-        slots: [{ startTime: "09:00", endTime: "21:00" }],
-      },
-      thursday: {
-        isOpen: true,
-        openTime: "09:00",
-        closeTime: "21:00",
-        slots: [{ startTime: "09:00", endTime: "21:00" }],
-      },
-      friday: {
-        isOpen: true,
-        openTime: "09:00",
-        closeTime: "21:00",
-        slots: [{ startTime: "09:00", endTime: "21:00" }],
-      },
-      saturday: {
-        isOpen: true,
-        openTime: "09:00",
-        closeTime: "21:00",
-        slots: [{ startTime: "09:00", endTime: "21:00" }],
-      },
-      sunday: {
-        isOpen: true,
-        openTime: "09:00",
-        closeTime: "21:00",
-        slots: [{ startTime: "09:00", endTime: "21:00" }],
+  // GeoJSON location.coordinates [0, 0] -> lng/lat columns.
+  const venue = await prisma.venue.create({
+    data: {
+      ownerName: payload.ownerName,
+      ownerEmail: payload.ownerEmail,
+      ownerPhone: payload.ownerPhone,
+      // Placeholder values (will be updated in Step 2)
+      name: "Pending Name",
+      lng: 0,
+      lat: 0,
+      approvalStatus: "PENDING",
+      sports: [],
+      pricePerHour: 0,
+      amenities: [],
+      address: "",
+      description: "",
+      allowExternalCoaches: true,
+      openingHours: {
+        create: WEEK_DAYS.map((day) => ({
+          day,
+          isOpen: true,
+          openTime: "09:00",
+          closeTime: "21:00",
+          slots: [
+            { startTime: "09:00", endTime: "21:00" },
+          ] as Prisma.InputJsonValue,
+        })),
       },
     },
-    description: "",
-    allowExternalCoaches: true,
+    include: venueInclude,
   });
 
-  await venue.save();
   return venue;
 };
 
@@ -135,24 +154,41 @@ export const startVenueOnboarding = async (
 export const updateVenueDetails = async (
   payload: IVenueOnboardingStep2,
 ): Promise<VenueDocument> => {
-  const venue = await Venue.findById(payload.venueId);
-  if (!venue) {
+  const existing = await prisma.venue.findUnique({
+    where: { id: payload.venueId },
+  });
+  if (!existing) {
     throw new Error("Venue not found");
   }
 
-  // Update venue details
-  venue.name = payload.name;
-  venue.location = payload.location;
-  venue.sports = payload.sports;
-  venue.pricePerHour = payload.pricePerHour;
-  venue.sportPricing = payload.sportPricing || {};
-  venue.amenities = payload.amenities;
-  venue.address = payload.address;
-  venue.openingHours = payload.openingHours;
-  venue.description = payload.description;
-  venue.allowExternalCoaches = payload.allowExternalCoaches;
+  // Update venue details. GeoJSON location.coordinates -> lng/lat; sportPricing
+  // object-map and openingHours object-map become child tables (replace in full).
+  const venue = await prisma.venue.update({
+    where: { id: payload.venueId },
+    data: {
+      name: payload.name,
+      lng: payload.location?.coordinates?.[0] ?? null,
+      lat: payload.location?.coordinates?.[1] ?? null,
+      sports: payload.sports,
+      pricePerHour: payload.pricePerHour,
+      amenities: payload.amenities,
+      address: payload.address,
+      description: payload.description,
+      allowExternalCoaches: payload.allowExternalCoaches,
+      sportPricing: {
+        deleteMany: {},
+        create: Object.entries(payload.sportPricing || {}).map(
+          ([sport, price]) => ({ sport, price }),
+        ),
+      },
+      openingHours: {
+        deleteMany: {},
+        create: buildOpeningHourRows(payload.openingHours),
+      },
+    },
+    include: venueInclude,
+  });
 
-  await venue.save();
   return venue;
 };
 
@@ -165,7 +201,7 @@ export const getImageUploadPresignedUrls = async (
   sports: string[], // Array of selected sports
 ): Promise<IOnboardingUploadUrl[]> => {
   // Verify venue exists
-  const venue = await Venue.findById(venueId);
+  const venue = await prisma.venue.findUnique({ where: { id: venueId } });
   if (!venue) {
     throw new Error("Venue not found");
   }
@@ -246,23 +282,36 @@ export const confirmVenueImages = async (
       }
     }
 
-    // Update venue with categorized images
-    const venue = await Venue.findByIdAndUpdate(
-      payload.venueId,
-      {
-        generalImages: payload.generalImages,
-        generalImageKeys: payload.generalImageKeys,
-        sportImages: payload.sportImages,
-        sportImageKeys: payload.sportImageKeys,
-        coverPhotoUrl: payload.coverPhotoUrl,
-        coverPhotoKey: payload.coverPhotoKey,
-      },
-      { new: true },
-    );
-
-    if (!venue) {
+    const existing = await prisma.venue.findUnique({
+      where: { id: payload.venueId },
+    });
+    if (!existing) {
       throw new Error("Venue not found");
     }
+
+    // Update venue with categorized images. sportImages/sportImageKeys are now
+    // the VenueSportImage child table (one row per sport); generalImages/
+    // generalImageKeys remain scalar String[] columns on the venue.
+    const venue = await prisma.venue.update({
+      where: { id: payload.venueId },
+      data: {
+        generalImages: payload.generalImages,
+        generalImageKeys: payload.generalImageKeys ?? [],
+        coverPhotoUrl: payload.coverPhotoUrl,
+        coverPhotoKey: payload.coverPhotoKey,
+        sportImages: {
+          deleteMany: {},
+          create: Object.entries(payload.sportImages).map(
+            ([sport, images]) => ({
+              sport,
+              images,
+              imageKeys: payload.sportImageKeys?.[sport] ?? [],
+            }),
+          ),
+        },
+      },
+      include: venueInclude,
+    });
 
     return venue;
   }
@@ -280,20 +329,23 @@ export const confirmVenueImages = async (
       );
     }
 
-    const venue = await Venue.findByIdAndUpdate(
-      payload.venueId,
-      {
+    const existing = await prisma.venue.findUnique({
+      where: { id: payload.venueId },
+    });
+    if (!existing) {
+      throw new Error("Venue not found");
+    }
+
+    const venue = await prisma.venue.update({
+      where: { id: payload.venueId },
+      data: {
         images: payload.images,
         imageKeys: payload.imageKeys,
         coverPhotoUrl: payload.coverPhotoUrl,
         coverPhotoKey: payload.coverPhotoKey,
       },
-      { new: true },
-    );
-
-    if (!venue) {
-      throw new Error("Venue not found");
-    }
+      include: venueInclude,
+    });
 
     return venue;
   }
@@ -309,7 +361,7 @@ export const getDocumentUploadPresignedUrls = async (
   documents: Array<{ type: string; fileName: string; contentType: string }>,
 ): Promise<IOnboardingUploadUrl[]> => {
   // Verify venue exists
-  const venue = await Venue.findById(venueId);
+  const venue = await prisma.venue.findUnique({ where: { id: venueId } });
   if (!venue) {
     throw new Error("Venue not found");
   }
@@ -369,39 +421,39 @@ export const finalizeVenueOnboarding = async (
     throw new Error("At least one document is required");
   }
 
-  // Transform documents
-  const documentsToSave: IVenueDocument[] = payload.documents.map(
-    (doc: (typeof payload.documents)[number]) => ({
-      type: doc.type as
-        | "OWNERSHIP_PROOF"
-        | "BUSINESS_REGISTRATION"
-        | "TAX_DOCUMENT"
-        | "INSURANCE"
-        | "CERTIFICATE",
+  const existing = await prisma.venue.findUnique({
+    where: { id: payload.venueId },
+  });
+  if (!existing) {
+    throw new Error("Venue not found");
+  }
+
+  // Transform documents into VenueDocument child rows (was an embedded array).
+  const documentsToCreate: Prisma.VenueDocumentCreateWithoutVenueInput[] =
+    payload.documents.map((doc: (typeof payload.documents)[number]) => ({
+      type: doc.type as VenueDocumentType,
       url: doc.url,
       ...(doc.s3Key !== undefined && { s3Key: doc.s3Key }), // Only include s3Key if defined
       fileName: doc.fileName,
       uploadedAt: new Date(),
-    }),
-  );
+    }));
 
   // Update venue with images, cover photo, and documents
-  const venue = await Venue.findByIdAndUpdate(
-    payload.venueId,
-    {
+  const venue = await prisma.venue.update({
+    where: { id: payload.venueId },
+    data: {
       images: payload.images, // URLs (will be regenerated on fetch)
       imageKeys: payload.imageKeys, // S3 keys for regeneration
       coverPhotoUrl: payload.coverPhotoUrl, // URL (will be regenerated on fetch)
       coverPhotoKey: payload.coverPhotoKey, // S3 key for regeneration
-      documents: documentsToSave,
+      documents: {
+        deleteMany: {},
+        create: documentsToCreate,
+      },
       approvalStatus: "PENDING", // Ready for admin review
     },
-    { new: true },
-  );
-
-  if (!venue) {
-    throw new Error("Venue not found");
-  }
+    include: venueInclude,
+  });
 
   return venue;
 };
@@ -420,32 +472,47 @@ export const getPendingVenues = async (
   page: number;
   totalPages: number;
 }> => {
-  const query: any = { approvalStatus: { $ne: "APPROVED" } };
-
-  if (approvalStatus) {
-    query.approvalStatus = approvalStatus;
-  }
+  const where: Prisma.VenueWhereInput = approvalStatus
+    ? { approvalStatus }
+    : { approvalStatus: { not: "APPROVED" } };
 
   const skip = (page - 1) * limit;
-  const total = await Venue.countDocuments(query);
+  const total = await prisma.venue.count({ where });
 
-  const venues = await Venue.find(query)
-    .populate("ownerId", "email phone")
-    .skip(skip)
-    .limit(limit)
-    .sort({ createdAt: -1 });
+  const venues = await prisma.venue.findMany({
+    where,
+    skip,
+    take: limit,
+    orderBy: { createdAt: "desc" },
+  });
+
+  // Resolve owner email/phone in a second query (was `.populate("ownerId", ...)`;
+  // ownerId is a plain String FK with no Prisma relation defined).
+  const ownerIds = [
+    ...new Set(venues.map((v) => v.ownerId).filter(Boolean) as string[]),
+  ];
+  const owners = ownerIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: ownerIds } },
+        select: { id: true, email: true, phone: true },
+      })
+    : [];
+  const ownerById = new Map(owners.map((u) => [u.id, u]));
 
   return {
-    venues: venues.map((v) => ({
-      id: v._id?.toString() || "",
-      name: v.name,
-      ownerEmail: v.ownerEmail || (v.ownerId as any)?.email || "",
-      ownerPhone: v.ownerPhone || (v.ownerId as any)?.phone || "",
-      sports: v.sports,
-      approvalStatus: v.approvalStatus as "PENDING" | "REVIEW" | "REJECTED",
-      submittedAt: v.createdAt,
-      lastReviewedAt: v.updatedAt,
-    })),
+    venues: venues.map((v) => {
+      const owner = v.ownerId ? ownerById.get(v.ownerId) : undefined;
+      return {
+        id: v.id || "",
+        name: v.name,
+        ownerEmail: v.ownerEmail || owner?.email || "",
+        ownerPhone: v.ownerPhone || owner?.phone || "",
+        sports: v.sports,
+        approvalStatus: v.approvalStatus as "PENDING" | "REVIEW" | "REJECTED",
+        submittedAt: v.createdAt,
+        lastReviewedAt: v.updatedAt,
+      };
+    }),
     total,
     page,
     totalPages: Math.ceil(total / limit),
@@ -459,7 +526,13 @@ export const getPendingVenues = async (
 export const getVenueOnboardingDetails = async (
   venueId: string,
 ): Promise<VenueDocument | null> => {
-  return Venue.findById(venueId).populate("ownerId", "name email phone");
+  // TODO(prisma): the old `.populate("ownerId", "name email phone")` no longer
+  // runs inline (ownerId is a String FK). Resolve the owner User in the caller
+  // if it needs owner name/email/phone alongside the venue.
+  return prisma.venue.findUnique({
+    where: { id: venueId },
+    include: venueInclude,
+  });
 };
 
 /**
@@ -470,61 +543,55 @@ export const getVenueOnboardingDetails = async (
 export const approveVenue = async (
   venueId: string,
 ): Promise<VenueDocument | null> => {
-  const venue = await Venue.findById(venueId);
+  const existing = await prisma.venue.findUnique({ where: { id: venueId } });
 
-  if (!venue) {
+  if (!existing) {
     throw new Error("Venue not found");
   }
 
   // Check if user already exists for this venue owner
-  let user = await User.findOne({
-    $or: [{ email: venue.ownerEmail }, { phone: venue.ownerPhone }],
+  let user = await prisma.user.findFirst({
+    where: {
+      OR: [{ email: existing.ownerEmail }, { phone: existing.ownerPhone }],
+    },
   });
 
   let tempPassword: string | undefined;
   let isNewUser = false;
 
-  // If user doesn't exist, create a new VENUE_LISTER account
+  // If user doesn't exist, create a new VenueLister account
   if (!user) {
     // Generate temporary password
     tempPassword = Math.random().toString(36).slice(-8) + "!A1";
     isNewUser = true;
 
-    user = new User({
-      name: venue.ownerName,
-      email: venue.ownerEmail,
-      phone: venue.ownerPhone,
-      password: tempPassword, // User model will hash this
-      role: "VenueLister",
-      venueListerProfile: {
-        businessDetails: {
-          name: venue.ownerName,
-          address: venue.address || "",
-        },
-        payoutInfo: {
-          accountNumber: "",
-          ifsc: "",
-          bankName: "",
-        },
-        canAddMoreVenues: false, // Restrict to only the approved venue
+    // TODO(prisma): the Mongo model stored an embedded `venueListerProfile`
+    // (businessDetails / payoutInfo / canAddMoreVenues). The Postgres User has
+    // no column for it — persist that profile in a dedicated table/Json column
+    // if the venue-lister dashboard still needs it. Password is now hashed here
+    // (was a User pre-save hook) per PORTING_GUIDE §3.
+    user = await prisma.user.create({
+      data: {
+        name: existing.ownerName,
+        email: existing.ownerEmail,
+        phone: existing.ownerPhone,
+        password: await hashPassword(tempPassword),
+        role: "VenueLister",
       },
     });
-
-    await user.save();
   }
 
-  // Link venue to user account
-  venue.ownerId = user._id as any;
-  venue.approvalStatus = "APPROVED";
-  // Clear rejection/review fields
-  if (venue.rejectionReason) {
-    venue.rejectionReason = "";
-  }
-  if (venue.reviewNotes) {
-    venue.reviewNotes = "";
-  }
-
-  await venue.save();
+  // Link venue to user account, mark APPROVED, and clear rejection/review fields.
+  const venue = await prisma.venue.update({
+    where: { id: venueId },
+    data: {
+      ownerId: user.id,
+      approvalStatus: "APPROVED",
+      ...(existing.rejectionReason ? { rejectionReason: "" } : {}),
+      ...(existing.reviewNotes ? { reviewNotes: "" } : {}),
+    },
+    include: venueInclude,
+  });
 
   // Send approval email with credentials (if new user)
   try {
@@ -615,7 +682,7 @@ export const approveVenue = async (
         </div>
         <div class="content">
           <p>Hi ${venue.ownerName},</p>
-          
+
           <p>We're thrilled to inform you that your venue <strong>"${venue.name}"</strong> has been approved and is now live on PowerMySport!</p>
 
           ${credentialsSection}
@@ -663,14 +730,14 @@ export const approveVenue = async (
     console.log(`✅ Approval email sent to ${venue.ownerEmail}`);
 
     // Send in-app notification to venue owner
-    if (user?._id) {
+    if (user?.id) {
       NotificationService.send({
-        userId: user._id.toString(),
+        userId: user.id.toString(),
         type: "VENUE_APPROVAL_APPROVED",
         title: "Venue Approved",
         message: `Congratulations! Your venue "${venue.name}" has been approved.`,
         data: {
-          venueId: venue._id.toString(),
+          venueId: venue.id.toString(),
           venueName: venue.name,
           approvedAt: new Date().toISOString(),
           isNewUser,
@@ -696,18 +763,19 @@ export const rejectVenue = async (
   venueId: string,
   reason: string,
 ): Promise<VenueDocument | null> => {
-  const venue = await Venue.findByIdAndUpdate(
-    venueId,
-    {
+  const existing = await prisma.venue.findUnique({ where: { id: venueId } });
+  if (!existing) {
+    throw new Error("Venue not found");
+  }
+
+  const venue = await prisma.venue.update({
+    where: { id: venueId },
+    data: {
       approvalStatus: "REJECTED",
       rejectionReason: reason,
     },
-    { new: true },
-  );
-
-  if (!venue) {
-    throw new Error("Venue not found");
-  }
+    include: venueInclude,
+  });
 
   // Send in-app notification to venue owner (if linked to a user account)
   if (venue.ownerId) {
@@ -717,7 +785,7 @@ export const rejectVenue = async (
       title: "Venue Rejected",
       message: `Your venue "${venue.name}" submission has been rejected.`,
       data: {
-        venueId: venue._id.toString(),
+        venueId: venue.id.toString(),
         venueName: venue.name,
         reason: reason,
         rejectedAt: new Date().toISOString(),
@@ -731,7 +799,10 @@ export const rejectVenue = async (
   try {
     const ownerEmail =
       venue.ownerEmail ||
-      (venue.ownerId ? (await User.findById(venue.ownerId))?.email : undefined);
+      (venue.ownerId
+        ? (await prisma.user.findUnique({ where: { id: venue.ownerId } }))
+            ?.email
+        : undefined);
 
     if (ownerEmail) {
       const rejectionEmailHtml = `
@@ -805,18 +876,19 @@ export const markVenueForReview = async (
   venueId: string,
   notes?: string,
 ): Promise<VenueDocument | null> => {
-  const venue = await Venue.findByIdAndUpdate(
-    venueId,
-    {
+  const existing = await prisma.venue.findUnique({ where: { id: venueId } });
+  if (!existing) {
+    throw new Error("Venue not found");
+  }
+
+  const venue = await prisma.venue.update({
+    where: { id: venueId },
+    data: {
       approvalStatus: "REVIEW",
       reviewNotes: notes,
     },
-    { new: true },
-  );
-
-  if (!venue) {
-    throw new Error("Venue not found");
-  }
+    include: venueInclude,
+  });
 
   // Send in-app notification to venue owner (if linked to a user account)
   if (venue.ownerId) {
@@ -826,7 +898,7 @@ export const markVenueForReview = async (
       title: "Venue Under Review",
       message: `Your venue "${venue.name}" is being reviewed by our team.`,
       data: {
-        venueId: venue._id.toString(),
+        venueId: venue.id.toString(),
         venueName: venue.name,
         notes: notes || "",
         reviewStartedAt: new Date().toISOString(),
@@ -840,7 +912,10 @@ export const markVenueForReview = async (
   try {
     const ownerEmail =
       venue.ownerEmail ||
-      (venue.ownerId ? (await User.findById(venue.ownerId))?.email : undefined);
+      (venue.ownerId
+        ? (await prisma.user.findUnique({ where: { id: venue.ownerId } }))
+            ?.email
+        : undefined);
 
     if (ownerEmail) {
       const reviewEmailHtml = `
@@ -932,7 +1007,10 @@ export const deleteVenueOnboarding = async (
   venueId: string,
   ownerId: string,
 ): Promise<void> => {
-  const venue = await Venue.findById(venueId);
+  const venue = await prisma.venue.findUnique({
+    where: { id: venueId },
+    include: { documents: true },
+  });
 
   if (!venue || !venue.ownerId) {
     throw new Error("Venue not found");
@@ -964,6 +1042,6 @@ export const deleteVenueOnboarding = async (
     await s3Service.deleteFiles(venue.images, "images");
   }
 
-  // Delete venue
-  await Venue.findByIdAndDelete(venueId);
+  // Delete venue (normalized children cascade via onDelete: Cascade)
+  await prisma.venue.delete({ where: { id: venueId } });
 };
