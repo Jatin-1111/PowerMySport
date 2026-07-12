@@ -1,35 +1,19 @@
 import { Request, Response } from "express";
-import { Coach, IPayoutMethod } from "../../client/models/Coach";
-import { Venue } from "../../client/models/Venue";
-import { Expert } from "../../client/models/ExpertProfile";
+import type {
+  CoachPayoutMethod,
+  VenuePayoutMethod,
+  ExpertPayoutMethod,
+} from "@prisma/client";
+import prisma from "../../lib/prisma";
 
-type PayoutMethodRecord = IPayoutMethod & {
-  _id?: unknown;
-};
+type AnyPayoutMethod =
+  | CoachPayoutMethod
+  | VenuePayoutMethod
+  | ExpertPayoutMethod;
 
-const getPayoutMethodId = (method: PayoutMethodRecord): string | undefined => {
-  if (method.id) {
-    return method.id.toString();
-  }
-
-  if (typeof method._id === "string") {
-    return method._id;
-  }
-
-  if (
-    method._id &&
-    typeof method._id === "object" &&
-    "toString" in method._id
-  ) {
-    return method._id.toString();
-  }
-
-  return undefined;
-};
-
-const getPrimaryPayoutMethod = (
-  payoutMethods?: IPayoutMethod[],
-): IPayoutMethod | null => {
+const getPrimaryPayoutMethod = <T extends { isDefault: boolean }>(
+  payoutMethods?: T[],
+): T | null => {
   if (!payoutMethods || payoutMethods.length === 0) {
     return null;
   }
@@ -37,6 +21,44 @@ const getPrimaryPayoutMethod = (
   return (
     payoutMethods.find((method) => method.isDefault) ?? payoutMethods[0] ?? null
   );
+};
+
+type PayoutFieldInput = {
+  accountHolderName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  bankName?: string;
+  upiId?: string;
+};
+
+/**
+ * Builds the type-specific column values for a payout method row. Mirrors the
+ * old behaviour of replacing the whole embedded sub-document: fields that do
+ * not apply to the chosen type are explicitly nulled out.
+ */
+const buildPayoutFields = (
+  type: "BANK_TRANSFER" | "UPI",
+  input: PayoutFieldInput,
+) => {
+  if (type === "BANK_TRANSFER") {
+    return {
+      type,
+      accountHolderName: input.accountHolderName!.trim(),
+      accountNumber: input.accountNumber!.trim(),
+      ifscCode: input.ifscCode!.trim().toUpperCase(),
+      bankName: input.bankName!.trim(),
+      upiId: null,
+    };
+  }
+
+  return {
+    type,
+    upiId: input.upiId!.trim(),
+    accountHolderName: null,
+    accountNumber: null,
+    ifscCode: null,
+    bankName: null,
+  };
 };
 
 // ============================================
@@ -58,9 +80,10 @@ export const getCoachPayoutMethod = async (
       return;
     }
 
-    const coach = await Coach.findOne({ userId })
-      .select("payoutMethods")
-      .lean();
+    const coach = await prisma.coach.findUnique({
+      where: { userId },
+      include: { payoutMethods: { orderBy: { addedAt: "asc" } } },
+    });
     if (!coach) {
       res
         .status(404)
@@ -72,9 +95,7 @@ export const getCoachPayoutMethod = async (
       success: true,
       message: "Payout method retrieved",
       data: {
-        payoutMethod: getPrimaryPayoutMethod(
-          coach.payoutMethods as IPayoutMethod[] | undefined,
-        ),
+        payoutMethod: getPrimaryPayoutMethod(coach.payoutMethods),
       },
     });
   } catch (error) {
@@ -100,9 +121,10 @@ export const getCoachPayoutMethods = async (
       return;
     }
 
-    const coach = await Coach.findOne({ userId })
-      .select("payoutMethods")
-      .lean();
+    const coach = await prisma.coach.findUnique({
+      where: { userId },
+      include: { payoutMethods: { orderBy: { addedAt: "asc" } } },
+    });
     if (!coach) {
       res
         .status(404)
@@ -207,8 +229,10 @@ export const upsertCoachPayoutMethod = async (
       }
     }
 
-    const now = new Date();
-    const coach = await Coach.findOne({ userId });
+    const coach = await prisma.coach.findUnique({
+      where: { userId },
+      include: { payoutMethods: { orderBy: { addedAt: "asc" } } },
+    });
     if (!coach) {
       res
         .status(404)
@@ -216,51 +240,48 @@ export const upsertCoachPayoutMethod = async (
       return;
     }
 
-    const payoutMethods = coach.payoutMethods ?? [];
-
-    const payoutMethodData: IPayoutMethod = {
-      type,
-      addedAt: now,
-      updatedAt: now,
-      isDefault: !coach.payoutMethods || coach.payoutMethods.length === 0, // First method is default
-    };
-
-    if (type === "BANK_TRANSFER") {
-      payoutMethodData.accountHolderName = accountHolderName!.trim();
-      payoutMethodData.accountNumber = accountNumber!.trim();
-      payoutMethodData.ifscCode = ifscCode!.trim().toUpperCase();
-      payoutMethodData.bankName = bankName!.trim();
-    } else {
-      payoutMethodData.upiId = upiId!.trim();
-    }
+    const fields = buildPayoutFields(type, {
+      accountHolderName,
+      accountNumber,
+      ifscCode,
+      bankName,
+      upiId,
+    });
 
     if (id) {
       // Update existing method
-      const methodIndex = payoutMethods.findIndex(
-        (method) => getPayoutMethodId(method as PayoutMethodRecord) === id,
-      );
-      if (methodIndex === -1) {
+      const existing = coach.payoutMethods.find((method) => method.id === id);
+      if (!existing) {
         res
           .status(404)
           .json({ success: false, message: "Payout method not found" });
         return;
       }
-      payoutMethodData.id = id;
-      payoutMethodData.addedAt = payoutMethods[methodIndex]!.addedAt;
-      payoutMethods[methodIndex] = payoutMethodData;
+      // addedAt is preserved automatically (we do not touch it on update).
+      await prisma.coachPayoutMethod.update({
+        where: { id },
+        data: fields,
+      });
     } else {
-      // Add new method
-      payoutMethods.push(payoutMethodData);
+      // Add new method — first method is default.
+      await prisma.coachPayoutMethod.create({
+        data: {
+          coachId: coach.id,
+          ...fields,
+          isDefault: coach.payoutMethods.length === 0,
+        },
+      });
     }
 
-    coach.payoutMethods = payoutMethods;
-
-    await coach.save();
+    const payoutMethods = await prisma.coachPayoutMethod.findMany({
+      where: { coachId: coach.id },
+      orderBy: { addedAt: "asc" },
+    });
 
     res.json({
       success: true,
       message: "Payout method saved successfully",
-      data: { payoutMethods: coach.payoutMethods },
+      data: { payoutMethods },
     });
   } catch (error) {
     console.error("upsertCoachPayoutMethod error:", error);
@@ -287,7 +308,10 @@ export const deleteCoachPayoutMethod = async (
 
     const { methodId } = req.params;
 
-    const coach = await Coach.findOne({ userId });
+    const coach = await prisma.coach.findUnique({
+      where: { userId },
+      include: { payoutMethods: { orderBy: { addedAt: "asc" } } },
+    });
     if (!coach) {
       res
         .status(404)
@@ -295,41 +319,47 @@ export const deleteCoachPayoutMethod = async (
       return;
     }
 
-    const payoutMethods = coach.payoutMethods ?? [];
-
     if (methodId) {
       // Delete specific method
-      const initialLength = payoutMethods.length;
-      coach.payoutMethods = payoutMethods.filter(
-        (method) =>
-          getPayoutMethodId(method as PayoutMethodRecord) !== methodId,
+      const existing = coach.payoutMethods.find(
+        (method) => method.id === methodId,
       );
-
-      if ((coach.payoutMethods ?? []).length === initialLength) {
+      if (!existing) {
         res
           .status(404)
           .json({ success: false, message: "Payout method not found" });
         return;
       }
 
+      await prisma.coachPayoutMethod.delete({ where: { id: methodId } });
+
       // If the deleted method was default and there are remaining methods, set first as default
-      if (
-        !coach.payoutMethods.some((method) => method.isDefault) &&
-        coach.payoutMethods.length > 0
-      ) {
-        coach.payoutMethods[0]!.isDefault = true;
+      const remaining = await prisma.coachPayoutMethod.findMany({
+        where: { coachId: coach.id },
+        orderBy: { addedAt: "asc" },
+      });
+      if (remaining.length > 0 && !remaining.some((m) => m.isDefault)) {
+        await prisma.coachPayoutMethod.update({
+          where: { id: remaining[0]!.id },
+          data: { isDefault: true },
+        });
       }
     } else {
       // Delete all methods
-      coach.payoutMethods = [];
+      await prisma.coachPayoutMethod.deleteMany({
+        where: { coachId: coach.id },
+      });
     }
 
-    await coach.save();
+    const payoutMethods = await prisma.coachPayoutMethod.findMany({
+      where: { coachId: coach.id },
+      orderBy: { addedAt: "asc" },
+    });
 
     res.json({
       success: true,
       message: "Payout method removed",
-      data: { payoutMethods: coach.payoutMethods },
+      data: { payoutMethods },
     });
   } catch (error) {
     console.error("deleteCoachPayoutMethod error:", error);
@@ -356,7 +386,10 @@ export const setCoachDefaultPayoutMethod = async (
 
     const { methodId } = req.params;
 
-    const coach = await Coach.findOne({ userId });
+    const coach = await prisma.coach.findUnique({
+      where: { userId },
+      include: { payoutMethods: true },
+    });
     if (!coach) {
       res
         .status(404)
@@ -364,12 +397,10 @@ export const setCoachDefaultPayoutMethod = async (
       return;
     }
 
-    const methods = coach.payoutMethods || [];
-    const methodIndex = methods.findIndex(
-      (method) => getPayoutMethodId(method as PayoutMethodRecord) === methodId,
+    const existing = coach.payoutMethods.find(
+      (method) => method.id === methodId,
     );
-
-    if (methodIndex === -1) {
+    if (!existing) {
       res
         .status(404)
         .json({ success: false, message: "Payout method not found" });
@@ -377,16 +408,24 @@ export const setCoachDefaultPayoutMethod = async (
     }
 
     // Set all to non-default except the one being set
-    methods.forEach((m, idx) => {
-      m.isDefault = idx === methodIndex;
+    await prisma.coachPayoutMethod.updateMany({
+      where: { coachId: coach.id },
+      data: { isDefault: false },
+    });
+    await prisma.coachPayoutMethod.update({
+      where: { id: methodId },
+      data: { isDefault: true },
     });
 
-    await coach.save();
+    const payoutMethods = await prisma.coachPayoutMethod.findMany({
+      where: { coachId: coach.id },
+      orderBy: { addedAt: "asc" },
+    });
 
     res.json({
       success: true,
       message: "Default payout method updated",
-      data: { payoutMethods: coach.payoutMethods },
+      data: { payoutMethods },
     });
   } catch (error) {
     console.error("setCoachDefaultPayoutMethod error:", error);
@@ -415,10 +454,11 @@ export const getVenuePayoutMethod = async (
       return;
     }
 
-    const venue = await Venue.findOne({ ownerId: userId })
-      .sort({ createdAt: 1 })
-      .select("payoutMethods name")
-      .lean();
+    const venue = await prisma.venue.findFirst({
+      where: { ownerId: userId },
+      orderBy: { createdAt: "asc" },
+      include: { payoutMethods: { orderBy: { addedAt: "asc" } } },
+    });
 
     if (!venue) {
       res
@@ -431,9 +471,7 @@ export const getVenuePayoutMethod = async (
       success: true,
       message: "Payout method retrieved",
       data: {
-        payoutMethod: getPrimaryPayoutMethod(
-          venue.payoutMethods as IPayoutMethod[] | undefined,
-        ),
+        payoutMethod: getPrimaryPayoutMethod(venue.payoutMethods),
         venueName: venue.name,
       },
     });
@@ -527,10 +565,12 @@ export const upsertVenuePayoutMethod = async (
       }
     }
 
-    // Find the first venue to get the current addedAt
-    const existingVenue = await Venue.findOne({ ownerId: userId })
-      .sort({ createdAt: 1 })
-      .select("payoutMethods");
+    // Find the first venue to determine the default flag for a new method
+    const existingVenue = await prisma.venue.findFirst({
+      where: { ownerId: userId },
+      orderBy: { createdAt: "asc" },
+      include: { payoutMethods: true },
+    });
 
     if (!existingVenue) {
       res
@@ -539,55 +579,54 @@ export const upsertVenuePayoutMethod = async (
       return;
     }
 
-    const now = new Date();
-    const payoutMethodData: IPayoutMethod = {
-      type,
-      addedAt: now,
-      updatedAt: now,
-      isDefault:
-        !existingVenue.payoutMethods ||
-        existingVenue.payoutMethods.length === 0, // First method is default
-    };
-
-    if (type === "BANK_TRANSFER") {
-      payoutMethodData.accountHolderName = accountHolderName!.trim();
-      payoutMethodData.accountNumber = accountNumber!.trim();
-      payoutMethodData.ifscCode = ifscCode!.trim().toUpperCase();
-      payoutMethodData.bankName = bankName!.trim();
-    } else {
-      payoutMethodData.upiId = upiId!.trim();
-    }
+    const fields = buildPayoutFields(type, {
+      accountHolderName,
+      accountNumber,
+      ifscCode,
+      bankName,
+      upiId,
+    });
+    const isDefault = existingVenue.payoutMethods.length === 0; // First method is default
 
     // Apply to all venues owned by this user
-    let update: any = {};
     if (id) {
-      // Update existing method - use a more complex update
-      // First, update all venues' payout methods
-      const venues = await Venue.find({ ownerId: userId });
+      // Update existing method — only the venue that actually holds this row is
+      // affected (method ids are unique per venue, matching the old per-doc ids).
+      const venues = await prisma.venue.findMany({
+        where: { ownerId: userId },
+        include: { payoutMethods: true },
+      });
       for (const venue of venues) {
-        const venueMethods = venue.payoutMethods ?? [];
-        const methodIndex = venueMethods.findIndex(
-          (method) => getPayoutMethodId(method as PayoutMethodRecord) === id,
+        const existing = venue.payoutMethods.find(
+          (method) => method.id === id,
         );
-        if (methodIndex !== -1) {
-          payoutMethodData.id = id;
-          payoutMethodData.addedAt = venueMethods[methodIndex]!.addedAt;
-          venueMethods[methodIndex] = payoutMethodData;
-          venue.payoutMethods = venueMethods;
-          await venue.save();
+        if (existing) {
+          await prisma.venuePayoutMethod.update({
+            where: { id },
+            data: { ...fields, isDefault },
+          });
         }
       }
     } else {
-      // Add new method - append to all venues
-      await Venue.updateMany(
-        { ownerId: userId },
-        { $push: { payoutMethods: payoutMethodData } },
-      );
+      // Add new method — append to all venues
+      const venues = await prisma.venue.findMany({
+        where: { ownerId: userId },
+        select: { id: true },
+      });
+      await prisma.venuePayoutMethod.createMany({
+        data: venues.map((venue) => ({
+          venueId: venue.id,
+          ...fields,
+          isDefault,
+        })),
+      });
     }
 
-    const updatedVenue = await Venue.findOne({ ownerId: userId })
-      .sort({ createdAt: 1 })
-      .select("payoutMethods");
+    const updatedVenue = await prisma.venue.findFirst({
+      where: { ownerId: userId },
+      orderBy: { createdAt: "asc" },
+      include: { payoutMethods: { orderBy: { addedAt: "asc" } } },
+    });
 
     res.json({
       success: true,
@@ -621,29 +660,37 @@ export const deleteVenuePayoutMethod = async (
 
     if (methodId) {
       // Delete specific method from all venues
-      const venues = await Venue.find({ ownerId: userId });
-      for (const venue of venues) {
-        const venueMethods = venue.payoutMethods ?? [];
-        const initialLength = venueMethods.length;
-        venue.payoutMethods = venueMethods.filter(
-          (method) =>
-            getPayoutMethodId(method as PayoutMethodRecord) !== methodId,
-        );
+      const venues = await prisma.venue.findMany({
+        where: { ownerId: userId },
+        orderBy: { createdAt: "asc" },
+        include: { payoutMethods: { orderBy: { addedAt: "asc" } } },
+      });
 
-        // If the deleted method was default and there are remaining methods, set first as default
-        if (
-          !venue.payoutMethods.some((method) => method.isDefault) &&
-          venue.payoutMethods.length > 0
-        ) {
-          venue.payoutMethods[0]!.isDefault = true;
+      for (const venue of venues) {
+        const target = venue.payoutMethods.find(
+          (method) => method.id === methodId,
+        );
+        if (target) {
+          await prisma.venuePayoutMethod.delete({ where: { id: methodId } });
         }
 
-        await venue.save();
+        // If the deleted method was default and there are remaining methods, set first as default
+        const remaining = venue.payoutMethods.filter(
+          (method) => method.id !== methodId,
+        );
+        if (remaining.length > 0 && !remaining.some((m) => m.isDefault)) {
+          await prisma.venuePayoutMethod.update({
+            where: { id: remaining[0]!.id },
+            data: { isDefault: true },
+          });
+        }
       }
 
-      const updatedVenue = await Venue.findOne({ ownerId: userId })
-        .sort({ createdAt: 1 })
-        .select("payoutMethods");
+      const updatedVenue = await prisma.venue.findFirst({
+        where: { ownerId: userId },
+        orderBy: { createdAt: "asc" },
+        include: { payoutMethods: { orderBy: { addedAt: "asc" } } },
+      });
 
       res.json({
         success: true,
@@ -652,17 +699,20 @@ export const deleteVenuePayoutMethod = async (
       });
     } else {
       // Delete all methods from all venues
-      const result = await Venue.updateMany(
-        { ownerId: userId },
-        { $set: { payoutMethods: [] } },
-      );
+      const matchCount = await prisma.venue.count({
+        where: { ownerId: userId },
+      });
 
-      if (result.matchedCount === 0) {
+      if (matchCount === 0) {
         res
           .status(404)
           .json({ success: false, message: "No venue found for this account" });
         return;
       }
+
+      await prisma.venuePayoutMethod.deleteMany({
+        where: { venue: { ownerId: userId } },
+      });
 
       res.json({
         success: true,
@@ -695,7 +745,10 @@ export const setVenueDefaultPayoutMethod = async (
 
     const { methodId } = req.params;
 
-    const venues = await Venue.find({ ownerId: userId });
+    const venues = await prisma.venue.findMany({
+      where: { ownerId: userId },
+      include: { payoutMethods: true },
+    });
     if (venues.length === 0) {
       res
         .status(404)
@@ -705,17 +758,20 @@ export const setVenueDefaultPayoutMethod = async (
 
     let updated = false;
     for (const venue of venues) {
-      const methodIndex = (venue.payoutMethods || []).findIndex(
-        (method) =>
-          getPayoutMethodId(method as PayoutMethodRecord) === methodId,
+      const hasMethod = venue.payoutMethods.some(
+        (method) => method.id === methodId,
       );
 
-      if (methodIndex !== -1) {
+      if (hasMethod) {
         // Set all to non-default except the one being set
-        (venue.payoutMethods || []).forEach((m, idx) => {
-          m.isDefault = idx === methodIndex;
+        await prisma.venuePayoutMethod.updateMany({
+          where: { venueId: venue.id },
+          data: { isDefault: false },
         });
-        await venue.save();
+        await prisma.venuePayoutMethod.update({
+          where: { id: methodId },
+          data: { isDefault: true },
+        });
         updated = true;
       }
     }
@@ -727,9 +783,11 @@ export const setVenueDefaultPayoutMethod = async (
       return;
     }
 
-    const updatedVenue = await Venue.findOne({ ownerId: userId })
-      .sort({ createdAt: 1 })
-      .select("payoutMethods");
+    const updatedVenue = await prisma.venue.findFirst({
+      where: { ownerId: userId },
+      orderBy: { createdAt: "asc" },
+      include: { payoutMethods: { orderBy: { addedAt: "asc" } } },
+    });
 
     res.json({
       success: true,
@@ -763,9 +821,10 @@ export const getExpertPayoutMethod = async (
       return;
     }
 
-    const expert = await Expert.findOne({ userId })
-      .select("payoutMethods")
-      .lean();
+    const expert = await prisma.expert.findUnique({
+      where: { userId },
+      include: { payoutMethods: { orderBy: { addedAt: "asc" } } },
+    });
     if (!expert) {
       res
         .status(404)
@@ -777,9 +836,7 @@ export const getExpertPayoutMethod = async (
       success: true,
       message: "Payout method retrieved",
       data: {
-        payoutMethod: getPrimaryPayoutMethod(
-          expert.payoutMethods as IPayoutMethod[] | undefined,
-        ),
+        payoutMethod: getPrimaryPayoutMethod(expert.payoutMethods),
       },
     });
   } catch (error) {
@@ -805,9 +862,10 @@ export const getExpertPayoutMethods = async (
       return;
     }
 
-    const expert = await Expert.findOne({ userId })
-      .select("payoutMethods")
-      .lean();
+    const expert = await prisma.expert.findUnique({
+      where: { userId },
+      include: { payoutMethods: { orderBy: { addedAt: "asc" } } },
+    });
     if (!expert) {
       res
         .status(404)
@@ -912,8 +970,10 @@ export const upsertExpertPayoutMethod = async (
       }
     }
 
-    const now = new Date();
-    const expert = await Expert.findOne({ userId });
+    const expert = await prisma.expert.findUnique({
+      where: { userId },
+      include: { payoutMethods: { orderBy: { addedAt: "asc" } } },
+    });
     if (!expert) {
       res
         .status(404)
@@ -921,52 +981,47 @@ export const upsertExpertPayoutMethod = async (
       return;
     }
 
-    const payoutMethods = expert.payoutMethods ?? [];
-
-    const payoutMethodData: IPayoutMethod = {
-      type,
-      addedAt: now,
-      updatedAt: now,
-      isDefault: !expert.payoutMethods || expert.payoutMethods.length === 0, // First method is default
-    };
-
-    if (type === "BANK_TRANSFER") {
-      payoutMethodData.accountHolderName = accountHolderName!.trim();
-      payoutMethodData.accountNumber = accountNumber!.trim();
-      payoutMethodData.ifscCode = ifscCode!.trim().toUpperCase();
-      payoutMethodData.bankName = bankName!.trim();
-    } else {
-      payoutMethodData.upiId = upiId!.trim();
-    }
+    const fields = buildPayoutFields(type, {
+      accountHolderName,
+      accountNumber,
+      ifscCode,
+      bankName,
+      upiId,
+    });
 
     if (id) {
       // Update existing method
-      const methodIndex = payoutMethods.findIndex(
-        (method: IPayoutMethod) =>
-          getPayoutMethodId(method as PayoutMethodRecord) === id,
-      );
-      if (methodIndex === -1) {
+      const existing = expert.payoutMethods.find((method) => method.id === id);
+      if (!existing) {
         res
           .status(404)
           .json({ success: false, message: "Payout method not found" });
         return;
       }
-      payoutMethodData.id = id;
-      payoutMethodData.addedAt = payoutMethods[methodIndex]!.addedAt;
-      payoutMethods[methodIndex] = payoutMethodData;
+      await prisma.expertPayoutMethod.update({
+        where: { id },
+        data: fields,
+      });
     } else {
-      // Add new method
-      payoutMethods.push(payoutMethodData);
+      // Add new method — first method is default.
+      await prisma.expertPayoutMethod.create({
+        data: {
+          expertId: expert.id,
+          ...fields,
+          isDefault: expert.payoutMethods.length === 0,
+        },
+      });
     }
 
-    expert.payoutMethods = payoutMethods;
-
-    await expert.save();
+    const payoutMethods = await prisma.expertPayoutMethod.findMany({
+      where: { expertId: expert.id },
+      orderBy: { addedAt: "asc" },
+    });
 
     res.json({
       success: true,
       message: "Payout method saved successfully",
-      data: { payoutMethods: expert.payoutMethods },
+      data: { payoutMethods },
     });
   } catch (error) {
     console.error("upsertExpertPayoutMethod error:", error);
@@ -993,7 +1048,10 @@ export const deleteExpertPayoutMethod = async (
 
     const { methodId } = req.params;
 
-    const expert = await Expert.findOne({ userId });
+    const expert = await prisma.expert.findUnique({
+      where: { userId },
+      include: { payoutMethods: { orderBy: { addedAt: "asc" } } },
+    });
     if (!expert) {
       res
         .status(404)
@@ -1001,43 +1059,47 @@ export const deleteExpertPayoutMethod = async (
       return;
     }
 
-    const payoutMethods = expert.payoutMethods ?? [];
-
     if (methodId) {
       // Delete specific method
-      const initialLength = payoutMethods.length;
-      expert.payoutMethods = payoutMethods.filter(
-        (method: IPayoutMethod) =>
-          getPayoutMethodId(method as PayoutMethodRecord) !== methodId,
+      const existing = expert.payoutMethods.find(
+        (method) => method.id === methodId,
       );
-
-      if ((expert.payoutMethods ?? []).length === initialLength) {
+      if (!existing) {
         res
           .status(404)
           .json({ success: false, message: "Payout method not found" });
         return;
       }
 
+      await prisma.expertPayoutMethod.delete({ where: { id: methodId } });
+
       // If the deleted method was default and there are remaining methods, set first as default
-      if (
-        !expert.payoutMethods.some(
-          (method: IPayoutMethod) => method.isDefault,
-        ) &&
-        expert.payoutMethods.length > 0
-      ) {
-        expert.payoutMethods[0]!.isDefault = true;
+      const remaining = await prisma.expertPayoutMethod.findMany({
+        where: { expertId: expert.id },
+        orderBy: { addedAt: "asc" },
+      });
+      if (remaining.length > 0 && !remaining.some((m) => m.isDefault)) {
+        await prisma.expertPayoutMethod.update({
+          where: { id: remaining[0]!.id },
+          data: { isDefault: true },
+        });
       }
     } else {
       // Delete all methods
-      expert.payoutMethods = [];
+      await prisma.expertPayoutMethod.deleteMany({
+        where: { expertId: expert.id },
+      });
     }
 
-    await expert.save();
+    const payoutMethods = await prisma.expertPayoutMethod.findMany({
+      where: { expertId: expert.id },
+      orderBy: { addedAt: "asc" },
+    });
 
     res.json({
       success: true,
       message: "Payout method removed",
-      data: { payoutMethods: expert.payoutMethods },
+      data: { payoutMethods },
     });
   } catch (error) {
     console.error("deleteExpertPayoutMethod error:", error);
@@ -1064,7 +1126,10 @@ export const setExpertDefaultPayoutMethod = async (
 
     const { methodId } = req.params;
 
-    const expert = await Expert.findOne({ userId });
+    const expert = await prisma.expert.findUnique({
+      where: { userId },
+      include: { payoutMethods: true },
+    });
     if (!expert) {
       res
         .status(404)
@@ -1072,13 +1137,10 @@ export const setExpertDefaultPayoutMethod = async (
       return;
     }
 
-    const methods = expert.payoutMethods || [];
-    const methodIndex = methods.findIndex(
-      (method: IPayoutMethod) =>
-        getPayoutMethodId(method as PayoutMethodRecord) === methodId,
+    const existing = expert.payoutMethods.find(
+      (method) => method.id === methodId,
     );
-
-    if (methodIndex === -1) {
+    if (!existing) {
       res
         .status(404)
         .json({ success: false, message: "Payout method not found" });
@@ -1086,16 +1148,24 @@ export const setExpertDefaultPayoutMethod = async (
     }
 
     // Set all to non-default except the one being set
-    methods.forEach((m: IPayoutMethod, idx: number) => {
-      m.isDefault = idx === methodIndex;
+    await prisma.expertPayoutMethod.updateMany({
+      where: { expertId: expert.id },
+      data: { isDefault: false },
+    });
+    await prisma.expertPayoutMethod.update({
+      where: { id: methodId },
+      data: { isDefault: true },
     });
 
-    await expert.save();
+    const payoutMethods = await prisma.expertPayoutMethod.findMany({
+      where: { expertId: expert.id },
+      orderBy: { addedAt: "asc" },
+    });
 
     res.json({
       success: true,
       message: "Default payout method updated",
-      data: { payoutMethods: expert.payoutMethods },
+      data: { payoutMethods },
     });
   } catch (error) {
     console.error("setExpertDefaultPayoutMethod error:", error);
@@ -1104,3 +1174,7 @@ export const setExpertDefaultPayoutMethod = async (
       .json({ success: false, message: "Failed to set default payout method" });
   }
 };
+
+// AnyPayoutMethod is exported implicitly via the generic helper above; the
+// named union is retained for potential local typing needs.
+export type { AnyPayoutMethod };

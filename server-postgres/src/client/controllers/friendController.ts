@@ -6,24 +6,32 @@ import {
   sendFriendRequestEmail,
   sendFriendRequestAcceptedEmail,
 } from "../../utils/email";
-import { User } from "../models/User";
+import prisma from "../../lib/prisma";
 import { S3Service } from "../../shared/services/S3Service";
+
+const userPhotoSelect = {
+  id: true,
+  name: true,
+  email: true,
+  photoUrl: true,
+  photoS3Key: true,
+} as const;
 
 const s3Service = new S3Service();
 
 const resolveUserPhotoUrl = async (user: {
-  photoUrl?: string;
-  photoS3Key?: string;
+  photoUrl?: string | null;
+  photoS3Key?: string | null;
 }): Promise<string | undefined> => {
   if (!user.photoS3Key) {
-    return user.photoUrl;
+    return user.photoUrl ?? undefined;
   }
 
   try {
     return await s3Service.generateDownloadUrl(user.photoS3Key, "images", 3600);
   } catch (error) {
     console.error("Failed to regenerate notification photo URL:", error);
-    return user.photoUrl;
+    return user.photoUrl ?? undefined;
   }
 };
 
@@ -70,8 +78,14 @@ export const sendFriendRequest = async (
 
     // Get user details for notifications
     const [requester, recipient] = await Promise.all([
-      User.findById(userId).select("name email photoUrl photoS3Key"),
-      User.findById(recipientId).select("name email photoUrl photoS3Key"),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: userPhotoSelect,
+      }),
+      prisma.user.findUnique({
+        where: { id: recipientId },
+        select: userPhotoSelect,
+      }),
     ]);
 
     if (requester && recipient) {
@@ -86,8 +100,8 @@ export const sendFriendRequest = async (
           title: "New Friend Request",
           message: `${requester.name} sent you a friend request`,
           data: {
-            requestId: friendRequest._id.toString(),
-            requesterId: requester._id.toString(),
+            requestId: friendRequest.id,
+            requesterId: requester.id,
             requesterName: requester.name,
             requesterEmail: requester.email,
             requesterPhotoUrl,
@@ -147,12 +161,14 @@ export const acceptFriendRequest = async (
     );
 
     // Get user details for notification
-    const acceptedBy = await User.findById(userId).select(
-      "name email photoUrl photoS3Key",
-    );
-    const requester = await User.findById(connection.requesterId).select(
-      "name email photoUrl photoS3Key",
-    );
+    const acceptedBy = await prisma.user.findUnique({
+      where: { id: userId },
+      select: userPhotoSelect,
+    });
+    const requester = await prisma.user.findUnique({
+      where: { id: connection.requesterId },
+      select: userPhotoSelect,
+    });
 
     if (!acceptedBy || !requester) {
       throw new Error("User not found");
@@ -163,13 +179,13 @@ export const acceptFriendRequest = async (
     // Send notification via NotificationService (socket + persist to DB) - don't await email
     NotificationService.send(
       {
-        userId: connection.requesterId.toString(),
+        userId: connection.requesterId,
         type: "FRIEND_REQUEST_ACCEPTED",
         title: "Friend Request Accepted",
         message: `${acceptedBy.name} accepted your friend request`,
         data: {
-          connectionId: connection._id.toString(),
-          acceptedById: acceptedBy._id.toString(),
+          connectionId: connection.id,
+          acceptedById: acceptedBy.id,
           acceptedByName: acceptedBy.name,
           acceptedByEmail: acceptedBy.email,
           acceptedByPhotoUrl,

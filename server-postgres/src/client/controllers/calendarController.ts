@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
-import mongoose from "mongoose";
-import { Booking } from "../models/Booking";
-import { UserCalendarEvent } from "../models/UserCalendarEvent";
+import prisma from "../../lib/prisma";
+import type { CalendarEventType, Prisma } from "@prisma/client";
 
 /**
  * GET /api/calendar/bookings?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
@@ -43,19 +42,68 @@ export const getCalendarBookings = async (
       return;
     }
 
-    const bookings = await Booking.find({
-      userId: new mongoose.Types.ObjectId(user.id),
-      date: { $gte: start, $lte: end },
-      status: { $nin: ["CANCELLED"] },
-    })
-      .select("date startTime endTime status sport venueId coachId")
-      .populate("venueId", "name")
-      .populate({
-        path: "coachId",
-        populate: { path: "userId", select: "name" },
-      })
-      .sort({ date: 1, startTime: 1 })
-      .lean();
+    const rows = await prisma.booking.findMany({
+      where: {
+        userId: user.id,
+        date: { gte: start, lte: end },
+        status: { not: "CANCELLED" },
+      },
+      select: {
+        id: true,
+        date: true,
+        startTime: true,
+        endTime: true,
+        status: true,
+        sport: true,
+        venueId: true,
+        coachId: true,
+      },
+      orderBy: [{ date: "asc" }, { startTime: "asc" }],
+    });
+
+    // String-FK "populate": batch-load venues, coaches, and coach users, then
+    // reattach under the original venueId/coachId keys (was Mongoose .populate).
+    const venueIds = [
+      ...new Set(rows.map((b) => b.venueId).filter((v): v is string => !!v)),
+    ];
+    const coachIds = [
+      ...new Set(rows.map((b) => b.coachId).filter((c): c is string => !!c)),
+    ];
+
+    const venues = venueIds.length
+      ? await prisma.venue.findMany({
+          where: { id: { in: venueIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+    const coaches = coachIds.length
+      ? await prisma.coach.findMany({
+          where: { id: { in: coachIds } },
+          select: { id: true, userId: true },
+        })
+      : [];
+    const coachUserIds = [...new Set(coaches.map((c) => c.userId))];
+    const coachUsers = coachUserIds.length
+      ? await prisma.user.findMany({
+          where: { id: { in: coachUserIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+
+    const venueById = new Map(venues.map((v) => [v.id, v]));
+    const userById = new Map(coachUsers.map((u) => [u.id, u]));
+    const coachById = new Map(
+      coaches.map((c) => [
+        c.id,
+        { id: c.id, userId: userById.get(c.userId) ?? null },
+      ]),
+    );
+
+    const bookings = rows.map((b) => ({
+      ...b,
+      venueId: b.venueId ? (venueById.get(b.venueId) ?? null) : null,
+      coachId: b.coachId ? (coachById.get(b.coachId) ?? null) : null,
+    }));
 
     res.json({ success: true, data: { bookings } });
   } catch (error) {
@@ -86,21 +134,21 @@ export const getCalendarEvents = async (
       endDate?: string;
     };
 
-    // Use a plain object filter to avoid FilterQuery generic complexity
-    const filter: Record<string, unknown> = {
-      userId: new mongoose.Types.ObjectId(user.id),
+    const where: Prisma.UserCalendarEventWhereInput = {
+      userId: user.id,
     };
 
     if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
-      filter.date = { $gte: start, $lte: end };
+      where.date = { gte: start, lte: end };
     }
 
-    const events = await UserCalendarEvent.find(filter as any)
-      .sort({ date: 1 })
-      .lean();
+    const events = await prisma.userCalendarEvent.findMany({
+      where,
+      orderBy: { date: "asc" },
+    });
 
     res.json({ success: true, data: { events } });
   } catch (error) {
@@ -148,8 +196,8 @@ export const createCalendarEvent = async (
     }
 
     // Enforce per-user event cap to prevent unbounded growth
-    const count = await UserCalendarEvent.countDocuments({
-      userId: new mongoose.Types.ObjectId(user.id),
+    const count = await prisma.userCalendarEvent.count({
+      where: { userId: user.id },
     });
     if (count >= 200) {
       res
@@ -161,23 +209,23 @@ export const createCalendarEvent = async (
       return;
     }
 
-    const payload: Record<string, unknown> = {
-      userId: new mongoose.Types.ObjectId(user.id),
+    const data: Prisma.UserCalendarEventCreateInput = {
+      userId: user.id,
       title: title.trim().slice(0, 120),
       date: parsedDate,
       color: color ?? "#f97316",
-      type: type ?? "IMPORTANT",
+      type: (type ?? "IMPORTANT") as CalendarEventType,
     };
     if (notes?.trim()) {
-      payload.notes = notes.trim().slice(0, 500);
+      data.notes = notes.trim().slice(0, 500);
     }
 
-    const event = await UserCalendarEvent.create(payload);
+    const event = await prisma.userCalendarEvent.create({ data });
 
     res.status(201).json({
       success: true,
       message: "Event created",
-      data: { event: (event as any).toJSON() },
+      data: { event },
     });
   } catch (error) {
     console.error("[createCalendarEvent]", error);
@@ -211,7 +259,7 @@ export const updateCalendarEvent = async (
       notes?: string;
     };
 
-    const update: Record<string, unknown> = {};
+    const update: Prisma.UserCalendarEventUpdateInput = {};
     if (title !== undefined) update.title = title.trim().slice(0, 120);
     if (date !== undefined) {
       const parsed = new Date(date);
@@ -222,24 +270,26 @@ export const updateCalendarEvent = async (
       update.date = parsed;
     }
     if (color !== undefined) update.color = color;
-    if (type !== undefined) update.type = type;
+    if (type !== undefined) update.type = type as CalendarEventType;
     if (notes !== undefined) update.notes = notes?.trim().slice(0, 500) ?? "";
 
-    const event = await UserCalendarEvent.findOneAndUpdate(
-      {
-        _id: new mongoose.Types.ObjectId(id),
-        userId: new mongoose.Types.ObjectId(user.id),
-      } as any,
-      update,
-      { new: true, runValidators: true },
-    );
+    // Owner-scoped: ensure the event belongs to the user before updating.
+    const existing = await prisma.userCalendarEvent.findFirst({
+      where: { id, userId: user.id },
+      select: { id: true },
+    });
 
-    if (!event) {
+    if (!existing) {
       res.status(404).json({ success: false, message: "Event not found" });
       return;
     }
 
-    res.json({ success: true, data: { event: (event as any).toJSON() } });
+    const event = await prisma.userCalendarEvent.update({
+      where: { id },
+      data: update,
+    });
+
+    res.json({ success: true, data: { event } });
   } catch (error) {
     console.error("[updateCalendarEvent]", error);
     res
@@ -264,12 +314,11 @@ export const deleteCalendarEvent = async (
     }
 
     const { id } = req.params as { id: string };
-    const event = await UserCalendarEvent.findOneAndDelete({
-      _id: new mongoose.Types.ObjectId(id),
-      userId: new mongoose.Types.ObjectId(user.id),
-    } as any);
+    const result = await prisma.userCalendarEvent.deleteMany({
+      where: { id, userId: user.id },
+    });
 
-    if (!event) {
+    if (result.count === 0) {
       res.status(404).json({ success: false, message: "Event not found" });
       return;
     }

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { generateToken } from "../../utils/jwt";
 import { S3Service } from "../../shared/services/S3Service";
-import { Venue } from "../models/Venue";
+import prisma from "../../lib/prisma";
 import {
   startVenueOnboarding,
   getImageUploadPresignedUrls,
@@ -62,7 +62,7 @@ export const createVenueStep1 = async (
     }
 
     const onboardingToken = generateToken({
-      id: venue._id.toString(),
+      id: venue.id.toString(),
       email: venue.ownerEmail,
       role: "VENUE_ONBOARDING",
     });
@@ -71,7 +71,7 @@ export const createVenueStep1 = async (
       success: true,
       message: "Venue contact info saved. Verification code sent to email.",
       data: {
-        venueId: venue._id,
+        venueId: venue.id,
         ownerName: venue.ownerName,
         ownerEmail: venue.ownerEmail,
         approvalStatus: venue.approvalStatus,
@@ -115,7 +115,7 @@ export const updateVenueDetailsStep2 = async (
       success: true,
       message: "Venue details saved. Proceed to Step 3: Images & Documents",
       data: {
-        venueId: venue._id,
+        venueId: venue.id,
         name: venue.name,
         address: venue.address,
         approvalStatus: venue.approvalStatus,
@@ -151,7 +151,7 @@ export const getImageUploadUrls = async (
     const { venueId, sports } = req.body;
 
     // Verify venue exists (no auth required - public onboarding)
-    const venue = await Venue.findById(venueId);
+    const venue = await prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) {
       res.status(404).json({
         success: false,
@@ -225,7 +225,7 @@ export const getCoachPhotoUploadUrl = async (
     }
 
     // Verify venue exists
-    const venue = await Venue.findById(venueId);
+    const venue = await prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) {
       res.status(404).json({
         success: false,
@@ -277,7 +277,7 @@ export const confirmImagesStep2 = async (
     const { venueId } = req.body;
 
     // Verify venue exists (no auth required - public onboarding)
-    const venue = await Venue.findById(venueId);
+    const venue = await prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) {
       res.status(404).json({
         success: false,
@@ -292,7 +292,7 @@ export const confirmImagesStep2 = async (
       success: true,
       message: "Images confirmed. Proceed to Step 4: Add Documents",
       data: {
-        venueId: updatedVenue?._id,
+        venueId: updatedVenue?.id,
         imageCount: updatedVenue?.images.length,
         coverPhoto: updatedVenue?.coverPhotoUrl,
         nextStep: "Upload required documents",
@@ -328,7 +328,7 @@ export const getDocumentUploadUrls = async (
     const { venueId, documents } = req.body;
 
     // Verify venue exists (no auth required - public onboarding)
-    const venue = await Venue.findById(venueId);
+    const venue = await prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) {
       res.status(404).json({
         success: false,
@@ -381,7 +381,7 @@ export const finalizeOnboardingStep3 = async (
     const { venueId } = req.body;
 
     // Verify venue exists (no auth required - public onboarding)
-    const venue = await Venue.findById(venueId);
+    const venue = await prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) {
       res.status(404).json({
         success: false,
@@ -396,7 +396,7 @@ export const finalizeOnboardingStep3 = async (
       success: true,
       message: "Venue onboarding complete! Your venue is now under review.",
       data: {
-        venueId: updatedVenue?._id,
+        venueId: updatedVenue?.id,
         name: updatedVenue?.name,
         approvalStatus: updatedVenue?.approvalStatus,
         documentsUploaded: updatedVenue?.documents.length,
@@ -428,7 +428,12 @@ export const deleteVenueOnboardingHandler = async (
 
     // For onboarding cancellation, we allow deletion without auth
     // (user just needs to know the venueId)
-    const venue = await Venue.findByIdAndDelete(venueId);
+    // Fetch with documents (normalized child table) before deleting so we can
+    // clean up S3, then delete the venue (children cascade via schema).
+    const venue = await prisma.venue.findUnique({
+      where: { id: venueId },
+      include: { documents: true },
+    });
 
     if (!venue) {
       res.status(404).json({
@@ -438,13 +443,15 @@ export const deleteVenueOnboardingHandler = async (
       return;
     }
 
+    await prisma.venue.delete({ where: { id: venueId } });
+
     // Delete associated S3 files
     const s3Service = new S3Service();
     if (venue.images?.length > 0) {
       await s3Service.deleteFiles(venue.images, "images");
     }
     if (venue.documents?.length > 0) {
-      const docKeys = venue.documents.map((doc: any) => doc.url);
+      const docKeys = venue.documents.map((doc) => doc.url);
       await s3Service.deleteFiles(docKeys, "documents");
     }
 
@@ -572,7 +579,7 @@ export const approveVenueHandler = async (
       success: true,
       message: "Venue approved successfully",
       data: {
-        venueId: venue?._id,
+        venueId: venue?.id,
         name: venue?.name,
         approvalStatus: venue?.approvalStatus,
       },
@@ -623,7 +630,7 @@ export const rejectVenueHandler = async (
       success: true,
       message: "Venue rejected",
       data: {
-        venueId: venue?._id,
+        venueId: venue?.id,
         name: venue?.name,
         approvalStatus: venue?.approvalStatus,
         rejectionReason: venue?.rejectionReason,
@@ -667,7 +674,7 @@ export const markVenueForReviewHandler = async (
       success: true,
       message: "Venue marked for review",
       data: {
-        venueId: venue?._id,
+        venueId: venue?.id,
         name: venue?.name,
         approvalStatus: venue?.approvalStatus,
         reviewNotes: venue?.reviewNotes,
@@ -704,19 +711,12 @@ export const addVenueCoaches = async (
       return;
     }
 
-    // Venue is already imported at the top
+    // Ensure venue exists before mutating child rows
+    const existingVenue = await prisma.venue.findUnique({
+      where: { id: venueId },
+    });
 
-    // Update venue with coaches
-    const venue = await Venue.findByIdAndUpdate(
-      venueId,
-      {
-        hasCoaches: coaches && coaches.length > 0,
-        venueCoaches: coaches || [],
-      },
-      { new: true, runValidators: true },
-    );
-
-    if (!venue) {
+    if (!existingVenue) {
       res.status(404).json({
         success: false,
         message: "Venue not found",
@@ -724,11 +724,37 @@ export const addVenueCoaches = async (
       return;
     }
 
+    const hasCoaches = Boolean(coaches && coaches.length > 0);
+
+    // venueCoaches is now a normalized child table (VenueCoach[]); replace the
+    // set and flip hasCoaches atomically.
+    // TODO(prisma): confirm the incoming `coaches` payload shape matches the
+    // VenueCoach columns (name, sport, hourlyRate, bio).
+    const venue = await prisma.$transaction(async (tx) => {
+      await tx.venueCoach.deleteMany({ where: { venueId } });
+      if (hasCoaches) {
+        await tx.venueCoach.createMany({
+          data: coaches.map((c: any) => ({
+            venueId,
+            name: c.name,
+            sport: c.sport,
+            hourlyRate: c.hourlyRate,
+            bio: c.bio,
+          })),
+        });
+      }
+      return tx.venue.update({
+        where: { id: venueId },
+        data: { hasCoaches },
+        include: { venueCoaches: true },
+      });
+    });
+
     res.status(200).json({
       success: true,
       message: "Venue coaches saved successfully",
       data: {
-        venueId: venue._id,
+        venueId: venue.id,
         hasCoaches: venue.hasCoaches,
         coachCount: venue.venueCoaches?.length || 0,
         approvalStatus: venue.approvalStatus,

@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
-import { User } from "../models/User";
-import { Venue } from "../models/Venue";
+import prisma from "../../lib/prisma";
 import { s3Service } from "../../shared/services/S3Service";
 import {
   createVenue,
@@ -103,7 +102,7 @@ export const createNewVenue = async (
 
     // Only venue listers can create venues
     // Coaches store venue details in their profile and cannot create marketplace venues
-    const user = await User.findById(req.user.id);
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
 
     if (!user) {
       res.status(404).json({
@@ -114,7 +113,7 @@ export const createNewVenue = async (
     }
 
     console.log("Venue Lister user:", {
-      id: user._id,
+      id: user.id,
       role: user.role,
     });
 
@@ -410,7 +409,7 @@ export const getVenueImageUploadUrls = async (
       coverPhotoIndex: number;
     };
 
-    const venue = await Venue.findById(venueId);
+    const venue = await prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) {
       res.status(404).json({
         success: false,
@@ -419,7 +418,7 @@ export const getVenueImageUploadUrls = async (
       return;
     }
 
-    if (venue.ownerId?.toString() !== req.user.id) {
+    if (venue.ownerId !== req.user.id) {
       res.status(403).json({
         success: false,
         message: "Access denied. You do not own this venue.",

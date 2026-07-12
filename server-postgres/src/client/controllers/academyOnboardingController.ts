@@ -18,7 +18,8 @@ import {
   createSessionPackage,
   UPLOAD_CONSTRAINTS,
 } from "../../admin/services/AcademyOnboardingService";
-import Academy from "../../admin/models/Academy";
+import prisma from "../../lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { getPaginationParams } from "../../utils/pagination";
 import { ADMIN_ROLES } from "../../constants/adminPermissions";
 
@@ -51,7 +52,7 @@ export const startAcademyOnboardingHandler = async (
       success: true,
       message: "Academy onboarding started. Proceed to Step 2.",
       data: {
-        academyId: academy._id,
+        academyId: academy.id,
         name: academy.name,
         slug: academy.slug,
         currentStep: 1,
@@ -124,7 +125,7 @@ export const saveAcademyStepHandler = async (
       success: true,
       message: `Step ${stepNumber} saved successfully.`,
       data: {
-        academyId: academy._id,
+        academyId: academy.id,
         currentStep: academy.onboardingStep,
         nextStep:
           stepNumber < 7 ? `Step ${stepNumber + 1}` : "Submit for review",
@@ -161,7 +162,9 @@ export const getImageUploadUrlsHandler = async (
     }
 
     // Verify academy exists
-    const academy = await Academy.findById(academyId);
+    const academy = await prisma.academy.findUnique({
+      where: { id: academyId },
+    });
     if (!academy) {
       res.status(404).json({
         success: false,
@@ -203,7 +206,9 @@ export const confirmImagesHandler = async (
       .academyId as string;
 
     // Verify academy exists
-    const academy = await Academy.findById(academyId);
+    const academy = await prisma.academy.findUnique({
+      where: { id: academyId },
+    });
     if (!academy) {
       res.status(404).json({
         success: false,
@@ -218,7 +223,7 @@ export const confirmImagesHandler = async (
       success: true,
       message: "Images confirmed successfully",
       data: {
-        academyId: updatedAcademy?._id,
+        academyId: updatedAcademy?.id,
         logoUrl: updatedAcademy?.logoUrl,
         coverPhotoUrl: updatedAcademy?.coverPhotoUrl,
         galleryPhotosCount: updatedAcademy?.photos.length,
@@ -256,7 +261,9 @@ export const getDocumentUploadUrlsHandler = async (
     }
 
     // Verify academy exists
-    const academy = await Academy.findById(academyId);
+    const academy = await prisma.academy.findUnique({
+      where: { id: academyId },
+    });
     if (!academy) {
       res.status(404).json({
         success: false,
@@ -298,7 +305,9 @@ export const confirmDocumentsHandler = async (
       .academyId as string;
 
     // Verify academy exists
-    const academy = await Academy.findById(academyId);
+    const academy = await prisma.academy.findUnique({
+      where: { id: academyId },
+    });
     if (!academy) {
       res.status(404).json({
         success: false,
@@ -313,7 +322,7 @@ export const confirmDocumentsHandler = async (
       success: true,
       message: "Documents confirmed successfully",
       data: {
-        academyId: updatedAcademy?._id,
+        academyId: updatedAcademy?.id,
         panDocumentUrl: updatedAcademy?.panDocumentUrl,
         gstDocumentUrl: updatedAcademy?.gstDocumentUrl,
       },
@@ -346,7 +355,7 @@ export const submitAcademyHandler = async (
       message:
         "Academy submitted for review. You will be notified once approved.",
       data: {
-        academyId: academy._id,
+        academyId: academy.id,
         name: academy.name,
         status: "Under Review",
         nextSteps: [
@@ -383,34 +392,36 @@ export const listApprovedAcademiesHandler = async (
     const city = (req.query.city as string) || undefined;
     const sport = (req.query.sport as string) || undefined;
 
-    const query: any = {
+    const query: Prisma.AcademyWhereInput = {
       isApproved: true,
       kycVerified: true,
       isActive: true,
     };
 
     if (city) {
-      query.city = { $regex: city, $options: "i" };
+      query.city = { contains: city, mode: "insensitive" };
     }
 
     if (sport) {
-      query.sports = { $in: [sport] };
+      query.sports = { has: sport };
     }
 
     const skip = (page - 1) * limit;
-    const total = await Academy.countDocuments(query);
+    const total = await prisma.academy.count({ where: query });
 
-    const academies = await Academy.find(query)
-      .skip(skip)
-      .limit(limit)
-      .sort({ rating: -1, createdAt: -1 });
+    const academies = await prisma.academy.findMany({
+      where: query,
+      skip,
+      take: limit,
+      orderBy: [{ rating: "desc" }, { createdAt: "desc" }],
+    });
 
     res.status(200).json({
       success: true,
       message: "Approved academies retrieved",
       data: {
         academies: academies.map((a) => ({
-          id: a._id.toString(),
+          id: a.id.toString(),
           name: a.name,
           slug: a.slug,
           city: a.city,
@@ -449,15 +460,14 @@ export const getAcademyProfileHandler = async (
   try {
     const slug = (req.params as Record<string, unknown>).slug as string;
 
-    const academy = await Academy.findOne({
-      slug,
-      isApproved: true,
-      kycVerified: true,
-      isActive: true,
-    })
-      .populate("ownerId", "name email phone")
-      .populate("subscriptionPlans")
-      .populate("sessionPackages");
+    const academy = await prisma.academy.findFirst({
+      where: {
+        slug,
+        isApproved: true,
+        kycVerified: true,
+        isActive: true,
+      },
+    });
 
     if (!academy) {
       res.status(404).json({
@@ -467,10 +477,29 @@ export const getAcademyProfileHandler = async (
       return;
     }
 
+    // Replace Mongoose .populate() with follow-up lookups (String-FK refs).
+    // ownerId -> owner user (name/email/phone); subscription plans & session
+    // packages are looked up by academyId (were Mongoose virtuals).
+    const [owner, subscriptionPlans, sessionPackages] = await Promise.all([
+      academy.ownerId
+        ? prisma.user.findUnique({
+            where: { id: academy.ownerId },
+            select: { name: true, email: true, phone: true },
+          })
+        : Promise.resolve(null),
+      prisma.subscriptionPlan.findMany({ where: { academyId: academy.id } }),
+      prisma.sessionPackage.findMany({ where: { academyId: academy.id } }),
+    ]);
+
     res.status(200).json({
       success: true,
       message: "Academy profile retrieved",
-      data: academy,
+      data: {
+        ...academy,
+        ownerId: owner ?? academy.ownerId,
+        subscriptionPlans,
+        sessionPackages,
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -602,7 +631,7 @@ export const approveAcademyHandler = async (
       success: true,
       message: "Academy approved successfully",
       data: {
-        academyId: academy?._id,
+        academyId: academy?.id,
         name: academy?.name,
         isApproved: true,
         isActive: academy?.kycVerified ? true : false,
@@ -653,7 +682,7 @@ export const rejectAcademyHandler = async (
       success: true,
       message: "Academy rejected successfully",
       data: {
-        academyId: academy?._id,
+        academyId: academy?.id,
         name: academy?.name,
         isApproved: false,
         rejectionReason,
@@ -693,7 +722,7 @@ export const markKycVerifiedHandler = async (
       success: true,
       message: "KYC verification marked",
       data: {
-        academyId: academy?._id,
+        academyId: academy?.id,
         name: academy?.name,
         kycVerified: true,
         isActive: academy?.isActive,
@@ -736,7 +765,7 @@ export const suspendAcademyHandler = async (
       success: true,
       message: "Academy suspended successfully",
       data: {
-        academyId: academy?._id,
+        academyId: academy?.id,
         name: academy?.name,
         isActive: false,
         reason: reason || "No reason provided",

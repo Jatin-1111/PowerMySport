@@ -33,8 +33,6 @@ import {
   sendExpertApprovedEmail,
   sendExpertRejectedEmail,
 } from "../../utils/email";
-import { Expert } from "../models/ExpertProfile";
-import { User } from "../models/User";
 
 const fail = (res: Response, error: unknown, code = 400) =>
   res.status(code).json({

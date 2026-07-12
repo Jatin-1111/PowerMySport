@@ -15,17 +15,14 @@ import {
   getCoachActiveSubscriptions,
   getCoachSubscriptionRevenue,
 } from "../services/CoachSubscriptionService";
-import { Coach } from "../models/Coach";
 import {
   getPhonePeOrderStatus,
   initiatePhonePePayment,
   isPhonePeGatewayError,
 } from "../../shared/services/PhonePeService";
-import { CoachSubscriptionPackage } from "../models/CoachSubscriptionPackage";
-import { User } from "../models/User";
-import { CoachSubscriptionPaymentTransaction } from "../models/CoachSubscriptionPayment";
-import { CoachSubscription } from "../models/CoachSubscription";
 import { reconcileCoachSubscriptionPaymentByIdentifiers } from "../services/CoachSubscriptionPaymentService";
+import prisma from "../../lib/prisma";
+import { Prisma } from "@prisma/client";
 
 const SUBSCRIPTION_PLATFORM_FEE_RATE = Number(
   process.env.SUBSCRIPTION_PLATFORM_FEE_RATE ??
@@ -67,7 +64,9 @@ export const createCoachPackageHandler = async (
       return;
     }
 
-    const coach = await Coach.findOne({ userId: req.user.id });
+    const coach = await prisma.coach.findFirst({
+      where: { userId: req.user.id },
+    });
     if (!coach) {
       res.status(404).json({
         success: false,
@@ -95,7 +94,7 @@ export const createCoachPackageHandler = async (
     }
 
     const package_ = await createCoachSubscriptionPackage({
-      coachId: coach._id.toString(),
+      coachId: coach.id,
       name,
       description,
       frequency,
@@ -138,7 +137,9 @@ export const getCoachPackagesHandler = async (
       return;
     }
 
-    const coach = await Coach.findOne({ userId: req.user.id });
+    const coach = await prisma.coach.findFirst({
+      where: { userId: req.user.id },
+    });
     if (!coach) {
       res.status(404).json({
         success: false,
@@ -147,7 +148,7 @@ export const getCoachPackagesHandler = async (
       return;
     }
 
-    const packages = await getCoachSubscriptionPackages(coach._id.toString());
+    const packages = await getCoachSubscriptionPackages(coach.id);
 
     res.status(200).json({
       success: true,
@@ -222,7 +223,9 @@ export const updateCoachPackageHandler = async (
       return;
     }
 
-    const coach = await Coach.findOne({ userId: req.user.id });
+    const coach = await prisma.coach.findFirst({
+      where: { userId: req.user.id },
+    });
     if (!coach) {
       res.status(404).json({
         success: false,
@@ -246,7 +249,7 @@ export const updateCoachPackageHandler = async (
 
     // Verify ownership
     const isOwner = await validateCoachOwnsPackage(
-      coach._id.toString(),
+      coach.id,
       packageId,
     );
     if (!isOwner) {
@@ -303,7 +306,9 @@ export const deleteCoachPackageHandler = async (
       return;
     }
 
-    const coach = await Coach.findOne({ userId: req.user.id });
+    const coach = await prisma.coach.findFirst({
+      where: { userId: req.user.id },
+    });
     if (!coach) {
       res.status(404).json({
         success: false,
@@ -327,7 +332,7 @@ export const deleteCoachPackageHandler = async (
 
     // Verify ownership
     const isOwner = await validateCoachOwnsPackage(
-      coach._id.toString(),
+      coach.id,
       packageId,
     );
     if (!isOwner) {
@@ -396,9 +401,10 @@ export const subscribeToCoachPackageHandler = async (
       return;
     }
 
-    const transaction = await CoachSubscriptionPaymentTransaction.findOne({
-      merchantOrderId,
-    });
+    const transaction =
+      await prisma.coachSubscriptionPaymentTransaction.findUnique({
+        where: { merchantOrderId },
+      });
 
     if (!transaction) {
       res.status(404).json({
@@ -408,7 +414,7 @@ export const subscribeToCoachPackageHandler = async (
       return;
     }
 
-    if (transaction.userId.toString() !== req.user.id) {
+    if (transaction.userId !== req.user.id) {
       res.status(403).json({
         success: false,
         message: "You are not authorized to use this payment",
@@ -417,8 +423,8 @@ export const subscribeToCoachPackageHandler = async (
     }
 
     if (
-      transaction.coachId.toString() !== coachId ||
-      transaction.packageId.toString() !== packageId
+      transaction.coachId !== coachId ||
+      transaction.packageId !== packageId
     ) {
       res.status(400).json({
         success: false,
@@ -437,13 +443,35 @@ export const subscribeToCoachPackageHandler = async (
     }
 
     if (transaction.linkedSubscriptionId) {
-      const existing = await CoachSubscription.findById(
-        transaction.linkedSubscriptionId,
-      )
-        .populate("packageId")
-        .populate("coachId", "bio sports rating reviewCount");
+      const existingSubscription = await prisma.coachSubscription.findUnique({
+        where: { id: transaction.linkedSubscriptionId },
+      });
 
-      if (existing) {
+      if (existingSubscription) {
+        // Emulate the Mongoose `.populate("packageId").populate("coachId", ...)`
+        // shape: replace the String-FK fields with the referenced documents.
+        const [pkg, coachRef] = await Promise.all([
+          prisma.coachSubscriptionPackage.findUnique({
+            where: { id: existingSubscription.packageId },
+          }),
+          prisma.coach.findUnique({
+            where: { id: existingSubscription.coachId },
+            select: {
+              id: true,
+              bio: true,
+              sports: true,
+              rating: true,
+              reviewCount: true,
+            },
+          }),
+        ]);
+
+        const existing = {
+          ...existingSubscription,
+          packageId: pkg,
+          coachId: coachRef,
+        };
+
         res.status(200).json({
           success: true,
           message: "Subscription already active",
@@ -461,8 +489,10 @@ export const subscribeToCoachPackageHandler = async (
       packageId,
     });
 
-    transaction.linkedSubscriptionId = subscription._id;
-    await transaction.save();
+    await prisma.coachSubscriptionPaymentTransaction.update({
+      where: { id: transaction.id },
+      data: { linkedSubscriptionId: subscription.id },
+    });
 
     res.status(201).json({
       success: true,
@@ -600,7 +630,9 @@ export const getCoachActiveSubscriptionsHandler = async (
       return;
     }
 
-    const coach = await Coach.findOne({ userId: req.user.id });
+    const coach = await prisma.coach.findFirst({
+      where: { userId: req.user.id },
+    });
     if (!coach) {
       res.status(404).json({
         success: false,
@@ -610,7 +642,7 @@ export const getCoachActiveSubscriptionsHandler = async (
     }
 
     const subscriptions = await getCoachActiveSubscriptions(
-      coach._id.toString(),
+      coach.id,
     );
 
     res.status(200).json({
@@ -648,7 +680,9 @@ export const getCoachSubscriptionRevenueHandler = async (
       return;
     }
 
-    const coach = await Coach.findOne({ userId: req.user.id });
+    const coach = await prisma.coach.findFirst({
+      where: { userId: req.user.id },
+    });
     if (!coach) {
       res.status(404).json({
         success: false,
@@ -658,7 +692,7 @@ export const getCoachSubscriptionRevenueHandler = async (
     }
 
     const revenue = await getCoachSubscriptionRevenue({
-      coachId: coach._id.toString(),
+      coachId: coach.id,
     });
 
     res.status(200).json({
@@ -719,8 +753,9 @@ export const initiateCoachSubscriptionPaymentHandler = async (
       return;
     }
 
-    const packageDoc =
-      await CoachSubscriptionPackage.findById(packageId).lean();
+    const packageDoc = await prisma.coachSubscriptionPackage.findUnique({
+      where: { id: packageId },
+    });
     if (!packageDoc) {
       res.status(404).json({
         success: false,
@@ -729,7 +764,7 @@ export const initiateCoachSubscriptionPaymentHandler = async (
       return;
     }
 
-    if (packageDoc.coachId.toString() !== coachId) {
+    if (packageDoc.coachId !== coachId) {
       res.status(400).json({
         success: false,
         message: "Selected package does not belong to this coach",
@@ -785,7 +820,10 @@ export const initiateCoachSubscriptionPaymentHandler = async (
     redirectUrl.searchParams.set("packageId", packageId);
     redirectUrl.searchParams.set("merchantOrderId", merchantOrderId);
 
-    const payer = await User.findById(req.user.id).select("phone");
+    const payer = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { phone: true },
+    });
 
     const paymentPayload: {
       merchantOrderId: string;
@@ -809,29 +847,33 @@ export const initiateCoachSubscriptionPaymentHandler = async (
       paymentPayload.userPhone = payer.phone;
     }
 
-    transaction = await CoachSubscriptionPaymentTransaction.create({
-      coachId: packageDoc.coachId,
-      userId: req.user.id,
-      ...(dependentId ? { dependentId } : {}),
-      packageId: packageDoc._id,
-      merchantOrderId,
-      baseAmount: baseAmountInPaise,
-      platformFeeAmount: platformFeeInPaise,
-      taxAmount: taxAmountInPaise,
-      amount: amountInPaise,
-      status: "PENDING",
-      state: "PENDING",
-      redirectUrl: redirectUrl.toString(),
+    transaction = await prisma.coachSubscriptionPaymentTransaction.create({
+      data: {
+        coachId: packageDoc.coachId,
+        userId: req.user.id,
+        ...(dependentId ? { dependentId } : {}),
+        packageId: packageDoc.id,
+        merchantOrderId,
+        baseAmount: baseAmountInPaise,
+        platformFeeAmount: platformFeeInPaise,
+        taxAmount: taxAmountInPaise,
+        amount: amountInPaise,
+        status: "PENDING",
+        state: "PENDING",
+        redirectUrl: redirectUrl.toString(),
+      },
     });
 
     const initResult = await initiatePhonePePayment(paymentPayload);
 
-    if (initResult.orderId) {
-      transaction.phonepeOrderId = initResult.orderId;
-    }
-    transaction.redirectUrl = initResult.redirectUrl;
-    transaction.state = initResult.state || "PENDING";
-    await transaction.save();
+    transaction = await prisma.coachSubscriptionPaymentTransaction.update({
+      where: { id: transaction.id },
+      data: {
+        ...(initResult.orderId ? { phonepeOrderId: initResult.orderId } : {}),
+        redirectUrl: initResult.redirectUrl,
+        state: initResult.state || "PENDING",
+      },
+    });
 
     res.status(200).json({
       success: true,
