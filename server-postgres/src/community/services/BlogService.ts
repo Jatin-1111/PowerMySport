@@ -1,18 +1,24 @@
-import mongoose from "mongoose";
-import { BlogPost } from "../models/BlogPost";
-import { BlogComment } from "../models/BlogComment";
-import { BlogLike, BlogLikeTargetType } from "../models/BlogLike";
-import {
-  CommunityProfile,
-  CommunitySocialLinks,
-} from "../models/CommunityProfile";
-import { User } from "../../client/models/User";
+import { Prisma, type BlogLikeTargetType } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { S3Service } from "../../shared/services/S3Service";
 import { normalizeTags } from "./communityQnaUtils";
 
 const s3Service = new S3Service();
 
 const COMMUNITY_ALLOWED_ROLES = ["Player", "Coach", "Parent"] as const;
+
+// socialLinks was an embedded object on CommunityProfile in Mongo; in Postgres
+// it is flattened into sl* scalar columns. This interface preserves the old
+// object shape used by the public response payloads.
+interface CommunitySocialLinks {
+  youtube?: string;
+  instagram?: string;
+  facebook?: string;
+  twitter?: string;
+  github?: string;
+  website?: string;
+}
+
 const SOCIAL_KEYS: Array<keyof CommunitySocialLinks> = [
   "youtube",
   "instagram",
@@ -115,9 +121,17 @@ const resolveBlogImageUrl = async (
 };
 
 const ensureCommunityUser = async (userId: string) => {
-  const user = await User.findById(userId)
-    .select("_id role name photoUrl photoS3Key createdAt")
-    .lean();
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      role: true,
+      name: true,
+      photoUrl: true,
+      photoS3Key: true,
+      createdAt: true,
+    },
+  });
   if (!user) {
     throw new Error("User not found");
   }
@@ -141,8 +155,10 @@ const slugifyUsername = (name?: string): string => {
   return base.length >= 3 ? base : `member${base}`;
 };
 
+// Postgres unique-constraint violations surface as Prisma P2002 (was Mongo 11000).
 const isDuplicateKeyError = (error: unknown): boolean =>
-  Boolean((error as { code?: number })?.code === 11000);
+  error instanceof Prisma.PrismaClientKnownRequestError &&
+  error.code === "P2002";
 
 const generateUniqueUsername = async (name?: string): Promise<string> => {
   const base = slugifyUsername(name);
@@ -152,7 +168,10 @@ const generateUniqueUsername = async (name?: string): Promise<string> => {
       attempt === 0
         ? base
         : `${base}${Math.floor(1000 + Math.random() * 9000)}`;
-    const exists = await CommunityProfile.exists({ username: candidate });
+    const exists = await prisma.communityProfile.findFirst({
+      where: { username: candidate },
+      select: { id: true },
+    });
     if (!exists) {
       return candidate.slice(0, 30);
     }
@@ -173,18 +192,24 @@ const makeDefaultAlias = (name?: string): string => {
 const ensureBlogProfile = async (userId: string) => {
   const user = await ensureCommunityUser(userId);
 
-  let profile = await CommunityProfile.findOne({ userId });
+  let profile = await prisma.communityProfile.findUnique({
+    where: { userId },
+  });
   if (!profile) {
     try {
-      profile = await CommunityProfile.create({
-        userId,
-        anonymousAlias: makeDefaultAlias(user.name),
+      profile = await prisma.communityProfile.create({
+        data: {
+          userId,
+          anonymousAlias: makeDefaultAlias(user.name),
+        },
       });
     } catch (error) {
       if (!isDuplicateKeyError(error)) {
         throw error;
       }
-      profile = await CommunityProfile.findOne({ userId });
+      profile = await prisma.communityProfile.findUnique({
+        where: { userId },
+      });
     }
   }
 
@@ -193,17 +218,21 @@ const ensureBlogProfile = async (userId: string) => {
   }
 
   if (!profile.username) {
-    profile.username = await generateUniqueUsername(user.name);
     try {
-      await profile.save();
+      profile = await prisma.communityProfile.update({
+        where: { id: profile.id },
+        data: { username: await generateUniqueUsername(user.name) },
+      });
     } catch (error) {
       if (!isDuplicateKeyError(error)) {
         throw error;
       }
-      profile.username = await generateUniqueUsername(
-        `${user.name}${Date.now()}`,
-      );
-      await profile.save();
+      profile = await prisma.communityProfile.update({
+        where: { id: profile.id },
+        data: {
+          username: await generateUniqueUsername(`${user.name}${Date.now()}`),
+        },
+      });
     }
   }
 
@@ -220,6 +249,23 @@ const normalizeSocialLinks = (
   }
   return result;
 };
+
+/** Rebuild the embedded-style socialLinks object from the flattened sl* columns. */
+const socialLinksFromProfile = (profile: {
+  slYoutube: string;
+  slInstagram: string;
+  slFacebook: string;
+  slTwitter: string;
+  slGithub: string;
+  slWebsite: string;
+}): CommunitySocialLinks => ({
+  youtube: profile.slYoutube,
+  instagram: profile.slInstagram,
+  facebook: profile.slFacebook,
+  twitter: profile.slTwitter,
+  github: profile.slGithub,
+  website: profile.slWebsite,
+});
 
 /** Strip HTML tags/entities from rich-text block content for plain excerpts. */
 const stripHtml = (value: string): string =>
@@ -264,10 +310,10 @@ interface LegacyBlogBlock {
 
 /**
  * Posts published before the Tiptap editor stored `content` as an array of
- * blocks (see git history of BlogPost.ts). `.lean()` reads return whatever
- * shape is actually persisted, so old documents still surface as arrays here
- * — convert them to the equivalent HTML on the fly rather than migrating
- * (and potentially corrupting) other authors' stored content.
+ * blocks (see git history of BlogPost.ts). Legacy rows migrated from Mongo may
+ * still carry that array shape, so convert them to the equivalent HTML on the
+ * fly rather than migrating (and potentially corrupting) other authors' stored
+ * content.
  */
 const legacyBlocksToHtml = (blocks: LegacyBlogBlock[]): string =>
   blocks
@@ -358,35 +404,35 @@ const resolveContentImageUrls = async (html: string): Promise<string> => {
   return result;
 };
 
-const toObjectId = (id: string, label = "id"): mongoose.Types.ObjectId => {
-  if (!mongoose.Types.ObjectId.isValid(id)) {
+/**
+ * Ids are now Postgres strings (cuid, or the 24-char ObjectId hex preserved
+ * from the Mongo ETL) — there is no ObjectId to cast to, so we only guard
+ * against empty/invalid input and pass the id through verbatim.
+ */
+const toId = (id: string, label = "id"): string => {
+  if (!id || typeof id !== "string") {
     throw new Error(`Invalid ${label}`);
   }
-  return new mongoose.Types.ObjectId(id);
+  return id;
 };
 
 // ─── Author resolution for lists ────────────────────────────────────────────
-type LeanUser = {
-  _id: mongoose.Types.ObjectId;
-  name?: string;
-  photoUrl?: string | null;
-  photoS3Key?: string | null;
-};
-
-const buildAuthorMaps = async (authorIds: mongoose.Types.ObjectId[]) => {
+const buildAuthorMaps = async (authorIds: string[]) => {
   const uniqueIds = [...new Set(authorIds.map((id) => String(id)))];
   const [users, profiles] = await Promise.all([
-    User.find({ _id: { $in: uniqueIds } })
-      .select("_id name photoUrl photoS3Key")
-      .lean<LeanUser[]>(),
-    CommunityProfile.find({ userId: { $in: uniqueIds } })
-      .select("userId username")
-      .lean(),
+    prisma.user.findMany({
+      where: { id: { in: uniqueIds } },
+      select: { id: true, name: true, photoUrl: true, photoS3Key: true },
+    }),
+    prisma.communityProfile.findMany({
+      where: { userId: { in: uniqueIds } },
+      select: { userId: true, username: true },
+    }),
   ]);
 
-  const userMap = new Map(users.map((user) => [String(user._id), user]));
+  const userMap = new Map(users.map((user) => [user.id, user]));
   const usernameMap = new Map(
-    profiles.map((profile) => [String(profile.userId), profile.username || ""]),
+    profiles.map((profile) => [profile.userId, profile.username || ""]),
   );
 
   // Resolve photo URLs once per unique author.
@@ -431,37 +477,46 @@ export const BlogService = {
     const safeLimit = Math.min(50, Math.max(1, limit));
     const skip = (safePage - 1) * safeLimit;
 
-    const query: Record<string, unknown> = {
+    const where: Prisma.BlogPostWhereInput = {
       isDeleted: false,
       status: "PUBLISHED",
     };
 
     if (filters?.mine) {
-      query.authorId = toObjectId(userId, "user id");
+      where.authorId = toId(userId, "user id");
     } else if (filters?.authorId) {
-      query.authorId = toObjectId(filters.authorId, "author id");
+      where.authorId = toId(filters.authorId, "author id");
     }
 
     const topic = (filters?.topic || "").trim();
     if (topic && topic.toLowerCase() !== "all") {
-      query.topic = topic;
+      where.topic = topic;
     }
 
-    // Case-insensitive "contains" match across title, excerpt, tags, topic.
+    // Case-insensitive "contains" match across title, excerpt, topic + exact tag.
     const search = (filters?.q || "").trim();
     if (search) {
-      const safe = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const rx = new RegExp(safe, "i");
-      query.$or = [{ title: rx }, { excerpt: rx }, { tags: rx }, { topic: rx }];
+      // TODO(prisma): full-text — this OR/contains scan replaces the old Mongo
+      // regex $or. For a real full-text endpoint, add a tsvector + GIN index and
+      // query via $queryRaw. Note `tags` (String[]) only supports exact-element
+      // `has` here; case-insensitive partial tag matching also needs the tsvector
+      // approach (Prisma has no `contains`/`mode` on scalar arrays).
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { excerpt: { contains: search, mode: "insensitive" } },
+        { topic: { contains: search, mode: "insensitive" } },
+        { tags: { has: search } },
+      ];
     }
 
     const [posts, total] = await Promise.all([
-      BlogPost.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(safeLimit)
-        .lean(),
-      BlogPost.countDocuments(query),
+      prisma.blogPost.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: safeLimit,
+      }),
+      prisma.blogPost.count({ where }),
     ]);
 
     const { buildAuthor } = await buildAuthorMaps(
@@ -471,7 +526,7 @@ export const BlogService = {
     const likedSet = await this.buildLikedSet(
       userId,
       "BLOG",
-      posts.map((post) => String(post._id)),
+      posts.map((post) => post.id),
     );
 
     const coverUrls = await Promise.all(
@@ -479,7 +534,7 @@ export const BlogService = {
     );
 
     const items: BlogListItem[] = posts.map((post, index) => ({
-      id: String(post._id),
+      id: post.id,
       title: post.title,
       excerpt: post.excerpt || "",
       coverImageKey: post.coverImageKey || null,
@@ -489,9 +544,9 @@ export const BlogService = {
       likeCount: post.likeCount || 0,
       commentCount: post.commentCount || 0,
       viewCount: post.viewCount || 0,
-      likedByMe: likedSet.has(String(post._id)),
+      likedByMe: likedSet.has(post.id),
       createdAt: post.createdAt,
-      author: buildAuthor(String(post.authorId)),
+      author: buildAuthor(post.authorId),
     }));
 
     return {
@@ -512,36 +567,39 @@ export const BlogService = {
     if (!targetIds.length) {
       return new Set();
     }
-    const likes = await BlogLike.find({
-      userId,
-      targetType,
-      targetId: { $in: targetIds },
-    })
-      .select("targetId")
-      .lean();
-    return new Set(likes.map((like) => String(like.targetId)));
+    const likes = await prisma.blogLike.findMany({
+      where: {
+        userId,
+        targetType,
+        targetId: { in: targetIds },
+      },
+      select: { targetId: true },
+    });
+    return new Set(likes.map((like) => like.targetId));
   },
 
   async getBlog(userId: string, blogId: string): Promise<BlogDetail> {
-    const id = toObjectId(blogId, "blog id");
-    const post = await BlogPost.findOne({ _id: id, isDeleted: false }).lean();
+    const id = toId(blogId, "blog id");
+    const post = await prisma.blogPost.findFirst({
+      where: { id, isDeleted: false },
+    });
     if (!post) {
       throw new Error("Blog not found");
     }
 
     // Fire-and-forget view increment (don't block the read).
-    BlogPost.updateOne({ _id: id }, { $inc: { viewCount: 1 } }).catch(() => {});
+    prisma.blogPost
+      .update({ where: { id }, data: { viewCount: { increment: 1 } } })
+      .catch(() => {});
 
     const { buildAuthor } = await buildAuthorMaps([post.authorId]);
-    const likedSet = await this.buildLikedSet(userId, "BLOG", [
-      String(post._id),
-    ]);
+    const likedSet = await this.buildLikedSet(userId, "BLOG", [post.id]);
 
     const coverImageUrl = await resolveBlogImageUrl(post.coverImageKey);
     const content = await resolveContentImageUrls(toContentHtml(post.content));
 
     return {
-      id: String(post._id),
+      id: post.id,
       title: post.title,
       excerpt: post.excerpt || "",
       coverImageKey: post.coverImageKey || null,
@@ -551,12 +609,12 @@ export const BlogService = {
       likeCount: post.likeCount || 0,
       commentCount: post.commentCount || 0,
       viewCount: (post.viewCount || 0) + 1,
-      likedByMe: likedSet.has(String(post._id)),
+      likedByMe: likedSet.has(post.id),
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
       content,
-      isMine: String(post.authorId) === userId,
-      author: buildAuthor(String(post.authorId)),
+      isMine: post.authorId === userId,
+      author: buildAuthor(post.authorId),
     };
   },
 
@@ -574,18 +632,20 @@ export const BlogService = {
     await ensureBlogProfile(userId);
 
     const content = stripContentImageSrc(payload.content || "");
-    const post = await BlogPost.create({
-      authorId: userId,
-      title: payload.title.trim(),
-      excerpt: deriveExcerpt(payload.excerpt, content),
-      coverImageKey: payload.coverImageKey || null,
-      topic: (payload.topic || "General").trim() || "General",
-      tags: normalizeTags(payload.tags),
-      content,
-      status: "PUBLISHED",
+    const post = await prisma.blogPost.create({
+      data: {
+        authorId: userId,
+        title: payload.title.trim(),
+        excerpt: deriveExcerpt(payload.excerpt, content),
+        coverImageKey: payload.coverImageKey || null,
+        topic: (payload.topic || "General").trim() || "General",
+        tags: normalizeTags(payload.tags),
+        content,
+        status: "PUBLISHED",
+      },
     });
 
-    return this.getBlog(userId, String(post._id));
+    return this.getBlog(userId, post.id);
   },
 
   async updateBlog(
@@ -600,57 +660,64 @@ export const BlogService = {
       content?: string;
     },
   ): Promise<BlogDetail> {
-    const id = toObjectId(blogId, "blog id");
-    const post = await BlogPost.findOne({ _id: id, isDeleted: false });
+    const id = toId(blogId, "blog id");
+    const post = await prisma.blogPost.findFirst({
+      where: { id, isDeleted: false },
+    });
     if (!post) {
       throw new Error("Blog not found");
     }
-    if (String(post.authorId) !== userId) {
+    if (post.authorId !== userId) {
       throw new Error("Access denied");
     }
 
+    const data: Prisma.BlogPostUpdateInput = {};
+
     if (typeof payload.title === "string") {
-      post.title = payload.title.trim();
+      data.title = payload.title.trim();
     }
     if (typeof payload.topic === "string") {
-      post.topic = payload.topic.trim() || "General";
+      data.topic = payload.topic.trim() || "General";
     }
     if (Array.isArray(payload.tags)) {
-      post.tags = normalizeTags(payload.tags);
+      data.tags = normalizeTags(payload.tags);
     }
     if (payload.coverImageKey !== undefined) {
-      post.coverImageKey = payload.coverImageKey || null;
+      data.coverImageKey = payload.coverImageKey || null;
     }
     if (typeof payload.content === "string") {
       const cleaned = stripContentImageSrc(payload.content);
-      post.content = cleaned;
-      post.excerpt = deriveExcerpt(payload.excerpt, cleaned);
+      data.content = cleaned;
+      data.excerpt = deriveExcerpt(payload.excerpt, cleaned);
     } else if (typeof payload.excerpt === "string") {
-      post.excerpt = payload.excerpt.trim().slice(0, 300);
+      data.excerpt = payload.excerpt.trim().slice(0, 300);
     }
 
-    await post.save();
-    return this.getBlog(userId, String(post._id));
+    await prisma.blogPost.update({ where: { id }, data });
+    return this.getBlog(userId, id);
   },
 
   async deleteBlog(
     userId: string,
     blogId: string,
   ): Promise<{ id: string; deleted: boolean }> {
-    const id = toObjectId(blogId, "blog id");
-    const post = await BlogPost.findOne({ _id: id, isDeleted: false });
+    const id = toId(blogId, "blog id");
+    const post = await prisma.blogPost.findFirst({
+      where: { id, isDeleted: false },
+    });
     if (!post) {
       throw new Error("Blog not found");
     }
-    if (String(post.authorId) !== userId) {
+    if (post.authorId !== userId) {
       throw new Error("Access denied");
     }
 
-    post.isDeleted = true;
-    post.deletedAt = new Date();
-    await post.save();
+    await prisma.blogPost.update({
+      where: { id },
+      data: { isDeleted: true, deletedAt: new Date() },
+    });
 
-    return { id: String(post._id), deleted: true };
+    return { id: post.id, deleted: true };
   },
 
   async toggleLike(
@@ -659,35 +726,64 @@ export const BlogService = {
     targetId: string,
   ): Promise<{ liked: boolean; likeCount: number }> {
     await ensureBlogProfile(userId);
-    const id = toObjectId(targetId, "target id");
+    const id = toId(targetId, "target id");
 
-    const Model = (
-      targetType === "BLOG" ? BlogPost : BlogComment
-    ) as mongoose.Model<{ likeCount: number }>;
-    const target = await Model.findOne({ _id: id, isDeleted: false }).select(
-      "_id",
-    );
+    // Confirm the like target exists and is not soft-deleted.
+    const target =
+      targetType === "BLOG"
+        ? await prisma.blogPost.findFirst({
+            where: { id, isDeleted: false },
+            select: { id: true },
+          })
+        : await prisma.blogComment.findFirst({
+            where: { id, isDeleted: false },
+            select: { id: true },
+          });
     if (!target) {
       throw new Error(
         targetType === "BLOG" ? "Blog not found" : "Comment not found",
       );
     }
 
-    const existing = await BlogLike.findOne({
-      userId,
-      targetType,
-      targetId: id,
+    const existing = await prisma.blogLike.findUnique({
+      where: {
+        userId_targetType_targetId: { userId, targetType, targetId: id },
+      },
     });
 
     let liked: boolean;
     if (existing) {
-      await BlogLike.deleteOne({ _id: existing._id });
-      await Model.updateOne({ _id: id }, { $inc: { likeCount: -1 } });
+      // Un-like: delete the row + decrement the target counter atomically.
+      await prisma.$transaction([
+        prisma.blogLike.delete({ where: { id: existing.id } }),
+        targetType === "BLOG"
+          ? prisma.blogPost.update({
+              where: { id },
+              data: { likeCount: { decrement: 1 } },
+            })
+          : prisma.blogComment.update({
+              where: { id },
+              data: { likeCount: { decrement: 1 } },
+            }),
+      ]);
       liked = false;
     } else {
+      // Like: create the row + increment the target counter atomically.
       try {
-        await BlogLike.create({ userId, targetType, targetId: id });
-        await Model.updateOne({ _id: id }, { $inc: { likeCount: 1 } });
+        await prisma.$transaction([
+          prisma.blogLike.create({
+            data: { userId, targetType, targetId: id },
+          }),
+          targetType === "BLOG"
+            ? prisma.blogPost.update({
+                where: { id },
+                data: { likeCount: { increment: 1 } },
+              })
+            : prisma.blogComment.update({
+                where: { id },
+                data: { likeCount: { increment: 1 } },
+              }),
+        ]);
         liked = true;
       } catch (error) {
         if (!isDuplicateKeyError(error)) {
@@ -697,7 +793,16 @@ export const BlogService = {
       }
     }
 
-    const updated = await Model.findById(id).select("likeCount").lean();
+    const updated =
+      targetType === "BLOG"
+        ? await prisma.blogPost.findUnique({
+            where: { id },
+            select: { likeCount: true },
+          })
+        : await prisma.blogComment.findUnique({
+            where: { id },
+            select: { likeCount: true },
+          });
     return { liked, likeCount: Math.max(0, updated?.likeCount || 0) };
   },
 
@@ -710,32 +815,29 @@ export const BlogService = {
     items: BlogCommentItem[];
     pagination: { total: number; page: number; totalPages: number };
   }> {
-    const id = toObjectId(blogId, "blog id");
+    const id = toId(blogId, "blog id");
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(50, Math.max(1, limit));
     const skip = (safePage - 1) * safeLimit;
 
     const [topLevel, total] = await Promise.all([
-      BlogComment.find({ blogId: id, parentId: null, isDeleted: false })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(safeLimit)
-        .lean(),
-      BlogComment.countDocuments({
-        blogId: id,
-        parentId: null,
-        isDeleted: false,
+      prisma.blogComment.findMany({
+        where: { blogId: id, parentId: null, isDeleted: false },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: safeLimit,
+      }),
+      prisma.blogComment.count({
+        where: { blogId: id, parentId: null, isDeleted: false },
       }),
     ]);
 
-    const topIds = topLevel.map((comment) => comment._id);
+    const topIds = topLevel.map((comment) => comment.id);
     const replies = topIds.length
-      ? await BlogComment.find({
-          parentId: { $in: topIds },
-          isDeleted: false,
+      ? await prisma.blogComment.findMany({
+          where: { parentId: { in: topIds }, isDeleted: false },
+          orderBy: { createdAt: "asc" },
         })
-          .sort({ createdAt: 1 })
-          .lean()
       : [];
 
     const all = [...topLevel, ...replies];
@@ -745,20 +847,20 @@ export const BlogService = {
     const likedSet = await this.buildLikedSet(
       userId,
       "COMMENT",
-      all.map((comment) => String(comment._id)),
+      all.map((comment) => comment.id),
     );
 
     const toItem = (comment: (typeof all)[number]): BlogCommentItem => ({
-      id: String(comment._id),
-      blogId: String(comment.blogId),
+      id: comment.id,
+      blogId: comment.blogId,
       content: comment.content,
-      parentId: comment.parentId ? String(comment.parentId) : null,
+      parentId: comment.parentId ? comment.parentId : null,
       likeCount: comment.likeCount || 0,
-      likedByMe: likedSet.has(String(comment._id)),
+      likedByMe: likedSet.has(comment.id),
       createdAt: comment.createdAt,
-      author: buildAuthor(String(comment.authorId)),
+      author: buildAuthor(comment.authorId),
       replies: [],
-      isMine: String(comment.authorId) === userId,
+      isMine: comment.authorId === userId,
     });
 
     const repliesByParent = new Map<string, BlogCommentItem[]>();
@@ -771,7 +873,7 @@ export const BlogService = {
 
     const items = topLevel.map((comment) => {
       const item = toItem(comment);
-      item.replies = repliesByParent.get(String(comment._id)) || [];
+      item.replies = repliesByParent.get(comment.id) || [];
       return item;
     });
 
@@ -792,50 +894,58 @@ export const BlogService = {
     parentId?: string,
   ): Promise<BlogCommentItem> {
     await ensureBlogProfile(userId);
-    const id = toObjectId(blogId, "blog id");
+    const id = toId(blogId, "blog id");
 
-    const blog = await BlogPost.findOne({ _id: id, isDeleted: false }).select(
-      "_id",
-    );
+    const blog = await prisma.blogPost.findFirst({
+      where: { id, isDeleted: false },
+      select: { id: true },
+    });
     if (!blog) {
       throw new Error("Blog not found");
     }
 
-    let parent: mongoose.Types.ObjectId | null = null;
+    let parent: string | null = null;
     if (parentId) {
-      const parentObjId = toObjectId(parentId, "parent id");
-      const parentComment = await BlogComment.findOne({
-        _id: parentObjId,
-        blogId: id,
-        isDeleted: false,
-      }).select("_id parentId");
+      const parentObjId = toId(parentId, "parent id");
+      const parentComment = await prisma.blogComment.findFirst({
+        where: { id: parentObjId, blogId: id, isDeleted: false },
+        select: { id: true, parentId: true },
+      });
       if (!parentComment) {
         throw new Error("Parent comment not found");
       }
       // Enforce single-level threading: reply to the top-level ancestor.
       parent = parentComment.parentId
-        ? (parentComment.parentId as mongoose.Types.ObjectId)
-        : (parentComment._id as mongoose.Types.ObjectId);
+        ? parentComment.parentId
+        : parentComment.id;
     }
 
-    const comment = await BlogComment.create({
-      blogId: id,
-      authorId: userId,
-      content: content.trim(),
-      parentId: parent,
+    const comment = await prisma.$transaction(async (tx) => {
+      const created = await tx.blogComment.create({
+        data: {
+          blogId: id,
+          authorId: userId,
+          content: content.trim(),
+          parentId: parent,
+        },
+      });
+      await tx.blogPost.update({
+        where: { id },
+        data: { commentCount: { increment: 1 } },
+      });
+      return created;
     });
-    await BlogPost.updateOne({ _id: id }, { $inc: { commentCount: 1 } });
 
     const { buildAuthor } = await buildAuthorMaps([comment.authorId]);
     return {
-      id: String(comment._id),
-      blogId: String(comment.blogId),
+      id: comment.id,
+      blogId: comment.blogId,
       content: comment.content,
-      parentId: comment.parentId ? String(comment.parentId) : null,
+      parentId: comment.parentId ? comment.parentId : null,
       likeCount: 0,
       likedByMe: false,
       createdAt: comment.createdAt,
-      author: buildAuthor(String(comment.authorId)),
+      author: buildAuthor(comment.authorId),
       replies: [],
       isMine: true,
     };
@@ -845,24 +955,29 @@ export const BlogService = {
     userId: string,
     commentId: string,
   ): Promise<{ id: string; deleted: boolean }> {
-    const id = toObjectId(commentId, "comment id");
-    const comment = await BlogComment.findOne({ _id: id, isDeleted: false });
+    const id = toId(commentId, "comment id");
+    const comment = await prisma.blogComment.findFirst({
+      where: { id, isDeleted: false },
+    });
     if (!comment) {
       throw new Error("Comment not found");
     }
-    if (String(comment.authorId) !== userId) {
+    if (comment.authorId !== userId) {
       throw new Error("Access denied");
     }
 
-    comment.isDeleted = true;
-    comment.deletedAt = new Date();
-    await comment.save();
-    await BlogPost.updateOne(
-      { _id: comment.blogId },
-      { $inc: { commentCount: -1 } },
-    );
+    await prisma.$transaction([
+      prisma.blogComment.update({
+        where: { id },
+        data: { isDeleted: true, deletedAt: new Date() },
+      }),
+      prisma.blogPost.update({
+        where: { id: comment.blogId },
+        data: { commentCount: { decrement: 1 } },
+      }),
+    ]);
 
-    return { id: String(comment._id), deleted: true };
+    return { id: comment.id, deleted: true };
   },
 
   async buildProfilePayload(
@@ -870,10 +985,17 @@ export const BlogService = {
     targetUserId: string,
   ): Promise<BlogAuthorProfile> {
     const [user, profile] = await Promise.all([
-      User.findById(targetUserId)
-        .select("_id name photoUrl photoS3Key createdAt")
-        .lean<LeanUser & { createdAt: Date }>(),
-      CommunityProfile.findOne({ userId: targetUserId }).lean(),
+      prisma.user.findUnique({
+        where: { id: targetUserId },
+        select: {
+          id: true,
+          name: true,
+          photoUrl: true,
+          photoS3Key: true,
+          createdAt: true,
+        },
+      }),
+      prisma.communityProfile.findUnique({ where: { userId: targetUserId } }),
     ]);
     if (!user) {
       throw new Error("User not found");
@@ -881,34 +1003,36 @@ export const BlogService = {
 
     const [photoUrl, blogCount, likeAgg] = await Promise.all([
       resolveUserPhotoUrl(user),
-      BlogPost.countDocuments({
-        authorId: targetUserId,
-        isDeleted: false,
-        status: "PUBLISHED",
-      }),
-      BlogPost.aggregate<{ total: number }>([
-        {
-          $match: {
-            authorId: new mongoose.Types.ObjectId(targetUserId),
-            isDeleted: false,
-            status: "PUBLISHED",
-          },
+      prisma.blogPost.count({
+        where: {
+          authorId: targetUserId,
+          isDeleted: false,
+          status: "PUBLISHED",
         },
-        { $group: { _id: null, total: { $sum: "$likeCount" } } },
-      ]),
+      }),
+      prisma.blogPost.aggregate({
+        where: {
+          authorId: targetUserId,
+          isDeleted: false,
+          status: "PUBLISHED",
+        },
+        _sum: { likeCount: true },
+      }),
     ]);
 
     return {
-      userId: String(user._id),
+      userId: user.id,
       username: profile?.username || "",
       name: user.name || "PowerMySport Member",
       photoUrl,
       bio: profile?.bio || "",
-      socialLinks: normalizeSocialLinks(profile?.socialLinks),
+      socialLinks: normalizeSocialLinks(
+        profile ? socialLinksFromProfile(profile) : undefined,
+      ),
       joinedAt: user.createdAt,
       blogCount,
-      totalLikes: likeAgg[0]?.total || 0,
-      isMe: String(user._id) === viewerId,
+      totalLikes: likeAgg._sum.likeCount || 0,
+      isMe: user.id === viewerId,
     };
   },
 
@@ -924,15 +1048,22 @@ export const BlogService = {
     let targetUserId: string | null = null;
 
     // Resolve by @username first, then by raw user id.
-    const byUsername = await CommunityProfile.findOne({
-      username: identifier.trim().toLowerCase(),
-    })
-      .select("userId")
-      .lean();
+    const byUsername = await prisma.communityProfile.findFirst({
+      where: { username: identifier.trim().toLowerCase() },
+      select: { userId: true },
+    });
     if (byUsername) {
-      targetUserId = String(byUsername.userId);
-    } else if (mongoose.Types.ObjectId.isValid(identifier)) {
-      targetUserId = identifier;
+      targetUserId = byUsername.userId;
+    } else {
+      // No ObjectId to validate against anymore; treat the identifier as a raw
+      // user id only if a matching user actually exists.
+      const user = await prisma.user.findUnique({
+        where: { id: identifier },
+        select: { id: true },
+      });
+      if (user) {
+        targetUserId = identifier;
+      }
     }
 
     if (!targetUserId) {
@@ -952,35 +1083,44 @@ export const BlogService = {
   ): Promise<BlogAuthorProfile> {
     const { profile } = await ensureBlogProfile(userId);
 
+    const data: Prisma.CommunityProfileUpdateInput = {};
+
     if (typeof payload.username === "string" && payload.username.trim()) {
       const nextUsername = payload.username.trim().toLowerCase();
       if (nextUsername !== profile.username) {
-        const taken = await CommunityProfile.findOne({
-          username: nextUsername,
-          userId: { $ne: userId },
-        })
-          .select("_id")
-          .lean();
+        const taken = await prisma.communityProfile.findFirst({
+          where: { username: nextUsername, userId: { not: userId } },
+          select: { id: true },
+        });
         if (taken) {
           throw new Error("Username is already taken");
         }
-        profile.username = nextUsername;
+        data.username = nextUsername;
       }
     }
 
     if (typeof payload.bio === "string") {
-      profile.bio = payload.bio.trim().slice(0, 300);
+      data.bio = payload.bio.trim().slice(0, 300);
     }
 
     if (payload.socialLinks) {
-      profile.socialLinks = normalizeSocialLinks({
-        ...(profile.socialLinks || {}),
+      const merged = normalizeSocialLinks({
+        ...socialLinksFromProfile(profile),
         ...payload.socialLinks,
       });
+      data.slYoutube = merged.youtube;
+      data.slInstagram = merged.instagram;
+      data.slFacebook = merged.facebook;
+      data.slTwitter = merged.twitter;
+      data.slGithub = merged.github;
+      data.slWebsite = merged.website;
     }
 
     try {
-      await profile.save();
+      await prisma.communityProfile.update({
+        where: { id: profile.id },
+        data,
+      });
     } catch (error) {
       if (isDuplicateKeyError(error)) {
         throw new Error("Username is already taken");

@@ -1,11 +1,97 @@
-import Academy, { AcademyDocument } from "../models/Academy";
-import { User } from "../../client/models/User";
-import SubscriptionPlan from "../../client/models/SubscriptionPlan";
-import SessionPackage from "../../client/models/SessionPackage";
+import crypto from "crypto";
+import type { Academy } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { IAcademyPendingReview, IOnboardingUploadUrl } from "../../types/index";
 import { sendEmail } from "../../utils/email";
 import { NotificationService } from "../../client/services/NotificationService";
 import { s3Service } from "../../shared/services/S3Service";
+
+// ---------------------------------------------------------------------------
+// Relocated AES-256-GCM bank-field crypto (see SCHEMA_CHANGES §11).
+// In Mongo this lived as getter/setter + a pre-save hook on the Academy model.
+// Prisma has no hooks, so the encrypt-on-write / decrypt-on-read logic moves
+// here and is applied explicitly around every Academy write/read that touches
+// bankAccountNumber / bankIfsc / upiId. Requires BANK_ENCRYPTION_KEY (32-byte
+// hex) in the environment — see server/.env.example.
+// ---------------------------------------------------------------------------
+const rawEncryptionKey = process.env.BANK_ENCRYPTION_KEY || "";
+const ENCRYPTION_KEY = Buffer.from(rawEncryptionKey, "hex");
+if (!rawEncryptionKey || ENCRYPTION_KEY.length !== 32) {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("FATAL: BANK_ENCRYPTION_KEY must be a 32-byte hex string.");
+  }
+  console.warn(
+    "WARNING: BANK_ENCRYPTION_KEY is missing or invalid. Academy bank fields will not be encrypted correctly.",
+  );
+}
+
+const isEncryptedValue = (value: string): boolean =>
+  value.split(":").length === 3;
+
+const encryptValue = (plaintext: string): string => {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
+  const encrypted = Buffer.concat([
+    cipher.update(plaintext, "utf8"),
+    cipher.final(),
+  ]);
+  const tag = cipher.getAuthTag();
+  return [
+    iv.toString("hex"),
+    tag.toString("hex"),
+    encrypted.toString("hex"),
+  ].join(":");
+};
+
+const decryptValue = (ciphertext: string): string => {
+  if (!ciphertext || !isEncryptedValue(ciphertext)) {
+    return ciphertext;
+  }
+
+  try {
+    const parts = ciphertext.split(":");
+    if (parts.length !== 3) {
+      return ciphertext;
+    }
+
+    const [ivHex, tagHex, encHex] = parts as [string, string, string];
+    const iv = Buffer.from(ivHex, "hex");
+    const tag = Buffer.from(tagHex, "hex");
+    const enc = Buffer.from(encHex, "hex");
+    const decipher = crypto.createDecipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
+    decipher.setAuthTag(tag);
+    return Buffer.concat([decipher.update(enc), decipher.final()]).toString(
+      "utf8",
+    );
+  } catch {
+    return ciphertext;
+  }
+};
+
+// Encrypt bank fields on any updateData object before it is written (mirrors
+// the old setter/pre-save behavior: only encrypt non-empty, not-already-
+// encrypted values).
+const encryptBankFieldsForWrite = (
+  updateData: Record<string, unknown>,
+): void => {
+  for (const field of ["bankAccountNumber", "bankIfsc", "upiId"] as const) {
+    const value = updateData[field];
+    if (typeof value === "string" && value && !isEncryptedValue(value)) {
+      updateData[field] = encryptValue(value);
+    }
+  }
+};
+
+// Decrypt bank fields on read (mirrors the old getters + toJSON/toObject
+// getters:true). Returns a new object so the stored/cached row is untouched.
+const decryptBankFieldsForRead = <T extends Academy>(academy: T): T => {
+  return {
+    ...academy,
+    bankAccountNumber: decryptValue(academy.bankAccountNumber),
+    bankIfsc: decryptValue(academy.bankIfsc),
+    upiId: decryptValue(academy.upiId),
+  };
+};
 
 export const UPLOAD_CONSTRAINTS = {
   IMAGES: {
@@ -62,7 +148,7 @@ const generateSlug = (name: string): string =>
     .replace(/-+/g, "-");
 
 const ensureAcademyExists = async (academyId: string) => {
-  const academy = await Academy.findById(academyId);
+  const academy = await prisma.academy.findUnique({ where: { id: academyId } });
   if (!academy) {
     throw new Error("Academy not found");
   }
@@ -81,10 +167,12 @@ export const startAcademyOnboarding = async (payload: {
   description: string;
   logoUrl?: string;
   logoKey?: string;
-}): Promise<AcademyDocument> => {
-  const existingAcademy = await Academy.findOne({
-    contactEmail: payload.ownerEmail,
-    onboardingCompleted: false,
+}): Promise<Academy> => {
+  const existingAcademy = await prisma.academy.findFirst({
+    where: {
+      contactEmail: payload.ownerEmail,
+      onboardingCompleted: false,
+    },
   });
 
   if (existingAcademy) {
@@ -95,117 +183,128 @@ export const startAcademyOnboarding = async (payload: {
 
   let slug = generateSlug(payload.name);
   let counter = 1;
-  while (await Academy.findOne({ slug })) {
+  while (await prisma.academy.findUnique({ where: { slug } })) {
     slug = `${generateSlug(payload.name)}-${counter}`;
     counter += 1;
   }
 
   // Do not create a new account here. Link an existing owner account only.
-  const existingOwner = await User.findOne({
-    $or: [{ email: payload.ownerEmail }, { phone: payload.ownerPhone }],
-  }).select("_id");
-
-  const academy = await Academy.create({
-    name: payload.name,
-    legalName: payload.legalName,
-    slug,
-    sports: payload.sports,
-    ageGroups: payload.ageGroups,
-    establishedYear: payload.establishedYear,
-    description: payload.description,
-    logoUrl: payload.logoUrl,
-    logoKey: payload.logoKey,
-    contactPersonName: payload.ownerName,
-    contactEmail: payload.ownerEmail,
-    contactPhone: payload.ownerPhone,
-    ownerId: existingOwner?._id,
-    photos: [],
-    photoKeys: [],
-    location: {
-      type: "Point",
-      coordinates: [0, 0],
+  const existingOwner = await prisma.user.findFirst({
+    where: {
+      OR: [{ email: payload.ownerEmail }, { phone: payload.ownerPhone }],
     },
-    operatingHours: {
-      monday: {
-        isOpen: true,
-        openTime: "09:00",
-        closeTime: "21:00",
-        slots: [{ startTime: "09:00", endTime: "21:00" }],
-      },
-      tuesday: {
-        isOpen: true,
-        openTime: "09:00",
-        closeTime: "21:00",
-        slots: [{ startTime: "09:00", endTime: "21:00" }],
-      },
-      wednesday: {
-        isOpen: true,
-        openTime: "09:00",
-        closeTime: "21:00",
-        slots: [{ startTime: "09:00", endTime: "21:00" }],
-      },
-      thursday: {
-        isOpen: true,
-        openTime: "09:00",
-        closeTime: "21:00",
-        slots: [{ startTime: "09:00", endTime: "21:00" }],
-      },
-      friday: {
-        isOpen: true,
-        openTime: "09:00",
-        closeTime: "21:00",
-        slots: [{ startTime: "09:00", endTime: "21:00" }],
-      },
-      saturday: {
-        isOpen: true,
-        openTime: "09:00",
-        closeTime: "21:00",
-        slots: [{ startTime: "09:00", endTime: "21:00" }],
-      },
-      sunday: {
-        isOpen: true,
-        openTime: "09:00",
-        closeTime: "21:00",
-        slots: [{ startTime: "09:00", endTime: "21:00" }],
-      },
-    },
-    languagesSpoken: ["English", "Hindi"],
-    whatsappNumber: payload.ownerPhone,
-    allowsExternalCoaches: true,
-    academyVenues: [],
-    academyCoaches: [],
-    venueIds: [],
-    coachIds: [],
-    subscriptionPlans: [],
-    sessionPackages: [],
-    businessType: "sole_proprietorship",
-    sessionRatePerHour: 0,
-    trialsessionOffered: false,
-    payoutFrequency: "weekly",
-    onboardingStep: 1,
-    onboardingCompleted: false,
-    isApproved: false,
-    kycVerified: false,
-    isActive: false,
-    rating: 0,
-    reviewCount: 0,
-    batchTimings: ["morning"],
-    maxBatchSize: 20,
+    select: { id: true },
   });
 
-  return academy;
+  const academy = await prisma.academy.create({
+    data: {
+      name: payload.name,
+      legalName: payload.legalName,
+      slug,
+      sports: payload.sports,
+      ageGroups: payload.ageGroups,
+      establishedYear: payload.establishedYear,
+      description: payload.description,
+      logoUrl: payload.logoUrl,
+      logoKey: payload.logoKey,
+      contactPersonName: payload.ownerName,
+      contactEmail: payload.ownerEmail,
+      contactPhone: payload.ownerPhone,
+      ownerId: existingOwner?.id ?? null,
+      photos: [],
+      photoKeys: [],
+      // GeoJSON Point -> lng/lat columns (SCHEMA_CHANGES §7).
+      lng: 0,
+      lat: 0,
+      // operatingHours (7-day object) kept as a Json blob.
+      operatingHours: {
+        monday: {
+          isOpen: true,
+          openTime: "09:00",
+          closeTime: "21:00",
+          slots: [{ startTime: "09:00", endTime: "21:00" }],
+        },
+        tuesday: {
+          isOpen: true,
+          openTime: "09:00",
+          closeTime: "21:00",
+          slots: [{ startTime: "09:00", endTime: "21:00" }],
+        },
+        wednesday: {
+          isOpen: true,
+          openTime: "09:00",
+          closeTime: "21:00",
+          slots: [{ startTime: "09:00", endTime: "21:00" }],
+        },
+        thursday: {
+          isOpen: true,
+          openTime: "09:00",
+          closeTime: "21:00",
+          slots: [{ startTime: "09:00", endTime: "21:00" }],
+        },
+        friday: {
+          isOpen: true,
+          openTime: "09:00",
+          closeTime: "21:00",
+          slots: [{ startTime: "09:00", endTime: "21:00" }],
+        },
+        saturday: {
+          isOpen: true,
+          openTime: "09:00",
+          closeTime: "21:00",
+          slots: [{ startTime: "09:00", endTime: "21:00" }],
+        },
+        sunday: {
+          isOpen: true,
+          openTime: "09:00",
+          closeTime: "21:00",
+          slots: [{ startTime: "09:00", endTime: "21:00" }],
+        },
+      },
+      languagesSpoken: ["English", "Hindi"],
+      whatsappNumber: payload.ownerPhone,
+      allowsExternalCoaches: true,
+      academyVenues: [],
+      academyCoaches: [],
+      venueIds: [],
+      coachIds: [],
+      subscriptionPlanIds: [],
+      sessionPackageIds: [],
+      businessType: "sole_proprietorship",
+      sessionRatePerHour: 0,
+      trialsessionOffered: false,
+      payoutFrequency: "weekly",
+      onboardingStep: 1,
+      onboardingCompleted: false,
+      isApproved: false,
+      kycVerified: false,
+      isActive: false,
+      rating: 0,
+      reviewCount: 0,
+      batchTimings: ["morning"],
+      maxBatchSize: 20,
+    },
+  });
+
+  return decryptBankFieldsForRead(academy);
 };
 
 export const updateAcademyStep = async (
   academyId: string,
   stepNumber: number,
   payload: any,
-): Promise<AcademyDocument> => {
+): Promise<Academy> => {
   const academy = await ensureAcademyExists(academyId);
   const updateData: Record<string, unknown> = {};
 
   if (stepNumber === 2) {
-    updateData.location = payload.location;
+    // GeoJSON Point -> lng/lat columns (SCHEMA_CHANGES §7).
+    // TODO(prisma): geo radius discovery for academies must move to a PostGIS/
+    // earthdistance $queryRaw; here we only persist the coordinates.
+    if (payload.location?.coordinates) {
+      updateData.lng = payload.location.coordinates[0];
+      updateData.lat = payload.location.coordinates[1];
+    }
     updateData.address = payload.address;
     updateData.city = payload.city;
     updateData.state = payload.state;
@@ -263,19 +362,19 @@ export const updateAcademyStep = async (
     updateData.onboardingStep = stepNumber;
   }
 
-  const updatedAcademy = await Academy.findByIdAndUpdate(
-    academyId,
-    updateData,
-    {
-      new: true,
-    },
-  );
+  // Relocated pre-save hook: encrypt bank fields before writing.
+  encryptBankFieldsForWrite(updateData);
+
+  const updatedAcademy = await prisma.academy.update({
+    where: { id: academyId },
+    data: updateData,
+  });
 
   if (!updatedAcademy) {
     throw new Error("Failed to update academy");
   }
 
-  return updatedAcademy;
+  return decryptBankFieldsForRead(updatedAcademy);
 };
 
 export const getAcademyOnboardingProgress = async (
@@ -288,13 +387,13 @@ export const getAcademyOnboardingProgress = async (
 }> => {
   const academy = await ensureAcademyExists(academyId);
   return {
-    academyId: academy._id.toString(),
+    academyId: academy.id.toString(),
     currentStep: academy.onboardingStep,
     completedSteps: Array.from(
       { length: academy.onboardingStep - 1 },
       (_, i) => i + 1,
     ),
-    data: academy.toObject(),
+    data: decryptBankFieldsForRead(academy),
   };
 };
 
@@ -456,11 +555,11 @@ export const confirmAcademyImages = async (
     galleryPhotoUrls?: string[];
     galleryPhotoKeys?: string[];
   },
-): Promise<AcademyDocument> => {
+): Promise<Academy> => {
   await ensureAcademyExists(academyId);
-  const updatedAcademy = await Academy.findByIdAndUpdate(
-    academyId,
-    {
+  const updatedAcademy = await prisma.academy.update({
+    where: { id: academyId },
+    data: {
       ...(payload.logoUrl
         ? { logoUrl: payload.logoUrl, logoKey: payload.logoKey }
         : {}),
@@ -477,14 +576,13 @@ export const confirmAcademyImages = async (
           }
         : {}),
     },
-    { new: true },
-  );
+  });
 
   if (!updatedAcademy) {
     throw new Error("Failed to confirm images");
   }
 
-  return updatedAcademy;
+  return decryptBankFieldsForRead(updatedAcademy);
 };
 
 export const getDocumentUploadPresignedUrls = async (
@@ -526,11 +624,11 @@ export const confirmAcademyDocuments = async (
     gstDocumentUrl?: string;
     gstDocumentKey?: string;
   },
-): Promise<AcademyDocument> => {
+): Promise<Academy> => {
   await ensureAcademyExists(academyId);
-  const updatedAcademy = await Academy.findByIdAndUpdate(
-    academyId,
-    {
+  const updatedAcademy = await prisma.academy.update({
+    where: { id: academyId },
+    data: {
       panDocumentUrl: payload.panDocumentUrl,
       panDocumentKey: payload.panDocumentKey,
       ...(payload.gstDocumentUrl
@@ -540,19 +638,18 @@ export const confirmAcademyDocuments = async (
           }
         : {}),
     },
-    { new: true },
-  );
+  });
 
   if (!updatedAcademy) {
     throw new Error("Failed to confirm documents");
   }
 
-  return updatedAcademy;
+  return decryptBankFieldsForRead(updatedAcademy);
 };
 
 export const submitAcademyForApproval = async (
   academyId: string,
-): Promise<AcademyDocument> => {
+): Promise<Academy> => {
   const academy = await ensureAcademyExists(academyId);
 
   if (academy.onboardingStep < 7) {
@@ -563,19 +660,20 @@ export const submitAcademyForApproval = async (
   if (!academy.panNumber || !academy.panDocumentUrl) {
     throw new Error("PAN details are required");
   }
+  // Presence checks work on the encrypted-at-rest values (non-empty stays
+  // non-empty once encrypted), so no decryption is needed here.
   if (!academy.bankAccountNumber && !academy.upiId) {
     throw new Error("Payout details are required");
   }
 
-  const updatedAcademy = await Academy.findByIdAndUpdate(
-    academyId,
-    {
+  const updatedAcademy = await prisma.academy.update({
+    where: { id: academyId },
+    data: {
       onboardingCompleted: true,
       isApproved: false,
       kycVerified: false,
     },
-    { new: true },
-  );
+  });
 
   if (!updatedAcademy) {
     throw new Error("Failed to submit academy");
@@ -595,7 +693,7 @@ export const submitAcademyForApproval = async (
     console.error("Failed to send submission confirmation email:", error);
   }
 
-  return updatedAcademy;
+  return decryptBankFieldsForRead(updatedAcademy);
 };
 
 export const getPendingAcademies = async (
@@ -608,21 +706,30 @@ export const getPendingAcademies = async (
   page: number;
   totalPages: number;
 }> => {
-  const query: Record<string, unknown> = { onboardingCompleted: true };
-  if (filter === "pending") query.isApproved = false;
-  if (filter === "approved") query.isApproved = true;
-  if (filter === "rejected") query.rejectionReason = { $exists: true, $ne: "" };
+  const where: Record<string, unknown> = { onboardingCompleted: true };
+  if (filter === "pending") where.isApproved = false;
+  if (filter === "approved") where.isApproved = true;
+  if (filter === "rejected") {
+    // Mongo: { $exists:true, $ne:"" } -> has a non-null, non-empty reason.
+    where.AND = [
+      { rejectionReason: { not: null } },
+      { rejectionReason: { not: "" } },
+    ];
+  }
 
-  const total = await Academy.countDocuments(query);
-  const academies = await Academy.find(query)
-    .populate("ownerId", "email phone name")
-    .skip((page - 1) * limit)
-    .limit(limit)
-    .sort({ createdAt: -1 });
+  const [total, academies] = await Promise.all([
+    prisma.academy.count({ where: where as any }),
+    prisma.academy.findMany({
+      where: where as any,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
   return {
     academies: academies.map((a) => ({
-      id: a._id?.toString() || "",
+      id: a.id?.toString() || "",
       name: a.name,
       legalName: a.legalName,
       city: a.city || "",
@@ -642,24 +749,51 @@ export const getPendingAcademies = async (
 
 export const getAcademyOnboardingDetails = async (
   academyId: string,
-): Promise<AcademyDocument | null> =>
-  Academy.findById(academyId)
-    .populate("ownerId", "name email phone")
-    .populate("subscriptionPlans")
-    .populate("sessionPackages");
+): Promise<Academy | null> => {
+  const academy = await prisma.academy.findUnique({
+    where: { id: academyId },
+  });
+  if (!academy) {
+    return null;
+  }
+
+  // Mongo populated ownerId (User) + subscriptionPlans + sessionPackages. There
+  // are no Prisma relations on these String[] FKs, so join in code (see
+  // PORTING_GUIDE §1 populate helper) and re-attach in the same shape.
+  const [owner, subscriptionPlans, sessionPackages] = await Promise.all([
+    academy.ownerId
+      ? prisma.user.findUnique({
+          where: { id: academy.ownerId },
+          select: { id: true, name: true, email: true, phone: true },
+        })
+      : Promise.resolve(null),
+    prisma.subscriptionPlan.findMany({
+      where: { id: { in: academy.subscriptionPlanIds } },
+    }),
+    prisma.sessionPackage.findMany({
+      where: { id: { in: academy.sessionPackageIds } },
+    }),
+  ]);
+
+  return {
+    ...decryptBankFieldsForRead(academy),
+    ownerId: owner ?? academy.ownerId,
+    subscriptionPlans,
+    sessionPackages,
+  } as unknown as Academy;
+};
 
 export const approveAcademy = async (
   academyId: string,
-): Promise<AcademyDocument | null> => {
+): Promise<Academy | null> => {
   const academy = await ensureAcademyExists(academyId);
-  const updatedAcademy = await Academy.findByIdAndUpdate(
-    academyId,
-    {
+  const updatedAcademy = await prisma.academy.update({
+    where: { id: academyId },
+    data: {
       isApproved: true,
       ...(academy.kycVerified ? { isActive: true } : {}),
     },
-    { new: true },
-  );
+  });
 
   if (!updatedAcademy) {
     throw new Error("Failed to approve academy");
@@ -686,7 +820,7 @@ export const approveAcademy = async (
         title: "Academy Approved",
         message: `Your academy "${academy.name}" has been approved!`,
         data: {
-          academyId: academy._id.toString(),
+          academyId: academy.id.toString(),
           academyName: academy.name,
           approvedAt: new Date().toISOString(),
         },
@@ -696,23 +830,22 @@ export const approveAcademy = async (
     console.error("Failed to send approval notification:", error);
   }
 
-  return updatedAcademy;
+  return decryptBankFieldsForRead(updatedAcademy);
 };
 
 export const rejectAcademy = async (
   academyId: string,
   rejectionReason: string,
-): Promise<AcademyDocument | null> => {
+): Promise<Academy | null> => {
   const academy = await ensureAcademyExists(academyId);
-  const updatedAcademy = await Academy.findByIdAndUpdate(
-    academyId,
-    {
+  const updatedAcademy = await prisma.academy.update({
+    where: { id: academyId },
+    data: {
       isApproved: false,
       rejectionReason,
       onboardingStep: 6,
     },
-    { new: true },
-  );
+  });
 
   if (!updatedAcademy) {
     throw new Error("Failed to reject academy");
@@ -741,7 +874,7 @@ export const rejectAcademy = async (
         title: "Academy Submission - More Information Needed",
         message: `Your academy submission needs more information: ${rejectionReason}`,
         data: {
-          academyId: academy._id.toString(),
+          academyId: academy.id.toString(),
           academyName: academy.name,
           reason: rejectionReason,
         },
@@ -751,45 +884,43 @@ export const rejectAcademy = async (
     console.error("Failed to send rejection notification:", error);
   }
 
-  return updatedAcademy;
+  return decryptBankFieldsForRead(updatedAcademy);
 };
 
 export const markAcademyKycVerified = async (
   academyId: string,
-): Promise<AcademyDocument | null> => {
+): Promise<Academy | null> => {
   await ensureAcademyExists(academyId);
-  const updatedAcademy = await Academy.findByIdAndUpdate(
-    academyId,
-    { kycVerified: true, isActive: true },
-    { new: true },
-  );
+  const updatedAcademy = await prisma.academy.update({
+    where: { id: academyId },
+    data: { kycVerified: true, isActive: true },
+  });
 
   if (!updatedAcademy) {
     throw new Error("Failed to mark KYC verified");
   }
 
-  return updatedAcademy;
+  return decryptBankFieldsForRead(updatedAcademy);
 };
 
 export const suspendAcademy = async (
   academyId: string,
   reason?: string,
-): Promise<AcademyDocument | null> => {
+): Promise<Academy | null> => {
   await ensureAcademyExists(academyId);
-  const updatedAcademy = await Academy.findByIdAndUpdate(
-    academyId,
-    {
+  const updatedAcademy = await prisma.academy.update({
+    where: { id: academyId },
+    data: {
       isActive: false,
       rejectionReason: reason || "Suspended by admin",
     },
-    { new: true },
-  );
+  });
 
   if (!updatedAcademy) {
     throw new Error("Failed to suspend academy");
   }
 
-  return updatedAcademy;
+  return decryptBankFieldsForRead(updatedAcademy);
 };
 
 export const createSubscriptionPlan = async (payload: {
@@ -800,19 +931,32 @@ export const createSubscriptionPlan = async (payload: {
   includes?: string[];
   maxSessions?: number;
 }) => {
-  const academy = await ensureAcademyExists(payload.academyId);
-  const plan = await SubscriptionPlan.create({
-    academyId: payload.academyId,
-    name: payload.name,
-    duration: payload.duration,
-    price: payload.price,
-    includes: payload.includes || [],
-    maxSessions: payload.maxSessions ?? null,
-    isActive: true,
+  await ensureAcademyExists(payload.academyId);
+
+  // NOTE: the Mongo call passed `includes: payload.includes || []`, but neither
+  // the old Mongoose schema nor the Prisma schema has an `includes` field
+  // (the plan uses includesVenue/includesCoaching booleans instead), so — as
+  // in Mongo, where the unknown key was silently stripped — it is not persisted.
+  const plan = await prisma.$transaction(async (tx) => {
+    const created = await tx.subscriptionPlan.create({
+      data: {
+        academyId: payload.academyId,
+        name: payload.name,
+        duration: payload.duration,
+        price: payload.price,
+        maxSessions: payload.maxSessions ?? null,
+        isActive: true,
+      },
+    });
+
+    await tx.academy.update({
+      where: { id: payload.academyId },
+      data: { subscriptionPlanIds: { push: created.id } },
+    });
+
+    return created;
   });
 
-  academy.subscriptionPlans.push(plan._id as never);
-  await academy.save();
   return plan;
 };
 
@@ -824,18 +968,33 @@ export const createSessionPackage = async (payload: {
   sport: string;
   coachId?: string;
 }) => {
-  const academy = await ensureAcademyExists(payload.academyId);
-  const pkg = await SessionPackage.create({
-    academyId: payload.academyId,
-    sessionCount: payload.sessionCount,
-    price: payload.price,
-    validityDays: payload.validityDays,
-    sport: payload.sport,
-    ...(payload.coachId ? { coachId: payload.coachId } : {}),
-    isActive: true,
+  await ensureAcademyExists(payload.academyId);
+
+  const pkg = await prisma.$transaction(async (tx) => {
+    const created = await tx.sessionPackage.create({
+      data: {
+        academyId: payload.academyId,
+        // TODO(prisma): `name` is required on SessionPackage but the original
+        // signature does not accept one (the Mongo create relied on the caller
+        // never hitting the required-name validation). Derive a stable default;
+        // add `name` to the payload if a caller needs to set it explicitly.
+        name: `${payload.sessionCount}-session ${payload.sport} package`,
+        sessionCount: payload.sessionCount,
+        price: payload.price,
+        validityDays: payload.validityDays,
+        sport: payload.sport,
+        ...(payload.coachId ? { coachId: payload.coachId } : {}),
+        isActive: true,
+      },
+    });
+
+    await tx.academy.update({
+      where: { id: payload.academyId },
+      data: { sessionPackageIds: { push: created.id } },
+    });
+
+    return created;
   });
 
-  academy.sessionPackages.push(pkg._id as never);
-  await academy.save();
   return pkg;
 };

@@ -1,6 +1,14 @@
-import { Booking, BookingPayment } from "../../client/models/Booking";
-import { Venue } from "../../client/models/Venue";
-import { Coach } from "../../client/models/Coach";
+import type { BookingPaymentLeg } from "@prisma/client";
+import prisma from "../../lib/prisma";
+
+// NOTE: despite the file name, this service does not read the analytics_events
+// table — it derives revenue/booking analytics from bookings + payment legs.
+// The monthly roll-ups below are computed in memory (as in the Mongo version)
+// to keep the return shapes byte-for-byte identical.
+// TODO(prisma): for large datasets these month buckets could be pushed into
+// Postgres via `$queryRaw` with `date_trunc('month', date)` + a SUM over the
+// paid legs, but that is an optimization — the in-memory port preserves the
+// exact output contract the frontends depend on.
 
 const getBookingVenueId = (venueRef: unknown): string | null => {
   if (!venueRef) return null;
@@ -14,6 +22,18 @@ const getBookingVenueId = (venueRef: unknown): string | null => {
     return (venueRef as { toString: () => string }).toString();
   }
   return null;
+};
+
+// Build a Prisma `date` range filter mirroring the Mongo $gte/$lte usage.
+const buildDateWhere = (
+  startDate?: Date,
+  endDate?: Date,
+): { date?: { gte?: Date; lte?: Date } } => {
+  if (!startDate && !endDate) return {};
+  const date: { gte?: Date; lte?: Date } = {};
+  if (startDate) date.gte = startDate;
+  if (endDate) date.lte = endDate;
+  return { date };
 };
 
 /**
@@ -43,22 +63,17 @@ export const getVenueListerAnalytics = async (
   }>;
 }> => {
   // Get all venues for this owner
-  const venues = await Venue.find({ ownerId });
-  const venueIds = venues.map((v) => v._id);
+  const venues = await prisma.venue.findMany({ where: { ownerId } });
+  const venueIds = venues.map((v) => v.id);
 
-  // Build date filter
-  const dateFilter: any = {};
-  if (startDate || endDate) {
-    dateFilter.date = {};
-    if (startDate) dateFilter.date.$gte = startDate;
-    if (endDate) dateFilter.date.$lte = endDate;
-  }
-
-  // Get all bookings for these venues
-  const bookings = await Booking.find({
-    venueId: { $in: venueIds },
-    ...dateFilter,
-  }).populate("venueId");
+  // Get all bookings for these venues (with their payment legs).
+  const bookings = await prisma.booking.findMany({
+    where: {
+      venueId: { in: venueIds },
+      ...buildDateWhere(startDate, endDate),
+    },
+    include: { payments: true },
+  });
 
   // Calculate totals
   let totalRevenue = 0;
@@ -70,7 +85,7 @@ export const getVenueListerAnalytics = async (
   const paidBookings = [...completedBookings, ...noShowBookings];
   paidBookings.forEach((booking) => {
     const venuePayment = booking.payments.find(
-      (payment: BookingPayment) =>
+      (payment: BookingPaymentLeg) =>
         payment.userType === "VenueLister" && payment.status === "PAID",
     );
     if (venuePayment) {
@@ -81,19 +96,19 @@ export const getVenueListerAnalytics = async (
   // Revenue by venue
   const revenueByVenue = venues.map((venue) => {
     const venueBookings = paidBookings.filter(
-      (b) => getBookingVenueId(b.venueId) === venue._id.toString(),
+      (b) => getBookingVenueId(b.venueId) === venue.id.toString(),
     );
 
     const revenue = venueBookings.reduce((sum, booking) => {
       const payment = booking.payments.find(
-        (p: BookingPayment) =>
+        (p: BookingPaymentLeg) =>
           p.userType === "VenueLister" && p.status === "PAID",
       );
       return sum + (payment?.amount || 0);
     }, 0);
 
     return {
-      venueId: venue._id.toString(),
+      venueId: venue.id.toString(),
       venueName: venue.name,
       revenue,
       bookings: venueBookings.length,
@@ -106,7 +121,7 @@ export const getVenueListerAnalytics = async (
   paidBookings.forEach((booking) => {
     const monthKey = booking.date.toISOString().slice(0, 7); // YYYY-MM
     const venuePayment = booking.payments.find(
-      (p: BookingPayment) =>
+      (p: BookingPaymentLeg) =>
         p.userType === "VenueLister" && p.status === "PAID",
     );
 
@@ -156,18 +171,13 @@ export const getCoachAnalytics = async (
   averageRating: number;
   totalReviews: number;
 }> => {
-  // Build date filter
-  const dateFilter: any = {};
-  if (startDate || endDate) {
-    dateFilter.date = {};
-    if (startDate) dateFilter.date.$gte = startDate;
-    if (endDate) dateFilter.date.$lte = endDate;
-  }
-
-  // Get all bookings for this coach
-  const bookings = await Booking.find({
-    coachId,
-    ...dateFilter,
+  // Get all bookings for this coach (with their payment legs).
+  const bookings = await prisma.booking.findMany({
+    where: {
+      coachId,
+      ...buildDateWhere(startDate, endDate),
+    },
+    include: { payments: true },
   });
 
   // Calculate totals
@@ -180,7 +190,7 @@ export const getCoachAnalytics = async (
   const paidBookings = [...completedBookings, ...noShowBookings];
   paidBookings.forEach((booking) => {
     const coachPayment = booking.payments.find(
-      (p: BookingPayment) => p.userType === "Coach" && p.status === "PAID",
+      (p: BookingPaymentLeg) => p.userType === "Coach" && p.status === "PAID",
     );
     if (coachPayment) {
       totalRevenue += coachPayment.amount;
@@ -193,7 +203,7 @@ export const getCoachAnalytics = async (
   paidBookings.forEach((booking) => {
     const monthKey = booking.date.toISOString().slice(0, 7); // YYYY-MM
     const coachPayment = booking.payments.find(
-      (p: BookingPayment) => p.userType === "Coach" && p.status === "PAID",
+      (p: BookingPaymentLeg) => p.userType === "Coach" && p.status === "PAID",
     );
 
     if (!monthlyData.has(monthKey)) {
@@ -210,7 +220,7 @@ export const getCoachAnalytics = async (
     .sort((a, b) => a.month.localeCompare(b.month));
 
   // Get coach rating info
-  const coach = await Coach.findById(coachId);
+  const coach = await prisma.coach.findUnique({ where: { id: coachId } });
 
   return {
     totalRevenue,
@@ -243,18 +253,12 @@ export const getAdminAnalytics = async (
     bookings: number;
   }>;
 }> => {
-  // Build date filter
-  const dateFilter: any = {};
-  if (startDate || endDate) {
-    dateFilter.date = {};
-    if (startDate) dateFilter.date.$gte = startDate;
-    if (endDate) dateFilter.date.$lte = endDate;
-  }
+  const dateWhere = buildDateWhere(startDate, endDate);
 
   const [bookings, totalVenues, totalCoaches] = await Promise.all([
-    Booking.find(dateFilter),
-    Venue.countDocuments({ approvalStatus: "APPROVED" }),
-    Coach.countDocuments(),
+    prisma.booking.findMany({ where: dateWhere, include: { payments: true } }),
+    prisma.venue.count({ where: { approvalStatus: "APPROVED" } }),
+    prisma.coach.count(),
   ]);
 
   const completedBookings = bookings.filter((b) => b.status === "COMPLETED");
@@ -264,8 +268,8 @@ export const getAdminAnalytics = async (
 
   const totalRevenue = paidBookings.reduce((sum, booking) => {
     const bookingTotal = booking.payments
-      .filter((p: BookingPayment) => p.status === "PAID")
-      .reduce((s: number, p: BookingPayment) => s + p.amount, 0);
+      .filter((p: BookingPaymentLeg) => p.status === "PAID")
+      .reduce((s: number, p: BookingPaymentLeg) => s + p.amount, 0);
     return sum + bookingTotal;
   }, 0);
 
@@ -275,8 +279,8 @@ export const getAdminAnalytics = async (
   paidBookings.forEach((booking) => {
     const monthKey = booking.date.toISOString().slice(0, 7);
     const bookingRevenue = booking.payments
-      .filter((p: BookingPayment) => p.status === "PAID")
-      .reduce((sum: number, p: BookingPayment) => sum + p.amount, 0);
+      .filter((p: BookingPaymentLeg) => p.status === "PAID")
+      .reduce((sum: number, p: BookingPaymentLeg) => sum + p.amount, 0);
 
     if (!monthlyData.has(monthKey)) {
       monthlyData.set(monthKey, { revenue: 0, bookings: 0 });

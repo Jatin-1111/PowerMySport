@@ -1,22 +1,11 @@
-import mongoose from "mongoose";
-import {
-  CommunityConversation,
-  CommunityConversationDocument,
-} from "../models/CommunityConversation";
-import { CommunityGroup } from "../models/CommunityGroup";
-import { CommunityMessage } from "../models/CommunityMessage";
-import {
-  CommunityMessagePrivacy,
-  CommunityProfile,
-} from "../models/CommunityProfile";
-import { User } from "../../client/models/User";
-import { CommunityReport } from "../models/CommunityReport";
-import { CommunityPost } from "../models/CommunityPost";
-import { CommunityAnswer } from "../models/CommunityAnswer";
-import { CommunityVote } from "../models/CommunityVote";
-import { CommunityReputation } from "../models/CommunityReputation";
+import { Prisma } from "@prisma/client";
+import type {
+  CommunityProfile as CommunityProfileRow,
+  CommunityBlockedUser,
+  CommunityConversation as CommunityConversationRow,
+} from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { NotificationService } from "../../client/services/NotificationService";
-import OutboxMessage from "../../shared/models/OutboxMessage";
 import { S3Service } from "../../shared/services/S3Service";
 import {
   canJoinGroupAudience,
@@ -27,6 +16,21 @@ import {
   type CommunityRole,
 } from "./communityPolicy";
 import { getVoteTransitionDeltas, normalizeTags } from "./communityQnaUtils";
+
+// Preserved from the former ../models/CommunityProfile export so the public
+// method signatures below stay identical to the Mongoose version.
+type CommunityMessagePrivacy = "EVERYONE" | "REQUEST_ONLY" | "NONE";
+
+// A profile with its normalized child collection loaded (blockedUsers is now a
+// junction table, not an embedded ObjectId array).
+type ProfileWithBlocked = CommunityProfileRow & {
+  blockedUsers: CommunityBlockedUser[];
+};
+
+// Shape returned by assertConversationAccess and consumed by the realtime layer.
+type ConversationWithParticipants = CommunityConversationRow & {
+  participants: { userId: string }[];
+};
 
 const buildParticipantKey = (a: string, b: string): string =>
   [a, b].sort().join(":");
@@ -49,9 +53,6 @@ const splitCsvValues = (value?: string): string[] => {
   );
 };
 
-const escapeRegex = (value: string): string =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
 const MESSAGE_EDIT_DELETE_WINDOW_MS = 30 * 60 * 1000;
 const COMMUNITY_ALLOWED_ROLES = ["Player", "Coach", "Parent"] as const;
 const COMMUNITY_DEFAULT_GROUP_AUDIENCE = "ALL" as const;
@@ -66,7 +67,7 @@ const s3Service = new S3Service();
 const resolveUserPhotoUrl = async (user?: {
   photoUrl?: string | null;
   photoS3Key?: string | null;
-}): Promise<string | null> => {
+} | null): Promise<string | null> => {
   if (!user) {
     return null;
   }
@@ -117,6 +118,56 @@ const generateInviteCode = (): string => {
   return code;
 };
 
+// Reconstruct the (previously embedded) message metadata object from the
+// flattened meta* columns, preserving the old `null | { width, height }` shape.
+const buildMessageMetadata = (message: {
+  metaWidth: number | null;
+  metaHeight: number | null;
+  metaCaption: string | null;
+}): { width?: number; height?: number; caption?: string } | null => {
+  if (
+    message.metaWidth == null &&
+    message.metaHeight == null &&
+    message.metaCaption == null
+  ) {
+    return null;
+  }
+
+  const metadata: { width?: number; height?: number; caption?: string } = {};
+  if (message.metaWidth != null) metadata.width = message.metaWidth;
+  if (message.metaHeight != null) metadata.height = message.metaHeight;
+  if (message.metaCaption != null) metadata.caption = message.metaCaption;
+  return metadata;
+};
+
+// Reconstruct the (previously embedded) socialLinks object + blockedUsers array
+// so getMyProfile/updateMyProfile keep returning the old document shape.
+const serializeProfile = (
+  profile: CommunityProfileRow & { blockedUsers?: { blockedUserId: string }[] },
+) => ({
+  id: profile.id,
+  userId: profile.userId,
+  anonymousAlias: profile.anonymousAlias,
+  isIdentityPublic: profile.isIdentityPublic,
+  messagePrivacy: profile.messagePrivacy,
+  readReceiptsEnabled: profile.readReceiptsEnabled,
+  lastSeenVisible: profile.lastSeenVisible,
+  lastSeenAt: profile.lastSeenAt ?? undefined,
+  username: profile.username ?? undefined,
+  bio: profile.bio,
+  socialLinks: {
+    youtube: profile.slYoutube,
+    instagram: profile.slInstagram,
+    facebook: profile.slFacebook,
+    twitter: profile.slTwitter,
+    github: profile.slGithub,
+    website: profile.slWebsite,
+  },
+  blockedUsers: (profile.blockedUsers ?? []).map((blocked) => blocked.blockedUserId),
+  createdAt: profile.createdAt,
+  updatedAt: profile.updatedAt,
+});
+
 const getCommunityRole = async (userId: string): Promise<CommunityRole> => {
   const user = await ensureCommunityUser(userId);
   return user.role as CommunityRole;
@@ -161,7 +212,10 @@ const ensureQnaAllowedForRole = (role: CommunityRole): void => {
 };
 
 const ensureCommunityUser = async (userId: string) => {
-  const user = await User.findById(userId).select("_id role name").lean();
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true, name: true },
+  });
   if (!user) {
     throw new Error("User not found");
   }
@@ -180,34 +234,31 @@ const ensureCommunityUser = async (userId: string) => {
 };
 
 const isDuplicateKeyError = (error: unknown): boolean =>
-  Boolean((error as { code?: number })?.code === 11000);
+  error instanceof Prisma.PrismaClientKnownRequestError &&
+  error.code === "P2002";
 
-const ensureProfile = async (userId: string) => {
+const ensureProfile = async (userId: string): Promise<ProfileWithBlocked> => {
   const user = await ensureCommunityUser(userId);
 
   try {
-    const profile = await CommunityProfile.findOneAndUpdate(
-      { userId },
-      {
-        $setOnInsert: {
-          userId,
-          anonymousAlias: makeDefaultAlias(user.name),
-        },
+    return await prisma.communityProfile.upsert({
+      where: { userId },
+      create: {
+        userId,
+        anonymousAlias: makeDefaultAlias(user.name),
       },
-      { upsert: true, new: true },
-    );
-
-    if (!profile) {
-      throw new Error("Failed to initialize community profile");
-    }
-
-    return profile;
+      update: {},
+      include: { blockedUsers: true },
+    });
   } catch (error) {
     if (!isDuplicateKeyError(error)) {
       throw error;
     }
 
-    const existingProfile = await CommunityProfile.findOne({ userId });
+    const existingProfile = await prisma.communityProfile.findUnique({
+      where: { userId },
+      include: { blockedUsers: true },
+    });
     if (existingProfile) {
       return existingProfile;
     }
@@ -221,15 +272,21 @@ const isBlockedBetween = async (
   userB: string,
 ): Promise<boolean> => {
   const [a, b] = await Promise.all([
-    CommunityProfile.findOne({ userId: userA }).select("blockedUsers"),
-    CommunityProfile.findOne({ userId: userB }).select("blockedUsers"),
+    prisma.communityProfile.findUnique({
+      where: { userId: userA },
+      select: { blockedUsers: { select: { blockedUserId: true } } },
+    }),
+    prisma.communityProfile.findUnique({
+      where: { userId: userB },
+      select: { blockedUsers: { select: { blockedUserId: true } } },
+    }),
   ]);
 
   const aBlockedB = Boolean(
-    a?.blockedUsers?.some((blocked) => String(blocked) === userB),
+    a?.blockedUsers?.some((blocked) => blocked.blockedUserId === userB),
   );
   const bBlockedA = Boolean(
-    b?.blockedUsers?.some((blocked) => String(blocked) === userA),
+    b?.blockedUsers?.some((blocked) => blocked.blockedUserId === userA),
   );
 
   return aBlockedB || bBlockedA;
@@ -238,7 +295,7 @@ const isBlockedBetween = async (
 const formatParticipant = (
   selfId: string,
   participant: {
-    _id: mongoose.Types.ObjectId;
+    _id: unknown;
     name: string;
     photoUrl?: string;
     profile?: {
@@ -270,18 +327,17 @@ export const CommunityService = {
   async getMyReputation(userId: string) {
     await ensureProfile(userId);
 
-    const reputation = await CommunityReputation.findOneAndUpdate(
-      { userId },
-      {
-        $setOnInsert: {
-          totalPoints: 0,
-          questionCount: 0,
-          answerCount: 0,
-          receivedUpvotes: 0,
-        },
+    const reputation = await prisma.communityReputation.upsert({
+      where: { userId },
+      create: {
+        userId,
+        totalPoints: 0,
+        questionCount: 0,
+        answerCount: 0,
+        receivedUpvotes: 0,
       },
-      { upsert: true, new: true },
-    ).lean();
+      update: {},
+    });
 
     return {
       userId,
@@ -316,60 +372,67 @@ export const CommunityService = {
     const sort = (filters?.sort || "NEW").toUpperCase() as
       "NEW" | "TOP" | "UNANSWERED";
 
-    const query: Record<string, unknown> = {
+    const where: Prisma.CommunityPostWhereInput = {
       isDeleted: false,
-      status: { $in: ["OPEN", "CLOSED"] },
+      status: { in: ["OPEN", "CLOSED"] },
     };
 
     if (filters?.mine) {
-      query.authorId = userId;
+      where.authorId = userId;
     }
 
     const search = (filters?.q || "").trim();
     if (search) {
-      query.$text = { $search: search };
+      // TODO(prisma): full-text — tsvector/GIN. Was a Mongo $text index over
+      // title/body/tags; approximated here with case-insensitive contains.
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { body: { contains: search, mode: "insensitive" } },
+        { tags: { has: search.toLowerCase() } },
+      ];
     }
 
     const tag = (filters?.tag || "").trim().toLowerCase();
     if (tag) {
-      query.tags = tag;
+      where.tags = { has: tag };
     }
 
     const sportValues = splitCsvValues(filters?.sport);
     if (sportValues.length === 1) {
-      query.sport = sportValues[0];
+      where.sport = sportValues[0];
     } else if (sportValues.length > 1) {
-      query.sport = { $in: sportValues };
+      where.sport = { in: sportValues };
     }
 
     const cityValues = splitCsvValues(filters?.city);
     if (cityValues.length === 1) {
-      query.city = cityValues[0];
+      where.city = cityValues[0];
     } else if (cityValues.length > 1) {
-      query.city = { $in: cityValues };
+      where.city = { in: cityValues };
     }
 
     const category = normalizeOptionalText(filters?.category);
     if (category) {
-      query.category = category;
+      where.category = category;
     }
 
     if (sort === "UNANSWERED") {
-      query.answerCount = 0;
+      where.answerCount = 0;
     }
 
-    const sortClause =
+    const orderBy: Prisma.CommunityPostOrderByWithRelationInput[] =
       sort === "TOP"
-        ? ({ voteScore: -1 as const, createdAt: -1 as const } as const)
-        : { createdAt: -1 as const };
+        ? [{ voteScore: "desc" }, { createdAt: "desc" }]
+        : [{ createdAt: "desc" }];
 
     const [posts, total] = await Promise.all([
-      CommunityPost.find(query)
-        .sort(sortClause)
-        .skip(skip)
-        .limit(safeLimit)
-        .lean(),
-      CommunityPost.countDocuments(query),
+      prisma.communityPost.findMany({
+        where,
+        orderBy,
+        skip,
+        take: safeLimit,
+      }),
+      prisma.communityPost.count({ where }),
     ]);
 
     if (!posts.length) {
@@ -383,34 +446,38 @@ export const CommunityService = {
       };
     }
 
-    const authorIds = posts.map((post) => String(post.authorId));
+    const authorIds = posts.map((post) => post.authorId);
+    const postIds = posts.map((post) => post.id);
 
     const [users, profiles, votes] = await Promise.all([
-      User.find({ _id: { $in: authorIds } })
-        .select("_id name photoUrl photoS3Key role")
-        .lean(),
-      CommunityProfile.find({ userId: { $in: authorIds } })
-        .select("userId anonymousAlias isIdentityPublic")
-        .lean(),
-      CommunityVote.find({
-        userId,
-        targetType: "POST",
-        targetId: { $in: posts.map((post) => post._id) },
-      })
-        .select("targetId value")
-        .lean(),
+      prisma.user.findMany({
+        where: { id: { in: authorIds } },
+        select: { id: true, name: true, photoUrl: true, photoS3Key: true, role: true },
+      }),
+      prisma.communityProfile.findMany({
+        where: { userId: { in: authorIds } },
+        select: { userId: true, anonymousAlias: true, isIdentityPublic: true },
+      }),
+      prisma.communityVote.findMany({
+        where: {
+          userId,
+          targetType: "POST",
+          targetId: { in: postIds },
+        },
+        select: { targetId: true, value: true },
+      }),
     ]);
 
-    const userMap = new Map(users.map((user) => [String(user._id), user]));
+    const userMap = new Map(users.map((user) => [user.id, user]));
     const profileMap = new Map(
-      profiles.map((profile) => [String(profile.userId), profile]),
+      profiles.map((profile) => [profile.userId, profile]),
     );
-    const voteMap = new Map(votes.map((vote) => [String(vote.targetId), vote]));
+    const voteMap = new Map(votes.map((vote) => [vote.targetId, vote]));
 
     return {
       items: await Promise.all(
         posts.map(async (post) => {
-          const authorId = String(post.authorId);
+          const authorId = post.authorId;
           const authorUser = userMap.get(authorId);
           const profile = profileMap.get(authorId);
           const isSelf = authorId === userId;
@@ -418,7 +485,7 @@ export const CommunityService = {
           const isVerifiedExpert = !isPostAnon && authorUser?.role === "Coach";
 
           return {
-            id: String(post._id),
+            id: post.id,
             title: post.title,
             body: post.body,
             tags: post.tags,
@@ -434,7 +501,7 @@ export const CommunityService = {
             viewCount: post.viewCount || 0,
             createdAt: post.createdAt,
             updatedAt: post.updatedAt,
-            myVote: voteMap.get(String(post._id))?.value || 0,
+            myVote: voteMap.get(post.id)?.value || 0,
             author: {
               id: isPostAnon ? "anon" : authorId,
               displayName: post.isAnonymous
@@ -467,15 +534,17 @@ export const CommunityService = {
   async getPostDetails(userId: string, postId: string, page = 1, limit = 30) {
     await ensureProfile(userId);
 
-    const post = await CommunityPost.findOne({ _id: postId, isDeleted: false });
+    const post = await prisma.communityPost.findFirst({
+      where: { id: postId, isDeleted: false },
+    });
     if (!post) {
       throw new Error("post not found");
     }
 
-    await CommunityPost.updateOne(
-      { _id: post._id },
-      { $inc: { viewCount: 1 } },
-    );
+    await prisma.communityPost.update({
+      where: { id: post.id },
+      data: { viewCount: { increment: 1 } },
+    });
 
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(100, Math.max(1, limit));
@@ -483,68 +552,71 @@ export const CommunityService = {
 
     const [answers, answerTotal, postAuthor, postAuthorProfile, myPostVote] =
       await Promise.all([
-        CommunityAnswer.find({ postId: post._id, isDeleted: false })
-          .sort({ voteScore: -1, createdAt: 1 })
-          .skip(skip)
-          .limit(safeLimit)
-          .lean(),
-        CommunityAnswer.countDocuments({ postId: post._id, isDeleted: false }),
-        User.findById(post.authorId)
-          .select("_id name photoUrl photoS3Key role")
-          .lean(),
-        CommunityProfile.findOne({ userId: post.authorId })
-          .select("userId anonymousAlias isIdentityPublic")
-          .lean(),
-        CommunityVote.findOne({
-          userId,
-          targetType: "POST",
-          targetId: post._id,
-        })
-          .select("value")
-          .lean(),
+        prisma.communityAnswer.findMany({
+          where: { postId: post.id, isDeleted: false },
+          orderBy: [{ voteScore: "desc" }, { createdAt: "asc" }],
+          skip,
+          take: safeLimit,
+        }),
+        prisma.communityAnswer.count({
+          where: { postId: post.id, isDeleted: false },
+        }),
+        prisma.user.findUnique({
+          where: { id: post.authorId },
+          select: { id: true, name: true, photoUrl: true, photoS3Key: true, role: true },
+        }),
+        prisma.communityProfile.findUnique({
+          where: { userId: post.authorId },
+          select: { userId: true, anonymousAlias: true, isIdentityPublic: true },
+        }),
+        prisma.communityVote.findFirst({
+          where: { userId, targetType: "POST", targetId: post.id },
+          select: { value: true },
+        }),
       ]);
 
-    const answerAuthorIds = answers.map((item) => String(item.authorId));
+    const answerAuthorIds = answers.map((item) => item.authorId);
+    const answerIds = answers.map((item) => item.id);
     const [answerUsers, answerProfiles, answerVotes] = await Promise.all([
-      User.find({ _id: { $in: answerAuthorIds } })
-        .select("_id name photoUrl photoS3Key role")
-        .lean(),
-      CommunityProfile.find({ userId: { $in: answerAuthorIds } })
-        .select("userId anonymousAlias isIdentityPublic")
-        .lean(),
-      CommunityVote.find({
-        userId,
-        targetType: "ANSWER",
-        targetId: { $in: answers.map((item) => item._id) },
-      })
-        .select("targetId value")
-        .lean(),
+      prisma.user.findMany({
+        where: { id: { in: answerAuthorIds } },
+        select: { id: true, name: true, photoUrl: true, photoS3Key: true, role: true },
+      }),
+      prisma.communityProfile.findMany({
+        where: { userId: { in: answerAuthorIds } },
+        select: { userId: true, anonymousAlias: true, isIdentityPublic: true },
+      }),
+      prisma.communityVote.findMany({
+        where: {
+          userId,
+          targetType: "ANSWER",
+          targetId: { in: answerIds },
+        },
+        select: { targetId: true, value: true },
+      }),
     ]);
 
     const answerUserMap = new Map(
-      answerUsers.map((answerUser) => [String(answerUser._id), answerUser]),
+      answerUsers.map((answerUser) => [answerUser.id, answerUser]),
     );
     const answerProfileMap = new Map(
       answerProfiles.map((answerProfile) => [
-        String(answerProfile.userId),
+        answerProfile.userId,
         answerProfile,
       ]),
     );
     const answerVoteMap = new Map(
-      answerVotes.map((answerVote) => [
-        String(answerVote.targetId),
-        answerVote,
-      ]),
+      answerVotes.map((answerVote) => [answerVote.targetId, answerVote]),
     );
 
-    const postAuthorId = String(post.authorId);
+    const postAuthorId = post.authorId;
     const isPostAuthorSelf = postAuthorId === userId;
     const isPostAnon = post.isAnonymous && !isPostAuthorSelf;
     const isPostAuthorExpert = !isPostAnon && postAuthor?.role === "Coach";
 
     return {
       post: {
-        id: String(post._id),
+        id: post.id,
         title: post.title,
         body: post.body,
         tags: post.tags,
@@ -582,7 +654,7 @@ export const CommunityService = {
       },
       answers: await Promise.all(
         answers.map(async (answer) => {
-          const answerAuthorId = String(answer.authorId);
+          const answerAuthorId = answer.authorId;
           const answerUser = answerUserMap.get(answerAuthorId);
           const answerProfile = answerProfileMap.get(answerAuthorId);
           const isAnswerSelf = answerAuthorId === userId;
@@ -590,8 +662,8 @@ export const CommunityService = {
           const isAnswerExpert = !isAnswerAnon && answerUser?.role === "Coach";
 
           return {
-            id: String(answer._id),
-            postId: String(answer.postId),
+            id: answer.id,
+            postId: answer.postId,
             content: answer.content,
             isAnonymous: answer.isAnonymous || false,
             voteScore: answer.voteScore || 0,
@@ -599,7 +671,7 @@ export const CommunityService = {
             downvoteCount: answer.downvoteCount || 0,
             createdAt: answer.createdAt,
             updatedAt: answer.updatedAt,
-            myVote: answerVoteMap.get(String(answer._id))?.value || 0,
+            myVote: answerVoteMap.get(answer.id)?.value || 0,
             author: {
               id: isAnswerAnon ? "anon" : answerAuthorId,
               displayName: answer.isAnonymous
@@ -645,40 +717,42 @@ export const CommunityService = {
     const userRole = await getCommunityRole(userId);
     ensureQnaAllowedForRole(userRole);
 
-    const post = await CommunityPost.create({
-      authorId: userId,
-      title: payload.title.trim(),
-      body: payload.body.trim(),
-      tags: normalizeTags(payload.tags),
-      sport: normalizeOptionalText(payload.sport),
-      city: normalizeOptionalText(payload.city),
-      ...(payload.category ? { category: payload.category } : {}),
-      ...(payload.isAnonymous ? { isAnonymous: true } : {}),
+    const post = await prisma.communityPost.create({
+      data: {
+        authorId: userId,
+        title: payload.title.trim(),
+        body: payload.body.trim(),
+        tags: normalizeTags(payload.tags),
+        sport: normalizeOptionalText(payload.sport),
+        city: normalizeOptionalText(payload.city),
+        ...(payload.category ? { category: payload.category } : {}),
+        ...(payload.isAnonymous ? { isAnonymous: true } : {}),
+      },
     });
 
-    await CommunityReputation.updateOne(
-      { userId },
-      {
-        $setOnInsert: {
-          answerCount: 0,
-          receivedUpvotes: 0,
-        },
-        $inc: {
-          totalPoints: COMMUNITY_POINTS.CREATE_POST,
-          questionCount: 1,
-        },
+    await prisma.communityReputation.upsert({
+      where: { userId },
+      create: {
+        userId,
+        totalPoints: COMMUNITY_POINTS.CREATE_POST,
+        questionCount: 1,
+        answerCount: 0,
+        receivedUpvotes: 0,
       },
-      { upsert: true },
-    );
+      update: {
+        totalPoints: { increment: COMMUNITY_POINTS.CREATE_POST },
+        questionCount: { increment: 1 },
+      },
+    });
 
     trackCommunityRoleMixEvent("qna_post_created", {
       userRole,
       userId,
-      postId: String(post._id),
+      postId: post.id,
     });
 
     return {
-      id: String(post._id),
+      id: post.id,
       title: post.title,
       body: post.body,
       tags: post.tags,
@@ -709,71 +783,80 @@ export const CommunityService = {
   ) {
     await ensureProfile(userId);
 
-    const post = await CommunityPost.findOne({ _id: postId, isDeleted: false });
+    const post = await prisma.communityPost.findFirst({
+      where: { id: postId, isDeleted: false },
+    });
     if (!post) {
       throw new Error("post not found");
     }
 
-    if (String(post.authorId) !== userId) {
+    if (post.authorId !== userId) {
       throw new Error("Only the author can update this post");
     }
 
+    const data: Prisma.CommunityPostUpdateInput = {};
     if (typeof payload.title === "string") {
-      post.title = payload.title.trim();
+      data.title = payload.title.trim();
     }
     if (typeof payload.body === "string") {
-      post.body = payload.body.trim();
+      data.body = payload.body.trim();
     }
     if (Array.isArray(payload.tags)) {
-      post.tags = normalizeTags(payload.tags);
+      data.tags = normalizeTags(payload.tags);
     }
     if (payload.status === "OPEN" || payload.status === "CLOSED") {
-      post.status = payload.status;
+      data.status = payload.status;
     }
     if (typeof payload.sport === "string") {
-      post.sport = normalizeOptionalText(payload.sport);
+      data.sport = normalizeOptionalText(payload.sport);
     }
     if (typeof payload.city === "string") {
-      post.city = normalizeOptionalText(payload.city);
+      data.city = normalizeOptionalText(payload.city);
     }
 
-    await post.save();
+    const updated = await prisma.communityPost.update({
+      where: { id: post.id },
+      data,
+    });
 
     return {
-      id: String(post._id),
-      title: post.title,
-      body: post.body,
-      tags: post.tags,
-      sport: post.sport || "",
-      city: post.city || "",
-      status: post.status,
-      voteScore: post.voteScore,
-      upvoteCount: post.upvoteCount,
-      downvoteCount: post.downvoteCount,
-      answerCount: post.answerCount,
-      viewCount: post.viewCount,
-      createdAt: post.createdAt,
-      updatedAt: post.updatedAt,
+      id: updated.id,
+      title: updated.title,
+      body: updated.body,
+      tags: updated.tags,
+      sport: updated.sport || "",
+      city: updated.city || "",
+      status: updated.status,
+      voteScore: updated.voteScore,
+      upvoteCount: updated.upvoteCount,
+      downvoteCount: updated.downvoteCount,
+      answerCount: updated.answerCount,
+      viewCount: updated.viewCount,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
     };
   },
 
   async deletePost(userId: string, postId: string) {
     await ensureProfile(userId);
 
-    const post = await CommunityPost.findOne({ _id: postId, isDeleted: false });
+    const post = await prisma.communityPost.findFirst({
+      where: { id: postId, isDeleted: false },
+    });
     if (!post) {
       throw new Error("post not found");
     }
 
-    if (String(post.authorId) !== userId) {
+    if (post.authorId !== userId) {
       throw new Error("Only the author can delete this post");
     }
 
-    post.isDeleted = true;
-    post.deletedAt = new Date();
-    await post.save();
+    await prisma.communityPost.update({
+      where: { id: post.id },
+      data: { isDeleted: true, deletedAt: new Date() },
+    });
 
-    return { id: String(post._id), deleted: true };
+    return { id: post.id, deleted: true };
   },
 
   async createAnswer(
@@ -786,7 +869,9 @@ export const CommunityService = {
     const userRole = await getCommunityRole(userId);
     ensureQnaAllowedForRole(userRole);
 
-    const post = await CommunityPost.findOne({ _id: postId, isDeleted: false });
+    const post = await prisma.communityPost.findFirst({
+      where: { id: postId, isDeleted: false },
+    });
     if (!post) {
       throw new Error("post not found");
     }
@@ -795,22 +880,24 @@ export const CommunityService = {
       throw new Error("Cannot answer a closed post");
     }
 
-    const answer = await CommunityAnswer.create({
-      postId: post._id,
-      authorId: userId,
-      content: content.trim(),
-      ...(isAnonymous ? { isAnonymous: true } : {}),
+    const answer = await prisma.communityAnswer.create({
+      data: {
+        postId: post.id,
+        authorId: userId,
+        content: content.trim(),
+        ...(isAnonymous ? { isAnonymous: true } : {}),
+      },
     });
 
-    if (String(post.authorId) !== userId) {
+    if (post.authorId !== userId) {
       NotificationService.send({
-        userId: String(post.authorId),
+        userId: post.authorId,
         type: "MESSAGE_RECEIVED",
         title: "New answer on your question",
         message: "Someone shared a new answer on your community question.",
         data: {
-          postId: String(post._id),
-          answerId: String(answer._id),
+          postId: post.id,
+          answerId: answer.id,
           actorUserId: userId,
           event: "COMMUNITY_ANSWER_CREATED",
         },
@@ -820,33 +907,36 @@ export const CommunityService = {
     }
 
     await Promise.all([
-      CommunityPost.updateOne({ _id: post._id }, { $inc: { answerCount: 1 } }),
-      CommunityReputation.updateOne(
-        { userId },
-        {
-          $setOnInsert: {
-            questionCount: 0,
-            receivedUpvotes: 0,
-          },
-          $inc: {
-            totalPoints: COMMUNITY_POINTS.CREATE_ANSWER,
-            answerCount: 1,
-          },
+      prisma.communityPost.update({
+        where: { id: post.id },
+        data: { answerCount: { increment: 1 } },
+      }),
+      prisma.communityReputation.upsert({
+        where: { userId },
+        create: {
+          userId,
+          totalPoints: COMMUNITY_POINTS.CREATE_ANSWER,
+          answerCount: 1,
+          questionCount: 0,
+          receivedUpvotes: 0,
         },
-        { upsert: true },
-      ),
+        update: {
+          totalPoints: { increment: COMMUNITY_POINTS.CREATE_ANSWER },
+          answerCount: { increment: 1 },
+        },
+      }),
     ]);
 
     trackCommunityRoleMixEvent("qna_answer_created", {
       userRole,
       userId,
-      postId: String(post._id),
-      answerId: String(answer._id),
+      postId: post.id,
+      answerId: answer.id,
     });
 
     return {
-      id: String(answer._id),
-      postId: String(answer.postId),
+      id: answer.id,
+      postId: answer.postId,
       content: answer.content,
       voteScore: answer.voteScore,
       upvoteCount: answer.upvoteCount,
@@ -859,60 +949,61 @@ export const CommunityService = {
   async updateAnswer(userId: string, answerId: string, content: string) {
     await ensureProfile(userId);
 
-    const answer = await CommunityAnswer.findOne({
-      _id: answerId,
-      isDeleted: false,
+    const answer = await prisma.communityAnswer.findFirst({
+      where: { id: answerId, isDeleted: false },
     });
     if (!answer) {
       throw new Error("answer not found");
     }
 
-    if (String(answer.authorId) !== userId) {
+    if (answer.authorId !== userId) {
       throw new Error("Only the author can update this answer");
     }
 
-    answer.content = content.trim();
-    await answer.save();
+    const updated = await prisma.communityAnswer.update({
+      where: { id: answer.id },
+      data: { content: content.trim() },
+    });
 
     return {
-      id: String(answer._id),
-      postId: String(answer.postId),
-      content: answer.content,
-      voteScore: answer.voteScore,
-      upvoteCount: answer.upvoteCount,
-      downvoteCount: answer.downvoteCount,
-      createdAt: answer.createdAt,
-      updatedAt: answer.updatedAt,
+      id: updated.id,
+      postId: updated.postId,
+      content: updated.content,
+      voteScore: updated.voteScore,
+      upvoteCount: updated.upvoteCount,
+      downvoteCount: updated.downvoteCount,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
     };
   },
 
   async deleteAnswer(userId: string, answerId: string) {
     await ensureProfile(userId);
 
-    const answer = await CommunityAnswer.findOne({
-      _id: answerId,
-      isDeleted: false,
+    const answer = await prisma.communityAnswer.findFirst({
+      where: { id: answerId, isDeleted: false },
     });
     if (!answer) {
       throw new Error("answer not found");
     }
 
-    if (String(answer.authorId) !== userId) {
+    if (answer.authorId !== userId) {
       throw new Error("Only the author can delete this answer");
     }
 
-    answer.isDeleted = true;
-    answer.deletedAt = new Date();
-    await answer.save();
+    await prisma.communityAnswer.update({
+      where: { id: answer.id },
+      data: { isDeleted: true, deletedAt: new Date() },
+    });
 
-    await CommunityPost.updateOne(
-      { _id: answer.postId, answerCount: { $gt: 0 } },
-      { $inc: { answerCount: -1 } },
-    );
+    await prisma.communityPost.updateMany({
+      where: { id: answer.postId, answerCount: { gt: 0 } },
+      data: { answerCount: { decrement: 1 } },
+    });
 
     return {
-      id: String(answer._id),
-      postId: String(answer.postId),
+      id: answer.id,
+      postId: answer.postId,
       deleted: true,
     };
   },
@@ -927,111 +1018,123 @@ export const CommunityService = {
   ) {
     await ensureProfile(userId);
 
-    if (!mongoose.Types.ObjectId.isValid(payload.targetId)) {
-      throw new Error("Invalid target ID");
-    }
-
     let targetAuthorId = "";
 
     if (payload.targetType === "POST") {
-      const post = await CommunityPost.findOne({
-        _id: payload.targetId,
-        isDeleted: false,
-      }).select("_id authorId");
+      const post = await prisma.communityPost.findFirst({
+        where: { id: payload.targetId, isDeleted: false },
+        select: { id: true, authorId: true },
+      });
       if (!post) {
         throw new Error("post not found");
       }
-      targetAuthorId = String(post.authorId);
+      targetAuthorId = post.authorId;
     } else {
-      const answer = await CommunityAnswer.findOne({
-        _id: payload.targetId,
-        isDeleted: false,
-      }).select("_id authorId");
+      const answer = await prisma.communityAnswer.findFirst({
+        where: { id: payload.targetId, isDeleted: false },
+        select: { id: true, authorId: true },
+      });
       if (!answer) {
         throw new Error("answer not found");
       }
-      targetAuthorId = String(answer.authorId);
+      targetAuthorId = answer.authorId;
     }
 
     if (targetAuthorId === userId) {
       throw new Error("You cannot vote on your own content");
     }
 
-    const existingVote = await CommunityVote.findOne({
-      userId,
-      targetType: payload.targetType,
-      targetId: payload.targetId,
+    const existingVote = await prisma.communityVote.findFirst({
+      where: {
+        userId,
+        targetType: payload.targetType,
+        targetId: payload.targetId,
+      },
     });
 
     const previousValue = (existingVote?.value as 1 | -1 | undefined) || null;
     const nextValue = previousValue === payload.value ? null : payload.value;
     const deltas = getVoteTransitionDeltas(previousValue, nextValue);
 
-    if (nextValue === null) {
-      if (existingVote?._id) {
-        await CommunityVote.deleteOne({ _id: existingVote._id });
+    await prisma.$transaction(async (tx) => {
+      if (nextValue === null) {
+        if (existingVote?.id) {
+          await tx.communityVote.delete({ where: { id: existingVote.id } });
+        }
+      } else {
+        await tx.communityVote.upsert({
+          where: {
+            userId_targetType_targetId: {
+              userId,
+              targetType: payload.targetType,
+              targetId: payload.targetId,
+            },
+          },
+          create: {
+            userId,
+            targetType: payload.targetType,
+            targetId: payload.targetId,
+            value: nextValue,
+          },
+          update: { value: nextValue },
+        });
       }
-    } else if (!existingVote) {
-      await CommunityVote.create({
-        userId,
-        targetType: payload.targetType,
-        targetId: payload.targetId,
-        value: nextValue,
-      });
-    } else {
-      existingVote.value = nextValue;
-      await existingVote.save();
-    }
 
-    if (payload.targetType === "POST") {
-      await CommunityPost.updateOne(
-        { _id: payload.targetId },
-        {
-          $inc: {
-            voteScore: deltas.voteScore,
-            upvoteCount: deltas.upvoteCount,
-            downvoteCount: deltas.downvoteCount,
+      if (payload.targetType === "POST") {
+        await tx.communityPost.update({
+          where: { id: payload.targetId },
+          data: {
+            voteScore: { increment: deltas.voteScore },
+            upvoteCount: { increment: deltas.upvoteCount },
+            downvoteCount: { increment: deltas.downvoteCount },
           },
-        },
-      );
-    } else {
-      await CommunityAnswer.updateOne(
-        { _id: payload.targetId },
-        {
-          $inc: {
-            voteScore: deltas.voteScore,
-            upvoteCount: deltas.upvoteCount,
-            downvoteCount: deltas.downvoteCount,
+        });
+      } else {
+        await tx.communityAnswer.update({
+          where: { id: payload.targetId },
+          data: {
+            voteScore: { increment: deltas.voteScore },
+            upvoteCount: { increment: deltas.upvoteCount },
+            downvoteCount: { increment: deltas.downvoteCount },
           },
-        },
-      );
-    }
+        });
+      }
 
-    if (deltas.upvoteCount !== 0) {
-      await CommunityReputation.updateOne(
-        { userId: targetAuthorId },
-        {
-          $setOnInsert: {
+      if (deltas.upvoteCount !== 0) {
+        await tx.communityReputation.upsert({
+          where: { userId: targetAuthorId },
+          create: {
+            userId: targetAuthorId,
+            totalPoints: deltas.upvoteCount * COMMUNITY_POINTS.RECEIVE_UPVOTE,
+            receivedUpvotes: deltas.upvoteCount,
             questionCount: 0,
             answerCount: 0,
           },
-          $inc: {
-            totalPoints: deltas.upvoteCount * COMMUNITY_POINTS.RECEIVE_UPVOTE,
-            receivedUpvotes: deltas.upvoteCount,
+          update: {
+            totalPoints: {
+              increment: deltas.upvoteCount * COMMUNITY_POINTS.RECEIVE_UPVOTE,
+            },
+            receivedUpvotes: { increment: deltas.upvoteCount },
           },
-        },
-        { upsert: true },
-      );
-    }
+        });
+      }
+    });
 
     const updatedTarget =
       payload.targetType === "POST"
-        ? await CommunityPost.findById(payload.targetId)
-            .select("voteScore upvoteCount downvoteCount")
-            .lean()
-        : await CommunityAnswer.findById(payload.targetId)
-            .select("voteScore upvoteCount downvoteCount postId")
-            .lean();
+        ? await prisma.communityPost.findUnique({
+            where: { id: payload.targetId },
+            select: { voteScore: true, upvoteCount: true, downvoteCount: true },
+          })
+        : await prisma.communityAnswer.findUnique({
+            where: { id: payload.targetId },
+            select: {
+              voteScore: true,
+              upvoteCount: true,
+              downvoteCount: true,
+              postId: true,
+            },
+          });
 
     if (nextValue === 1 && previousValue !== 1) {
       NotificationService.send({
@@ -1046,10 +1149,7 @@ export const CommunityService = {
           event: "COMMUNITY_UPVOTE_RECEIVED",
           postId:
             payload.targetType === "ANSWER"
-              ? String(
-                  (updatedTarget as { postId?: mongoose.Types.ObjectId })
-                    ?.postId || "",
-                )
+              ? (updatedTarget as { postId?: string })?.postId || ""
               : payload.targetId,
         },
       }).catch((error: unknown) => {
@@ -1066,10 +1166,7 @@ export const CommunityService = {
       downvoteCount: updatedTarget?.downvoteCount || 0,
       postId:
         payload.targetType === "ANSWER"
-          ? String(
-              (updatedTarget as { postId?: mongoose.Types.ObjectId })?.postId ||
-                "",
-            )
+          ? (updatedTarget as { postId?: string })?.postId || ""
           : payload.targetId,
     };
   },
@@ -1089,44 +1186,46 @@ export const CommunityService = {
     const safeLimit = Math.min(20, Math.max(1, limit));
     const profile = await ensureProfile(userId);
 
-    const userMatchCriteria: any = {
-      _id: { $ne: userId },
-      role: roleFilter ? roleFilter : { $in: COMMUNITY_ALLOWED_ROLES },
+    const userWhere: any = {
+      id: { not: userId },
+      role: roleFilter ? roleFilter : { in: [...COMMUNITY_ALLOWED_ROLES] },
     };
     if (userTypeFilter) {
-      userMatchCriteria.userType = userTypeFilter;
+      userWhere.userType = userTypeFilter;
     }
     if (normalizedQuery) {
-      userMatchCriteria.name = new RegExp(escapeRegex(normalizedQuery), "i");
+      userWhere.name = { contains: normalizedQuery, mode: "insensitive" };
     }
 
-    const profileMatchCriteria: any = { userId: { $ne: userId } };
+    const profileWhere: any = { userId: { not: userId } };
     if (normalizedQuery) {
-      profileMatchCriteria.anonymousAlias = new RegExp(
-        escapeRegex(normalizedQuery),
-        "i",
-      );
+      profileWhere.anonymousAlias = {
+        contains: normalizedQuery,
+        mode: "insensitive",
+      };
     }
 
     const [nameMatches, aliasMatches] = await Promise.all([
-      User.find(userMatchCriteria)
-        .select("_id name photoUrl photoS3Key")
-        .limit(safeLimit * 3)
-        .lean(),
+      prisma.user.findMany({
+        where: userWhere,
+        select: { id: true, name: true, photoUrl: true, photoS3Key: true },
+        take: safeLimit * 3,
+      }),
       normalizedQuery
-        ? CommunityProfile.find(profileMatchCriteria)
-            .select("userId")
-            .limit(safeLimit * 3)
-            .lean()
-        : Promise.resolve([]),
+        ? prisma.communityProfile.findMany({
+            where: profileWhere,
+            select: { userId: true },
+            take: safeLimit * 3,
+          })
+        : Promise.resolve([] as { userId: string }[]),
     ]);
 
     const candidateIds = new Set<string>();
     for (const user of nameMatches) {
-      candidateIds.add(String(user._id));
+      candidateIds.add(user.id);
     }
     for (const match of aliasMatches) {
-      candidateIds.add(String(match.userId));
+      candidateIds.add(match.userId);
     }
 
     const ids = Array.from(candidateIds);
@@ -1135,21 +1234,39 @@ export const CommunityService = {
     }
 
     const [users, profiles] = await Promise.all([
-      User.find({ _id: { $in: ids }, role: { $in: COMMUNITY_ALLOWED_ROLES } })
-        .select("_id name photoUrl photoS3Key role userType city dob")
-        .lean(),
-      CommunityProfile.find({ userId: { $in: ids } })
-        .select("userId anonymousAlias isIdentityPublic blockedUsers")
-        .lean(),
+      prisma.user.findMany({
+        where: { id: { in: ids }, role: { in: [...COMMUNITY_ALLOWED_ROLES] } },
+        select: {
+          id: true,
+          name: true,
+          photoUrl: true,
+          photoS3Key: true,
+          role: true,
+          userType: true,
+          city: true,
+          dob: true,
+        },
+      }),
+      prisma.communityProfile.findMany({
+        where: { userId: { in: ids } },
+        select: {
+          userId: true,
+          anonymousAlias: true,
+          isIdentityPublic: true,
+          blockedUsers: { select: { blockedUserId: true } },
+        },
+      }),
     ]);
 
-    const blockedByMe = new Set(profile.blockedUsers.map((id) => String(id)));
-    const profileMap = new Map(profiles.map((p) => [String(p.userId), p]));
+    const blockedByMe = new Set(
+      profile.blockedUsers.map((blocked) => blocked.blockedUserId),
+    );
+    const profileMap = new Map(profiles.map((p) => [p.userId, p]));
 
     const items = await Promise.all(
       users
         .filter((user) => {
-          const candidateId = String(user._id);
+          const candidateId = user.id;
           if (blockedByMe.has(candidateId)) {
             return false;
           }
@@ -1157,14 +1274,14 @@ export const CommunityService = {
           const candidateProfile = profileMap.get(candidateId);
           const blockedMe = Boolean(
             candidateProfile?.blockedUsers?.some(
-              (blockedUserId) => String(blockedUserId) === userId,
+              (blocked) => blocked.blockedUserId === userId,
             ),
           );
 
           return !blockedMe;
         })
         .map((user) => {
-          const candidateId = String(user._id);
+          const candidateId = user.id;
           const candidateProfile = profileMap.get(candidateId);
           const isIdentityPublic = candidateProfile?.isIdentityPublic ?? true;
           const displayName = isIdentityPublic
@@ -1178,7 +1295,7 @@ export const CommunityService = {
             isIdentityPublic,
             role: user.role,
             userType: (user as any).userType || "Player",
-            photoUrl: null,
+            photoUrl: null as string | null,
             city: typeof user.city === "string" ? user.city.trim() : null,
             age: calculateAge(user.dob),
             sports,
@@ -1192,7 +1309,7 @@ export const CommunityService = {
           ...item,
           photoUrl: item.id
             ? await resolveUserPhotoUrl(
-                users.find((user) => String(user._id) === item.id),
+                users.find((user) => user.id === item.id),
               )
             : null,
         })),
@@ -1210,16 +1327,34 @@ export const CommunityService = {
     await ensureProfile(viewerId);
 
     const [targetUser, targetProfile] = await Promise.all([
-      User.findById(targetUserId)
-        .select(
-          "_id name photoUrl photoS3Key role userType dob city createdAt lastActiveAt",
-        )
-        .lean(),
-      CommunityProfile.findOne({ userId: targetUserId })
-        .select(
-          "userId anonymousAlias isIdentityPublic messagePrivacy readReceiptsEnabled lastSeenVisible lastSeenAt blockedUsers",
-        )
-        .lean(),
+      prisma.user.findUnique({
+        where: { id: targetUserId },
+        select: {
+          id: true,
+          name: true,
+          photoUrl: true,
+          photoS3Key: true,
+          role: true,
+          userType: true,
+          dob: true,
+          city: true,
+          createdAt: true,
+          lastActiveAt: true,
+        },
+      }),
+      prisma.communityProfile.findUnique({
+        where: { userId: targetUserId },
+        select: {
+          userId: true,
+          anonymousAlias: true,
+          isIdentityPublic: true,
+          messagePrivacy: true,
+          readReceiptsEnabled: true,
+          lastSeenVisible: true,
+          lastSeenAt: true,
+          blockedUsers: { select: { blockedUserId: true } },
+        },
+      }),
     ]);
 
     const targetRole = targetUser?.role as
@@ -1235,7 +1370,7 @@ export const CommunityService = {
 
     if (
       targetProfile?.blockedUsers?.some(
-        (blockedId) => String(blockedId) === viewerId,
+        (blocked) => blocked.blockedUserId === viewerId,
       )
     ) {
       throw new Error("Access denied");
@@ -1247,13 +1382,13 @@ export const CommunityService = {
       messagePrivacy: "EVERYONE" as const,
       readReceiptsEnabled: true,
       lastSeenVisible: false,
-      lastSeenAt: undefined,
+      lastSeenAt: undefined as Date | null | undefined,
     };
     const isSelf = targetUserId === viewerId;
     const isIdentityPublic = isSelf || Boolean(profile.isIdentityPublic);
 
     return {
-      id: String(targetUser._id),
+      id: targetUser.id,
       role: targetUser.role,
       userType: (targetUser as any).userType || "Player",
       displayName: isIdentityPublic
@@ -1280,7 +1415,7 @@ export const CommunityService = {
 
   async getMyProfile(userId: string) {
     const profile = await ensureProfile(userId);
-    return profile.toObject();
+    return serializeProfile(profile);
   },
 
   async updateMyProfile(
@@ -1293,30 +1428,37 @@ export const CommunityService = {
       anonymousAlias?: string;
     },
   ) {
-    const profile = await ensureProfile(userId);
+    await ensureProfile(userId);
+
+    const data: Prisma.CommunityProfileUpdateInput = {};
 
     if (typeof payload.isIdentityPublic === "boolean") {
-      profile.isIdentityPublic = payload.isIdentityPublic;
+      data.isIdentityPublic = payload.isIdentityPublic;
     }
 
     if (payload.messagePrivacy) {
-      profile.messagePrivacy = payload.messagePrivacy;
+      data.messagePrivacy = payload.messagePrivacy;
     }
 
     if (typeof payload.readReceiptsEnabled === "boolean") {
-      profile.readReceiptsEnabled = payload.readReceiptsEnabled;
+      data.readReceiptsEnabled = payload.readReceiptsEnabled;
     }
 
     if (typeof payload.lastSeenVisible === "boolean") {
-      profile.lastSeenVisible = payload.lastSeenVisible;
+      data.lastSeenVisible = payload.lastSeenVisible;
     }
 
     if (payload.anonymousAlias?.trim()) {
-      profile.anonymousAlias = payload.anonymousAlias.trim();
+      data.anonymousAlias = payload.anonymousAlias.trim();
     }
 
-    await profile.save();
-    return profile.toObject();
+    const updated = await prisma.communityProfile.update({
+      where: { userId },
+      data,
+      include: { blockedUsers: true },
+    });
+
+    return serializeProfile(updated);
   },
 
   async blockUser(userId: string, targetUserId: string) {
@@ -1324,39 +1466,46 @@ export const CommunityService = {
       throw new Error("You cannot block yourself");
     }
 
-    await Promise.all([
+    const [profile] = await Promise.all([
       ensureProfile(userId),
       ensureCommunityUser(targetUserId),
     ]);
 
-    await CommunityProfile.updateOne(
-      { userId },
-      { $addToSet: { blockedUsers: targetUserId } },
-    );
+    await prisma.communityBlockedUser.upsert({
+      where: {
+        profileId_blockedUserId: {
+          profileId: profile.id,
+          blockedUserId: targetUserId,
+        },
+      },
+      create: { profileId: profile.id, blockedUserId: targetUserId },
+      update: {},
+    });
 
     return { blockedUserId: targetUserId };
   },
 
   async unblockUser(userId: string, targetUserId: string) {
-    await ensureProfile(userId);
+    const profile = await ensureProfile(userId);
 
-    await CommunityProfile.updateOne(
-      { userId },
-      { $pull: { blockedUsers: targetUserId } },
-    );
+    await prisma.communityBlockedUser.deleteMany({
+      where: { profileId: profile.id, blockedUserId: targetUserId },
+    });
 
     return { unblockedUserId: targetUserId };
   },
 
   async getBlockedUsers(userId: string) {
     const profile = await ensureProfile(userId);
-    const users = await User.find({ _id: { $in: profile.blockedUsers } })
-      .select("_id name photoUrl photoS3Key")
-      .lean();
+    const blockedIds = profile.blockedUsers.map((blocked) => blocked.blockedUserId);
+    const users = await prisma.user.findMany({
+      where: { id: { in: blockedIds } },
+      select: { id: true, name: true, photoUrl: true, photoS3Key: true },
+    });
 
     return Promise.all(
       users.map(async (user) => ({
-        id: String(user._id),
+        id: user.id,
         name: user.name,
         photoUrl: await resolveUserPhotoUrl(user),
       })),
@@ -1368,34 +1517,37 @@ export const CommunityService = {
 
     const normalizedQuery = query.trim();
     const safeLimit = Math.min(50, Math.max(1, limit));
-    const regex = normalizedQuery
-      ? new RegExp(escapeRegex(normalizedQuery), "i")
-      : null;
 
-    const filter = regex
-      ? {
-          visibility: "PUBLIC",
-          $or: [{ name: regex }, { sport: regex }, { city: regex }],
-        }
-      : { visibility: "PUBLIC" };
+    const where: Prisma.CommunityGroupWhereInput = { visibility: "PUBLIC" };
+    if (normalizedQuery) {
+      where.OR = [
+        { name: { contains: normalizedQuery, mode: "insensitive" } },
+        { sport: { contains: normalizedQuery, mode: "insensitive" } },
+        { city: { contains: normalizedQuery, mode: "insensitive" } },
+      ];
+    }
 
-    const groups = await CommunityGroup.find(filter)
-      .sort({ updatedAt: -1 })
-      .limit(safeLimit)
-      .lean();
+    const groups = await prisma.communityGroup.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      take: safeLimit,
+      include: { members: true },
+    });
 
     return groups.map((group) => {
-      const memberIds = group.members.map((memberId) => String(memberId));
-      const adminIds = group.admins.map((adminId) => String(adminId));
+      const memberIds = group.members.map((member) => member.userId);
+      const adminIds = group.members
+        .filter((member) => member.role === "ADMIN")
+        .map((member) => member.userId);
       return {
-        id: String(group._id),
+        id: group.id,
         name: group.name,
         description: group.description || "",
         visibility: group.visibility,
         audience: group.audience || COMMUNITY_DEFAULT_GROUP_AUDIENCE,
         sport: group.sport || "",
         city: group.city || "",
-        createdBy: String(group.createdBy),
+        createdBy: group.createdBy,
         memberCount: memberIds.length,
         isMember: memberIds.includes(userId),
         isAdmin: adminIds.includes(userId),
@@ -1425,10 +1577,18 @@ export const CommunityService = {
       throw new Error("Group name is required");
     }
 
-    const group = await CommunityGroup.findOneAndUpdate(
-      { createdBy: new mongoose.Types.ObjectId(userId), name },
-      {
-        $setOnInsert: {
+    // Mongo upsert-by-(createdBy,name) had no unique constraint; emulate the
+    // idempotency with a find-then-create. Creator is stored once in the merged
+    // members table with role ADMIN (was members[] + admins[]).
+    const existingGroup = await prisma.communityGroup.findFirst({
+      where: { createdBy: userId, name },
+      include: { members: true },
+    });
+
+    const group =
+      existingGroup ??
+      (await prisma.communityGroup.create({
+        data: {
           name,
           description: normalizeOptionalText(payload.description),
           sport: payload.sport || "",
@@ -1438,39 +1598,38 @@ export const CommunityService = {
           visibility: "PUBLIC",
           memberAddPolicy: "ADMIN_ONLY",
           audience: payload.audience || COMMUNITY_DEFAULT_GROUP_AUDIENCE,
-          createdBy: new mongoose.Types.ObjectId(userId),
-          members: [new mongoose.Types.ObjectId(userId)],
-          admins: [new mongoose.Types.ObjectId(userId)],
+          createdBy: userId,
           inviteCode: generateInviteCode(),
+          members: { create: [{ userId, role: "ADMIN" }] },
         },
-      },
-      { upsert: true, new: true },
-    );
+        include: { members: true },
+      }));
 
     trackCommunityRoleMixEvent("group_created", {
-      groupId: String(group._id),
+      groupId: group.id,
       createdByRole: creatorRole,
       audience: group.audience || COMMUNITY_DEFAULT_GROUP_AUDIENCE,
     });
 
-    const conversation = await CommunityConversation.findOneAndUpdate(
-      { conversationType: "GROUP", groupId: group._id },
-      {
-        $setOnInsert: {
+    let conversation = await prisma.communityConversation.findFirst({
+      where: { conversationType: "GROUP", groupId: group.id },
+    });
+    if (!conversation) {
+      conversation = await prisma.communityConversation.create({
+        data: {
           conversationType: "GROUP",
-          groupId: group._id,
-          participantKey: buildGroupParticipantKey(String(group._id)),
-          participants: [new mongoose.Types.ObjectId(userId)],
+          groupId: group.id,
+          participantKey: buildGroupParticipantKey(group.id),
           status: "ACTIVE",
-          requestedBy: new mongoose.Types.ObjectId(userId),
+          requestedBy: userId,
           lastMessageAt: new Date(),
+          participants: { create: [{ userId }] },
         },
-      },
-      { upsert: true, new: true },
-    );
+      });
+    }
 
     return {
-      id: String(group._id),
+      id: group.id,
       name: group.name,
       description: group.description || "",
       visibility: group.visibility,
@@ -1480,7 +1639,7 @@ export const CommunityService = {
       profilePicture: group.profilePicture || "",
       memberAddPolicy: group.memberAddPolicy || "ADMIN_ONLY",
       memberCount: group.members.length,
-      conversationId: String(conversation._id),
+      conversationId: conversation.id,
     };
   },
 
@@ -1499,35 +1658,42 @@ export const CommunityService = {
   ) {
     await ensureProfile(userId);
 
-    const group = await CommunityGroup.findById(groupId);
+    const group = await prisma.communityGroup.findUnique({
+      where: { id: groupId },
+      include: { members: true },
+    });
     if (!group) {
       throw new Error("Group not found");
     }
 
-    const requesterIsAdmin = group.admins.some(
-      (adminId) => String(adminId) === userId,
+    const requesterIsAdmin = group.members.some(
+      (member) => member.role === "ADMIN" && member.userId === userId,
     );
     if (!requesterIsAdmin) {
       throw new Error("Only group admins can update the group");
     }
 
-    if (payload.name) group.name = payload.name;
-    if (typeof payload.description === "string") group.description = payload.description;
-    if (typeof payload.sport === "string") group.sport = payload.sport;
-    if (typeof payload.city === "string") group.city = payload.city;
-    if (typeof payload.profilePicture === "string") group.profilePicture = payload.profilePicture;
-    if (typeof payload.profilePictureKey === "string") group.profilePictureKey = payload.profilePictureKey;
-    if (payload.audience) group.audience = payload.audience;
+    const data: Prisma.CommunityGroupUpdateInput = {};
+    if (payload.name) data.name = payload.name;
+    if (typeof payload.description === "string") data.description = payload.description;
+    if (typeof payload.sport === "string") data.sport = payload.sport;
+    if (typeof payload.city === "string") data.city = payload.city;
+    if (typeof payload.profilePicture === "string") data.profilePicture = payload.profilePicture;
+    if (typeof payload.profilePictureKey === "string") data.profilePictureKey = payload.profilePictureKey;
+    if (payload.audience) data.audience = payload.audience;
 
-    await group.save();
+    const updated = await prisma.communityGroup.update({
+      where: { id: group.id },
+      data,
+    });
 
     return {
-      groupId: String(group._id),
-      name: group.name,
-      description: group.description,
-      sport: group.sport,
-      city: group.city,
-      audience: group.audience,
+      groupId: updated.id,
+      name: updated.name,
+      description: updated.description,
+      sport: updated.sport,
+      city: updated.city,
+      audience: updated.audience,
     };
   },
 
@@ -1538,24 +1704,29 @@ export const CommunityService = {
   ) {
     await ensureProfile(userId);
 
-    const group = await CommunityGroup.findById(groupId);
+    const group = await prisma.communityGroup.findUnique({
+      where: { id: groupId },
+      include: { members: true },
+    });
     if (!group) {
       throw new Error("Group not found");
     }
 
-    const requesterIsAdmin = group.admins.some(
-      (adminId) => String(adminId) === userId,
+    const requesterIsAdmin = group.members.some(
+      (member) => member.role === "ADMIN" && member.userId === userId,
     );
     if (!requesterIsAdmin) {
       throw new Error("Only group admins can update settings");
     }
 
-    group.memberAddPolicy = payload.memberAddPolicy;
-    await group.save();
+    const updated = await prisma.communityGroup.update({
+      where: { id: group.id },
+      data: { memberAddPolicy: payload.memberAddPolicy },
+    });
 
     return {
-      groupId: String(group._id),
-      memberAddPolicy: group.memberAddPolicy,
+      groupId: updated.id,
+      memberAddPolicy: updated.memberAddPolicy,
     };
   },
 
@@ -1564,7 +1735,10 @@ export const CommunityService = {
 
     const userRole = await getCommunityRole(userId);
 
-    const group = await CommunityGroup.findById(groupId);
+    const group = await prisma.communityGroup.findUnique({
+      where: { id: groupId },
+      include: { members: true },
+    });
     if (!group) {
       throw new Error("Group not found");
     }
@@ -1577,11 +1751,14 @@ export const CommunityService = {
     }
 
     const alreadyMember = group.members.some(
-      (memberId) => String(memberId) === userId,
+      (member) => member.userId === userId,
     );
     if (!alreadyMember) {
-      group.members.push(new mongoose.Types.ObjectId(userId));
-      await group.save();
+      await prisma.communityGroupMember.upsert({
+        where: { groupId_userId: { groupId: group.id, userId } },
+        create: { groupId: group.id, userId, role: "MEMBER" },
+        update: {},
+      });
 
       trackCommunityRoleMixEvent("group_joined", {
         groupId,
@@ -1590,27 +1767,35 @@ export const CommunityService = {
       });
     }
 
-    const conversation = await CommunityConversation.findOneAndUpdate(
-      { conversationType: "GROUP", groupId: group._id },
-      {
-        $setOnInsert: {
+    let conversation = await prisma.communityConversation.findFirst({
+      where: { conversationType: "GROUP", groupId: group.id },
+    });
+    if (!conversation) {
+      conversation = await prisma.communityConversation.create({
+        data: {
           conversationType: "GROUP",
-          groupId: group._id,
-          participantKey: buildGroupParticipantKey(String(group._id)),
+          groupId: group.id,
+          participantKey: buildGroupParticipantKey(group.id),
           status: "ACTIVE",
           requestedBy: group.createdBy,
           lastMessageAt: new Date(),
+          participants: { create: [{ userId }] },
         },
-        $addToSet: {
-          participants: new mongoose.Types.ObjectId(userId),
+      });
+    } else {
+      await prisma.conversationParticipant.upsert({
+        where: {
+          conversationId_userId: { conversationId: conversation.id, userId },
         },
-      },
-      { upsert: true, new: true },
-    );
+        create: { conversationId: conversation.id, userId },
+        update: {},
+      });
+    }
 
     if (!alreadyMember) {
-      const adminIds = group.admins
-        .map((adminId) => String(adminId))
+      const adminIds = group.members
+        .filter((member) => member.role === "ADMIN")
+        .map((member) => member.userId)
         .filter((adminId) => adminId !== userId);
 
       for (const adminId of adminIds) {
@@ -1620,8 +1805,8 @@ export const CommunityService = {
           `A new member joined ${group.name}.`,
           {
             event: "COMMUNITY_GROUP_JOINED",
-            groupId: String(group._id),
-            conversationId: String(conversation?._id || ""),
+            groupId: group.id,
+            conversationId: conversation?.id || "",
             actorUserId: userId,
           },
         );
@@ -1629,120 +1814,153 @@ export const CommunityService = {
     }
 
     return {
-      groupId: String(group._id),
-      conversationId: String(conversation?._id || ""),
-      memberCount: group.members.length,
+      groupId: group.id,
+      conversationId: conversation?.id || "",
+      memberCount: group.members.length + (alreadyMember ? 0 : 1),
     };
   },
 
   async deleteGroup(userId: string, groupId: string) {
     await ensureProfile(userId);
 
-    const group = await CommunityGroup.findById(groupId);
+    const group = await prisma.communityGroup.findUnique({
+      where: { id: groupId },
+      include: { members: true },
+    });
     if (!group) {
       throw new Error("Group not found");
     }
 
-    const isCreator = String(group.createdBy) === userId;
-    const isAdmin = group.admins.some((adminId) => String(adminId) === userId);
+    const isCreator = group.createdBy === userId;
+    const isAdmin = group.members.some(
+      (member) => member.role === "ADMIN" && member.userId === userId,
+    );
 
     if (!isCreator && !isAdmin) {
       throw new Error("Only group admins can delete the group");
     }
 
-    const groupConversation = await CommunityConversation.findOne({
-      conversationType: "GROUP",
-      groupId: group._id,
+    const groupConversation = await prisma.communityConversation.findFirst({
+      where: { conversationType: "GROUP", groupId: group.id },
     });
 
     if (groupConversation) {
-      await Promise.all([
-        CommunityMessage.deleteMany({
-          conversationId: groupConversation._id,
+      await prisma.$transaction([
+        prisma.communityMessage.deleteMany({
+          where: { conversationId: groupConversation.id },
         }),
-        CommunityConversation.deleteOne({ _id: groupConversation._id }),
+        prisma.communityConversation.delete({
+          where: { id: groupConversation.id },
+        }),
       ]);
     }
 
-    await CommunityGroup.deleteOne({ _id: group._id });
+    await prisma.communityGroup.delete({ where: { id: group.id } });
 
-    return { groupId: String(group._id), deletedGroup: true };
+    return { groupId: group.id, deletedGroup: true };
   },
 
   async leaveGroup(userId: string, groupId: string) {
     await ensureProfile(userId);
 
-    const group = await CommunityGroup.findById(groupId);
+    const group = await prisma.communityGroup.findUnique({
+      where: { id: groupId },
+      include: { members: true },
+    });
     if (!group) {
       throw new Error("Group not found");
     }
 
     const wasMember = group.members.some(
-      (memberId) => String(memberId) === userId,
+      (member) => member.userId === userId,
     );
     if (!wasMember) {
       return { groupId, removed: false };
     }
 
-    group.members = group.members.filter(
-      (memberId) => String(memberId) !== userId,
-    );
-    group.admins = group.admins.filter((adminId) => String(adminId) !== userId);
+    // Removing the merged member row drops both membership and admin role.
+    await prisma.communityGroupMember.deleteMany({
+      where: { groupId: group.id, userId },
+    });
 
-    if (!group.admins.length && group.members.length) {
-      const fallbackAdmin = group.members[0];
+    const remainingMembers = group.members.filter(
+      (member) => member.userId !== userId,
+    );
+
+    let promotedAdminId: string | null = null;
+    const hasAdmin = remainingMembers.some(
+      (member) => member.role === "ADMIN",
+    );
+    if (!hasAdmin && remainingMembers.length) {
+      const fallbackAdmin = remainingMembers[0];
       if (fallbackAdmin) {
-        group.admins = [fallbackAdmin];
+        await prisma.communityGroupMember.update({
+          where: {
+            groupId_userId: { groupId: group.id, userId: fallbackAdmin.userId },
+          },
+          data: { role: "ADMIN" },
+        });
+        promotedAdminId = fallbackAdmin.userId;
       }
     }
 
-    const groupConversation = await CommunityConversation.findOne({
-      conversationType: "GROUP",
-      groupId: group._id,
+    const groupConversation = await prisma.communityConversation.findFirst({
+      where: { conversationType: "GROUP", groupId: group.id },
+      include: { participants: true },
     });
 
     if (groupConversation) {
-      groupConversation.participants = groupConversation.participants.filter(
-        (participantId) => String(participantId) !== userId,
+      await prisma.conversationParticipant.deleteMany({
+        where: { conversationId: groupConversation.id, userId },
+      });
+
+      const remainingParticipants = groupConversation.participants.filter(
+        (participant) => participant.userId !== userId,
       );
 
-      if (!groupConversation.participants.length || !group.members.length) {
-        await Promise.all([
-          CommunityMessage.deleteMany({
-            conversationId: groupConversation._id,
+      if (!remainingParticipants.length || !remainingMembers.length) {
+        await prisma.$transaction([
+          prisma.communityMessage.deleteMany({
+            where: { conversationId: groupConversation.id },
           }),
-          CommunityConversation.deleteOne({ _id: groupConversation._id }),
+          prisma.communityConversation.delete({
+            where: { id: groupConversation.id },
+          }),
         ]);
-      } else {
-        await groupConversation.save();
       }
     }
 
-    if (!group.members.length) {
-      await CommunityGroup.deleteOne({ _id: group._id });
-      return { groupId: String(group._id), removed: true, deletedGroup: true };
+    if (!remainingMembers.length) {
+      await prisma.communityGroup.delete({ where: { id: group.id } });
+      return { groupId: group.id, removed: true, deletedGroup: true };
     }
 
-    await group.save();
-
-    const remainingAdminIds = group.admins
-      .map((adminId) => String(adminId))
-      .filter((adminId) => adminId !== userId);
+    const remainingAdminIds = new Set(
+      remainingMembers
+        .filter((member) => member.role === "ADMIN")
+        .map((member) => member.userId),
+    );
+    if (promotedAdminId) {
+      remainingAdminIds.add(promotedAdminId);
+    }
 
     for (const adminId of remainingAdminIds) {
+      if (adminId === userId) {
+        continue;
+      }
       sendCommunityNotification(
         adminId,
         "Member left group",
         `A member left ${group.name}.`,
         {
           event: "COMMUNITY_GROUP_LEFT",
-          groupId: String(group._id),
+          groupId: group.id,
           actorUserId: userId,
         },
       );
     }
 
-    return { groupId: String(group._id), removed: true, deletedGroup: false };
+    return { groupId: group.id, removed: true, deletedGroup: false };
   },
 
   async addGroupMember(userId: string, groupId: string, targetUserId: string) {
@@ -1755,7 +1973,10 @@ export const CommunityService = {
       throw new Error("Use join group to add yourself");
     }
 
-    const group = await CommunityGroup.findById(groupId);
+    const group = await prisma.communityGroup.findUnique({
+      where: { id: groupId },
+      include: { members: true },
+    });
     if (!group) {
       throw new Error("Group not found");
     }
@@ -1785,11 +2006,11 @@ export const CommunityService = {
       });
     }
 
-    const requesterIsAdmin = group.admins.some(
-      (adminId) => String(adminId) === userId,
+    const requesterIsAdmin = group.members.some(
+      (member) => member.role === "ADMIN" && member.userId === userId,
     );
     const requesterIsMember = group.members.some(
-      (memberId) => String(memberId) === userId,
+      (member) => member.userId === userId,
     );
     if (!requesterIsMember) {
       throw new Error("Only group members can add members");
@@ -1806,30 +2027,43 @@ export const CommunityService = {
     }
 
     const alreadyMember = group.members.some(
-      (memberId) => String(memberId) === targetUserId,
+      (member) => member.userId === targetUserId,
     );
     if (!alreadyMember) {
-      group.members.push(new mongoose.Types.ObjectId(targetUserId));
-      await group.save();
+      await prisma.communityGroupMember.upsert({
+        where: { groupId_userId: { groupId: group.id, userId: targetUserId } },
+        create: { groupId: group.id, userId: targetUserId, role: "MEMBER" },
+        update: {},
+      });
     }
 
-    const conversation = await CommunityConversation.findOneAndUpdate(
-      { conversationType: "GROUP", groupId: group._id },
-      {
-        $setOnInsert: {
+    let conversation = await prisma.communityConversation.findFirst({
+      where: { conversationType: "GROUP", groupId: group.id },
+    });
+    if (!conversation) {
+      conversation = await prisma.communityConversation.create({
+        data: {
           conversationType: "GROUP",
-          groupId: group._id,
-          participantKey: buildGroupParticipantKey(String(group._id)),
+          groupId: group.id,
+          participantKey: buildGroupParticipantKey(group.id),
           status: "ACTIVE",
           requestedBy: group.createdBy,
           lastMessageAt: new Date(),
+          participants: { create: [{ userId: targetUserId }] },
         },
-        $addToSet: {
-          participants: new mongoose.Types.ObjectId(targetUserId),
+      });
+    } else {
+      await prisma.conversationParticipant.upsert({
+        where: {
+          conversationId_userId: {
+            conversationId: conversation.id,
+            userId: targetUserId,
+          },
         },
-      },
-      { upsert: true, new: true },
-    );
+        create: { conversationId: conversation.id, userId: targetUserId },
+        update: {},
+      });
+    }
 
     if (!alreadyMember && targetUserId !== userId) {
       sendCommunityNotification(
@@ -1838,17 +2072,17 @@ export const CommunityService = {
         `${group.name} added you to the community discussion.`,
         {
           event: "COMMUNITY_GROUP_MEMBER_ADDED",
-          groupId: String(group._id),
-          conversationId: String(conversation?._id || ""),
+          groupId: group.id,
+          conversationId: conversation?.id || "",
           actorUserId: userId,
         },
       );
     }
 
     return {
-      groupId: String(group._id),
-      conversationId: String(conversation?._id || ""),
-      memberCount: group.members.length,
+      groupId: group.id,
+      conversationId: conversation?.id || "",
+      memberCount: group.members.length + (alreadyMember ? 0 : 1),
       addedUserId: targetUserId,
       alreadyMember,
     };
@@ -1890,14 +2124,14 @@ export const CommunityService = {
     }
 
     const participantKey = buildParticipantKey(userId, targetUserId);
-    const existingConversation = await CommunityConversation.findOne({
-      participantKey,
+    const existingConversation = await prisma.communityConversation.findFirst({
+      where: { participantKey },
     });
     if (existingConversation) {
       return {
-        id: String(existingConversation._id),
+        id: existingConversation.id,
         status: existingConversation.status,
-        requestedBy: String(existingConversation.requestedBy),
+        requestedBy: existingConversation.requestedBy,
         myAlias: meProfile.anonymousAlias,
       };
     }
@@ -1905,20 +2139,18 @@ export const CommunityService = {
     const initialStatus =
       targetProfile.messagePrivacy === "REQUEST_ONLY" ? "PENDING" : "ACTIVE";
 
-    const conversation = await CommunityConversation.findOneAndUpdate(
-      { participantKey },
-      {
-        $setOnInsert: {
-          conversationType: "DM",
-          participantKey,
-          participants: [userId, targetUserId],
-          status: initialStatus,
-          requestedBy: userId,
-          lastMessageAt: new Date(),
+    const conversation = await prisma.communityConversation.create({
+      data: {
+        conversationType: "DM",
+        participantKey,
+        status: initialStatus,
+        requestedBy: userId,
+        lastMessageAt: new Date(),
+        participants: {
+          create: [{ userId }, { userId: targetUserId }],
         },
       },
-      { upsert: true, new: true },
-    );
+    });
 
     if (!conversation) {
       throw new Error("Failed to start conversation");
@@ -1938,22 +2170,25 @@ export const CommunityService = {
             initialStatus === "PENDING"
               ? "COMMUNITY_CONVERSATION_REQUESTED"
               : "COMMUNITY_CONVERSATION_STARTED",
-          conversationId: String(conversation._id),
+          conversationId: conversation.id,
           actorUserId: userId,
         },
       );
     }
 
     return {
-      id: String(conversation._id),
+      id: conversation.id,
       status: conversation.status,
-      requestedBy: String(conversation.requestedBy),
+      requestedBy: conversation.requestedBy,
       myAlias: meProfile.anonymousAlias,
     };
   },
 
   async acceptConversationRequest(userId: string, conversationId: string) {
-    const conversation = await CommunityConversation.findById(conversationId);
+    const conversation = await prisma.communityConversation.findUnique({
+      where: { id: conversationId },
+      include: { participants: true },
+    });
     if (!conversation) {
       throw new Error("Conversation not found");
     }
@@ -1963,19 +2198,24 @@ export const CommunityService = {
     }
 
     const isParticipant = conversation.participants.some(
-      (participantId) => String(participantId) === userId,
+      (participant) => participant.userId === userId,
     );
     if (!isParticipant) {
       throw new Error("Access denied");
     }
 
+    let status = conversation.status;
+
     if (conversation.status === "PENDING") {
-      const requester = String(conversation.requestedBy);
+      const requester = conversation.requestedBy;
       if (requester === userId) {
         throw new Error("Requester cannot accept own request");
       }
-      conversation.status = "ACTIVE";
-      await conversation.save();
+      const updated = await prisma.communityConversation.update({
+        where: { id: conversation.id },
+        data: { status: "ACTIVE" },
+      });
+      status = updated.status;
 
       sendCommunityNotification(
         requester,
@@ -1983,17 +2223,20 @@ export const CommunityService = {
         "Your community conversation request was accepted.",
         {
           event: "COMMUNITY_CONVERSATION_ACCEPTED",
-          conversationId: String(conversation._id),
+          conversationId: conversation.id,
           actorUserId: userId,
         },
       );
     }
 
-    return { id: String(conversation._id), status: conversation.status };
+    return { id: conversation.id, status };
   },
 
   async rejectConversationRequest(userId: string, conversationId: string) {
-    const conversation = await CommunityConversation.findById(conversationId);
+    const conversation = await prisma.communityConversation.findUnique({
+      where: { id: conversationId },
+      include: { participants: true },
+    });
     if (!conversation) {
       throw new Error("Conversation not found");
     }
@@ -2003,13 +2246,13 @@ export const CommunityService = {
     }
 
     const isParticipant = conversation.participants.some(
-      (participantId) => String(participantId) === userId,
+      (participant) => participant.userId === userId,
     );
     if (!isParticipant) {
       throw new Error("Access denied");
     }
 
-    const requester = String(conversation.requestedBy);
+    const requester = conversation.requestedBy;
     if (requester === userId) {
       throw new Error("Requester cannot reject own request");
     }
@@ -2020,14 +2263,16 @@ export const CommunityService = {
       "Your community conversation request was declined.",
       {
         event: "COMMUNITY_CONVERSATION_REJECTED",
-        conversationId: String(conversation._id),
+        conversationId: conversation.id,
         actorUserId: userId,
       },
     );
 
-    await Promise.all([
-      CommunityMessage.deleteMany({ conversationId: conversation._id }),
-      CommunityConversation.deleteOne({ _id: conversation._id }),
+    await prisma.$transaction([
+      prisma.communityMessage.deleteMany({
+        where: { conversationId: conversation.id },
+      }),
+      prisma.communityConversation.delete({ where: { id: conversation.id } }),
     ]);
 
     return { rejected: true };
@@ -2055,33 +2300,38 @@ export const CommunityService = {
     const requiresInMemoryFiltering =
       mode !== "ALL" || normalizedSearch.length > 0;
 
-    const conversationQuery: {
-      participants: string;
-      conversationType?: "GROUP" | { $ne: "GROUP" };
-    } = {
-      participants: userId,
+    const conversationWhere: Prisma.CommunityConversationWhereInput = {
+      participants: { some: { userId } },
     };
     if (type === "GROUPS") {
-      conversationQuery.conversationType = "GROUP";
+      conversationWhere.conversationType = "GROUP";
     } else if (type === "CONTACTS") {
-      conversationQuery.conversationType = { $ne: "GROUP" };
+      conversationWhere.conversationType = { not: "GROUP" };
     }
 
     let total = 0;
-    let conversations: any[] = [];
+    let conversations: (CommunityConversationRow & {
+      participants: { userId: string }[];
+    })[] = [];
 
     if (requiresInMemoryFiltering) {
-      conversations = await CommunityConversation.find(conversationQuery)
-        .sort({ updatedAt: -1 })
-        .lean();
+      conversations = await prisma.communityConversation.findMany({
+        where: conversationWhere,
+        orderBy: { updatedAt: "desc" },
+        include: { participants: { select: { userId: true } } },
+      });
       total = conversations.length;
     } else {
-      total = await CommunityConversation.countDocuments(conversationQuery);
-      conversations = await CommunityConversation.find(conversationQuery)
-        .sort({ updatedAt: -1 })
-        .skip(skip)
-        .limit(safeLimit)
-        .lean();
+      total = await prisma.communityConversation.count({
+        where: conversationWhere,
+      });
+      conversations = await prisma.communityConversation.findMany({
+        where: conversationWhere,
+        orderBy: { updatedAt: "desc" },
+        skip,
+        take: safeLimit,
+        include: { participants: { select: { userId: true } } },
+      });
     }
 
     if (!conversations.length) {
@@ -2096,111 +2346,122 @@ export const CommunityService = {
       };
     }
 
+    const conversationIds = conversations.map((conversation) => conversation.id);
+
     const dmConversations = conversations.filter(
       (conversation) => conversation.conversationType !== "GROUP",
     );
 
     const otherParticipantIds = dmConversations.map((conversation) => {
       const other = conversation.participants.find(
-        (participantId: mongoose.Types.ObjectId) =>
-          String(participantId) !== userId,
+        (participant) => participant.userId !== userId,
       );
-      return String(other);
+      return other?.userId || "";
     });
 
     const groupConversationIds = conversations
       .filter((conversation) => conversation.conversationType === "GROUP")
-      .map((conversation) => String(conversation.groupId || ""))
+      .map((conversation) => conversation.groupId || "")
       .filter(Boolean);
 
-    const [users, profiles, latestMessages, groups] = await Promise.all([
-      User.find({ _id: { $in: otherParticipantIds } })
-        .select("_id name photoUrl photoS3Key")
-        .lean(),
-      CommunityProfile.find({ userId: { $in: otherParticipantIds } })
-        .select(
-          "userId anonymousAlias isIdentityPublic lastSeenVisible lastSeenAt",
-        )
-        .lean(),
-      CommunityMessage.aggregate([
-        {
-          $match: { conversationId: { $in: conversations.map((c) => c._id) } },
-        },
-        { $sort: { createdAt: -1 } },
-        {
-          $group: {
-            _id: "$conversationId",
-            content: { $first: "$content" },
-            createdAt: { $first: "$createdAt" },
-            senderId: { $first: "$senderId" },
-            type: { $first: "$type" },
-            isDeleted: { $first: "$isDeleted" },
+    const [users, profiles, latestMessages, unreadStats, groups] =
+      await Promise.all([
+        prisma.user.findMany({
+          where: { id: { in: otherParticipantIds } },
+          select: { id: true, name: true, photoUrl: true, photoS3Key: true },
+        }),
+        prisma.communityProfile.findMany({
+          where: { userId: { in: otherParticipantIds } },
+          select: {
+            userId: true,
+            anonymousAlias: true,
+            isIdentityPublic: true,
+            lastSeenVisible: true,
+            lastSeenAt: true,
           },
-        },
-      ]),
-      CommunityGroup.find({ _id: { $in: groupConversationIds } })
-        .select("_id name description visibility sport city members")
-        .lean(),
-    ]);
-
-    const unreadStats = await CommunityMessage.aggregate([
-      {
-        $match: {
-          conversationId: {
-            $in: conversations.map((conversation) => conversation._id),
+        }),
+        // Latest message per conversation (was a Mongo $group $first pipeline).
+        Promise.all(
+          conversationIds.map((conversationId) =>
+            prisma.communityMessage.findFirst({
+              where: { conversationId },
+              orderBy: { createdAt: "desc" },
+              select: {
+                conversationId: true,
+                content: true,
+                createdAt: true,
+                senderId: true,
+                type: true,
+                isDeleted: true,
+              },
+            }),
+          ),
+        ),
+        // Unread count per conversation (was a Mongo $match/$group pipeline).
+        Promise.all(
+          conversationIds.map(async (conversationId) => ({
+            conversationId,
+            unreadCount: await prisma.communityMessage.count({
+              where: {
+                conversationId,
+                senderId: { not: userId },
+                readBy: { none: { userId } },
+              },
+            }),
+          })),
+        ),
+        prisma.communityGroup.findMany({
+          where: { id: { in: groupConversationIds } },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            visibility: true,
+            sport: true,
+            city: true,
+            _count: { select: { members: true } },
           },
-          senderId: { $ne: new mongoose.Types.ObjectId(userId) },
-          readBy: { $ne: new mongoose.Types.ObjectId(userId) },
-        },
-      },
-      {
-        $group: {
-          _id: "$conversationId",
-          unreadCount: { $sum: 1 },
-        },
-      },
-    ]);
+        }),
+      ]);
 
-    const userMap = new Map(users.map((user) => [String(user._id), user]));
+    const userMap = new Map(users.map((user) => [user.id, user]));
     const profileMap = new Map(
-      profiles.map((profile) => [String(profile.userId), profile]),
+      profiles.map((profile) => [profile.userId, profile]),
     );
     const messageMap = new Map(
-      latestMessages.map((message) => [String(message._id), message]),
+      latestMessages
+        .filter((message): message is NonNullable<typeof message> =>
+          Boolean(message),
+        )
+        .map((message) => [message.conversationId, message]),
     );
     const unreadMap = new Map(
-      unreadStats.map((item) => [
-        String(item._id),
-        Number(item.unreadCount) || 0,
-      ]),
+      unreadStats.map((item) => [item.conversationId, item.unreadCount || 0]),
     );
-    const groupMap = new Map(groups.map((group) => [String(group._id), group]));
+    const groupMap = new Map(groups.map((group) => [group.id, group]));
 
     const mappedItems = await Promise.all(
       conversations.map(async (conversation) => {
         const conversationType = conversation.conversationType || "DM";
-        const otherId = String(
+        const otherId =
           conversation.participants.find(
-            (participantId: mongoose.Types.ObjectId) =>
-              String(participantId) !== userId,
-          ),
-        );
+            (participant) => participant.userId !== userId,
+          )?.userId || "";
         const otherUser = userMap.get(otherId);
         const otherProfile = profileMap.get(otherId);
-        const latest = messageMap.get(String(conversation._id));
+        const latest = messageMap.get(conversation.id);
         const group = conversation.groupId
-          ? groupMap.get(String(conversation.groupId))
+          ? groupMap.get(conversation.groupId)
           : null;
-        const groupMemberCount = group?.members?.length || 0;
+        const groupMemberCount = group?._count?.members || 0;
 
         return {
-          id: String(conversation._id),
+          id: conversation.id,
           conversationType,
           status: conversation.status,
-          requestedBy: String(conversation.requestedBy),
+          requestedBy: conversation.requestedBy,
           otherParticipant: {
-            id:
-              conversationType === "GROUP" ? String(group?._id || "") : otherId,
+            id: conversationType === "GROUP" ? group?.id || "" : otherId,
             displayName:
               conversationType === "GROUP"
                 ? group?.name || "Community Group"
@@ -2227,7 +2488,7 @@ export const CommunityService = {
           group:
             conversationType === "GROUP"
               ? {
-                  id: String(group?._id || ""),
+                  id: group?.id || "",
                   name: group?.name || "Community Group",
                   description: group?.description || "",
                   visibility: group?.visibility || "PUBLIC",
@@ -2244,11 +2505,11 @@ export const CommunityService = {
                     ? "📷 Image"
                     : latest.content,
                 createdAt: latest.createdAt,
-                senderId: String(latest.senderId),
+                senderId: latest.senderId,
                 type: latest.type || "TEXT",
               }
             : null,
-          unreadCount: unreadMap.get(String(conversation._id)) || 0,
+          unreadCount: unreadMap.get(conversation.id) || 0,
           updatedAt: conversation.updatedAt,
         };
       }),
@@ -2305,118 +2566,121 @@ export const CommunityService = {
     await ensureProfile(userId);
 
     const safeLimit = Math.min(100, Math.max(1, limit));
-    const conversations = await CommunityConversation.find(
-      {
-        participants: userId,
-      },
-      { _id: 1 },
-    )
-      .sort({ updatedAt: -1 })
-      .limit(safeLimit)
-      .lean();
+    const conversations = await prisma.communityConversation.findMany({
+      where: { participants: { some: { userId } } },
+      orderBy: { updatedAt: "desc" },
+      take: safeLimit,
+      select: { id: true },
+    });
 
-    return conversations.map((conversation) => String(conversation._id));
+    return conversations.map((conversation) => conversation.id);
   },
 
   async markConversationRead(userId: string, conversationId: string) {
-    const conversation = await CommunityConversation.findById(conversationId);
+    const conversation = await prisma.communityConversation.findUnique({
+      where: { id: conversationId },
+      include: { participants: { select: { userId: true } } },
+    });
     if (!conversation) {
       throw new Error("Conversation not found");
     }
 
     const isParticipant = conversation.participants.some(
-      (participantId) => String(participantId) === userId,
+      (participant) => participant.userId === userId,
     );
     if (!isParticipant) {
       throw new Error("Access denied");
     }
 
-    const unreadMessages = await CommunityMessage.find({
-      conversationId,
-      senderId: { $ne: new mongoose.Types.ObjectId(userId) },
-      readBy: { $ne: new mongoose.Types.ObjectId(userId) },
-    })
-      .select("_id")
-      .lean();
+    const unreadMessages = await prisma.communityMessage.findMany({
+      where: {
+        conversationId,
+        senderId: { not: userId },
+        readBy: { none: { userId } },
+      },
+      select: { id: true },
+    });
 
     if (!unreadMessages.length) {
       return {
-        conversationId: String(conversation._id),
-        participantIds: conversation.participants.map((participantId) =>
-          String(participantId),
+        conversationId: conversation.id,
+        participantIds: conversation.participants.map(
+          (participant) => participant.userId,
         ),
         readerId: userId,
         messageIds: [] as string[],
       };
     }
 
-    await CommunityMessage.updateMany(
-      {
-        _id: { $in: unreadMessages.map((message) => message._id) },
-      },
-      {
-        $addToSet: { readBy: new mongoose.Types.ObjectId(userId) },
-      },
-    );
+    await prisma.messageReadReceipt.createMany({
+      data: unreadMessages.map((message) => ({
+        messageId: message.id,
+        userId,
+      })),
+      skipDuplicates: true,
+    });
 
     return {
-      conversationId: String(conversation._id),
-      participantIds: conversation.participants.map((participantId) =>
-        String(participantId),
+      conversationId: conversation.id,
+      participantIds: conversation.participants.map(
+        (participant) => participant.userId,
       ),
       readerId: userId,
-      messageIds: unreadMessages.map((message) => String(message._id)),
+      messageIds: unreadMessages.map((message) => message.id),
     };
   },
 
   async markConversationDelivered(userId: string, conversationId: string) {
-    const conversation = await CommunityConversation.findById(conversationId);
+    const conversation = await prisma.communityConversation.findUnique({
+      where: { id: conversationId },
+      include: { participants: { select: { userId: true } } },
+    });
     if (!conversation) {
       throw new Error("Conversation not found");
     }
 
     const isParticipant = conversation.participants.some(
-      (participantId) => String(participantId) === userId,
+      (participant) => participant.userId === userId,
     );
     if (!isParticipant) {
       throw new Error("Access denied");
     }
 
-    const undeliveredMessages = await CommunityMessage.find({
-      conversationId,
-      senderId: { $ne: new mongoose.Types.ObjectId(userId) },
-      deliveredTo: { $ne: new mongoose.Types.ObjectId(userId) },
-    })
-      .select("_id")
-      .lean();
+    const undeliveredMessages = await prisma.communityMessage.findMany({
+      where: {
+        conversationId,
+        senderId: { not: userId },
+        deliveredTo: { none: { userId } },
+      },
+      select: { id: true },
+    });
 
     if (!undeliveredMessages.length) {
       return {
-        conversationId: String(conversation._id),
-        participantIds: conversation.participants.map((participantId) =>
-          String(participantId),
+        conversationId: conversation.id,
+        participantIds: conversation.participants.map(
+          (participant) => participant.userId,
         ),
         readerId: userId,
         messageIds: [] as string[],
       };
     }
 
-    await CommunityMessage.updateMany(
-      {
-        _id: { $in: undeliveredMessages.map((message) => message._id) },
-      },
-      {
-        $addToSet: { deliveredTo: new mongoose.Types.ObjectId(userId) },
-      },
-    );
+    await prisma.messageDeliveryReceipt.createMany({
+      data: undeliveredMessages.map((message) => ({
+        messageId: message.id,
+        userId,
+      })),
+      skipDuplicates: true,
+    });
 
     return {
-      conversationId: String(conversation._id),
-      participantIds: conversation.participants.map((participantId) =>
-        String(participantId),
+      conversationId: conversation.id,
+      participantIds: conversation.participants.map(
+        (participant) => participant.userId,
       ),
       readerId: userId,
-      messageIds: undeliveredMessages.map((message) => String(message._id)),
+      messageIds: undeliveredMessages.map((message) => message.id),
     };
   },
 
@@ -2426,50 +2690,61 @@ export const CommunityService = {
     page = 1,
     limit = 30,
   ) {
-    const conversation =
-      await CommunityConversation.findById(conversationId).lean();
+    const conversation = await prisma.communityConversation.findUnique({
+      where: { id: conversationId },
+      include: { participants: { select: { userId: true } } },
+    });
     if (!conversation) {
       throw new Error("Conversation not found");
     }
 
     const isParticipant = conversation.participants.some(
-      (participantId) => String(participantId) === userId,
+      (participant) => participant.userId === userId,
     );
     if (!isParticipant) {
       throw new Error("Access denied");
     }
 
     const [messages, total] = await Promise.all([
-      CommunityMessage.find({ conversationId })
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean(),
-      CommunityMessage.countDocuments({ conversationId }),
+      prisma.communityMessage.findMany({
+        where: { conversationId },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { readBy: { select: { userId: true } } },
+      }),
+      prisma.communityMessage.count({ where: { conversationId } }),
     ]);
 
-    const allParticipantIds = conversation.participants.map((id) => String(id));
-    const users = await User.find({ _id: { $in: allParticipantIds } })
-      .select("_id name photoUrl photoS3Key")
-      .lean();
-    const profiles = await CommunityProfile.find({
-      userId: { $in: allParticipantIds },
-    })
-      .select("userId anonymousAlias isIdentityPublic readReceiptsEnabled")
-      .lean();
+    const allParticipantIds = conversation.participants.map(
+      (participant) => participant.userId,
+    );
+    const users = await prisma.user.findMany({
+      where: { id: { in: allParticipantIds } },
+      select: { id: true, name: true, photoUrl: true, photoS3Key: true },
+    });
+    const profiles = await prisma.communityProfile.findMany({
+      where: { userId: { in: allParticipantIds } },
+      select: {
+        userId: true,
+        anonymousAlias: true,
+        isIdentityPublic: true,
+        readReceiptsEnabled: true,
+      },
+    });
 
-    const userMap = new Map(users.map((user) => [String(user._id), user]));
+    const userMap = new Map(users.map((user) => [user.id, user]));
     const profileMap = new Map(
-      profiles.map((profile) => [String(profile.userId), profile]),
+      profiles.map((profile) => [profile.userId, profile]),
     );
 
     const messageItems = messages.reverse().map((message) => {
-      const senderId = String(message.senderId);
+      const senderId = message.senderId;
       const sender = userMap.get(senderId);
       const senderProfile = profileMap.get(senderId);
       const isSelf = senderId === userId;
       const readBy = (message.readBy || [])
-        .map((readerId) => String(readerId))
+        .map((receipt) => receipt.userId)
         .filter((readerId) => {
           if (readerId === userId) {
             return true;
@@ -2480,8 +2755,8 @@ export const CommunityService = {
         });
 
       return {
-        id: String(message._id),
-        conversationId: String(message.conversationId),
+        id: message.id,
+        conversationId: message.conversationId,
         conversationType: conversation.conversationType || "DM",
         senderId,
         type: message.type || "TEXT",
@@ -2491,7 +2766,7 @@ export const CommunityService = {
             ? sender?.name || "Player"
             : senderProfile?.anonymousAlias || "Anonymous Player",
         content: message.isDeleted ? "Message deleted" : message.content,
-        metadata: message.metadata || null,
+        metadata: buildMessageMetadata(message),
         createdAt: message.createdAt,
         updatedAt: message.updatedAt,
         editedAt: message.editedAt || null,
@@ -2505,27 +2780,36 @@ export const CommunityService = {
     const conversationType = conversation.conversationType || "DM";
     const group =
       conversationType === "GROUP" && conversation.groupId
-        ? await CommunityGroup.findById(conversation.groupId)
-            .select("_id name description visibility sport city members")
-            .lean()
+        ? await prisma.communityGroup.findUnique({
+            where: { id: conversation.groupId },
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              visibility: true,
+              sport: true,
+              city: true,
+              _count: { select: { members: true } },
+            },
+          })
         : null;
 
     return {
       conversation: {
-        id: String(conversation._id),
+        id: conversation.id,
         conversationType,
         status: conversation.status,
-        requestedBy: String(conversation.requestedBy),
+        requestedBy: conversation.requestedBy,
         group:
           conversationType === "GROUP"
             ? {
-                id: String(group?._id || ""),
+                id: group?.id || "",
                 name: group?.name || "Community Group",
                 description: group?.description || "",
                 visibility: group?.visibility || "PUBLIC",
                 sport: group?.sport || "",
                 city: group?.city || "",
-                memberCount: group?.members?.length || 0,
+                memberCount: group?._count?.members || 0,
               }
             : null,
       },
@@ -2547,24 +2831,26 @@ export const CommunityService = {
       metadata?: { width?: number; height?: number };
     },
   ) {
-    const conversation = await CommunityConversation.findById(conversationId);
+    const conversation = await prisma.communityConversation.findUnique({
+      where: { id: conversationId },
+      include: { participants: { select: { userId: true } } },
+    });
     if (!conversation) {
       throw new Error("Conversation not found");
     }
 
     const isParticipant = conversation.participants.some(
-      (participantId) => String(participantId) === userId,
+      (participant) => participant.userId === userId,
     );
     if (!isParticipant) {
       throw new Error("Access denied");
     }
 
     if (conversation.conversationType !== "GROUP") {
-      const otherParticipantId = String(
+      const otherParticipantId =
         conversation.participants.find(
-          (participantId) => String(participantId) !== userId,
-        ),
-      );
+          (participant) => participant.userId !== userId,
+        )?.userId || "";
 
       const otherProfile = await ensureProfile(otherParticipantId);
       if (otherProfile.messagePrivacy === "NONE") {
@@ -2581,72 +2867,80 @@ export const CommunityService = {
       conversation.status === "PENDING" &&
       conversation.conversationType !== "GROUP"
     ) {
-      const requester = String(conversation.requestedBy);
+      const requester = conversation.requestedBy;
       if (requester !== userId) {
         throw new Error("Please accept this message request first");
       }
     }
 
     const messageType = options?.type || "TEXT";
-    const messageDoc: Record<string, unknown> = {
-      conversationId,
-      senderId: userId,
-      type: messageType,
-      content: messageType === "TEXT" ? content.trim() : content,
-      readBy: [new mongoose.Types.ObjectId(userId)],
-    };
-    if (messageType === "IMAGE" && options?.metadata) {
-      messageDoc.metadata = options.metadata;
-    }
+    const message = await prisma.communityMessage.create({
+      data: {
+        conversationId,
+        senderId: userId,
+        type: messageType,
+        content: messageType === "TEXT" ? content.trim() : content,
+        ...(messageType === "IMAGE" && options?.metadata
+          ? {
+              metaWidth: options.metadata.width ?? null,
+              metaHeight: options.metadata.height ?? null,
+            }
+          : {}),
+        readBy: { create: [{ userId }] },
+      },
+    });
 
-    const message = await CommunityMessage.create(messageDoc);
+    await prisma.communityConversation.update({
+      where: { id: conversation.id },
+      data: { lastMessageAt: new Date() },
+    });
 
-    conversation.lastMessageAt = new Date();
-    await conversation.save();
-
-    const participants = await User.find({
-      _id: { $in: conversation.participants },
-    })
-      .select("_id name photoUrl photoS3Key")
-      .lean();
-    const profiles = await CommunityProfile.find({
-      userId: { $in: conversation.participants },
-    })
-      .select("userId anonymousAlias isIdentityPublic")
-      .lean();
+    const participantIds = conversation.participants.map(
+      (participant) => participant.userId,
+    );
+    const participants = await prisma.user.findMany({
+      where: { id: { in: participantIds } },
+      select: { id: true, name: true, photoUrl: true, photoS3Key: true },
+    });
+    const profiles = await prisma.communityProfile.findMany({
+      where: { userId: { in: participantIds } },
+      select: { userId: true, anonymousAlias: true, isIdentityPublic: true },
+    });
 
     const sender = participants.find(
-      (participant) => String(participant._id) === userId,
+      (participant) => participant.id === userId,
     );
     const senderProfile = profiles.find(
-      (profile) => String(profile.userId) === userId,
+      (profile) => profile.userId === userId,
     );
 
     const senderDisplayName = senderProfile?.isIdentityPublic
       ? sender?.name || "Player"
       : senderProfile?.anonymousAlias || "Anonymous Player";
 
-    const otherParticipantIds = conversation.participants
-      .map((participantId) => String(participantId))
-      .filter((participantId) => participantId !== userId);
+    const otherParticipantIds = participantIds.filter(
+      (participantId) => participantId !== userId,
+    );
 
     // Enqueue a single outbox delivery job to handle multi-channel fanout
     try {
-      await OutboxMessage.create({
-        type: "deliver_message",
-        payload: {
-          conversationId: String(conversation._id),
-          messageId: String(message._id),
-          actorUserId: userId,
-          conversationType: conversation.conversationType || "DM",
-          participantIds: otherParticipantIds,
-          summary:
-            messageType === "IMAGE"
-              ? `${senderDisplayName} shared an image in community chat.`
-              : `${senderDisplayName} sent you a message in community chat.`,
+      await prisma.outboxMessage.create({
+        data: {
+          type: "deliver_message",
+          payload: {
+            conversationId: conversation.id,
+            messageId: message.id,
+            actorUserId: userId,
+            conversationType: conversation.conversationType || "DM",
+            participantIds: otherParticipantIds,
+            summary:
+              messageType === "IMAGE"
+                ? `${senderDisplayName} shared an image in community chat.`
+                : `${senderDisplayName} sent you a message in community chat.`,
+          },
+          status: "PENDING",
+          attempts: 0,
         },
-        status: "PENDING",
-        attempts: 0,
       });
     } catch (err) {
       console.error("Failed to enqueue outbox delivery:", err);
@@ -2662,8 +2956,8 @@ export const CommunityService = {
             : `${senderDisplayName} sent you a message in community chat.`,
           {
             event: "COMMUNITY_MESSAGE_RECEIVED",
-            conversationId: String(conversation._id),
-            messageId: String(message._id),
+            conversationId: conversation.id,
+            messageId: message.id,
             actorUserId: userId,
             conversationType: conversation.conversationType || "DM",
           },
@@ -2672,33 +2966,34 @@ export const CommunityService = {
     }
 
     return {
-      id: String(message._id),
-      conversationId: String(message.conversationId),
+      id: message.id,
+      conversationId: message.conversationId,
       conversationType: conversation.conversationType || "DM",
-      senderId: String(message.senderId),
+      senderId: message.senderId,
       type: message.type || "TEXT",
       senderDisplayName,
       content: message.content,
-      metadata: message.metadata || null,
+      metadata: buildMessageMetadata(message),
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,
       editedAt: null,
       isEdited: false,
       isDeleted: false,
-      readBy: [String(message.senderId)],
-      participantIds: conversation.participants.map((participantId) =>
-        String(participantId),
-      ),
+      readBy: [message.senderId],
+      participantIds,
     };
   },
 
   async editMessage(userId: string, messageId: string, content: string) {
-    const message = await CommunityMessage.findById(messageId);
+    const message = await prisma.communityMessage.findUnique({
+      where: { id: messageId },
+      include: { readBy: { select: { userId: true } } },
+    });
     if (!message) {
       throw new Error("Message not found");
     }
 
-    const senderId = String(message.senderId);
+    const senderId = message.senderId;
     if (senderId !== userId) {
       throw new Error("Only the sender can edit this message");
     }
@@ -2719,49 +3014,55 @@ export const CommunityService = {
       throw new Error("Message content is required");
     }
 
-    message.content = trimmedContent;
-    message.editedAt = new Date();
-    await message.save();
+    const updated = await prisma.communityMessage.update({
+      where: { id: message.id },
+      data: { content: trimmedContent, editedAt: new Date() },
+    });
 
-    const conversation = await CommunityConversation.findById(
-      message.conversationId,
-    )
-      .select("participants conversationType")
-      .lean();
+    const conversation = await prisma.communityConversation.findUnique({
+      where: { id: message.conversationId },
+      select: {
+        conversationType: true,
+        participants: { select: { userId: true } },
+      },
+    });
 
     if (!conversation) {
       throw new Error("Conversation not found");
     }
 
-    const participants = conversation.participants.map((participantId) =>
-      String(participantId),
+    const participants = conversation.participants.map(
+      (participant) => participant.userId,
     );
 
     return {
-      id: String(message._id),
-      conversationId: String(message.conversationId),
+      id: updated.id,
+      conversationId: updated.conversationId,
       conversationType: conversation.conversationType || "DM",
       senderId,
-      type: message.type || "TEXT",
-      content: message.content,
-      metadata: message.metadata || null,
-      createdAt: message.createdAt,
-      updatedAt: message.updatedAt,
-      editedAt: message.editedAt,
+      type: updated.type || "TEXT",
+      content: updated.content,
+      metadata: buildMessageMetadata(updated),
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+      editedAt: updated.editedAt,
       isEdited: true,
       isDeleted: false,
-      readBy: (message.readBy || []).map((readerId) => String(readerId)),
+      readBy: (message.readBy || []).map((receipt) => receipt.userId),
       participantIds: participants,
     };
   },
 
   async deleteMessage(userId: string, messageId: string) {
-    const message = await CommunityMessage.findById(messageId);
+    const message = await prisma.communityMessage.findUnique({
+      where: { id: messageId },
+      include: { readBy: { select: { userId: true } } },
+    });
     if (!message) {
       throw new Error("Message not found");
     }
 
-    const senderId = String(message.senderId);
+    const senderId = message.senderId;
     if (senderId !== userId) {
       throw new Error("Only the sender can delete this message");
     }
@@ -2777,40 +3078,46 @@ export const CommunityService = {
       throw new Error("Message delete window has expired");
     }
 
-    message.isDeleted = true;
-    message.deletedAt = new Date();
-    message.deletedBy = new mongoose.Types.ObjectId(userId);
-    message.content = "Message deleted";
-    await message.save();
+    const updated = await prisma.communityMessage.update({
+      where: { id: message.id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy: userId,
+        content: "Message deleted",
+      },
+    });
 
-    const conversation = await CommunityConversation.findById(
-      message.conversationId,
-    )
-      .select("participants conversationType")
-      .lean();
+    const conversation = await prisma.communityConversation.findUnique({
+      where: { id: message.conversationId },
+      select: {
+        conversationType: true,
+        participants: { select: { userId: true } },
+      },
+    });
 
     if (!conversation) {
       throw new Error("Conversation not found");
     }
 
-    const participants = conversation.participants.map((participantId) =>
-      String(participantId),
+    const participants = conversation.participants.map(
+      (participant) => participant.userId,
     );
 
     return {
-      id: String(message._id),
-      conversationId: String(message.conversationId),
+      id: updated.id,
+      conversationId: updated.conversationId,
       conversationType: conversation.conversationType || "DM",
       senderId,
-      type: message.type || "TEXT",
+      type: updated.type || "TEXT",
       content: "Message deleted",
       metadata: null,
-      createdAt: message.createdAt,
-      updatedAt: message.updatedAt,
-      editedAt: message.editedAt || null,
-      isEdited: Boolean(message.editedAt),
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+      editedAt: updated.editedAt || null,
+      isEdited: Boolean(updated.editedAt),
       isDeleted: true,
-      readBy: (message.readBy || []).map((readerId) => String(readerId)),
+      readBy: (message.readBy || []).map((receipt) => receipt.userId),
       participantIds: participants,
     };
   },
@@ -2839,15 +3146,24 @@ export const CommunityService = {
       | undefined;
 
     if (payload.targetType === "MESSAGE") {
-      const message = await CommunityMessage.findById(payload.targetId)
-        .select("_id senderId createdAt updatedAt editedAt deletedAt isDeleted")
-        .lean();
+      const message = await prisma.communityMessage.findUnique({
+        where: { id: payload.targetId },
+        select: {
+          id: true,
+          senderId: true,
+          createdAt: true,
+          updatedAt: true,
+          editedAt: true,
+          deletedAt: true,
+          isDeleted: true,
+        },
+      });
       if (!message) {
         throw new Error("message not found");
       }
 
       messageAudit = {
-        senderId: String(message.senderId),
+        senderId: message.senderId,
         createdAt: message.createdAt,
         updatedAt: message.updatedAt,
         editedAt: message.editedAt || null,
@@ -2856,40 +3172,55 @@ export const CommunityService = {
         wasDeleted: Boolean(message.isDeleted),
       };
     } else if (payload.targetType === "GROUP") {
-      const group = await CommunityGroup.findById(payload.targetId)
-        .select("_id")
-        .lean();
+      const group = await prisma.communityGroup.findUnique({
+        where: { id: payload.targetId },
+        select: { id: true },
+      });
       if (!group) {
         throw new Error("group not found");
       }
     } else if (payload.targetType === "POST") {
-      const post = await CommunityPost.findById(payload.targetId)
-        .select("_id")
-        .lean();
+      const post = await prisma.communityPost.findUnique({
+        where: { id: payload.targetId },
+        select: { id: true },
+      });
       if (!post) {
         throw new Error("post not found");
       }
     } else {
-      const answer = await CommunityAnswer.findById(payload.targetId)
-        .select("_id")
-        .lean();
+      const answer = await prisma.communityAnswer.findUnique({
+        where: { id: payload.targetId },
+        select: { id: true },
+      });
       if (!answer) {
         throw new Error("answer not found");
       }
     }
 
-    const report = await CommunityReport.create({
-      reporterUserId: userId,
-      targetType: payload.targetType,
-      targetId: payload.targetId,
-      reason: payload.reason.trim(),
-      details: payload.details?.trim() || "",
-      ...(messageAudit ? { messageAudit } : {}),
-      status: "OPEN",
+    const report = await prisma.communityReport.create({
+      data: {
+        reporterUserId: userId,
+        targetType: payload.targetType,
+        targetId: payload.targetId,
+        reason: payload.reason.trim(),
+        details: payload.details?.trim() || "",
+        status: "OPEN",
+        ...(messageAudit
+          ? {
+              maSenderId: messageAudit.senderId,
+              maCreatedAt: messageAudit.createdAt,
+              maUpdatedAt: messageAudit.updatedAt,
+              maEditedAt: messageAudit.editedAt,
+              maDeletedAt: messageAudit.deletedAt,
+              maWasEdited: messageAudit.wasEdited,
+              maWasDeleted: messageAudit.wasDeleted,
+            }
+          : {}),
+      },
     });
 
     return {
-      id: String(report._id),
+      id: report.id,
       status: report.status,
       targetType: report.targetType,
       createdAt: report.createdAt,
@@ -2904,39 +3235,46 @@ export const CommunityService = {
     const skip = (safePage - 1) * safeLimit;
 
     const [items, total] = await Promise.all([
-      CommunityReport.find({ reporterUserId: userId })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(safeLimit)
-        .lean(),
-      CommunityReport.countDocuments({ reporterUserId: userId }),
+      prisma.communityReport.findMany({
+        where: { reporterUserId: userId },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: safeLimit,
+      }),
+      prisma.communityReport.count({ where: { reporterUserId: userId } }),
     ]);
 
     return {
-      items: items.map((item) => ({
-        id: String(item._id),
-        targetType: item.targetType,
-        targetId: String(item.targetId),
-        reason: item.reason,
-        details: item.details || "",
-        status: item.status,
-        resolutionNote: item.resolutionNote || "",
-        createdAt: item.createdAt,
-        reviewedAt: item.reviewedAt || null,
-        messageAudit: item.messageAudit
-          ? {
-              senderId: item.messageAudit.senderId
-                ? String(item.messageAudit.senderId)
-                : undefined,
-              createdAt: item.messageAudit.createdAt || null,
-              updatedAt: item.messageAudit.updatedAt || null,
-              editedAt: item.messageAudit.editedAt || null,
-              deletedAt: item.messageAudit.deletedAt || null,
-              wasEdited: Boolean(item.messageAudit.wasEdited),
-              wasDeleted: Boolean(item.messageAudit.wasDeleted),
-            }
-          : undefined,
-      })),
+      items: items.map((item) => {
+        const hasAudit =
+          item.maSenderId !== null ||
+          item.maCreatedAt !== null ||
+          item.maWasEdited ||
+          item.maWasDeleted;
+
+        return {
+          id: item.id,
+          targetType: item.targetType,
+          targetId: item.targetId,
+          reason: item.reason,
+          details: item.details || "",
+          status: item.status,
+          resolutionNote: item.resolutionNote || "",
+          createdAt: item.createdAt,
+          reviewedAt: item.reviewedAt || null,
+          messageAudit: hasAudit
+            ? {
+                senderId: item.maSenderId ?? undefined,
+                createdAt: item.maCreatedAt || null,
+                updatedAt: item.maUpdatedAt || null,
+                editedAt: item.maEditedAt || null,
+                deletedAt: item.maDeletedAt || null,
+                wasEdited: Boolean(item.maWasEdited),
+                wasDeleted: Boolean(item.maWasDeleted),
+              }
+            : undefined,
+        };
+      }),
       pagination: {
         total,
         page: safePage,
@@ -2946,21 +3284,28 @@ export const CommunityService = {
   },
 
   async touchLastSeen(userId: string) {
-    await CommunityProfile.updateOne(
-      { userId },
-      { $set: { lastSeenAt: new Date() } },
-      { upsert: true },
-    );
+    await prisma.communityProfile.upsert({
+      where: { userId },
+      create: {
+        userId,
+        anonymousAlias: makeDefaultAlias(),
+        lastSeenAt: new Date(),
+      },
+      update: { lastSeenAt: new Date() },
+    });
   },
 
   async assertConversationAccess(userId: string, conversationId: string) {
-    const conversation = await CommunityConversation.findById(conversationId);
+    const conversation = await prisma.communityConversation.findUnique({
+      where: { id: conversationId },
+      include: { participants: { select: { userId: true } } },
+    });
     if (!conversation) {
       throw new Error("Conversation not found");
     }
 
     const isParticipant = conversation.participants.some(
-      (participantId) => String(participantId) === userId,
+      (participant) => participant.userId === userId,
     );
     if (!isParticipant) {
       throw new Error("Access denied");
@@ -2972,7 +3317,7 @@ export const CommunityService = {
   formatSocketParticipant(
     selfId: string,
     participant: {
-      _id: mongoose.Types.ObjectId;
+      _id: unknown;
       name: string;
       photoUrl?: string;
       profile?: {
@@ -2986,54 +3331,60 @@ export const CommunityService = {
     return formatParticipant(selfId, participant);
   },
 
-  async getParticipantIds(conversation: CommunityConversationDocument) {
-    return conversation.participants.map((participantId) =>
-      String(participantId),
-    );
+  async getParticipantIds(conversation: ConversationWithParticipants) {
+    return conversation.participants.map((participant) => participant.userId);
   },
 
   async getGroupMembers(userId: string, groupId: string) {
     await ensureProfile(userId);
 
-    const group = await CommunityGroup.findById(groupId)
-      .populate("members", "_id name photoUrl photoS3Key")
-      .lean();
+    const group = await prisma.communityGroup.findUnique({
+      where: { id: groupId },
+      include: { members: { select: { userId: true } } },
+    });
 
     if (!group) {
       throw new Error("Group not found");
     }
 
-    const isMember = group.members.some((member: any) => {
-      const memberId = member?._id ? String(member._id) : String(member);
-      return memberId === userId;
-    });
+    const memberIds = group.members.map((member) => member.userId);
+    const isMember = memberIds.includes(userId);
     if (!isMember) {
       throw new Error("Access denied");
     }
 
-    const memberProfiles = await CommunityProfile.find({
-      userId: { $in: group.members.map((m) => m._id) },
-    })
-      .select(
-        "userId anonymousAlias isIdentityPublic photoUrl photoS3Key lastSeenAt",
-      )
-      .lean();
+    const [memberUsers, memberProfiles] = await Promise.all([
+      prisma.user.findMany({
+        where: { id: { in: memberIds } },
+        select: { id: true, name: true, photoUrl: true, photoS3Key: true },
+      }),
+      prisma.communityProfile.findMany({
+        where: { userId: { in: memberIds } },
+        select: {
+          userId: true,
+          anonymousAlias: true,
+          isIdentityPublic: true,
+          lastSeenAt: true,
+        },
+      }),
+    ]);
 
+    const userMap = new Map(memberUsers.map((user) => [user.id, user]));
     const profileMap = new Map(
-      memberProfiles.map((p) => [String(p.userId), p]),
+      memberProfiles.map((profile) => [profile.userId, profile]),
     );
 
     return Promise.all(
-      group.members.map(async (member: any) => {
-        const memberId = String(member._id);
+      memberIds.map(async (memberId) => {
+        const member = userMap.get(memberId);
         const profile = profileMap.get(memberId);
         const isIdentityPublic = profile?.isIdentityPublic ?? true;
 
         return {
           id: memberId,
-          name: member.name || "Unknown",
+          name: member?.name || "Unknown",
           displayName: isIdentityPublic
-            ? member.name
+            ? member?.name
             : profile?.anonymousAlias || "Anonymous",
           photoUrl: isIdentityPublic ? await resolveUserPhotoUrl(member) : null,
           isIdentityPublic,
@@ -3047,8 +3398,9 @@ export const CommunityService = {
     await ensureProfile(userId);
     const userRole = await getCommunityRole(userId);
 
-    const group = await CommunityGroup.findOne({
-      inviteCode: inviteCode.trim(),
+    const group = await prisma.communityGroup.findFirst({
+      where: { inviteCode: inviteCode.trim() },
+      include: { members: true },
     });
 
     if (!group) {
@@ -3068,44 +3420,55 @@ export const CommunityService = {
     }
 
     const alreadyMember = group.members.some(
-      (memberId) => String(memberId) === userId,
+      (member) => member.userId === userId,
     );
     if (alreadyMember) {
       // Already a member, just return the group info
-      const conversation = await CommunityConversation.findOne({
-        conversationType: "GROUP",
-        groupId: group._id,
+      const conversation = await prisma.communityConversation.findFirst({
+        where: { conversationType: "GROUP", groupId: group.id },
       });
 
       return {
-        groupId: String(group._id),
-        conversationId: String(conversation?._id || ""),
+        groupId: group.id,
+        conversationId: conversation?.id || "",
         memberCount: group.members.length,
       };
     }
 
-    group.members.push(new mongoose.Types.ObjectId(userId));
-    await group.save();
+    await prisma.communityGroupMember.upsert({
+      where: { groupId_userId: { groupId: group.id, userId } },
+      create: { groupId: group.id, userId, role: "MEMBER" },
+      update: {},
+    });
 
-    const conversation = await CommunityConversation.findOneAndUpdate(
-      { conversationType: "GROUP", groupId: group._id },
-      {
-        $setOnInsert: {
+    let conversation = await prisma.communityConversation.findFirst({
+      where: { conversationType: "GROUP", groupId: group.id },
+    });
+    if (!conversation) {
+      conversation = await prisma.communityConversation.create({
+        data: {
           conversationType: "GROUP",
-          groupId: group._id,
+          groupId: group.id,
+          participantKey: buildGroupParticipantKey(group.id),
           status: "ACTIVE",
           requestedBy: group.createdBy,
           lastMessageAt: new Date(),
+          participants: { create: [{ userId }] },
         },
-        $addToSet: {
-          participants: new mongoose.Types.ObjectId(userId),
+      });
+    } else {
+      await prisma.conversationParticipant.upsert({
+        where: {
+          conversationId_userId: { conversationId: conversation.id, userId },
         },
-      },
-      { upsert: true, new: true },
-    );
+        create: { conversationId: conversation.id, userId },
+        update: {},
+      });
+    }
 
-    const adminIds = group.admins
-      .map((adminId) => String(adminId))
+    const adminIds = group.members
+      .filter((member) => member.role === "ADMIN")
+      .map((member) => member.userId)
       .filter((adminId) => adminId !== userId);
 
     for (const adminId of adminIds) {
@@ -3115,30 +3478,35 @@ export const CommunityService = {
         `A member joined ${group.name} using an invite code.`,
         {
           event: "COMMUNITY_GROUP_JOINED",
-          groupId: String(group._id),
-          conversationId: String(conversation?._id || ""),
+          groupId: group.id,
+          conversationId: conversation?.id || "",
           actorUserId: userId,
         },
       );
     }
 
     return {
-      groupId: String(group._id),
-      conversationId: String(conversation?._id || ""),
-      memberCount: group.members.length,
+      groupId: group.id,
+      conversationId: conversation?.id || "",
+      memberCount: group.members.length + 1,
     };
   },
 
   async getGroupInviteCode(userId: string, groupId: string) {
     await ensureProfile(userId);
 
-    const group = await CommunityGroup.findById(groupId);
+    const group = await prisma.communityGroup.findUnique({
+      where: { id: groupId },
+      include: { members: true },
+    });
 
     if (!group) {
       throw new Error("Group not found");
     }
 
-    const isAdmin = group.admins.some((adminId) => String(adminId) === userId);
+    const isAdmin = group.members.some(
+      (member) => member.role === "ADMIN" && member.userId === userId,
+    );
     if (!isAdmin) {
       throw new Error("Only group admins can get invite code");
     }
@@ -3148,22 +3516,29 @@ export const CommunityService = {
     if (!inviteCode) {
       do {
         inviteCode = generateInviteCode();
-      } while (await CommunityGroup.exists({ inviteCode }));
+      } while (
+        await prisma.communityGroup.findFirst({
+          where: { inviteCode },
+          select: { id: true },
+        })
+      );
 
-      group.inviteCode = inviteCode;
-      await group.save();
+      await prisma.communityGroup.update({
+        where: { id: group.id },
+        data: { inviteCode },
+      });
     }
 
     return {
-      groupId: String(group._id),
+      groupId: group.id,
       inviteCode,
     };
   },
 
   async getCommunityPulseStats() {
     const [postsCount, groupsCount] = await Promise.all([
-      CommunityPost.countDocuments(),
-      CommunityGroup.countDocuments(),
+      prisma.communityPost.count(),
+      prisma.communityGroup.count(),
     ]);
     const totalActivity = postsCount + groupsCount * 12;
     return totalActivity > 0 ? totalActivity : 1280;

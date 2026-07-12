@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
-import Admin, { IAdmin } from "../models/Admin";
+import type { Admin } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import {
   ADMIN_ROLES,
   getRolePermissions,
@@ -44,6 +45,23 @@ const generateTemporaryPassword = (length: number = 12): string => {
   }
 
   return password;
+};
+
+// Relocated from the Mongoose model hook/method (see SCHEMA_CHANGES §11):
+// bcrypt hashing (pre-save hook) and comparePassword (schema method) now live
+// in this service, which owns every Admin write/read.
+const BCRYPT_COST = 12;
+
+const hashPassword = async (plainPassword: string): Promise<string> => {
+  const salt = await bcrypt.genSalt(BCRYPT_COST);
+  return bcrypt.hash(plainPassword, salt);
+};
+
+export const comparePassword = async (
+  plainPassword: string,
+  passwordHash: string,
+): Promise<boolean> => {
+  return bcrypt.compare(plainPassword, passwordHash);
 };
 
 const normalizeUrl = (value: string): string => value.replace(/\/+$/, "");
@@ -106,40 +124,41 @@ const resolveAdminLoginUrl = (): string => {
 export const loginAdmin = async (data: LoginPayload) => {
   const { email, password } = data;
 
-  // Find admin with password field
-  const admin = await Admin.findOne({ email, isActive: true }).select(
-    "+password",
-  );
+  // Find active admin. The Mongo schema lowercased email on save/query; mirror
+  // that here so a mixed-case login still matches the stored (lowercased) value.
+  const admin = await prisma.admin.findFirst({
+    where: { email: email.toLowerCase(), isActive: true },
+  });
 
   if (!admin) {
     throw new Error("Invalid credentials");
   }
 
   // Check password
-  const isPasswordValid = await admin.comparePassword(password);
+  const isPasswordValid = await comparePassword(password, admin.password);
   if (!isPasswordValid) {
     throw new Error("Invalid credentials");
   }
 
-  // Update last login via a targeted write, not a full-document .save() —
-  // a full save re-validates every field (including permissions), which
-  // would block login entirely for any admin carrying legacy/invalid
-  // permission strings, for a change that has nothing to do with permissions.
-  admin.lastLogin = new Date();
-  await Admin.updateOne(
-    { _id: admin._id },
-    { $set: { lastLogin: admin.lastLogin } },
-  );
+  // Update last login via a targeted write, not a full-document save — a full
+  // save would re-validate every field (including permissions), which would
+  // block login entirely for any admin carrying legacy/invalid permission
+  // strings, for a change that has nothing to do with permissions.
+  const lastLogin = new Date();
+  await prisma.admin.update({
+    where: { id: admin.id },
+    data: { lastLogin },
+  });
 
   // Generate token
   const token = generateToken({
-    id: admin._id.toString(),
+    id: admin.id,
     email: admin.email,
     role: admin.role as AdminRole,
   });
 
   // Return admin without password
-  const adminObject: any = admin.toObject();
+  const adminObject: any = { ...admin, lastLogin };
   delete adminObject.password;
 
   return {
@@ -150,9 +169,11 @@ export const loginAdmin = async (data: LoginPayload) => {
 
 export const createAdmin = async (
   data: CreateAdminPayload,
-): Promise<IAdmin> => {
+): Promise<Admin> => {
+  const email = data.email.toLowerCase();
+
   // Check if admin already exists
-  const existingAdmin = await Admin.findOne({ email: data.email });
+  const existingAdmin = await prisma.admin.findUnique({ where: { email } });
   if (existingAdmin) {
     throw new Error("Admin with this email already exists");
   }
@@ -178,16 +199,19 @@ export const createAdmin = async (
   }
 
   const temporaryPassword = generateTemporaryPassword();
-  const admin = new Admin({
-    name: data.name,
-    email: data.email,
-    role,
-    permissions,
-    password: temporaryPassword,
-    mustChangePassword: true,
-  });
+  // Relocated pre-save hashing hook: hash before create.
+  const hashedPassword = await hashPassword(temporaryPassword);
 
-  await admin.save();
+  const admin = await prisma.admin.create({
+    data: {
+      name: data.name,
+      email,
+      role: role as Admin["role"],
+      permissions,
+      password: hashedPassword,
+      mustChangePassword: true,
+    },
+  });
 
   try {
     const adminPortalUrl = resolveAdminLoginUrl();
@@ -199,7 +223,7 @@ export const createAdmin = async (
       loginUrl: adminPortalUrl,
     });
   } catch (error) {
-    await Admin.findByIdAndDelete(admin._id);
+    await prisma.admin.delete({ where: { id: admin.id } });
     throw new Error(
       error instanceof Error
         ? `Failed to send temporary credentials email: ${error.message}`
@@ -212,82 +236,72 @@ export const createAdmin = async (
 
 export const changeAdminPassword = async (
   payload: ChangeAdminPasswordPayload,
-): Promise<IAdmin> => {
+): Promise<Admin> => {
   const { adminId, currentPassword, newPassword } = payload;
 
-  const admin = await Admin.findById(adminId).select("+password");
+  const admin = await prisma.admin.findUnique({ where: { id: adminId } });
   if (!admin || !admin.isActive) {
     throw new Error("Admin not found");
   }
 
-  const isPasswordValid = await admin.comparePassword(currentPassword);
+  const isPasswordValid = await comparePassword(currentPassword, admin.password);
   if (!isPasswordValid) {
     throw new Error("Current password is incorrect");
   }
 
-  // Hash manually and write via a targeted update rather than .save() — a
-  // full-document save re-validates every field (including permissions),
-  // which would block a password change for any admin carrying legacy/
-  // invalid permission strings, for a change unrelated to permissions.
-  // findByIdAndUpdate skips the pre("save") hashing hook, so it's replicated
-  // here explicitly with the same cost factor the model's hook uses.
-  const salt = await bcrypt.genSalt(12);
-  const hashedPassword = await bcrypt.hash(newPassword, salt);
+  // Relocated pre-save hashing hook: hash the new password here explicitly with
+  // the same cost factor before the targeted update.
+  const hashedPassword = await hashPassword(newPassword);
 
-  const updatedAdmin = await Admin.findByIdAndUpdate(
-    adminId,
-    { $set: { password: hashedPassword, mustChangePassword: false } },
-    { new: true },
-  );
-
-  if (!updatedAdmin) {
-    throw new Error("Admin not found");
-  }
+  const updatedAdmin = await prisma.admin.update({
+    where: { id: adminId },
+    data: { password: hashedPassword, mustChangePassword: false },
+  });
 
   return updatedAdmin;
 };
 
-export const getAdminById = async (adminId: string): Promise<IAdmin | null> => {
-  return await Admin.findById(adminId);
+export const getAdminById = async (adminId: string): Promise<Admin | null> => {
+  return await prisma.admin.findUnique({ where: { id: adminId } });
 };
 
-export const getAllAdmins = async (): Promise<IAdmin[]> => {
-  return await Admin.find().sort({ createdAt: -1 });
+export const getAllAdmins = async (): Promise<Admin[]> => {
+  return await prisma.admin.findMany({ orderBy: { createdAt: "desc" } });
 };
 
 export const updateAdmin = async (
   adminId: string,
-  updates: Partial<IAdmin>,
-): Promise<IAdmin | null> => {
+  updates: Partial<Admin>,
+): Promise<Admin | null> => {
   // Don't allow password updates through this method
   delete updates.password;
 
-  return await Admin.findByIdAndUpdate(adminId, updates, {
-    new: true,
-    runValidators: true,
+  const existing = await prisma.admin.findUnique({ where: { id: adminId } });
+  if (!existing) {
+    return null;
+  }
+
+  return await prisma.admin.update({
+    where: { id: adminId },
+    // `updates` is an arbitrary Partial<Admin> (mirrors the old
+    // findByIdAndUpdate); cast so TS accepts it as AdminUpdateInput.
+    data: updates as any,
   });
 };
 
 export const setAdminActiveStatus = async (
   adminId: string,
   isActive: boolean,
-): Promise<IAdmin> => {
-  // findByIdAndUpdate + runValidators only validates the fields being set
-  // (just isActive here), unlike a full document .save() which re-validates
-  // every field — including permissions, where legacy admin documents can
-  // carry now-removed permission strings that would otherwise block this
-  // unrelated status change.
-  const admin = await Admin.findByIdAndUpdate(
-    adminId,
-    { isActive },
-    { new: true, runValidators: true },
-  );
-
-  if (!admin) {
+): Promise<Admin> => {
+  const existing = await prisma.admin.findUnique({ where: { id: adminId } });
+  if (!existing) {
     throw new Error("Admin not found");
   }
 
-  return admin;
+  return await prisma.admin.update({
+    where: { id: adminId },
+    data: { isActive },
+  });
 };
 
 /**
@@ -296,21 +310,21 @@ export const setAdminActiveStatus = async (
 export const updateAdminPermissions = async (
   adminId: string,
   permissions: string[],
-): Promise<IAdmin> => {
+): Promise<Admin> => {
   // Validate permissions
   if (!areValidPermissions(permissions, ALL_PERMISSIONS)) {
     throw new Error("Invalid permissions provided");
   }
 
-  const admin = await Admin.findById(adminId);
-  if (!admin) {
+  const existing = await prisma.admin.findUnique({ where: { id: adminId } });
+  if (!existing) {
     throw new Error("Admin not found");
   }
 
-  admin.permissions = normalizePermissions(permissions);
-  await admin.save();
-
-  return admin;
+  return await prisma.admin.update({
+    where: { id: adminId },
+    data: { permissions: normalizePermissions(permissions) },
+  });
 };
 
 /**
@@ -319,23 +333,25 @@ export const updateAdminPermissions = async (
 export const updateAdminRole = async (
   adminId: string,
   role: string,
-): Promise<IAdmin> => {
+): Promise<Admin> => {
   // Validate role
   const validRoles = Object.values(ADMIN_ROLES);
   if (!validRoles.includes(role as any)) {
     throw new Error("Invalid role provided");
   }
 
-  const admin = await Admin.findById(adminId);
-  if (!admin) {
+  const existing = await prisma.admin.findUnique({ where: { id: adminId } });
+  if (!existing) {
     throw new Error("Admin not found");
   }
 
-  admin.role = role;
-  admin.permissions = [...getRolePermissions(role)];
-  await admin.save();
-
-  return admin;
+  return await prisma.admin.update({
+    where: { id: adminId },
+    data: {
+      role: role as Admin["role"],
+      permissions: [...getRolePermissions(role)],
+    },
+  });
 };
 
 /**
