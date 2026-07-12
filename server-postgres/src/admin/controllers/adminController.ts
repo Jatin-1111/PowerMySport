@@ -1,17 +1,13 @@
 import { Request, Response } from "express";
 import crypto from "crypto";
-import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
+import type {
+  CoachVerificationStatus,
+  CommunityReportStatus,
+  VenueApprovalStatus,
+} from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { S3Service } from "../../shared/services/S3Service";
-import { User } from "../../client/models/User";
-import { Coach } from "../../client/models/Coach";
-import { Venue } from "../../client/models/Venue";
-import Admin from "../models/Admin";
-import { CommunityReport } from "../../community/models/CommunityReport";
-import { CommunityMessage } from "../../community/models/CommunityMessage";
-import { CommunityGroup } from "../../community/models/CommunityGroup";
-import { CommunityPost } from "../../community/models/CommunityPost";
-import { CommunityAnswer } from "../../community/models/CommunityAnswer";
-import { Dispute } from "../../client/models/Dispute";
 import { WebhookRecoveryService } from "../../shared/controllers/WebhookController";
 import {
   changeAdminPassword,
@@ -56,6 +52,22 @@ const auditContext = (
   return { adminId: req.user.id, adminEmail: req.user.email };
 };
 
+// bcrypt work factor for admin-provisioned accounts. In Mongo this was a
+// User pre-save hook; with Prisma there is no hook, so temp passwords created
+// here must be hashed explicitly before write (see PORTING_GUIDE §3).
+const BCRYPT_COST = 12;
+const hashTempPassword = async (plain: string): Promise<string> => {
+  const salt = await bcrypt.genSalt(BCRYPT_COST);
+  return bcrypt.hash(plain, salt);
+};
+
+// A coach returned from CoachService may carry `userId` either as a plain
+// String FK or as an already-joined user object; extract the id in both cases.
+const extractUserId = (value: unknown): string =>
+  value && typeof value === "object"
+    ? String((value as { id?: string }).id ?? "")
+    : String(value ?? "");
+
 const normalizeAdminResponse = (admin: unknown) => {
   if (!admin || typeof admin !== "object") {
     return admin;
@@ -96,13 +108,13 @@ const generateTempPassword = (length = 12): string => {
 };
 
 const buildUserSummary = (user: {
-  _id?: { toString?: () => string };
+  id?: string;
   name?: string;
   email?: string;
   phone?: string;
   role?: string;
 }) => ({
-  id: user._id?.toString?.() || "",
+  id: user.id || "",
   name: user.name,
   email: user.email,
   phone: user.phone,
@@ -132,6 +144,65 @@ const normalizeCoachResponse = (coach: unknown) => {
           ? (plain._id as { toString: () => string }).toString()
           : "",
   };
+};
+
+// Reconstruct the previously-embedded coach shape (sportPricing map,
+// baseLocation GeoJSON, ownVenueDetails) from the normalized Prisma children,
+// mirroring CoachService.mapCoachRecord so the admin list response keeps the
+// legacy JSON shape.
+const mapAdminCoachRecord = (coach: any, user: unknown) => {
+  const {
+    ownVenue,
+    sportPricing: rawSportPricing,
+    availability,
+    sportAvailability,
+    documents,
+    blockedDates,
+    payoutMethods,
+    ...scalar
+  } = coach;
+
+  const sportPricing: Record<string, number> = {};
+  for (const sp of rawSportPricing ?? []) {
+    sportPricing[sp.sport] = sp.price;
+  }
+
+  const baseLocation =
+    coach.baseLng != null && coach.baseLat != null
+      ? {
+          type: "Point" as const,
+          coordinates: [coach.baseLng, coach.baseLat] as [number, number],
+        }
+      : undefined;
+
+  const ownVenueDetails = ownVenue
+    ? {
+        name: ownVenue.name,
+        address: ownVenue.address,
+        location: {
+          type: "Point" as const,
+          coordinates: [ownVenue.lng ?? 0, ownVenue.lat ?? 0] as [
+            number,
+            number,
+          ],
+        },
+        sports: ownVenue.sports,
+        amenities: ownVenue.amenities,
+        pricePerHour: ownVenue.pricePerHour,
+        description: ownVenue.description,
+        images: ownVenue.images,
+        imageS3Keys: ownVenue.imageS3Keys,
+        openingHours: ownVenue.openingHours,
+      }
+    : undefined;
+
+  return normalizeCoachResponse({
+    ...scalar,
+    sportPricing,
+    baseLocation,
+    ownVenueDetails,
+    userId: user ?? coach.userId,
+  });
 };
 
 // Admin login
@@ -204,7 +275,7 @@ export const createAdminAccount = async (
         ...audit,
         action: "admin.create",
         targetType: "Admin",
-        targetId: admin._id.toString(),
+        targetId: admin.id.toString(),
         metadata: { name, email, role: admin.role },
       });
     }
@@ -400,27 +471,55 @@ export const listCoaches = async (
     const statusFilter =
       typeof req.query.status === "string" ? req.query.status.trim() : "";
 
-    const filter: Record<string, unknown> = {};
+    const where: Record<string, unknown> = {};
     if (statusFilter && statusFilter !== "ALL") {
-      filter.verificationStatus = statusFilter;
+      where.verificationStatus = statusFilter as CoachVerificationStatus;
     }
 
     const [total, coaches] = await Promise.all([
-      Coach.countDocuments(filter),
-      Coach.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate({
-          path: "userId",
-          select: "_id name email phone photoUrl photoS3Key role",
-        }),
+      prisma.coach.count({ where }),
+      prisma.coach.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        include: {
+          ownVenue: true,
+          sportPricing: true,
+          availability: true,
+          sportAvailability: true,
+          documents: true,
+          blockedDates: true,
+          payoutMethods: true,
+        },
+      }),
     ]);
+
+    // Populate the user for each coach (String FK, no relation) — mirror the
+    // legacy `.populate("userId", "_id name email phone photoUrl photoS3Key role")`.
+    const userIds = [...new Set(coaches.map((coach) => coach.userId))];
+    const users = userIds.length
+      ? await prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            photoUrl: true,
+            photoS3Key: true,
+            role: true,
+          },
+        })
+      : [];
+    const usersById = new Map(users.map((user) => [user.id, user]));
 
     res.status(200).json({
       success: true,
       message: "Coaches retrieved successfully",
-      data: coaches.map((coach) => normalizeCoachResponse(coach)),
+      data: coaches.map((coach) =>
+        mapAdminCoachRecord(coach, usersById.get(coach.userId) ?? null),
+      ),
       pagination: {
         total,
         page,
@@ -707,12 +806,12 @@ export const getAdminCoachVerificationUploadUrlHandler = async (
         ? await s3Service.generateCoachVenueImageUploadUrl(
             fileName,
             contentType,
-            coach._id.toString(),
+            coach.id.toString(),
           )
         : await s3Service.generateCoachVerificationUploadUrl(
             fileName,
             contentType,
-            coach._id.toString(),
+            coach.id.toString(),
             (documentType as any) || "OTHER",
           );
 
@@ -779,7 +878,7 @@ export const updateCoachAdminHandler = async (
     res.status(200).json({
       success: true,
       message: "Coach updated successfully",
-      data: transformDocument(updated.toJSON()),
+      data: transformDocument(updated as any),
     });
   } catch (error) {
     res.status(400).json({
@@ -910,7 +1009,7 @@ export const submitCoachVerificationAdminHandler = async (
     const payload = req.body as { documents?: any[] };
 
     const submitted = await submitCoachVerification(
-      (coach.userId as any).toString(),
+      extractUserId(coach.userId),
       {
         documents: payload.documents || [],
       },
@@ -919,7 +1018,7 @@ export const submitCoachVerificationAdminHandler = async (
     res.status(200).json({
       success: true,
       message: "Verification submitted successfully",
-      data: transformDocument(submitted.toJSON()),
+      data: transformDocument(submitted as any),
     });
   } catch (error) {
     res.status(400).json({
@@ -965,39 +1064,50 @@ export const listUsersForSafety = async (
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
     const skip = (page - 1) * limit;
 
-    const query: Record<string, unknown> = {
-      role: { $in: ["Player", "Coach", "VenueLister"] },
+    const where: Record<string, unknown> = {
+      role: { in: ["Player", "Coach", "VenueLister"] },
     };
 
     if (role && ["Player", "Coach", "VenueLister"].includes(role)) {
-      query.role = role;
+      where.role = role;
     }
 
     if (status === "ACTIVE") {
       // Legacy users created before safety rollout may not have isActive persisted.
       // Treat anything except explicit false as active.
-      query.isActive = { $ne: false };
+      where.isActive = { not: false };
     } else if (status === "SUSPENDED") {
-      query.isActive = false;
+      where.isActive = false;
     }
 
     const [users, total] = await Promise.all([
-      User.find(query)
-        .select(
-          "name email phone role isActive suspensionReason suspendedAt deactivatedAt createdAt lastActiveAt",
-        )
-        .sort({ updatedAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      User.countDocuments(query),
+      prisma.user.findMany({
+        where: where as any,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          role: true,
+          isActive: true,
+          suspensionReason: true,
+          suspendedAt: true,
+          deactivatedAt: true,
+          createdAt: true,
+          lastActiveAt: true,
+        },
+        orderBy: { updatedAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.user.count({ where: where as any }),
     ]);
 
     res.status(200).json({
       success: true,
       message: "User safety list retrieved",
       data: users.map((user) => ({
-        id: user._id.toString(),
+        id: user.id.toString(),
         ...user,
         isActive: user.isActive !== false,
       })),
@@ -1026,7 +1136,9 @@ export const updateUserSafetyStatus = async (
 ): Promise<void> => {
   try {
     const userId = (req.params as Record<string, unknown>).userId as string;
-    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+    // NOTE: Postgres ids are cuids, not Mongo ObjectIds — the old
+    // ObjectId.isValid() guard no longer applies; a presence check is used.
+    if (!userId) {
       res.status(400).json({ success: false, message: "Invalid user id" });
       return;
     }
@@ -1059,9 +1171,7 @@ export const updateUserSafetyStatus = async (
       update.suspensionReason = reason.trim();
       update.suspendedAt = new Date();
       update.deactivatedAt = null;
-      update.suspendedBy = req.user?.id
-        ? new mongoose.Types.ObjectId(req.user.id)
-        : null;
+      update.suspendedBy = req.user?.id ?? null;
     }
 
     if (action === "REACTIVATE") {
@@ -1078,25 +1188,36 @@ export const updateUserSafetyStatus = async (
         reason?.trim() || "Account deactivated by admin";
       update.deactivatedAt = new Date();
       update.suspendedAt = new Date();
-      update.suspendedBy = req.user?.id
-        ? new mongoose.Types.ObjectId(req.user.id)
-        : null;
+      update.suspendedBy = req.user?.id ?? null;
     }
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $set: update },
-      { new: true },
-    )
-      .select(
-        "name email phone role isActive suspensionReason suspendedAt deactivatedAt createdAt lastActiveAt",
-      )
-      .lean();
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
 
-    if (!user) {
+    if (!existingUser) {
       res.status(404).json({ success: false, message: "User not found" });
       return;
     }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: update,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        suspensionReason: true,
+        suspendedAt: true,
+        deactivatedAt: true,
+        createdAt: true,
+        lastActiveAt: true,
+      },
+    });
 
     // Notify the user their account status changed (fire-and-forget).
     if (user.email) {
@@ -1125,7 +1246,7 @@ export const updateUserSafetyStatus = async (
       success: true,
       message: `User ${action.toLowerCase()} successful`,
       data: {
-        id: user._id.toString(),
+        id: user.id.toString(),
         ...user,
       },
     });
@@ -1148,12 +1269,9 @@ const truncatePreview = (value: string): string =>
     : value;
 
 const resolveCommunityReportTargets = async (
-  reports: Array<{ targetType: string; targetId: mongoose.Types.ObjectId }>,
+  reports: Array<{ targetType: string; targetId: string }>,
 ): Promise<Map<string, { preview: string; deleted: boolean } | null>> => {
-  const idsByType: Record<
-    "MESSAGE" | "GROUP" | "POST" | "ANSWER",
-    mongoose.Types.ObjectId[]
-  > = {
+  const idsByType: Record<"MESSAGE" | "GROUP" | "POST" | "ANSWER", string[]> = {
     MESSAGE: [],
     GROUP: [],
     POST: [],
@@ -1175,29 +1293,33 @@ const resolveCommunityReportTargets = async (
 
   const [messages, groups, posts, answers] = await Promise.all([
     idsByType.MESSAGE.length
-      ? CommunityMessage.find({ _id: { $in: idsByType.MESSAGE } })
-          .select("content isDeleted")
-          .lean()
+      ? prisma.communityMessage.findMany({
+          where: { id: { in: idsByType.MESSAGE } },
+          select: { id: true, content: true, isDeleted: true },
+        })
       : Promise.resolve([]),
     idsByType.GROUP.length
-      ? CommunityGroup.find({ _id: { $in: idsByType.GROUP } })
-          .select("name")
-          .lean()
+      ? prisma.communityGroup.findMany({
+          where: { id: { in: idsByType.GROUP } },
+          select: { id: true, name: true },
+        })
       : Promise.resolve([]),
     idsByType.POST.length
-      ? CommunityPost.find({ _id: { $in: idsByType.POST } })
-          .select("title isDeleted")
-          .lean()
+      ? prisma.communityPost.findMany({
+          where: { id: { in: idsByType.POST } },
+          select: { id: true, title: true, isDeleted: true },
+        })
       : Promise.resolve([]),
     idsByType.ANSWER.length
-      ? CommunityAnswer.find({ _id: { $in: idsByType.ANSWER } })
-          .select("content isDeleted")
-          .lean()
+      ? prisma.communityAnswer.findMany({
+          where: { id: { in: idsByType.ANSWER } },
+          select: { id: true, content: true, isDeleted: true },
+        })
       : Promise.resolve([]),
   ]);
 
   for (const message of messages) {
-    result.set(String(message._id), {
+    result.set(String(message.id), {
       preview: message.isDeleted
         ? "[message deleted]"
         : truncatePreview(message.content),
@@ -1205,19 +1327,19 @@ const resolveCommunityReportTargets = async (
     });
   }
   for (const group of groups) {
-    result.set(String(group._id), {
+    result.set(String(group.id), {
       preview: group.name,
       deleted: false,
     });
   }
   for (const post of posts) {
-    result.set(String(post._id), {
+    result.set(String(post.id), {
       preview: post.isDeleted ? "[post deleted]" : truncatePreview(post.title),
       deleted: Boolean(post.isDeleted),
     });
   }
   for (const answer of answers) {
-    result.set(String(answer._id), {
+    result.set(String(answer.id), {
       preview: answer.isDeleted
         ? "[answer deleted]"
         : truncatePreview(answer.content),
@@ -1239,20 +1361,58 @@ export const listCommunityReports = async (
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
     const skip = (page - 1) * limit;
 
-    const query = status
-      ? { status }
-      : { status: { $in: ["OPEN", "UNDER_REVIEW", "RESOLVED", "REJECTED"] } };
+    const where = status
+      ? { status: status as CommunityReportStatus }
+      : {
+          status: {
+            in: [
+              "OPEN",
+              "UNDER_REVIEW",
+              "RESOLVED",
+              "REJECTED",
+            ] as CommunityReportStatus[],
+          },
+        };
 
     const [reports, total] = await Promise.all([
-      CommunityReport.find(query)
-        .populate("reporterUserId", "name email")
-        .populate("reviewedBy", "name")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      CommunityReport.countDocuments(query),
+      prisma.communityReport.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.communityReport.count({ where }),
     ]);
+
+    // Populate reporter (User) and reviewer (Admin) via String FKs.
+    const reporterIds = [
+      ...new Set(reports.map((report) => report.reporterUserId)),
+    ];
+    const reviewerIds = [
+      ...new Set(
+        reports
+          .map((report) => report.reviewedBy)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+
+    const [reporters, reviewers] = await Promise.all([
+      reporterIds.length
+        ? prisma.user.findMany({
+            where: { id: { in: reporterIds } },
+            select: { id: true, name: true, email: true },
+          })
+        : Promise.resolve([]),
+      reviewerIds.length
+        ? prisma.admin.findMany({
+            where: { id: { in: reviewerIds } },
+            select: { id: true, name: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const reportersById = new Map(reporters.map((user) => [user.id, user]));
+    const reviewersById = new Map(reviewers.map((admin) => [admin.id, admin]));
 
     const targetPreviews = await resolveCommunityReportTargets(reports);
 
@@ -1260,25 +1420,25 @@ export const listCommunityReports = async (
       success: true,
       message: "Community reports fetched",
       data: reports.map((report) => {
-        const reporter = report.reporterUserId as unknown as
-          | { _id: mongoose.Types.ObjectId; name?: string; email?: string }
-          | mongoose.Types.ObjectId;
-        const reviewer = report.reviewedBy as unknown as
-          | { _id: mongoose.Types.ObjectId; name?: string }
-          | mongoose.Types.ObjectId
-          | undefined;
+        const reporter = reportersById.get(report.reporterUserId) || null;
+        const reviewer = report.reviewedBy
+          ? reviewersById.get(report.reviewedBy) || null
+          : null;
         const target = targetPreviews.get(String(report.targetId)) || null;
 
         return {
-          id: String(report._id),
-          reporterUserId:
-            reporter && typeof reporter === "object" && "name" in reporter
-              ? {
-                  id: String(reporter._id),
-                  name: reporter.name || "Unknown user",
-                  email: reporter.email || "",
-                }
-              : { id: String(reporter), name: "Unknown user", email: "" },
+          id: String(report.id),
+          reporterUserId: reporter
+            ? {
+                id: String(reporter.id),
+                name: reporter.name || "Unknown user",
+                email: reporter.email || "",
+              }
+            : {
+                id: String(report.reporterUserId),
+                name: "Unknown user",
+                email: "",
+              },
           targetType: report.targetType,
           targetId: String(report.targetId),
           targetPreview: target
@@ -1289,13 +1449,12 @@ export const listCommunityReports = async (
           details: report.details || "",
           status: report.status,
           resolutionNote: report.resolutionNote || "",
-          reviewedBy:
-            reviewer && typeof reviewer === "object" && "name" in reviewer
-              ? {
-                  id: String(reviewer._id),
-                  name: reviewer.name || "Unknown admin",
-                }
-              : null,
+          reviewedBy: reviewer
+            ? {
+                id: String(reviewer.id),
+                name: reviewer.name || "Unknown admin",
+              }
+            : null,
           reviewedAt: report.reviewedAt || null,
           createdAt: report.createdAt,
         };
@@ -1328,7 +1487,7 @@ export const reviewCommunityReport = async (
     }
 
     const reportId = String(req.params.reportId || "");
-    if (!reportId || !mongoose.Types.ObjectId.isValid(reportId)) {
+    if (!reportId) {
       res.status(400).json({ success: false, message: "Invalid report id" });
       return;
     }
@@ -1338,23 +1497,26 @@ export const reviewCommunityReport = async (
       resolutionNote?: string;
     };
 
-    const updated = await CommunityReport.findByIdAndUpdate(
-      reportId,
-      {
-        $set: {
-          status,
-          resolutionNote: resolutionNote?.trim() || "",
-          reviewedBy: req.user.id,
-          reviewedAt: new Date(),
-        },
-      },
-      { new: true },
-    ).lean();
+    const existing = await prisma.communityReport.findUnique({
+      where: { id: reportId },
+      select: { id: true },
+    });
 
-    if (!updated) {
+    if (!existing) {
       res.status(404).json({ success: false, message: "Report not found" });
       return;
     }
+
+    const updated = await prisma.communityReport.update({
+      where: { id: reportId },
+      data: {
+        status: status as CommunityReportStatus,
+        resolutionNote: resolutionNote?.trim() || "",
+        reviewedBy: req.user.id,
+        reviewedAt: new Date(),
+      },
+      select: { id: true, status: true, reviewedAt: true },
+    });
 
     void recordAuditLog({
       adminId: req.user.id,
@@ -1369,7 +1531,7 @@ export const reviewCommunityReport = async (
       success: true,
       message: "Report updated",
       data: {
-        id: String(updated._id),
+        id: String(updated.id),
         status: updated.status,
         reviewedAt: updated.reviewedAt,
       },
@@ -1415,8 +1577,10 @@ export const bulkReviewCommunityReports = async (
       return;
     }
 
-    const validIds = reportIds.filter((id) =>
-      mongoose.Types.ObjectId.isValid(id),
+    // Postgres ids are cuids — the old ObjectId.isValid() filter no longer
+    // applies; keep only non-empty string ids.
+    const validIds = reportIds.filter(
+      (id) => typeof id === "string" && id.trim().length > 0,
     );
     if (validIds.length === 0) {
       res.status(400).json({ success: false, message: "No valid report ids" });
@@ -1428,17 +1592,15 @@ export const bulkReviewCommunityReports = async (
       return;
     }
 
-    const result = await CommunityReport.updateMany(
-      { _id: { $in: validIds } },
-      {
-        $set: {
-          status,
-          resolutionNote: resolutionNote?.trim() || "",
-          reviewedBy: req.user.id,
-          reviewedAt: new Date(),
-        },
+    const result = await prisma.communityReport.updateMany({
+      where: { id: { in: validIds } },
+      data: {
+        status: status as CommunityReportStatus,
+        resolutionNote: resolutionNote?.trim() || "",
+        reviewedBy: req.user.id,
+        reviewedAt: new Date(),
       },
-    );
+    });
 
     void recordAuditLog({
       adminId: req.user.id,
@@ -1448,14 +1610,14 @@ export const bulkReviewCommunityReports = async (
       metadata: {
         reportIds: validIds,
         status,
-        modifiedCount: result.modifiedCount,
+        modifiedCount: result.count,
       },
     });
 
     res.status(200).json({
       success: true,
-      message: `${result.modifiedCount} report(s) updated`,
-      data: { modifiedCount: result.modifiedCount },
+      message: `${result.count} report(s) updated`,
+      data: { modifiedCount: result.count },
     });
   } catch (error) {
     res.status(500).json({
@@ -1556,40 +1718,46 @@ export const listRefunds = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { Booking } = await import("../../client/models/Booking");
     const refundStatus = req.query.refundStatus as string;
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
     const skip = (page - 1) * limit;
 
-    const query: any = {
-      refundStatus: { $exists: true, $ne: null },
+    // `{ $exists: true, $ne: null }` on an optional column -> `{ not: null }`.
+    const where: any = {
+      refundStatus: { not: null },
     };
 
     if (refundStatus) {
-      query.refundStatus = refundStatus;
+      where.refundStatus = refundStatus;
     }
 
     const [bookings, total, statsResult] = await Promise.all([
-      Booking.find(query)
-        .sort({ updatedAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate("userId", "name email phone")
-        .populate("venueId", "name")
-        .lean(),
-      Booking.countDocuments(query),
-      Booking.aggregate([
-        { $match: { refundStatus: { $exists: true, $ne: null } } },
-        {
-          $group: {
-            _id: "$refundStatus",
-            count: { $sum: 1 },
-            amount: { $sum: "$refundAmount" },
-          },
-        },
-      ]),
+      prisma.booking.findMany({
+        where,
+        orderBy: { updatedAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.booking.count({ where }),
+      // Mongo aggregate($group by refundStatus, $sum refundAmount) -> groupBy.
+      prisma.booking.groupBy({
+        by: ["refundStatus"],
+        where: { refundStatus: { not: null } },
+        _count: { _all: true },
+        _sum: { refundAmount: true },
+      }),
     ]);
+
+    // Populate the booking user (String FK) for the response.
+    const userIds = [...new Set(bookings.map((booking) => booking.userId))];
+    const users = userIds.length
+      ? await prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, name: true, email: true, phone: true },
+        })
+      : [];
+    const usersById = new Map(users.map((user) => [user.id, user]));
 
     const stats = {
       pendingCount: 0,
@@ -1599,30 +1767,34 @@ export const listRefunds = async (
     };
 
     statsResult.forEach((s) => {
-      if (s._id === "PENDING") stats.pendingCount = s.count;
-      else if (s._id === "PROCESSED") stats.completedCount = s.count;
-      else if (s._id === "REJECTED") stats.failedCount = s.count;
+      const count = s._count._all;
+      if (s.refundStatus === "PENDING") stats.pendingCount = count;
+      else if (s.refundStatus === "PROCESSED") stats.completedCount = count;
+      else if (s.refundStatus === "REJECTED") stats.failedCount = count;
 
       // Sum the amounts (in rupees)
-      stats.totalAmount += s.amount || 0;
+      stats.totalAmount += s._sum.refundAmount || 0;
     });
 
-    const formattedRefunds = bookings.map((booking: any) => ({
-      id: booking._id.toString(),
-      bookingId: booking._id.toString(),
-      playerId: booking.userId?._id?.toString() || "",
-      playerName: booking.userId?.name || "Unknown",
-      playerEmail: booking.userId?.email || "",
-      amount: booking.refundAmount || 0,
-      originalPaymentMethod: "ONLINE",
-      status:
-        booking.refundStatus === "PROCESSED"
-          ? "COMPLETED"
-          : booking.refundStatus === "REJECTED"
-            ? "FAILED"
-            : "PENDING",
-      requestedAt: booking.updatedAt || booking.createdAt,
-    }));
+    const formattedRefunds = bookings.map((booking) => {
+      const player = usersById.get(booking.userId) || null;
+      return {
+        id: booking.id.toString(),
+        bookingId: booking.id.toString(),
+        playerId: player?.id?.toString() || "",
+        playerName: player?.name || "Unknown",
+        playerEmail: player?.email || "",
+        amount: booking.refundAmount || 0,
+        originalPaymentMethod: "ONLINE",
+        status:
+          booking.refundStatus === "PROCESSED"
+            ? "COMPLETED"
+            : booking.refundStatus === "REJECTED"
+              ? "FAILED"
+              : "PENDING",
+        requestedAt: booking.updatedAt || booking.createdAt,
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -1698,18 +1870,80 @@ export const listDisputes = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const disputes = await Dispute.find()
-      .populate({
-        path: "bookingId",
-        populate: { path: "venueId", select: "name" },
-      })
-      .populate("userId", "firstName lastName email phone")
-      .sort({ createdAt: -1 });
+    const disputes = await prisma.dispute.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Populate bookingId -> Booking (with nested venueId -> Venue name) and
+    // userId -> User, all via String FKs joined in code.
+    const bookingIds = [
+      ...new Set(disputes.map((dispute) => dispute.bookingId)),
+    ];
+    const userIds = [
+      ...new Set(
+        disputes
+          .map((dispute) => dispute.userId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+
+    const bookings = bookingIds.length
+      ? await prisma.booking.findMany({ where: { id: { in: bookingIds } } })
+      : [];
+    const bookingsById = new Map(
+      bookings.map((booking) => [booking.id, booking]),
+    );
+
+    const venueIds = [
+      ...new Set(
+        bookings
+          .map((booking) => booking.venueId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+
+    const [venues, users] = await Promise.all([
+      venueIds.length
+        ? prisma.venue.findMany({
+            where: { id: { in: venueIds } },
+            select: { id: true, name: true },
+          })
+        : Promise.resolve([]),
+      userIds.length
+        ? prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, name: true, email: true, phone: true },
+          })
+        : Promise.resolve([]),
+    ]);
+    const venuesById = new Map(venues.map((venue) => [venue.id, venue]));
+    const usersById = new Map(users.map((user) => [user.id, user]));
+
+    const data = disputes.map((dispute) => {
+      const booking = bookingsById.get(dispute.bookingId) || null;
+      const bookingPopulated = booking
+        ? {
+            ...booking,
+            venueId: booking.venueId
+              ? venuesById.get(booking.venueId) ?? booking.venueId
+              : booking.venueId,
+          }
+        : dispute.bookingId;
+      const user = dispute.userId
+        ? usersById.get(dispute.userId) ?? dispute.userId
+        : dispute.userId;
+
+      return {
+        ...dispute,
+        bookingId: bookingPopulated,
+        userId: user,
+      };
+    });
 
     res.status(200).json({
       success: true,
       message: "Disputes retrieved successfully",
-      data: disputes,
+      data,
     });
   } catch (error) {
     res.status(500).json({
@@ -1746,7 +1980,8 @@ export const handleDispute = async (
       reason?: string;
     };
 
-    if (!bookingId || !mongoose.Types.ObjectId.isValid(bookingId)) {
+    // Postgres ids are cuids — presence check replaces ObjectId.isValid().
+    if (!bookingId) {
       res.status(400).json({
         success: false,
         message: "Invalid booking ID",
@@ -1806,13 +2041,14 @@ export const handleDispute = async (
 
     // Send notification to player
     try {
-      const { Booking } = await import("../../client/models/Booking");
-      const { User } = await import("../../client/models/User");
-      const booking = await Booking.findById(bookingId);
+      const booking = await prisma.booking.findUnique({
+        where: { id: bookingId },
+      });
       if (booking?.userId) {
-        const disputeUser = await User.findById(booking.userId)
-          .select("name email")
-          .lean();
+        const disputeUser = await prisma.user.findUnique({
+          where: { id: booking.userId },
+          select: { name: true, email: true },
+        });
         if (disputeUser?.email) {
           sendDisputeStatusEmail({
             name: disputeUser.name,
@@ -1905,7 +2141,12 @@ export const listCoachVerifications = async (
 ): Promise<void> => {
   try {
     const status = req.query.status as
-      "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED" | undefined;
+      | "UNVERIFIED"
+      | "PENDING"
+      | "REVIEW"
+      | "VERIFIED"
+      | "REJECTED"
+      | undefined;
     const page = parseInt((req.query.page as string) || "1", 10);
     const limit = parseInt((req.query.limit as string) || "20", 10);
 
@@ -1993,7 +2234,9 @@ export const approveCoachVerification = async (
     );
 
     try {
-      const user = await User.findById(coach.userId);
+      const user = await prisma.user.findUnique({
+        where: { id: extractUserId(coach.userId) },
+      });
       if (user?.email) {
         await sendCoachVerificationStatusEmail({
           name: user.name,
@@ -2003,9 +2246,9 @@ export const approveCoachVerification = async (
       }
 
       // Send in-app notification
-      if (user?._id) {
+      if (user?.id) {
         NotificationService.send({
-          userId: user._id.toString(),
+          userId: user.id.toString(),
           type: "COACH_VERIFICATION_VERIFIED",
           title: "Coach Verification Approved",
           message: "Congratulations! Your coach profile has been verified.",
@@ -2078,7 +2321,9 @@ export const rejectCoachVerification = async (
     );
 
     try {
-      const user = await User.findById(coach.userId);
+      const user = await prisma.user.findUnique({
+        where: { id: extractUserId(coach.userId) },
+      });
       if (user?.email) {
         await sendCoachVerificationStatusEmail({
           name: user.name,
@@ -2089,9 +2334,9 @@ export const rejectCoachVerification = async (
       }
 
       // Send in-app notification
-      if (user?._id) {
+      if (user?.id) {
         NotificationService.send({
-          userId: user._id.toString(),
+          userId: user.id.toString(),
           type: "COACH_VERIFICATION_REJECTED",
           title: "Coach Verification Rejected",
           message: "Your coach verification request has been rejected.",
@@ -2159,7 +2404,9 @@ export const markCoachVerificationForReview = async (
     );
 
     try {
-      const user = await User.findById(coach.userId);
+      const user = await prisma.user.findUnique({
+        where: { id: extractUserId(coach.userId) },
+      });
       if (user?.email) {
         await sendCoachVerificationStatusEmail({
           name: user.name,
@@ -2170,9 +2417,9 @@ export const markCoachVerificationForReview = async (
       }
 
       // Send in-app notification
-      if (user?._id) {
+      if (user?.id) {
         NotificationService.send({
-          userId: user._id.toString(),
+          userId: user.id.toString(),
           type: "COACH_VERIFICATION_REVIEW",
           title: "Coach Verification Under Review",
           message: "Your coach verification is under review by our team.",
@@ -2257,8 +2504,11 @@ export const notifyCoachVerificationPending = async (
       }
     }
 
-    const user = await User.findById(coach.userId).select("_id name email");
-    if (!user?._id) {
+    const user = await prisma.user.findUnique({
+      where: { id: extractUserId(coach.userId) },
+      select: { id: true, name: true, email: true },
+    });
+    if (!user?.id) {
       res.status(404).json({
         success: false,
         message: "Coach user not found",
@@ -2279,11 +2529,13 @@ export const notifyCoachVerificationPending = async (
       email: user.email,
     });
 
-    coach.lastVerificationReminderAt = new Date();
-    await coach.save();
+    await prisma.coach.update({
+      where: { id: coachId },
+      data: { lastVerificationReminderAt: new Date() },
+    });
 
     NotificationService.send({
-      userId: user._id.toString(),
+      userId: user.id.toString(),
       type: "COACH_VERIFICATION_PENDING",
       title: "Complete Your Coach Verification",
       message:
@@ -2346,39 +2598,70 @@ export const createVenueAdminHandler = async (
       approvalStatus,
     } = req.body;
 
-    const adminAccount = await Admin.findById(req.user.id).select("name email");
-
-    const newVenue = new Venue({
-      ownerName: ownerName || adminAccount?.name || "Admin Venue",
-      ownerEmail:
-        ownerEmail ||
-        adminAccount?.email ||
-        req.user.email ||
-        "admin@powersport.local",
-      ownerPhone: ownerPhone || req.user.id,
-      name,
-      address,
-      sports,
-      pricePerHour,
-      sportPricing: sportPricing || {},
-      amenities: amenities || [],
-      description: description || "",
-      location,
-      openingHours: openingHours || {
-        monday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-        tuesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-        wednesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-        thursday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-        friday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-        saturday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-        sunday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-      },
-      allowExternalCoaches: allowExternalCoaches !== false,
-      approvalStatus: approvalStatus || "APPROVED",
-      createdBy: req.user.id,
+    const adminAccount = await prisma.admin.findUnique({
+      where: { id: req.user.id },
+      select: { name: true, email: true },
     });
 
-    const venue = await newVenue.save();
+    const defaultOpeningHours: Record<
+      string,
+      { isOpen: boolean; openTime: string; closeTime: string }
+    > = openingHours || {
+      monday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+      tuesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+      wednesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+      thursday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+      friday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+      saturday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+      sunday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+    };
+
+    // Normalized children: sportPricing map -> rows, openingHours obj -> rows.
+    const sportPricingRows = Object.entries(
+      (sportPricing as Record<string, number>) || {},
+    ).map(([sport, price]) => ({ sport, price: Number(price) }));
+
+    const openingHourRows = Object.entries(defaultOpeningHours).map(
+      ([day, value]) => ({
+        day,
+        isOpen: value?.isOpen ?? true,
+        openTime: value?.openTime ?? "09:00",
+        closeTime: value?.closeTime ?? "21:00",
+      }),
+    );
+
+    // location GeoJSON Point -> lng/lat scalar columns.
+    const coords: number[] | undefined = location?.coordinates;
+    const lng = Array.isArray(coords) ? coords[0] : undefined;
+    const lat = Array.isArray(coords) ? coords[1] : undefined;
+
+    // TODO(prisma): the legacy Venue carried a `createdBy` field; the Postgres
+    // schema has no such column, so it is dropped here. Add it to schema.prisma
+    // (+ migration) if admin attribution on venues must be preserved.
+    const venue = await prisma.venue.create({
+      data: {
+        ownerName: ownerName || adminAccount?.name || "Admin Venue",
+        ownerEmail:
+          ownerEmail ||
+          adminAccount?.email ||
+          req.user.email ||
+          "admin@powersport.local",
+        ownerPhone: ownerPhone || req.user.id,
+        name,
+        address,
+        sports,
+        pricePerHour,
+        amenities: amenities || [],
+        description: description || "",
+        allowExternalCoaches: allowExternalCoaches !== false,
+        approvalStatus: (approvalStatus || "APPROVED") as VenueApprovalStatus,
+        ...(lng != null ? { lng } : {}),
+        ...(lat != null ? { lat } : {}),
+        sportPricing: { create: sportPricingRows },
+        openingHours: { create: openingHourRows },
+      },
+      include: { sportPricing: true, openingHours: true },
+    });
 
     res.status(201).json({
       success: true,
@@ -2413,7 +2696,7 @@ export const updateVenueAdminHandler = async (
 
     const venueId = (req.params as Record<string, unknown>).venueId as string;
 
-    const venue = await Venue.findById(venueId);
+    const venue = await prisma.venue.findUnique({ where: { id: venueId } });
 
     if (!venue) {
       res.status(404).json({
@@ -2437,7 +2720,7 @@ export const updateVenueAdminHandler = async (
         ? (updatePayload.approvalStatus as string)
         : venue.approvalStatus;
 
-    let ownerUser: typeof venue.ownerId | null = null;
+    let ownerUser: string | null = null;
     let tempPassword: string | null = null;
     let createdUser = false;
 
@@ -2450,13 +2733,13 @@ export const updateVenueAdminHandler = async (
       const ownerEmail = ownerEmailRaw?.trim().toLowerCase() || "";
       const ownerPhone = ownerPhoneRaw?.trim() || "";
 
-      const existingUser = await User.findOne({
-        $or: [{ email: ownerEmail }, { phone: ownerPhone }],
+      const existingUser = await prisma.user.findFirst({
+        where: { OR: [{ email: ownerEmail }, { phone: ownerPhone }] },
       });
 
       if (existingUser) {
         if (existingUser.role === "VenueLister") {
-          ownerUser = existingUser._id;
+          ownerUser = existingUser.id;
         } else if (existingUser.role === "Player") {
           if (!convertExistingUser) {
             res.status(409).json({
@@ -2471,9 +2754,11 @@ export const updateVenueAdminHandler = async (
             return;
           }
 
-          existingUser.role = "VenueLister";
-          await existingUser.save();
-          ownerUser = existingUser._id;
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: { role: "VenueLister" },
+          });
+          ownerUser = existingUser.id;
         } else {
           res.status(409).json({
             success: false,
@@ -2493,16 +2778,17 @@ export const updateVenueAdminHandler = async (
           (updatePayload.ownerName as string | undefined) || venue.ownerName;
         const ownerName = ownerNameRaw?.trim() || "Venue Owner";
 
-        const newUser = new User({
-          name: ownerName,
-          email: ownerEmail,
-          phone: ownerPhone,
-          password: tempPassword,
-          role: "VenueLister",
+        const savedUser = await prisma.user.create({
+          data: {
+            name: ownerName,
+            email: ownerEmail,
+            phone: ownerPhone,
+            // Was hashed by the User pre-save hook in Mongo; hash explicitly now.
+            password: await hashTempPassword(tempPassword),
+            role: "VenueLister",
+          },
         });
-
-        const savedUser = await newUser.save();
-        ownerUser = savedUser._id;
+        ownerUser = savedUser.id;
         createdUser = true;
       }
 
@@ -2510,8 +2796,33 @@ export const updateVenueAdminHandler = async (
       updatePayload.approvalStatus = "APPROVED";
     }
 
-    const updatedVenue = await Venue.findByIdAndUpdate(venueId, updatePayload, {
-      new: true,
+    // TODO(prisma): the legacy handler mass-assigned the whole request body to
+    // Venue.findByIdAndUpdate. With Prisma, the normalized children
+    // (sportPricing / openingHours / sportImages) are separate tables and can
+    // no longer be set inline — they are stripped here and must be written via
+    // nested upserts if the admin UI sends them. `location` GeoJSON is mapped
+    // to lng/lat; remaining scalar columns pass through.
+    const {
+      sportPricing: _sportPricing,
+      openingHours: _openingHours,
+      sportImages: _sportImages,
+      location: locationUpdate,
+      ...venueScalarUpdates
+    } = updatePayload;
+
+    if (
+      locationUpdate &&
+      typeof locationUpdate === "object" &&
+      Array.isArray((locationUpdate as { coordinates?: number[] }).coordinates)
+    ) {
+      const coords = (locationUpdate as { coordinates: number[] }).coordinates;
+      venueScalarUpdates.lng = coords[0];
+      venueScalarUpdates.lat = coords[1];
+    }
+
+    const updatedVenue = await prisma.venue.update({
+      where: { id: venueId },
+      data: venueScalarUpdates as any,
     });
 
     if (!updatedVenue) {
@@ -2602,18 +2913,22 @@ export const createCoachAdminHandler = async (
     const normalizedEmail = typeof email === "string" ? email.trim() : "";
     const normalizedPhone = typeof phone === "string" ? phone.trim() : "";
 
-    let user = await User.findOne({
-      $or: [
-        { email: normalizedEmail.toLowerCase() },
-        { phone: normalizedPhone },
-      ],
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: normalizedEmail.toLowerCase() },
+          { phone: normalizedPhone },
+        ],
+      },
     });
     let tempPassword: string | undefined;
     let createdUser = false;
 
     if (user) {
       if (user.role === "Coach") {
-        const existingCoach = await Coach.findOne({ userId: user._id });
+        const existingCoach = await prisma.coach.findUnique({
+          where: { userId: user.id },
+        });
         if (existingCoach) {
           res.status(409).json({
             success: false,
@@ -2638,8 +2953,10 @@ export const createCoachAdminHandler = async (
           return;
         }
 
-        user.role = "Coach";
-        await user.save();
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { role: "Coach" },
+        });
       } else {
         res.status(409).json({
           success: false,
@@ -2654,26 +2971,34 @@ export const createCoachAdminHandler = async (
       }
     } else {
       tempPassword = generateTempPassword(12);
-      const newUser = new User({
-        name: `${firstName} ${lastName}`,
-        email: normalizedEmail,
-        phone: normalizedPhone,
-        role: "Coach",
-        isActive: true,
-        password: tempPassword, // Will be hashed by schema middleware
+      user = await prisma.user.create({
+        data: {
+          name: `${firstName} ${lastName}`,
+          email: normalizedEmail,
+          phone: normalizedPhone,
+          role: "Coach",
+          isActive: true,
+          // Was hashed by the User pre-save hook in Mongo; hash explicitly now.
+          password: await hashTempPassword(tempPassword),
+        },
       });
-
-      user = await newUser.save();
       createdUser = true;
     }
 
     if (profilePhotoUrl || profilePhotoKey) {
-      user.photoUrl = profilePhotoUrl || user.photoUrl;
-      user.photoS3Key = profilePhotoKey || user.photoS3Key;
-      await user.save();
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          photoUrl: profilePhotoUrl || user.photoUrl,
+          photoS3Key: profilePhotoKey || user.photoS3Key,
+        },
+      });
     }
 
-    const normalizedOwnVenueDetails =
+    // ownVenueDetails (embedded in Mongo) -> CoachOwnVenue child columns.
+    const ownVenueCoords: number[] | undefined =
+      ownVenueDetails?.location?.coordinates || ownVenueDetails?.coordinates;
+    const normalizedOwnVenue =
       ownVenueDetails && typeof ownVenueDetails === "object"
         ? {
             name: ownVenueDetails.name,
@@ -2682,42 +3007,52 @@ export const createCoachAdminHandler = async (
             openingHours: ownVenueDetails.openingHours || "",
             images: ownVenueDetails.images || [],
             imageS3Keys: ownVenueDetails.imageS3Keys || [],
-            location:
-              ownVenueDetails.location || ownVenueDetails.coordinates
-                ? {
-                    type: "Point",
-                    coordinates:
-                      ownVenueDetails.location?.coordinates ||
-                      ownVenueDetails.coordinates,
-                  }
-                : undefined,
+            lng: Array.isArray(ownVenueCoords) ? ownVenueCoords[0] : undefined,
+            lat: Array.isArray(ownVenueCoords) ? ownVenueCoords[1] : undefined,
             sports,
             amenities: [],
             pricePerHour: hourlyRate,
           }
         : undefined;
 
-    // Create coach profile
-    const newCoach = new Coach({
-      userId: user._id,
-      bio,
-      sports,
-      hourlyRate,
-      sportPricing: sportPricing || {},
-      serviceMode: serviceMode || "FREELANCE",
-      baseLocation,
-      serviceRadiusKm,
-      travelBufferTime,
-      ...(normalizedOwnVenueDetails
-        ? { ownVenueDetails: normalizedOwnVenueDetails }
-        : {}),
-      venueId: venueId || undefined,
-      verificationStatus: verificationStatus || "VERIFIED",
-      isVerified: (verificationStatus || "VERIFIED") === "VERIFIED",
-      createdBy: req.user.id,
-    });
+    // baseLocation GeoJSON -> baseLng/baseLat scalar columns.
+    const baseCoords: number[] | undefined = baseLocation?.coordinates;
+    const baseLng = Array.isArray(baseCoords) ? baseCoords[0] : undefined;
+    const baseLat = Array.isArray(baseCoords) ? baseCoords[1] : undefined;
 
-    const coach = await newCoach.save();
+    // sportPricing map -> CoachSportPricing rows.
+    const sportPricingRows = Object.entries(
+      (sportPricing as Record<string, number>) || {},
+    ).map(([sport, price]) => ({ sport, price: Number(price) }));
+
+    // TODO(prisma): the legacy Coach carried `venueId` and `createdBy` fields;
+    // the Postgres Coach model has neither column, so they are dropped here.
+    // Add them to schema.prisma (+ migration) if that linkage/attribution must
+    // be preserved. (`venueId` from the request body is intentionally unused.)
+    void venueId;
+
+    const coach = await prisma.coach.create({
+      data: {
+        userId: user.id,
+        bio,
+        sports,
+        hourlyRate,
+        serviceMode: serviceMode || "FREELANCE",
+        ...(serviceRadiusKm != null ? { serviceRadiusKm } : {}),
+        ...(travelBufferTime != null ? { travelBufferTime } : {}),
+        verificationStatus: verificationStatus || "VERIFIED",
+        isVerified: (verificationStatus || "VERIFIED") === "VERIFIED",
+        ...(baseLng != null ? { baseLng } : {}),
+        ...(baseLat != null ? { baseLat } : {}),
+        ...(sportPricingRows.length
+          ? { sportPricing: { create: sportPricingRows } }
+          : {}),
+        ...(normalizedOwnVenue
+          ? { ownVenue: { create: normalizedOwnVenue } }
+          : {}),
+      },
+      include: { sportPricing: true, ownVenue: true },
+    });
 
     if (createdUser && tempPassword) {
       try {
@@ -2735,13 +3070,13 @@ export const createCoachAdminHandler = async (
     // Send in-app notification
     try {
       NotificationService.send({
-        userId: user._id.toString(),
+        userId: user.id.toString(),
         type: "COACH_VERIFICATION_VERIFIED",
         title: "Welcome to PowerMySport",
         message:
           "Your coach account has been created and verified successfully.",
         data: {
-          coachId: coach._id.toString(),
+          coachId: coach.id.toString(),
           createdAt: new Date().toISOString(),
         },
       }).catch((err: Error) =>

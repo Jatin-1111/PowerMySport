@@ -1,26 +1,32 @@
 import { Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
-import { Review as ReviewModel } from "../../client/models/Review";
+import {
+  FulfillmentStatus,
+  OrderStatus,
+  PaymentGateway,
+  ShopPaymentStatus as PaymentStatus,
+} from "@prisma/client";
 import { NotificationService } from "../../client/services/NotificationService";
 import { validatePromoCode } from "../../client/services/PromoCodeService";
+import prisma from "../../lib/prisma";
 import {
   PaymentService,
   RefundService,
 } from "../../shared/services/PaymentService";
 import { s3Service } from "../../shared/services/S3Service";
+// PaymentService still speaks the legacy string-enum types from
+// "../../types/ecommerce" (its own enum source), whereas the Prisma models and
+// EcommerceService use the "@prisma/client" enums above. The values are
+// identical, so we alias the legacy enums only where we hand values to (or
+// receive them from) PaymentService, keeping every Prisma read/write typed
+// against the generated Prisma enums.
+// TODO(prisma): collapse this dual enum source once PaymentService is ported to
+// the "@prisma/client" enums.
 import {
   ApiResponse,
-  FulfillmentStatus,
-  OrderStatus,
-  PaymentGateway,
-  PaymentStatus,
+  PaymentGateway as EcomPaymentGateway,
+  PaymentStatus as EcomPaymentStatus,
 } from "../../types/ecommerce";
-import {
-  Order as OrderModel,
-  PaymentTransaction as PaymentTransactionModel,
-  Product as ProductModel,
-  Wishlist as WishlistModel,
-} from "../models/Ecommerce";
 import {
   CartService,
   InventoryService,
@@ -43,7 +49,7 @@ export class EcommerceController {
     this.cartService = new CartService();
     this.orderService = new OrderService();
     this.productService = new ProductService();
-    this.paymentService = new PaymentService(PaymentGateway.PHONEPE);
+    this.paymentService = new PaymentService(EcomPaymentGateway.PHONEPE);
   }
 
   /**
@@ -487,11 +493,11 @@ export class EcommerceController {
       // Initiate payment
       const idempotencyKey = uuidv4();
       const paymentTx = await this.paymentService.initiatePayment(
-        order._id.toString(),
+        order.id,
         order.totalAmount,
         "INR",
         idempotencyKey,
-        PaymentGateway.PHONEPE,
+        EcomPaymentGateway.PHONEPE,
         {
           name: shippingAddress.fullName,
           email: shippingAddress.email,
@@ -500,20 +506,22 @@ export class EcommerceController {
       );
 
       // Update order with payment gateway order ID
-      order.paymentGatewayOrderId = paymentTx.gatewayOrderId;
-      await order.save();
+      const updatedOrder = await prisma.order.update({
+        where: { id: order.id },
+        data: { paymentGatewayOrderId: paymentTx.gatewayOrderId },
+      });
 
       res.status(201).json({
         ok: true,
         data: {
           order: {
-            id: order._id.toString(),
-            orderNumber: order.orderNumber,
-            status: order.status,
-            totalAmount: order.totalAmount,
-            paymentGateway: order.paymentGateway,
-            paymentGatewayOrderId: order.paymentGatewayOrderId,
-            createdAt: order.createdAt,
+            id: updatedOrder.id,
+            orderNumber: updatedOrder.orderNumber,
+            status: updatedOrder.status,
+            totalAmount: updatedOrder.totalAmount,
+            paymentGateway: updatedOrder.paymentGateway,
+            paymentGatewayOrderId: updatedOrder.paymentGatewayOrderId,
+            createdAt: updatedOrder.createdAt,
           },
           paymentConfig: paymentTx.gatewayResponse,
         },
@@ -607,7 +615,7 @@ export class EcommerceController {
         title: "Payment Confirmed",
         message: `Your payment for order ${order.orderNumber} has been confirmed. We are processing your order.`,
         data: {
-          orderId: order._id.toString(),
+          orderId: order.id,
           orderNumber: order.orderNumber,
           totalAmount: order.totalAmount,
           confirmedAt: new Date().toISOString(),
@@ -623,7 +631,7 @@ export class EcommerceController {
         ok: true,
         data: {
           order: {
-            id: order._id.toString(),
+            id: order.id,
             orderNumber: order.orderNumber,
             status: order.status,
             paymentStatus: order.paymentStatus,
@@ -692,9 +700,10 @@ export class EcommerceController {
       }
 
       // Look up the latest payment transaction for this order.
-      const paymentTx = await PaymentTransactionModel.findOne({
-        orderId,
-      }).sort({ createdAt: -1 });
+      const paymentTx = await prisma.shopPaymentTransaction.findFirst({
+        where: { orderId },
+        orderBy: { createdAt: "desc" },
+      });
 
       if (!paymentTx?.gatewayOrderId) {
         res.json({ ok: true, data: order } as ApiResponse<any>);
@@ -706,12 +715,16 @@ export class EcommerceController {
         .getGatewayService()
         .getPaymentStatus(paymentTx.gatewayOrderId);
 
-      if (gatewayStatus === PaymentStatus.CAPTURED) {
-        paymentTx.status = PaymentStatus.CAPTURED;
-        if (!paymentTx.gatewayPaymentId) {
-          paymentTx.gatewayPaymentId = paymentTx.gatewayOrderId;
-        }
-        await paymentTx.save();
+      if (gatewayStatus === EcomPaymentStatus.CAPTURED) {
+        await prisma.shopPaymentTransaction.update({
+          where: { id: paymentTx.id },
+          data: {
+            status: PaymentStatus.CAPTURED,
+            ...(paymentTx.gatewayPaymentId
+              ? {}
+              : { gatewayPaymentId: paymentTx.gatewayOrderId }),
+          },
+        });
 
         const updatedOrder = await this.orderService.confirmPayment(
           orderId,
@@ -725,7 +738,7 @@ export class EcommerceController {
           title: "Payment Confirmed",
           message: `Your payment for order ${updatedOrder.orderNumber} has been confirmed. We are processing your order.`,
           data: {
-            orderId: updatedOrder._id.toString(),
+            orderId: updatedOrder.id,
             orderNumber: updatedOrder.orderNumber,
             totalAmount: updatedOrder.totalAmount,
             confirmedAt: new Date().toISOString(),
@@ -1011,15 +1024,16 @@ export class EcommerceController {
       // Bill to section
       doc.fontSize(12).font("Helvetica-Bold").text("BILL TO:");
       doc.fontSize(10).font("Helvetica");
-      doc.text(order.shippingAddress.fullName);
-      doc.text(order.shippingAddress.addressLine1);
-      if (order.shippingAddress.addressLine2) {
-        doc.text(order.shippingAddress.addressLine2);
+      // shippingAddress (embedded) was flattened to ship* columns on Order.
+      doc.text(order.shipFullName ?? "");
+      doc.text(order.shipAddressLine1 ?? "");
+      if (order.shipAddressLine2) {
+        doc.text(order.shipAddressLine2);
       }
       doc.text(
-        `${order.shippingAddress.city}, ${order.shippingAddress.state} ${order.shippingAddress.postalCode}`,
+        `${order.shipCity ?? ""}, ${order.shipState ?? ""} ${order.shipPostalCode ?? ""}`,
       );
-      doc.text(order.shippingAddress.country || "IN");
+      doc.text(order.shipCountry || "IN");
       doc.moveDown();
 
       // Items table
@@ -1125,10 +1139,28 @@ export class EcommerceController {
         });
         return;
       }
-      const wishlist = await WishlistModel.findOne({ userId }).populate(
-        "products.productId",
-      );
-      res.json({ ok: true, data: wishlist?.products || [] });
+      const wishlist = await prisma.wishlist.findUnique({
+        where: { userId },
+        include: { products: true },
+      });
+      if (!wishlist) {
+        res.json({ ok: true, data: [] });
+        return;
+      }
+      // Was .populate("products.productId") — join each wishlist entry's
+      // product (String-FK) in code and expose it under `productId` to keep the
+      // populated response shape the frontend expects.
+      const productIds = wishlist.products.map((p) => p.productId);
+      const products = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        include: { variants: true },
+      });
+      const productsById = new Map(products.map((p) => [p.id, p]));
+      const populated = wishlist.products.map((item) => ({
+        ...item,
+        productId: productsById.get(item.productId) ?? null,
+      }));
+      res.json({ ok: true, data: populated });
     } catch (error: any) {
       res.status(500).json({
         ok: false,
@@ -1151,19 +1183,44 @@ export class EcommerceController {
         });
         return;
       }
-      let wishlist = await WishlistModel.findOne({ userId });
+      let wishlist = await prisma.wishlist.findUnique({
+        where: { userId },
+        include: { products: true },
+      });
       if (!wishlist) {
-        wishlist = new WishlistModel({ userId, products: [] });
+        wishlist = await prisma.wishlist.create({
+          data: { userId },
+          include: { products: true },
+        });
       }
-      const idx = wishlist.products.findIndex(
-        (p) => p.productId.toString() === productId,
+      const existing = wishlist.products.find(
+        (p) => p.productId === productId,
       );
-      if (idx > -1) wishlist.products.splice(idx, 1);
-      else wishlist.products.push({ productId, addedAt: new Date() } as any);
+      if (existing) {
+        await prisma.wishlistItem.delete({ where: { id: existing.id } });
+      } else {
+        await prisma.wishlistItem.create({
+          data: { wishlistId: wishlist.id, productId, addedAt: new Date() },
+        });
+      }
 
-      await wishlist.save();
-      await wishlist.populate("products.productId");
-      res.json({ ok: true, data: wishlist.products });
+      // Re-read and join products in code (was .populate("products.productId")).
+      const refreshed = await prisma.wishlist.findUnique({
+        where: { userId },
+        include: { products: true },
+      });
+      const items = refreshed?.products ?? [];
+      const productIds = items.map((p) => p.productId);
+      const products = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        include: { variants: true },
+      });
+      const productsById = new Map(products.map((p) => [p.id, p]));
+      const populated = items.map((item) => ({
+        ...item,
+        productId: productsById.get(item.productId) ?? null,
+      }));
+      res.json({ ok: true, data: populated });
     } catch (error: any) {
       res.status(500).json({
         ok: false,
@@ -1204,8 +1261,10 @@ export class EcommerceController {
       // Verify the user actually purchased THIS product (a DELIVERED order
       // containing one of this product's variants) before marking the review a
       // verified purchase — previously any delivered order of anything counted.
-      const product =
-        await ProductModel.findById(productId).select("variants._id");
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+        include: { variants: { select: { id: true } } },
+      });
       if (!product) {
         res.status(404).json({
           ok: false,
@@ -1213,18 +1272,22 @@ export class EcommerceController {
         });
         return;
       }
-      const variantIds = product.variants.map((v: any) => v._id);
-      const hasPurchased = await OrderModel.findOne({
-        userId,
-        status: OrderStatus.DELIVERED,
-        "items.productVariantId": { $in: variantIds },
+      const variantIds = product.variants.map((v) => v.id);
+      const hasPurchased = await prisma.order.findFirst({
+        where: {
+          userId,
+          status: OrderStatus.DELIVERED,
+          items: { some: { productVariantId: { in: variantIds } } },
+        },
       });
       const isVerified = !!hasPurchased;
 
-      const existingReview = await ReviewModel.findOne({
-        userId,
-        targetType: "PRODUCT",
-        targetId: productId,
+      const existingReview = await prisma.review.findFirst({
+        where: {
+          userId,
+          targetType: "PRODUCT",
+          targetId: productId,
+        },
       });
       if (existingReview) {
         res.status(400).json({
@@ -1237,27 +1300,32 @@ export class EcommerceController {
         return;
       }
 
-      const newReview = new ReviewModel({
-        userId,
-        targetType: "PRODUCT",
-        targetId: productId,
-        rating,
-        review,
-        isVerified,
+      const newReview = await prisma.review.create({
+        data: {
+          userId,
+          targetType: "PRODUCT",
+          targetId: productId,
+          rating,
+          review,
+          isVerified,
+        },
       });
 
-      await newReview.save();
-
       // Recalculate Product average rating
-      const allReviews = await ReviewModel.find({
-        targetType: "PRODUCT",
-        targetId: productId,
+      const allReviews = await prisma.review.findMany({
+        where: {
+          targetType: "PRODUCT",
+          targetId: productId,
+        },
       });
       const avg =
         allReviews.reduce((acc, r) => acc + r.rating, 0) / allReviews.length;
-      await ProductModel.findByIdAndUpdate(productId, {
-        averageRating: avg,
-        totalReviews: allReviews.length,
+      await prisma.product.update({
+        where: { id: productId },
+        data: {
+          averageRating: avg,
+          totalReviews: allReviews.length,
+        },
       });
 
       res.json({ ok: true, data: newReview });
@@ -1275,12 +1343,26 @@ export class EcommerceController {
   async getProductReviews(req: Request, res: Response): Promise<void> {
     try {
       const productId = req.params.id as string;
-      const reviews = await ReviewModel.find({
-        targetType: "PRODUCT",
-        targetId: productId,
-      })
-        .populate("userId", "name photoUrl")
-        .sort({ createdAt: -1 });
+      const rawReviews = await prisma.review.findMany({
+        where: {
+          targetType: "PRODUCT",
+          targetId: productId,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      // Was .populate("userId", "name photoUrl") — join the reviewer (String-FK)
+      // in code and expose the user object under `userId` to preserve shape.
+      const userIds = [...new Set(rawReviews.map((r) => r.userId))];
+      const users = await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, name: true, photoUrl: true },
+      });
+      const usersById = new Map(users.map((u) => [u.id, u]));
+      const reviews = rawReviews.map((r) => ({
+        ...r,
+        userId: usersById.get(r.userId) ?? null,
+      }));
 
       // Calculate stats
       const stats = {
@@ -1710,9 +1792,10 @@ export class AdminEcommerceController {
 
       // Use gatewayOrderId (our merchantOrderId) — PhonePe's refund API requires
       // the original merchantOrderId, not the PhonePe-assigned payment ID.
-      const paymentTransaction = await PaymentTransactionModel.findOne({
-        orderId: orderId,
-      }).sort({ createdAt: -1 });
+      const paymentTransaction = await prisma.shopPaymentTransaction.findFirst({
+        where: { orderId: orderId },
+        orderBy: { createdAt: "desc" },
+      });
 
       if (!paymentTransaction?.gatewayOrderId) {
         res.status(400).json({

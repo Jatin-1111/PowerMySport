@@ -1,9 +1,7 @@
 import { Request, Response } from "express";
 import PDFDocument from "pdfkit";
-import { Booking } from "../models/Booking";
-import { Venue } from "../models/Venue";
-import { User } from "../models/User";
-import { BookingPaymentTransaction } from "../models/BookingPayment";
+import prisma from "../../lib/prisma";
+import type { OpeningHours, DayHours } from "../../types/index";
 import { WalletService } from "../services/WalletService";
 import {
   cancelBooking,
@@ -176,17 +174,42 @@ export const getBookingById = async (
     const bookingId = (req.params as Record<string, unknown>)
       .bookingId as string;
 
-    const booking = await Booking.findById(bookingId)
-      .select("+checkInCode")
-      .populate("userId venueId coachId participantId");
+    const bookingRow = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { payments: true, participants: true },
+    });
 
-    if (!booking) {
+    if (!bookingRow) {
       res.status(404).json({
         success: false,
         message: "Booking not found",
       });
       return;
     }
+
+    // .populate("userId venueId coachId participantId") → follow-up lookups +
+    // in-code join, rebuilding the embedded-object shape the response returns.
+    const [populatedUser, populatedVenue, populatedCoach, populatedParticipant] =
+      await Promise.all([
+        prisma.user.findUnique({ where: { id: bookingRow.userId } }),
+        bookingRow.venueId
+          ? prisma.venue.findUnique({ where: { id: bookingRow.venueId } })
+          : Promise.resolve(null),
+        bookingRow.coachId
+          ? prisma.coach.findUnique({ where: { id: bookingRow.coachId } })
+          : Promise.resolve(null),
+        bookingRow.participantId
+          ? prisma.user.findUnique({ where: { id: bookingRow.participantId } })
+          : Promise.resolve(null),
+      ]);
+
+    const booking: any = {
+      ...bookingRow,
+      userId: populatedUser ?? bookingRow.userId,
+      venueId: populatedVenue ?? bookingRow.venueId,
+      coachId: populatedCoach ?? bookingRow.coachId,
+      participantId: populatedParticipant ?? bookingRow.participantId,
+    };
 
     const getRefId = (value: unknown): string | null => {
       if (!value || typeof value !== "object") return null;
@@ -200,10 +223,9 @@ export const getBookingById = async (
     const isBookingOwner = bookingOwnerId === req.user.id;
 
     let isVenueOwner = false;
-    if (booking.venueId && req.user.role === "VenueLister") {
-      const venue = await Venue.findById(booking.venueId).select("ownerId");
+    if (bookingRow.venueId && req.user.role === "VenueLister") {
       isVenueOwner = Boolean(
-        venue && venue.ownerId?.toString() === req.user.id,
+        populatedVenue && populatedVenue.ownerId === req.user.id,
       );
     }
 
@@ -216,7 +238,7 @@ export const getBookingById = async (
     }
 
     // Transform booking to include id field
-    const bookingData = transformDocument(booking.toObject());
+    const bookingData = transformDocument(booking);
 
     res.status(200).json({
       success: true,
@@ -327,14 +349,42 @@ export const downloadBookingInvoicePdf = async (
     const bookingId = (req.params as Record<string, unknown>)
       .bookingId as string;
 
-    const booking = await Booking.findById(bookingId)
-      .select("+checkInCode")
-      .populate("userId venueId coachId participantId");
+    const bookingRow = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { payments: true, participants: true },
+    });
 
-    if (!booking) {
+    if (!bookingRow) {
       res.status(404).json({ success: false, message: "Booking not found" });
       return;
     }
+
+    // .populate("userId venueId coachId participantId") → follow-up lookups +
+    // in-code join. Coach's own-venue is included for the invoice fallback.
+    const [populatedUser, populatedVenue, populatedCoach, populatedParticipant] =
+      await Promise.all([
+        prisma.user.findUnique({ where: { id: bookingRow.userId } }),
+        bookingRow.venueId
+          ? prisma.venue.findUnique({ where: { id: bookingRow.venueId } })
+          : Promise.resolve(null),
+        bookingRow.coachId
+          ? prisma.coach.findUnique({
+              where: { id: bookingRow.coachId },
+              include: { ownVenue: true },
+            })
+          : Promise.resolve(null),
+        bookingRow.participantId
+          ? prisma.user.findUnique({ where: { id: bookingRow.participantId } })
+          : Promise.resolve(null),
+      ]);
+
+    const booking: any = {
+      ...bookingRow,
+      userId: populatedUser ?? bookingRow.userId,
+      venueId: populatedVenue ?? bookingRow.venueId,
+      coachId: populatedCoach ?? bookingRow.coachId,
+      participantId: populatedParticipant ?? bookingRow.participantId,
+    };
 
     const isAdmin = req.user.role === "Admin";
     const bookingOwnerId =
@@ -342,10 +392,9 @@ export const downloadBookingInvoicePdf = async (
     const isBookingOwner = bookingOwnerId === req.user.id;
 
     let isVenueOwner = false;
-    if (booking.venueId && req.user.role === "VenueLister") {
-      const venue = await Venue.findById(booking.venueId).select("ownerId");
+    if (bookingRow.venueId && req.user.role === "VenueLister") {
       isVenueOwner = Boolean(
-        venue && venue.ownerId?.toString() === req.user.id,
+        populatedVenue && populatedVenue.ownerId === req.user.id,
       );
     }
 
@@ -374,8 +423,12 @@ export const downloadBookingInvoicePdf = async (
     const providerName =
       venue?.name ||
       (coach ? `${coach.sports?.[0] || "Coach"} Coach` : "Provider");
+    // ownVenueDetails (embedded) → ownVenue relation in Prisma (included above).
     const providerAddress =
-      venue?.address || coach?.ownVenueDetails?.address || "-";
+      venue?.address || coach?.ownVenue?.address || "-";
+    // TODO(prisma): gstNumber is not a column on Venue/Coach in the Prisma
+    // schema, so these resolve to undefined and fall back to "-" exactly as
+    // before. Add the columns if GST on invoices is required.
     const providerGst = venue?.gstNumber || coach?.gstNumber || "-";
 
     const serviceFee = booking.serviceFee || 0;
@@ -740,7 +793,10 @@ export const getVenueAvailability = async (
       return;
     }
 
-    const venue = await Venue.findById(venueId).select("openingHours");
+    const venue = await prisma.venue.findUnique({
+      where: { id: venueId },
+      include: { openingHours: true },
+    });
     if (!venue) {
       res.status(404).json({
         success: false,
@@ -748,6 +804,21 @@ export const getVenueAvailability = async (
       });
       return;
     }
+
+    // openingHours relation (VenueOpeningHour[]) → the object-keyed
+    // OpeningHours shape the rest of this handler + isWithinOpeningHours expect.
+    const openingHoursByDay = (venue.openingHours ?? []).reduce(
+      (acc, oh) => {
+        acc[oh.day] = {
+          isOpen: oh.isOpen,
+          openTime: oh.openTime,
+          closeTime: oh.closeTime,
+          slots: (oh.slots as unknown as DayHours["slots"]) ?? [],
+        };
+        return acc;
+      },
+      {} as Record<string, DayHours>,
+    );
 
     // Get all bookings for this venue on the specified date
     const bookedSlots = await getVenueBookingsForDate(
@@ -776,7 +847,7 @@ export const getVenueAvailability = async (
     // the UTC day-of-week so this is correct regardless of the server
     // process's local timezone (see openingHours.ts for the same fix).
     const dayName = dayNames[targetDate.getUTCDay()];
-    const dayHours = dayName ? venue.openingHours?.[dayName] : null;
+    const dayHours = dayName ? openingHoursByDay[dayName] : null;
 
     let allSlots: string[] = [];
 
@@ -793,6 +864,10 @@ export const getVenueAvailability = async (
         (Number.isFinite(closeHour) ? closeHour : 0) +
         (closeMinute > 0 ? 1 : 0);
 
+      // TODO(prisma): minimumBookingDuration is not a column on Venue in the
+      // Prisma schema, so this resolves to undefined and falls back to 60 min,
+      // preserving prior behavior. Add the column if configurable durations
+      // are needed.
       const intervalMinutes = (venue as any).minimumBookingDuration || 60;
       allSlots = generateDynamicSlots(
         slotStartHour,
@@ -811,7 +886,7 @@ export const getVenueAvailability = async (
           targetDate,
           slot,
           slotEnd,
-          venue.openingHours,
+          openingHoursByDay as OpeningHours,
         ).isValid;
       });
     }
@@ -1052,7 +1127,9 @@ export const retryBookingRefund = async (
       return;
     }
 
-    const booking = await Booking.findOne({ _id: bookingId, userId }).lean();
+    const booking = await prisma.booking.findFirst({
+      where: { id: bookingId, userId },
+    });
     if (!booking) {
       res.status(404).json({ success: false, message: "Booking not found" });
       return;
@@ -1299,9 +1376,10 @@ export const initiatePhonePePaymentForBooking = async (
 
     const bookingId = (req.params as Record<string, unknown>)
       .bookingId as string;
-    const booking = await Booking.findById(bookingId).select(
-      "userId totalAmount payments bookingType paymentType status paymentConfirmedAt",
-    );
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { payments: true },
+    });
 
     if (!booking) {
       res.status(404).json({
@@ -1356,14 +1434,19 @@ export const initiatePhonePePaymentForBooking = async (
       redirectUrl.searchParams.set("type", req.body.type);
     }
 
-    const payer = await User.findById(userId).select("phone");
+    const payer = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { phone: true },
+    });
 
-    const transaction = await BookingPaymentTransaction.create({
-      bookingId: booking._id,
-      userId,
-      merchantOrderId,
-      amount: amountInPaise,
-      status: "PENDING",
+    const transaction = await prisma.bookingPaymentTransaction.create({
+      data: {
+        bookingId: booking.id,
+        userId,
+        merchantOrderId,
+        amount: amountInPaise,
+        status: "PENDING",
+      },
     });
 
     const paymentPayload: {
@@ -1388,12 +1471,14 @@ export const initiatePhonePePaymentForBooking = async (
 
     const initResult = await initiatePhonePePayment(paymentPayload);
 
-    if (initResult.orderId) {
-      transaction.phonepeOrderId = initResult.orderId;
-    }
-    transaction.redirectUrl = initResult.redirectUrl;
-    transaction.state = initResult.state || "PENDING";
-    await transaction.save();
+    await prisma.bookingPaymentTransaction.update({
+      where: { id: transaction.id },
+      data: {
+        ...(initResult.orderId ? { phonepeOrderId: initResult.orderId } : {}),
+        redirectUrl: initResult.redirectUrl,
+        state: initResult.state || "PENDING",
+      },
+    });
 
     res.status(200).json({
       success: true,
@@ -1451,8 +1536,8 @@ export const handlePhonePeCallback = async (
       return;
     }
 
-    const transaction = await BookingPaymentTransaction.findOne({
-      merchantOrderId,
+    const transaction = await prisma.bookingPaymentTransaction.findUnique({
+      where: { merchantOrderId },
     });
     if (!transaction) {
       res.status(404).json({
@@ -1462,19 +1547,17 @@ export const handlePhonePeCallback = async (
       return;
     }
 
-    transaction.callbackPayload = callback as any;
-    transaction.phonepeOrderId = payload.orderId || transaction.phonepeOrderId;
-    transaction.state = payload.state || transaction.state;
+    let nextStatus: "COMPLETED" | "FAILED" | undefined;
 
     if (payload.state === "COMPLETED") {
-      transaction.status = "COMPLETED";
+      nextStatus = "COMPLETED";
       await updatePaymentStatus(
         transaction.bookingId.toString(),
         transaction.userId.toString(),
         "PAID",
       );
     } else if (payload.state === "FAILED") {
-      transaction.status = "FAILED";
+      nextStatus = "FAILED";
       await updatePaymentStatus(
         transaction.bookingId.toString(),
         transaction.userId.toString(),
@@ -1482,7 +1565,15 @@ export const handlePhonePeCallback = async (
       );
     }
 
-    await transaction.save();
+    await prisma.bookingPaymentTransaction.update({
+      where: { id: transaction.id },
+      data: {
+        callbackPayload: callback as any,
+        phonepeOrderId: payload.orderId || transaction.phonepeOrderId,
+        state: payload.state || transaction.state,
+        ...(nextStatus ? { status: nextStatus } : {}),
+      },
+    });
 
     res.status(200).json({
       success: true,
@@ -1534,8 +1625,8 @@ export const verifyPhonePeOrderStatus = async (
 
     const merchantOrderId = merchantOrderIdParam;
 
-    const transaction = await BookingPaymentTransaction.findOne({
-      merchantOrderId,
+    const transaction = await prisma.bookingPaymentTransaction.findUnique({
+      where: { merchantOrderId },
     });
 
     if (!transaction) {
@@ -1555,18 +1646,18 @@ export const verifyPhonePeOrderStatus = async (
     }
 
     const status = await getPhonePeOrderStatus(merchantOrderId);
-    transaction.lastStatusPayload = status.raw;
-    transaction.state = status.state || transaction.state || "PENDING";
+
+    let nextStatus: "COMPLETED" | "FAILED" | undefined;
 
     if (status.state === "COMPLETED" && transaction.status !== "COMPLETED") {
-      transaction.status = "COMPLETED";
+      nextStatus = "COMPLETED";
       await updatePaymentStatus(
         transaction.bookingId.toString(),
         transaction.userId.toString(),
         "PAID",
       );
     } else if (status.state === "FAILED" && transaction.status !== "FAILED") {
-      transaction.status = "FAILED";
+      nextStatus = "FAILED";
       await updatePaymentStatus(
         transaction.bookingId.toString(),
         transaction.userId.toString(),
@@ -1574,7 +1665,14 @@ export const verifyPhonePeOrderStatus = async (
       );
     }
 
-    await transaction.save();
+    await prisma.bookingPaymentTransaction.update({
+      where: { id: transaction.id },
+      data: {
+        lastStatusPayload: status.raw as any,
+        state: status.state || transaction.state || "PENDING",
+        ...(nextStatus ? { status: nextStatus } : {}),
+      },
+    });
 
     res.status(200).json({
       success: true,
@@ -1854,7 +1952,10 @@ export const payBookingWithWallet = async (
       return;
     }
 
-    const booking = await Booking.findById(bookingId);
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { payments: true },
+    });
     if (!booking) {
       res.status(404).json({ success: false, message: "Booking not found" });
       return;
@@ -1924,13 +2025,15 @@ export const payBookingWithWallet = async (
     const merchantOrderId = `WALLET-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
     // Create payment transaction
-    await BookingPaymentTransaction.create({
-      bookingId: booking._id,
-      userId: user.id,
-      merchantOrderId,
-      amount,
-      status: "COMPLETED",
-      state: "COMPLETED",
+    await prisma.bookingPaymentTransaction.create({
+      data: {
+        bookingId: booking.id,
+        userId: user.id,
+        merchantOrderId,
+        amount,
+        status: "COMPLETED",
+        state: "COMPLETED",
+      },
     });
 
     // Update booking status

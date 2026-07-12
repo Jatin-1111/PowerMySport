@@ -1,20 +1,40 @@
 import { Request, Response } from "express";
-import { ConciergeRequest } from "../../shared/models/ConciergeRequest";
+import { Prisma } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { S3Service } from "../../shared/services/S3Service";
 
 /**
- * Fetch all concierge requests for the admin panel, sorted by newest first
+ * Fetch all concierge requests for the admin panel, sorted by newest first.
+ *
+ * The Mongo `.populate("userId", "name email phone")` has no Prisma relation on
+ * the String FK, so we batch-load the referenced users and attach them onto the
+ * `userId` field to preserve the exact response shape the admin panel expects.
+ * The previously-embedded `documents` array is now a normalized child table,
+ * loaded via `include`.
  */
 export const getAllConciergeRequests = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const requests = await ConciergeRequest.find()
-      .populate("userId", "name email phone")
-      .sort({ createdAt: -1 });
+    const requests = await prisma.conciergeRequest.findMany({
+      include: { documents: true },
+      orderBy: { createdAt: "desc" },
+    });
 
-    res.status(200).json({ success: true, requests });
+    const userIds = [...new Set(requests.map((request) => request.userId))];
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, email: true, phone: true },
+    });
+    const usersById = new Map(users.map((user) => [user.id, user]));
+
+    const populated = requests.map((request) => ({
+      ...request,
+      userId: usersById.get(request.userId) ?? request.userId,
+    }));
+
+    res.status(200).json({ success: true, requests: populated });
   } catch (error) {
     console.error("Error fetching admin concierge requests:", error);
     res.status(500).json({ success: false, error: "Failed to fetch requests" });
@@ -37,23 +57,35 @@ export const updateConciergeRequestStatus = async (
       return;
     }
 
-    const updatePayload: Record<string, any> = { status };
+    const updatePayload: Prisma.ConciergeRequestUpdateInput = { status };
     if (adminNotes !== undefined) {
       updatePayload.adminNotes = String(adminNotes).slice(0, 2000);
     }
 
-    const updatedRequest = await ConciergeRequest.findByIdAndUpdate(
-      id,
-      updatePayload,
-      { new: true },
-    ).populate("userId", "name email phone");
+    const existing = await prisma.conciergeRequest.findUnique({
+      where: { id },
+    });
 
-    if (!updatedRequest) {
+    if (!existing) {
       res.status(404).json({ success: false, error: "Request not found" });
       return;
     }
 
-    res.status(200).json({ success: true, request: updatedRequest });
+    const updatedRequest = await prisma.conciergeRequest.update({
+      where: { id },
+      data: updatePayload,
+      include: { documents: true },
+    });
+
+    const user = await prisma.user.findUnique({
+      where: { id: updatedRequest.userId },
+      select: { id: true, name: true, email: true, phone: true },
+    });
+
+    res.status(200).json({
+      success: true,
+      request: { ...updatedRequest, userId: user ?? updatedRequest.userId },
+    });
   } catch (error) {
     console.error("Error updating concierge request status:", error);
     res.status(500).json({ success: false, error: "Failed to update status" });
@@ -77,7 +109,10 @@ export const getConciergeDocumentDownloadUrl = async (
     }
 
     // Verify the request exists and contains this document key
-    const request = await ConciergeRequest.findById(id);
+    const request = await prisma.conciergeRequest.findUnique({
+      where: { id },
+      include: { documents: true },
+    });
     if (!request) {
       res.status(404).json({ success: false, error: "Request not found" });
       return;

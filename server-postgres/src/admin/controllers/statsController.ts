@@ -1,16 +1,6 @@
 import { Request, Response } from "express";
-import { Booking } from "../../client/models/Booking";
-import { Coach } from "../../client/models/Coach";
-import { AnalyticsEvent } from "../models/AnalyticsEvent";
-import { User } from "../../client/models/User";
-import { Player } from "../../client/models/Player";
-import { Venue } from "../../client/models/Venue";
-import VenueInquiry from "../../client/models/VenueInquiry";
-import { Dispute } from "../../client/models/Dispute";
-import { SupportTicket } from "../../client/models/SupportTicket";
-import { CommunityReport } from "../../community/models/CommunityReport";
-import { ConciergeRequest } from "../../shared/models/ConciergeRequest";
-import Academy from "../models/Academy";
+import { Prisma } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { WebhookRecoveryService } from "../../shared/controllers/WebhookController";
 import { getObservabilitySnapshot } from "../../middleware/observability";
 import { transformDocuments } from "../../middleware/responseTransform";
@@ -122,20 +112,12 @@ export const getPublicPlatformStats = async (
 ): Promise<void> => {
   try {
     const [totalUsers, roleCounts] = await Promise.all([
-      User.countDocuments(),
-      User.aggregate<{ _id: string; count: number }>([
-        {
-          $match: {
-            role: { $in: ["Player", "Coach", "VenueLister"] },
-          },
-        },
-        {
-          $group: {
-            _id: "$role",
-            count: { $sum: 1 },
-          },
-        },
-      ]),
+      prisma.user.count(),
+      prisma.user.groupBy({
+        by: ["role"],
+        where: { role: { in: ["Player", "Coach", "VenueLister"] } },
+        _count: { _all: true },
+      }),
     ]);
 
     const summary = {
@@ -145,8 +127,8 @@ export const getPublicPlatformStats = async (
     };
 
     for (const item of roleCounts) {
-      if (item._id in summary) {
-        summary[item._id as keyof typeof summary] = item.count;
+      if (item.role in summary) {
+        summary[item.role as keyof typeof summary] = item._count._all;
       }
     }
 
@@ -179,22 +161,17 @@ export const getPlatformStats = async (
       pendingInquiries,
       revenueResult,
     ] = await Promise.all([
-      User.countDocuments(),
-      Venue.countDocuments(),
-      Booking.countDocuments(),
-      VenueInquiry.countDocuments({ status: "PENDING" }),
-      Booking.aggregate([
-        { $match: { status: "CONFIRMED" } },
-        {
-          $group: {
-            _id: null,
-            totalRevenue: { $sum: "$totalAmount" },
-          },
-        },
-      ]),
+      prisma.user.count(),
+      prisma.venue.count(),
+      prisma.booking.count(),
+      prisma.venueInquiry.count({ where: { status: "PENDING" } }),
+      prisma.booking.aggregate({
+        where: { status: "CONFIRMED" },
+        _sum: { totalAmount: true },
+      }),
     ]);
 
-    const revenue = revenueResult[0]?.totalRevenue || 0;
+    const revenue = revenueResult._sum.totalAmount || 0;
 
     res.status(200).json({
       success: true,
@@ -229,21 +206,30 @@ export const getAllUsers = async (
       100,
     );
 
-    const query = role ? { role } : {};
+    const where: Prisma.UserWhereInput = role ? { role } : {};
     const [total, users] = await Promise.all([
-      User.countDocuments(query),
-      User.find(query)
-        .select("name email phone role createdAt lastActiveAt")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          role: true,
+          createdAt: true,
+          lastActiveAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
     ]);
 
-    // Transform _id to id for frontend
+    // id is already the primary key in Postgres
     const transformedUsers = users.map((user) => ({
       ...user,
-      id: user._id.toString(),
+      id: user.id,
     }));
 
     res.status(200).json({
@@ -275,17 +261,26 @@ const makeRoleUsersHandler =
         100,
       );
       const [total, users] = await Promise.all([
-        User.countDocuments({ role }),
-        User.find({ role })
-          .select("name email phone role createdAt lastActiveAt")
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .lean(),
+        prisma.user.count({ where: { role } }),
+        prisma.user.findMany({
+          where: { role },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            role: true,
+            createdAt: true,
+            lastActiveAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit,
+        }),
       ]);
       const transformedUsers = users.map((user) => ({
         ...user,
-        id: user._id.toString(),
+        id: user.id,
       }));
       res.status(200).json({
         success: true,
@@ -309,19 +304,13 @@ export const getUserRoleSummary = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const roleCounts = await User.aggregate<{ _id: string; count: number }>([
-      {
-        $match: {
-          role: { $in: ["Player", "Coach", "VenueLister", "EXPERT", "Parent"] },
-        },
+    const roleCounts = await prisma.user.groupBy({
+      by: ["role"],
+      where: {
+        role: { in: ["Player", "Coach", "VenueLister", "EXPERT", "Parent"] },
       },
-      {
-        $group: {
-          _id: "$role",
-          count: { $sum: 1 },
-        },
-      },
-    ]);
+      _count: { _all: true },
+    });
 
     const summary = {
       EXPERT: 0,
@@ -332,8 +321,8 @@ export const getUserRoleSummary = async (
     };
 
     for (const item of roleCounts) {
-      if (item._id in summary) {
-        summary[item._id as keyof typeof summary] = item.count;
+      if (item.role in summary) {
+        summary[item.role as keyof typeof summary] = item._count._all;
       }
     }
 
@@ -364,37 +353,21 @@ export const getUserGrowthAnalytics = async (
     start.setDate(1);
     start.setHours(0, 0, 0, 0);
 
-    const growth = await User.aggregate<{
-      _id: { month: string; role: AdminUserRole };
-      count: number;
-    }>([
-      {
-        $match: {
-          role: { $in: ["Player", "Coach", "VenueLister"] },
-          createdAt: { $gte: start },
-        },
-      },
-      {
-        $group: {
-          _id: {
-            month: {
-              $dateToString: {
-                format: "%Y-%m",
-                date: "$createdAt",
-              },
-            },
-            role: "$role",
-          },
-          count: { $sum: 1 },
-        },
-      },
-      {
-        $sort: {
-          "_id.month": 1,
-          "_id.role": 1,
-        },
-      },
-    ]);
+    // TODO(prisma): verify aggregation SQL — monthly, per-role user signups.
+    // Mirrors the Mongo $dateToString('%Y-%m') + $group by { month, role }.
+    const growth = await prisma.$queryRaw<
+      Array<{ month: string; role: string; count: bigint }>
+    >(Prisma.sql`
+      SELECT
+        to_char(date_trunc('month', "createdAt"), 'YYYY-MM') AS month,
+        role::text AS role,
+        COUNT(*)::bigint AS count
+      FROM users
+      WHERE role IN ('Player', 'Coach', 'VenueLister')
+        AND "createdAt" >= ${start}
+      GROUP BY 1, 2
+      ORDER BY 1, 2
+    `);
 
     const monthSeries = buildMonthSeries(months);
     const monthBuckets = new Map(
@@ -405,14 +378,15 @@ export const getUserGrowthAnalytics = async (
     );
 
     for (const row of growth) {
-      const bucket = monthBuckets.get(row._id.month);
+      const bucket = monthBuckets.get(row.month);
       if (!bucket) continue;
 
-      const role = row._id.role as keyof typeof bucket;
+      const role = row.role as keyof typeof bucket;
+      const count = Number(row.count);
       if (role in bucket && typeof bucket[role] === "number") {
-        (bucket[role] as number) += row.count;
+        (bucket[role] as number) += count;
       }
-      bucket.total += row.count;
+      bucket.total += count;
     }
 
     res.status(200).json({
@@ -446,25 +420,32 @@ export const getPlayersUsers = async (
       100,
     );
 
-    const query = { role: "Player" };
     const [total, users] = await Promise.all([
-      User.countDocuments(query),
-      User.find(query)
-        .select("name email phone createdAt lastActiveAt")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+      prisma.user.count({ where: { role: "Player" } }),
+      prisma.user.findMany({
+        where: { role: "Player" },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          createdAt: true,
+          lastActiveAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
     ]);
 
-    const userIds = users.map((user) => user._id);
-    const playerProfiles = await Player.find({
-      userId: { $in: userIds },
-    }).lean();
+    const userIds = users.map((user) => user.id);
+    const playerProfiles = await prisma.player.findMany({
+      where: { userId: { in: userIds } },
+    });
 
-    const profilesByUserId = new Map<string, any[]>();
+    const profilesByUserId = new Map<string, typeof playerProfiles>();
     for (const profile of playerProfiles) {
-      const uidStr = profile.userId.toString();
+      const uidStr = profile.userId;
       if (!profilesByUserId.has(uidStr)) {
         profilesByUserId.set(uidStr, []);
       }
@@ -473,7 +454,7 @@ export const getPlayersUsers = async (
 
     const data = await Promise.all(
       users.map(async (user) => {
-        const userProfiles = profilesByUserId.get(user._id.toString()) || [];
+        const userProfiles = profilesByUserId.get(user.id) || [];
 
         const selfProfile = userProfiles.find((p) => p.type === "SELF");
         const dependentsProfiles = userProfiles.filter(
@@ -486,7 +467,7 @@ export const getPlayersUsers = async (
         const hasSportsProfile = sportsCount > 0;
 
         const dependents = dependentsProfiles.map((d) => ({
-          id: d._id.toString(),
+          id: d.id,
           name: d.name,
           age: d.age,
           gender: d.gender,
@@ -495,14 +476,14 @@ export const getPlayersUsers = async (
         }));
 
         return {
-          id: user._id.toString(),
+          id: user.id,
           name: user.name,
           email: user.email,
           phone: user.phone,
           role: "Player",
           createdAt: user.createdAt,
           lastActiveAt: user.lastActiveAt || user.createdAt,
-          isOnlineNow: await isUserOnline(user._id.toString()),
+          isOnlineNow: await isUserOnline(user.id),
           sports,
           sportsCount,
           hasSportsProfile,
@@ -543,38 +524,53 @@ export const getCoachUsers = async (
       100,
     );
 
-    const query = { role: "Coach" };
-    const total = await User.countDocuments(query);
-    const users = await User.find(query)
-      .select("name email phone createdAt lastActiveAt")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const total = await prisma.user.count({ where: { role: "Coach" } });
+    const users = await prisma.user.findMany({
+      where: { role: "Coach" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+        lastActiveAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    });
 
-    const userIds = users.map((user) => user._id);
-    const coachProfiles = await Coach.find({ userId: { $in: userIds } })
-      .select(
-        "userId sports hourlyRate serviceMode verificationStatus isVerified rating reviewCount",
-      )
-      .lean();
+    const userIds = users.map((user) => user.id);
+    const coachProfiles = await prisma.coach.findMany({
+      where: { userId: { in: userIds } },
+      select: {
+        userId: true,
+        sports: true,
+        hourlyRate: true,
+        serviceMode: true,
+        verificationStatus: true,
+        isVerified: true,
+        rating: true,
+        reviewCount: true,
+      },
+    });
 
     const coachByUserId = new Map(
-      coachProfiles.map((profile) => [profile.userId.toString(), profile]),
+      coachProfiles.map((profile) => [profile.userId, profile]),
     );
 
     const data = await Promise.all(
       users.map(async (user) => {
-        const profile = coachByUserId.get(user._id.toString());
+        const profile = coachByUserId.get(user.id);
         return {
-          id: user._id.toString(),
+          id: user.id,
           name: user.name,
           email: user.email,
           phone: user.phone,
           role: "Coach",
           createdAt: user.createdAt,
           lastActiveAt: user.lastActiveAt || user.createdAt,
-          isOnlineNow: await isUserOnline(user._id.toString()),
+          isOnlineNow: await isUserOnline(user.id),
           sports: profile?.sports || [],
           hourlyRate: profile?.hourlyRate ?? null,
           serviceMode: profile?.serviceMode ?? null,
@@ -618,65 +614,70 @@ export const getVenueListerUsers = async (
       100,
     );
 
-    const query = { role: "VenueLister" };
-    const total = await User.countDocuments(query);
-    const users = await User.find(query)
-      .select("name email phone createdAt lastActiveAt")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const ownerIds = users.map((user) => user._id);
-    const venueCounts = await Venue.aggregate<{
-      _id: unknown;
-      venueCount: number;
-      approvedVenueCount: number;
-      pendingVenueCount: number;
-    }>([
-      {
-        $match: {
-          ownerId: { $in: ownerIds },
-        },
+    const total = await prisma.user.count({ where: { role: "VenueLister" } });
+    const users = await prisma.user.findMany({
+      where: { role: "VenueLister" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+        lastActiveAt: true,
       },
-      {
-        $group: {
-          _id: "$ownerId",
-          venueCount: { $sum: 1 },
-          approvedVenueCount: {
-            $sum: {
-              $cond: [{ $eq: ["$approvalStatus", "APPROVED"] }, 1, 0],
-            },
-          },
-          pendingVenueCount: {
-            $sum: {
-              $cond: [
-                { $in: ["$approvalStatus", ["PENDING", "REVIEW"]] },
-                1,
-                0,
-              ],
-            },
-          },
-        },
-      },
-    ]);
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    });
 
-    const venueCountByOwnerId = new Map(
-      venueCounts.map((item) => [String(item._id), item]),
-    );
+    const ownerIds = users.map((user) => user.id);
+    // The Mongo $group-with-$cond over ownerId is expressed here as a bounded
+    // fetch (owners are a single page) with the counts computed in code.
+    const venues = await prisma.venue.findMany({
+      where: { ownerId: { in: ownerIds } },
+      select: { ownerId: true, approvalStatus: true },
+    });
+
+    const venueCountByOwnerId = new Map<
+      string,
+      {
+        venueCount: number;
+        approvedVenueCount: number;
+        pendingVenueCount: number;
+      }
+    >();
+    for (const venue of venues) {
+      if (!venue.ownerId) continue;
+      const counts = venueCountByOwnerId.get(venue.ownerId) ?? {
+        venueCount: 0,
+        approvedVenueCount: 0,
+        pendingVenueCount: 0,
+      };
+      counts.venueCount += 1;
+      if (venue.approvalStatus === "APPROVED") {
+        counts.approvedVenueCount += 1;
+      }
+      if (
+        venue.approvalStatus === "PENDING" ||
+        venue.approvalStatus === "REVIEW"
+      ) {
+        counts.pendingVenueCount += 1;
+      }
+      venueCountByOwnerId.set(venue.ownerId, counts);
+    }
 
     const data = await Promise.all(
       users.map(async (user) => {
-        const counts = venueCountByOwnerId.get(user._id.toString());
+        const counts = venueCountByOwnerId.get(user.id);
         return {
-          id: user._id.toString(),
+          id: user.id,
           name: user.name,
           email: user.email,
           phone: user.phone,
           role: "VenueLister",
           createdAt: user.createdAt,
           lastActiveAt: user.lastActiveAt || user.createdAt,
-          isOnlineNow: await isUserOnline(user._id.toString()),
+          isOnlineNow: await isUserOnline(user.id),
           businessName: "",
           canAddMoreVenues: false,
           venueCount: counts?.venueCount ?? 0,
@@ -715,6 +716,10 @@ export const getPlayersAnalytics = async (
     const monthStart = getStartOfCurrentMonth();
     const twentyFourHoursAgo = getTwentyFourHoursAgo();
 
+    // NOTE: the Mongo version read embedded `playerProfile.sports` / `dependents`
+    // off the User doc. Those are now the normalized Player table, so
+    // withSportsProfile = SELF players with a non-empty sportsFocus and
+    // withDependents = distinct users owning at least one DEPENDENT player.
     const [
       totalPlayers,
       newThisMonth,
@@ -722,22 +727,18 @@ export const getPlayersAnalytics = async (
       withDependents,
       newAccountsLast24Hours,
     ] = await Promise.all([
-      User.countDocuments({ role: "Player" }),
-      User.countDocuments({
-        role: "Player",
-        createdAt: { $gte: monthStart },
+      prisma.user.count({ where: { role: "Player" } }),
+      prisma.user.count({
+        where: { role: "Player", createdAt: { gte: monthStart } },
       }),
-      User.countDocuments({
-        role: "Player",
-        "playerProfile.sports.0": { $exists: true },
+      prisma.player.count({
+        where: { type: "SELF", sportsFocus: { isEmpty: false } },
       }),
-      User.countDocuments({
-        role: "Player",
-        "dependents.0": { $exists: true },
-      }),
-      User.countDocuments({
-        role: "Player",
-        createdAt: { $gte: twentyFourHoursAgo },
+      prisma.player
+        .groupBy({ by: ["userId"], where: { type: "DEPENDENT" } })
+        .then((rows) => rows.length),
+      prisma.user.count({
+        where: { role: "Player", createdAt: { gte: twentyFourHoursAgo } },
       }),
     ]);
 
@@ -773,37 +774,21 @@ export const getFunnelTrends = async (
     start.setDate(start.getDate() - (days - 1));
     start.setHours(0, 0, 0, 0);
 
-    const trendRows = await AnalyticsEvent.aggregate<{
-      _id: { day: string; source: FunnelSource };
-      count: number;
-    }>([
-      {
-        $match: {
-          createdAt: { $gte: start },
-          source: { $in: Array.from(FUNNEL_SOURCE_SET) },
-        },
-      },
-      {
-        $group: {
-          _id: {
-            day: {
-              $dateToString: {
-                format: "%Y-%m-%d",
-                date: "$createdAt",
-              },
-            },
-            source: "$source",
-          },
-          count: { $sum: 1 },
-        },
-      },
-      {
-        $sort: {
-          "_id.day": 1,
-          "_id.source": 1,
-        },
-      },
-    ]);
+    // TODO(prisma): verify aggregation SQL — daily analytics events per source.
+    // Mirrors the Mongo $dateToString('%Y-%m-%d') + $group by { day, source }.
+    const trendRows = await prisma.$queryRaw<
+      Array<{ day: string; source: string; count: bigint }>
+    >(Prisma.sql`
+      SELECT
+        to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS day,
+        source::text AS source,
+        COUNT(*)::bigint AS count
+      FROM analytics_events
+      WHERE "createdAt" >= ${start}
+        AND source IN ('WEB', 'MOBILE', 'SERVER')
+      GROUP BY 1, 2
+      ORDER BY 1, 2
+    `);
 
     const daySeries = buildDaySeries(days);
     const dayBuckets = new Map(
@@ -820,12 +805,15 @@ export const getFunnelTrends = async (
     };
 
     for (const row of trendRows) {
-      const bucket = dayBuckets.get(row._id.day);
+      const bucket = dayBuckets.get(row.day);
       if (!bucket) continue;
 
-      bucket[row._id.source] += row.count;
-      bucket.total += row.count;
-      sourceTotals[row._id.source] += row.count;
+      const source = row.source as FunnelSource;
+      if (!FUNNEL_SOURCE_SET.has(source)) continue;
+      const count = Number(row.count);
+      bucket[source] += count;
+      bucket.total += count;
+      sourceTotals[source] += count;
     }
 
     res.status(200).json({
@@ -867,22 +855,14 @@ export const getCoachesAnalytics = async (
       ratingAggregate,
       newAccountsLast24Hours,
     ] = await Promise.all([
-      User.countDocuments({ role: "Coach" }),
-      Coach.countDocuments({ isVerified: true }),
-      Coach.countDocuments({
-        verificationStatus: { $in: ["PENDING", "REVIEW"] },
+      prisma.user.count({ where: { role: "Coach" } }),
+      prisma.coach.count({ where: { isVerified: true } }),
+      prisma.coach.count({
+        where: { verificationStatus: { in: ["PENDING", "REVIEW"] } },
       }),
-      Coach.aggregate<{ _id: null; avgRating: number }>([
-        {
-          $group: {
-            _id: null,
-            avgRating: { $avg: "$rating" },
-          },
-        },
-      ]),
-      User.countDocuments({
-        role: "Coach",
-        createdAt: { $gte: twentyFourHoursAgo },
+      prisma.coach.aggregate({ _avg: { rating: true } }),
+      prisma.user.count({
+        where: { role: "Coach", createdAt: { gte: twentyFourHoursAgo } },
       }),
     ]);
 
@@ -893,7 +873,7 @@ export const getCoachesAnalytics = async (
         totalCoaches,
         verifiedCount,
         pendingOrReviewCount,
-        avgRating: Number((ratingAggregate[0]?.avgRating ?? 0).toFixed(2)),
+        avgRating: Number((ratingAggregate._avg.rating ?? 0).toFixed(2)),
         newAccountsLast24Hours,
       },
     });
@@ -915,51 +895,29 @@ export const getVenueListersAnalytics = async (
   try {
     const twentyFourHoursAgo = getTwentyFourHoursAgo();
 
-    const [totalVenueListers, newAccountsLast24Hours, venueCountAggregates] =
-      await Promise.all([
-        User.countDocuments({ role: "VenueLister" }),
-        User.countDocuments({
+    // withAtLeastOneVenue = number of distinct owners (any venue); the approved
+    // and pending totals are simple counts across every venue, matching the
+    // two-stage Mongo $group.
+    const [
+      totalVenueListers,
+      newAccountsLast24Hours,
+      ownerGroups,
+      approvedVenuesCount,
+      pendingVenuesCount,
+    ] = await Promise.all([
+      prisma.user.count({ where: { role: "VenueLister" } }),
+      prisma.user.count({
+        where: {
           role: "VenueLister",
-          createdAt: { $gte: twentyFourHoursAgo },
-        }),
-        Venue.aggregate<{
-          _id: null;
-          withAtLeastOneVenue: number;
-          approvedVenuesCount: number;
-          pendingVenuesCount: number;
-        }>([
-          {
-            $group: {
-              _id: "$ownerId",
-              venueCount: { $sum: 1 },
-              approvedVenuesCount: {
-                $sum: {
-                  $cond: [{ $eq: ["$approvalStatus", "APPROVED"] }, 1, 0],
-                },
-              },
-              pendingVenuesCount: {
-                $sum: {
-                  $cond: [
-                    { $in: ["$approvalStatus", ["PENDING", "REVIEW"]] },
-                    1,
-                    0,
-                  ],
-                },
-              },
-            },
-          },
-          {
-            $group: {
-              _id: null,
-              withAtLeastOneVenue: { $sum: 1 },
-              approvedVenuesCount: { $sum: "$approvedVenuesCount" },
-              pendingVenuesCount: { $sum: "$pendingVenuesCount" },
-            },
-          },
-        ]),
-      ]);
-
-    const aggregates = venueCountAggregates[0];
+          createdAt: { gte: twentyFourHoursAgo },
+        },
+      }),
+      prisma.venue.groupBy({ by: ["ownerId"] }),
+      prisma.venue.count({ where: { approvalStatus: "APPROVED" } }),
+      prisma.venue.count({
+        where: { approvalStatus: { in: ["PENDING", "REVIEW"] } },
+      }),
+    ]);
 
     res.status(200).json({
       success: true,
@@ -967,9 +925,9 @@ export const getVenueListersAnalytics = async (
       data: {
         totalVenueListers,
         newAccountsLast24Hours,
-        withAtLeastOneVenue: aggregates?.withAtLeastOneVenue ?? 0,
-        approvedVenuesCount: aggregates?.approvedVenuesCount ?? 0,
-        pendingVenuesCount: aggregates?.pendingVenuesCount ?? 0,
+        withAtLeastOneVenue: ownerGroups.length,
+        approvedVenuesCount,
+        pendingVenuesCount,
       },
     });
   } catch (error) {
@@ -1036,84 +994,69 @@ export const getAllBookings = async (
       100,
     );
 
-    const total = await Booking.countDocuments();
-    const bookings = await Booking.find()
-      .populate("userId venueId")
-      .populate({
-        path: "coachId",
-        populate: { path: "userId", select: "name email" },
-      })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const total = await prisma.booking.count();
+    const bookings = await prisma.booking.findMany({
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    });
 
-    const toId = (value: unknown): string => {
-      if (!value) return "";
-      if (typeof value === "string") return value;
-      if (typeof value === "object") {
-        const candidate = value as { _id?: unknown; id?: unknown };
-        if (typeof candidate.id === "string") return candidate.id;
-        if (
-          candidate._id &&
-          typeof (candidate._id as { toString?: () => string }).toString ===
-            "function"
-        ) {
-          return (candidate._id as { toString: () => string }).toString();
-        }
-      }
-      return "";
-    };
+    // No Prisma relations exist for the userId / venueId / coachId String FKs,
+    // so batch-load each referenced entity and join in code to reproduce the
+    // populated response the admin bookings table expects.
+    const userIds = bookings.map((booking) => booking.userId).filter(Boolean);
+    const venueIds = bookings
+      .map((booking) => booking.venueId)
+      .filter((value): value is string => Boolean(value));
+    const coachIds = bookings
+      .map((booking) => booking.coachId)
+      .filter((value): value is string => Boolean(value));
 
-    const normalizeEntity = (value: unknown): unknown => {
-      if (!value || typeof value === "string") {
-        return value;
-      }
+    const [players, venues, coaches] = await Promise.all([
+      prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, name: true, email: true },
+      }),
+      prisma.venue.findMany({ where: { id: { in: venueIds } } }),
+      prisma.coach.findMany({ where: { id: { in: coachIds } } }),
+    ]);
 
-      if (typeof value === "object") {
-        const plain = value as Record<string, unknown>;
-        return {
-          ...plain,
-          id: toId(value),
-        };
-      }
+    const coachUserIds = coaches.map((coach) => coach.userId);
+    const coachUsers = await prisma.user.findMany({
+      where: { id: { in: coachUserIds } },
+      select: { id: true, name: true, email: true },
+    });
 
-      return value;
-    };
+    const playerById = new Map(players.map((player) => [player.id, player]));
+    const venueById = new Map(venues.map((venue) => [venue.id, venue]));
+    const coachById = new Map(coaches.map((coach) => [coach.id, coach]));
+    const coachUserById = new Map(
+      coachUsers.map((coachUser) => [coachUser.id, coachUser]),
+    );
 
     const transformedBookings = bookings.map((booking) => {
-      const plain = booking as unknown as Record<string, unknown>;
-
-      const playerRecord =
-        plain.userId && typeof plain.userId === "object"
-          ? (plain.userId as { name?: string; email?: string })
-          : null;
-      const venueRecord =
-        plain.venueId && typeof plain.venueId === "object"
-          ? (plain.venueId as { name?: string })
-          : null;
-      const coachRecord =
-        plain.coachId && typeof plain.coachId === "object"
-          ? (plain.coachId as { userId?: unknown; name?: string })
-          : null;
-      const coachUserRecord =
-        coachRecord?.userId && typeof coachRecord.userId === "object"
-          ? (coachRecord.userId as { name?: string; email?: string })
-          : null;
+      const player = playerById.get(booking.userId) ?? null;
+      const venue = booking.venueId
+        ? (venueById.get(booking.venueId) ?? null)
+        : null;
+      const coach = booking.coachId
+        ? (coachById.get(booking.coachId) ?? null)
+        : null;
+      const coachUser = coach
+        ? (coachUserById.get(coach.userId) ?? null)
+        : null;
 
       return {
-        ...plain,
-        id: toId(booking),
-        userId: toId(plain.userId),
-        venueId: normalizeEntity(plain.venueId),
-        coachId: normalizeEntity(plain.coachId),
-        playerName: playerRecord?.name || playerRecord?.email || "",
-        venueName: venueRecord?.name || "",
-        coachName:
-          coachUserRecord?.name ||
-          coachUserRecord?.email ||
-          coachRecord?.name ||
-          "",
+        ...booking,
+        id: booking.id,
+        userId: booking.userId,
+        venueId: venue ? { ...venue, id: venue.id } : booking.venueId,
+        coachId: coach
+          ? { ...coach, id: coach.id, userId: coachUser ?? coach.userId }
+          : booking.coachId,
+        playerName: player?.name || player?.email || "",
+        venueName: venue?.name || "",
+        coachName: coachUser?.name || coachUser?.email || "",
       };
     });
 
@@ -1149,14 +1092,16 @@ export const trackFunnelEvent = async (
       source?: "WEB" | "MOBILE" | "SERVER";
     };
 
-    await AnalyticsEvent.create({
-      ...(req.user?.id ? { userId: req.user.id } : {}),
+    const data: Prisma.AnalyticsEventCreateInput = {
       eventName,
-      ...(entityType ? { entityType } : {}),
-      ...(entityId ? { entityId } : {}),
-      ...(metadata ? { metadata } : {}),
       source: source || "WEB",
-    });
+    };
+    if (req.user?.id) data.userId = req.user.id;
+    if (entityType) data.entityType = entityType;
+    if (entityId) data.entityId = entityId;
+    if (metadata) data.metadata = metadata as Prisma.InputJsonValue;
+
+    await prisma.analyticsEvent.create({ data });
 
     res.status(201).json({
       success: true,
@@ -1178,27 +1123,20 @@ export const getFunnelSummary = async (
     const days = Math.min(90, Math.max(1, Number(req.query.days) || 30));
     const start = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const grouped = await AnalyticsEvent.aggregate<{
-      _id: string;
-      count: number;
-      uniqueUsers: number;
-    }>([
-      { $match: { createdAt: { $gte: start } } },
-      {
-        $group: {
-          _id: "$eventName",
-          count: { $sum: 1 },
-          users: { $addToSet: "$userId" },
-        },
-      },
-      {
-        $project: {
-          count: 1,
-          uniqueUsers: { $size: "$users" },
-        },
-      },
-      { $sort: { count: -1 } },
-    ]);
+    // TODO(prisma): verify aggregation SQL — per-event counts + unique users.
+    // Mirrors the Mongo $group by eventName with $addToSet(userId) -> $size.
+    const grouped = await prisma.$queryRaw<
+      Array<{ eventName: string; count: bigint; uniqueUsers: bigint }>
+    >(Prisma.sql`
+      SELECT
+        "eventName" AS "eventName",
+        COUNT(*)::bigint AS count,
+        COUNT(DISTINCT "userId")::bigint AS "uniqueUsers"
+      FROM analytics_events
+      WHERE "createdAt" >= ${start}
+      GROUP BY "eventName"
+      ORDER BY count DESC
+    `);
 
     res.status(200).json({
       success: true,
@@ -1206,9 +1144,9 @@ export const getFunnelSummary = async (
       data: {
         days,
         events: grouped.map((entry) => ({
-          eventName: entry._id,
-          count: entry.count,
-          uniqueUsers: entry.uniqueUsers,
+          eventName: entry.eventName,
+          count: Number(entry.count),
+          uniqueUsers: Number(entry.uniqueUsers),
         })),
       },
     });
@@ -1228,112 +1166,89 @@ export const getFinanceReconciliation = async (
   res: Response,
 ): Promise<void> => {
   try {
-    // Run entirely in MongoDB – no data pulled into Node memory
-    const [summary, mismatches] = await Promise.all([
-      Booking.aggregate<{
-        total: number;
-        matched: number;
-        mismatched: number;
-      }>([
-        {
-          $match: {
-            status: {
-              $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"],
-            },
-          },
-        },
-        {
-          $addFields: {
-            paidAmount: {
-              $reduce: {
-                input: {
-                  $filter: {
-                    input: { $ifNull: ["$payments", []] },
-                    cond: { $eq: ["$$this.status", "PAID"] },
-                  },
-                },
-                initialValue: 0,
-                in: { $add: ["$$value", { $ifNull: ["$$this.amount", 0] }] },
-              },
-            },
-          },
-        },
-        {
-          $addFields: {
-            delta: { $abs: { $subtract: ["$totalAmount", "$paidAmount"] } },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: 1 },
-            matched: { $sum: { $cond: [{ $lte: ["$delta", 1] }, 1, 0] } },
-            mismatched: { $sum: { $cond: [{ $gt: ["$delta", 1] }, 1, 0] } },
-          },
-        },
-      ]),
-      Booking.aggregate<{
-        bookingId: string;
-        expected: number;
-        paid: number;
-        status: string;
-      }>([
-        {
-          $match: {
-            status: {
-              $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"],
-            },
-          },
-        },
-        {
-          $addFields: {
-            paidAmount: {
-              $reduce: {
-                input: {
-                  $filter: {
-                    input: { $ifNull: ["$payments", []] },
-                    cond: { $eq: ["$$this.status", "PAID"] },
-                  },
-                },
-                initialValue: 0,
-                in: { $add: ["$$value", { $ifNull: ["$$this.amount", 0] }] },
-              },
-            },
-          },
-        },
-        {
-          $addFields: {
-            delta: { $abs: { $subtract: ["$totalAmount", "$paidAmount"] } },
-          },
-        },
-        { $match: { delta: { $gt: 1 } } },
-        { $sort: { createdAt: -1 } },
-        { $limit: 25 },
-        {
-          $project: {
-            bookingId: { $toString: "$_id" },
-            expected: "$totalAmount",
-            paid: "$paidAmount",
-            status: 1,
-          },
-        },
-      ]),
+    // Run entirely in Postgres — payments are now the normalized
+    // booking_payment_legs table, summed per booking and compared to totalAmount.
+    const [summaryRows, mismatchRows] = await Promise.all([
+      // TODO(prisma): verify aggregation SQL — reconciliation summary totals.
+      prisma.$queryRaw<
+        Array<{ total: bigint; matched: bigint; mismatched: bigint }>
+      >(Prisma.sql`
+        WITH paid AS (
+          SELECT
+            b.id,
+            b."totalAmount",
+            COALESCE(
+              SUM(CASE WHEN l.status = 'PAID' THEN l.amount ELSE 0 END),
+              0
+            ) AS paid_amount
+          FROM bookings b
+          LEFT JOIN booking_payment_legs l ON l."bookingId" = b.id
+          WHERE b.status IN ('CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'NO_SHOW')
+          GROUP BY b.id, b."totalAmount"
+        )
+        SELECT
+          COUNT(*)::bigint AS total,
+          COUNT(*) FILTER (WHERE ABS("totalAmount" - paid_amount) <= 1)::bigint AS matched,
+          COUNT(*) FILTER (WHERE ABS("totalAmount" - paid_amount) > 1)::bigint AS mismatched
+        FROM paid
+      `),
+      // TODO(prisma): verify aggregation SQL — sample of mismatched bookings.
+      prisma.$queryRaw<
+        Array<{
+          bookingId: string;
+          expected: number;
+          paid: number;
+          status: string;
+        }>
+      >(Prisma.sql`
+        WITH paid AS (
+          SELECT
+            b.id,
+            b."totalAmount",
+            b.status,
+            b."createdAt",
+            COALESCE(
+              SUM(CASE WHEN l.status = 'PAID' THEN l.amount ELSE 0 END),
+              0
+            ) AS paid_amount
+          FROM bookings b
+          LEFT JOIN booking_payment_legs l ON l."bookingId" = b.id
+          WHERE b.status IN ('CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'NO_SHOW')
+          GROUP BY b.id, b."totalAmount", b.status, b."createdAt"
+        )
+        SELECT
+          id AS "bookingId",
+          "totalAmount" AS expected,
+          paid_amount::int AS paid,
+          status::text AS status
+        FROM paid
+        WHERE ABS("totalAmount" - paid_amount) > 1
+        ORDER BY "createdAt" DESC
+        LIMIT 25
+      `),
     ]);
 
-    const totals = summary[0] ?? { total: 0, matched: 0, mismatched: 0 };
+    const summary = summaryRows[0] ?? {
+      total: BigInt(0),
+      matched: BigInt(0),
+      mismatched: BigInt(0),
+    };
+    const totalsTotal = Number(summary.total);
+    const totalsMatched = Number(summary.matched);
+    const totalsMismatched = Number(summary.mismatched);
 
     res.status(200).json({
       success: true,
       message: "Finance reconciliation generated",
       data: {
-        totalBookingsChecked: totals.total,
-        matched: totals.matched,
-        mismatched: totals.mismatched,
+        totalBookingsChecked: totalsTotal,
+        matched: totalsMatched,
+        mismatched: totalsMismatched,
         mismatchRate:
-          totals.total > 0
-            ? Number((totals.mismatched / totals.total).toFixed(4))
+          totalsTotal > 0
+            ? Number((totalsMismatched / totalsTotal).toFixed(4))
             : 0,
-        sampleMismatches: mismatches,
+        sampleMismatches: mismatchRows,
       },
     });
   } catch (error) {
@@ -1371,7 +1286,7 @@ export const getObservabilityStats = async (
 // ─── Guest (anonymous visitor) analytics ──────────────────────────────────────
 
 // Only events carrying a guestId — i.e. activity from not-signed-in visitors.
-const GUEST_EVENT_MATCH = { guestId: { $exists: true, $nin: [null, ""] } };
+// Expressed inline in the SQL below as: "guestId" IS NOT NULL AND "guestId" <> ''
 
 /**
  * Public, unauthenticated ingest for anonymous visitor activity.
@@ -1400,11 +1315,15 @@ export const trackGuestEvents = async (
       eventName: event.eventName,
       ...(event.entityType ? { entityType: event.entityType } : {}),
       ...(event.entityId ? { entityId: event.entityId } : {}),
-      ...(event.metadata ? { metadata: event.metadata } : {}),
+      ...(event.metadata
+        ? { metadata: event.metadata as Prisma.InputJsonValue }
+        : {}),
       source: "WEB" as const,
     }));
 
-    await AnalyticsEvent.insertMany(docs, { ordered: false });
+    await prisma.analyticsEvent.createMany({
+      data: docs as Prisma.AnalyticsEventCreateManyInput[],
+    });
 
     res.status(201).json({
       success: true,
@@ -1426,126 +1345,102 @@ export const getGuestActivity = async (
   try {
     const days = Math.min(90, Math.max(1, Number(req.query.days) || 30));
     const start = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const match = { ...GUEST_EVENT_MATCH, createdAt: { $gte: start } };
 
-    const [totalsAgg, topPages, topEvents, dailyAgg, engagementAgg] =
+    const [totalsAgg, topPagesRaw, topEventsRaw, dailyAgg, engagementAgg] =
       await Promise.all([
-        AnalyticsEvent.aggregate<{
-          events: number;
-          uniqueGuests: number;
-          pageViews: number;
-        }>([
-          { $match: match },
-          {
-            $group: {
-              _id: null,
-              events: { $sum: 1 },
-              guests: { $addToSet: "$guestId" },
-              pageViews: {
-                $sum: { $cond: [{ $eq: ["$eventName", "page_view"] }, 1, 0] },
-              },
-            },
-          },
-          {
-            $project: {
-              _id: 0,
-              events: 1,
-              pageViews: 1,
-              uniqueGuests: { $size: "$guests" },
-            },
-          },
-        ]),
-        AnalyticsEvent.aggregate<{
-          path: string;
-          views: number;
-          uniqueGuests: number;
-        }>([
-          { $match: { ...match, eventName: "page_view" } },
-          {
-            $group: {
-              _id: "$entityId",
-              views: { $sum: 1 },
-              guests: { $addToSet: "$guestId" },
-            },
-          },
-          {
-            $project: {
-              _id: 0,
-              path: { $ifNull: ["$_id", "(unknown)"] },
-              views: 1,
-              uniqueGuests: { $size: "$guests" },
-            },
-          },
-          { $sort: { views: -1 } },
-          { $limit: 20 },
-        ]),
-        AnalyticsEvent.aggregate<{
-          eventName: string;
-          count: number;
-          uniqueGuests: number;
-        }>([
-          { $match: match },
-          {
-            $group: {
-              _id: "$eventName",
-              count: { $sum: 1 },
-              guests: { $addToSet: "$guestId" },
-            },
-          },
-          {
-            $project: {
-              _id: 0,
-              eventName: "$_id",
-              count: 1,
-              uniqueGuests: { $size: "$guests" },
-            },
-          },
-          { $sort: { count: -1 } },
-          { $limit: 20 },
-        ]),
-        AnalyticsEvent.aggregate<{
-          day: string;
-          views: number;
-          uniqueGuests: number;
-        }>([
-          { $match: { ...match, eventName: "page_view" } },
-          {
-            $group: {
-              _id: {
-                $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
-              },
-              views: { $sum: 1 },
-              guests: { $addToSet: "$guestId" },
-            },
-          },
-          {
-            $project: {
-              _id: 0,
-              day: "$_id",
-              views: 1,
-              uniqueGuests: { $size: "$guests" },
-            },
-          },
-          { $sort: { day: 1 } },
-        ]),
-        AnalyticsEvent.aggregate<{ avgScroll: number; avgTime: number }>([
-          { $match: { ...match, eventName: "page_exit" } },
-          {
-            $group: {
-              _id: null,
-              avgScroll: { $avg: "$metadata.scrollDepthPct" },
-              avgTime: { $avg: "$metadata.durationMs" },
-            },
-          },
-        ]),
+        // TODO(prisma): verify aggregation SQL — guest totals (events, unique
+        // guests, page views).
+        prisma.$queryRaw<
+          Array<{ events: bigint; uniqueGuests: bigint; pageViews: bigint }>
+        >(Prisma.sql`
+          SELECT
+            COUNT(*)::bigint AS events,
+            COUNT(DISTINCT "guestId")::bigint AS "uniqueGuests",
+            COUNT(*) FILTER (WHERE "eventName" = 'page_view')::bigint AS "pageViews"
+          FROM analytics_events
+          WHERE "guestId" IS NOT NULL AND "guestId" <> ''
+            AND "createdAt" >= ${start}
+        `),
+        // TODO(prisma): verify aggregation SQL — top pages by page_view.
+        prisma.$queryRaw<
+          Array<{ path: string; views: bigint; uniqueGuests: bigint }>
+        >(Prisma.sql`
+          SELECT
+            COALESCE("entityId", '(unknown)') AS path,
+            COUNT(*)::bigint AS views,
+            COUNT(DISTINCT "guestId")::bigint AS "uniqueGuests"
+          FROM analytics_events
+          WHERE "guestId" IS NOT NULL AND "guestId" <> ''
+            AND "createdAt" >= ${start}
+            AND "eventName" = 'page_view'
+          GROUP BY "entityId"
+          ORDER BY views DESC
+          LIMIT 20
+        `),
+        // TODO(prisma): verify aggregation SQL — top events by count.
+        prisma.$queryRaw<
+          Array<{ eventName: string; count: bigint; uniqueGuests: bigint }>
+        >(Prisma.sql`
+          SELECT
+            "eventName" AS "eventName",
+            COUNT(*)::bigint AS count,
+            COUNT(DISTINCT "guestId")::bigint AS "uniqueGuests"
+          FROM analytics_events
+          WHERE "guestId" IS NOT NULL AND "guestId" <> ''
+            AND "createdAt" >= ${start}
+          GROUP BY "eventName"
+          ORDER BY count DESC
+          LIMIT 20
+        `),
+        // TODO(prisma): verify aggregation SQL — daily page views.
+        prisma.$queryRaw<
+          Array<{ day: string; views: bigint; uniqueGuests: bigint }>
+        >(Prisma.sql`
+          SELECT
+            to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS day,
+            COUNT(*)::bigint AS views,
+            COUNT(DISTINCT "guestId")::bigint AS "uniqueGuests"
+          FROM analytics_events
+          WHERE "guestId" IS NOT NULL AND "guestId" <> ''
+            AND "createdAt" >= ${start}
+            AND "eventName" = 'page_view'
+          GROUP BY 1
+          ORDER BY 1
+        `),
+        // TODO(prisma): verify aggregation SQL — page_exit engagement averages
+        // read from the metadata JSONB blob.
+        prisma.$queryRaw<Array<{ avgScroll: number | null; avgTime: number | null }>>(
+          Prisma.sql`
+            SELECT
+              AVG(("metadata"->>'scrollDepthPct')::float) AS "avgScroll",
+              AVG(("metadata"->>'durationMs')::float) AS "avgTime"
+            FROM analytics_events
+            WHERE "guestId" IS NOT NULL AND "guestId" <> ''
+              AND "createdAt" >= ${start}
+              AND "eventName" = 'page_exit'
+          `,
+        ),
       ]);
 
-    const totals = totalsAgg[0] ?? {
-      events: 0,
-      uniqueGuests: 0,
-      pageViews: 0,
-    };
+    const totals = totalsAgg[0]
+      ? {
+          events: Number(totalsAgg[0].events),
+          uniqueGuests: Number(totalsAgg[0].uniqueGuests),
+          pageViews: Number(totalsAgg[0].pageViews),
+        }
+      : { events: 0, uniqueGuests: 0, pageViews: 0 };
     const engagement = engagementAgg[0] ?? { avgScroll: 0, avgTime: 0 };
+
+    const topPages = topPagesRaw.map((row) => ({
+      path: row.path,
+      views: Number(row.views),
+      uniqueGuests: Number(row.uniqueGuests),
+    }));
+    const topEvents = topEventsRaw.map((row) => ({
+      eventName: row.eventName,
+      count: Number(row.count),
+      uniqueGuests: Number(row.uniqueGuests),
+    }));
 
     const daySeries = buildDaySeries(days);
     const dayMap = new Map(dailyAgg.map((row) => [row.day, row]));
@@ -1553,8 +1448,8 @@ export const getGuestActivity = async (
       const row = dayMap.get(point.key);
       return {
         label: point.label,
-        views: row?.views ?? 0,
-        uniqueGuests: row?.uniqueGuests ?? 0,
+        views: row ? Number(row.views) : 0,
+        uniqueGuests: row ? Number(row.uniqueGuests) : 0,
       };
     });
 
@@ -1595,11 +1490,11 @@ export const clearAnalyticsData = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const result = await AnalyticsEvent.deleteMany({});
+    const result = await prisma.analyticsEvent.deleteMany({});
     res.status(200).json({
       success: true,
       message: "Analytics data cleared",
-      data: { deletedCount: result.deletedCount ?? 0 },
+      data: { deletedCount: result.count ?? 0 },
     });
   } catch (error) {
     res.status(500).json({
@@ -1630,13 +1525,15 @@ export const getPendingCounts = async (
       supportTickets,
       conciergeRequests,
     ] = await Promise.all([
-      Academy.countDocuments({ onboardingCompleted: true, isApproved: false }),
-      Coach.countDocuments({ verificationStatus: "PENDING" }),
-      Venue.countDocuments({ approvalStatus: "PENDING" }),
-      CommunityReport.countDocuments({ status: "OPEN" }),
-      Dispute.countDocuments({ status: "OPEN" }),
-      SupportTicket.countDocuments({ status: "OPEN" }),
-      ConciergeRequest.countDocuments({ status: "pending" }),
+      prisma.academy.count({
+        where: { onboardingCompleted: true, isApproved: false },
+      }),
+      prisma.coach.count({ where: { verificationStatus: "PENDING" } }),
+      prisma.venue.count({ where: { approvalStatus: "PENDING" } }),
+      prisma.communityReport.count({ where: { status: "OPEN" } }),
+      prisma.dispute.count({ where: { status: "OPEN" } }),
+      prisma.supportTicket.count({ where: { status: "OPEN" } }),
+      prisma.conciergeRequest.count({ where: { status: "pending" } }),
     ]);
 
     res.status(200).json({
@@ -1677,44 +1574,41 @@ export const getUnsupportedSportsStats = async (
     const since = new Date();
     since.setDate(since.getDate() - days);
 
-    const rows = await AnalyticsEvent.aggregate<{
-      sport: string;
-      count: number;
-      lastSearched: Date;
-      sources: string[];
-    }>([
-      {
-        $match: {
-          eventName: "unsupported_sport_search",
-          createdAt: { $gte: since },
-        },
-      },
-      {
-        $group: {
-          _id: { $toLower: "$metadata.sport" },
-          count: { $sum: 1 },
-          lastSearched: { $max: "$createdAt" },
-          sources: { $addToSet: "$metadata.source" },
-        },
-      },
-      { $sort: { count: -1 } },
-      { $limit: 25 },
-      {
-        $project: {
-          _id: 0,
-          sport: "$_id",
-          count: 1,
-          lastSearched: 1,
-          sources: 1,
-        },
-      },
-    ]);
+    // TODO(prisma): verify aggregation SQL — top unsupported sports searched,
+    // grouped on lower(metadata.sport) with the distinct source list.
+    const rows = await prisma.$queryRaw<
+      Array<{
+        sport: string;
+        count: bigint;
+        lastSearched: Date;
+        sources: string[];
+      }>
+    >(Prisma.sql`
+      SELECT
+        lower("metadata"->>'sport') AS sport,
+        COUNT(*)::bigint AS count,
+        MAX("createdAt") AS "lastSearched",
+        ARRAY_AGG(DISTINCT "metadata"->>'source') AS sources
+      FROM analytics_events
+      WHERE "eventName" = 'unsupported_sport_search'
+        AND "createdAt" >= ${since}
+      GROUP BY lower("metadata"->>'sport')
+      ORDER BY count DESC
+      LIMIT 25
+    `);
 
-    const totalSearches = rows.reduce((sum, r) => sum + r.count, 0);
+    const mapped = rows.map((row) => ({
+      sport: row.sport,
+      count: Number(row.count),
+      lastSearched: row.lastSearched,
+      sources: row.sources,
+    }));
+
+    const totalSearches = mapped.reduce((sum, r) => sum + r.count, 0);
 
     res.status(200).json({
       success: true,
-      data: { rows, totalSearches, days },
+      data: { rows: mapped, totalSearches, days },
     });
   } catch (error) {
     res.status(500).json({

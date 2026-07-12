@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { S3Service } from "../../shared/services/S3Service";
-import { Booking } from "../models/Booking";
-import { User } from "../models/User";
+import prisma from "../../lib/prisma";
 import {
   checkCoachAvailability,
   createCoach,
@@ -200,8 +199,8 @@ export const createNewCoach = async (
       serviceMode: coach.serviceMode,
     });
 
-    // Convert to JSON and transform _id to id
-    const coachData = transformDocument(coach.toJSON());
+    // Transform to the API response shape (id already normalized by the service)
+    const coachData = transformDocument(coach);
 
     console.log("Coach JSON response:", {
       id: coachData.id,
@@ -253,8 +252,8 @@ export const getCoach = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Convert to JSON and transform _id to id
-    const coachData = transformDocument(coach.toJSON());
+    // Transform to the API response shape (id already normalized by the service)
+    const coachData = transformDocument(coach);
 
     res.status(200).json({
       success: true,
@@ -296,8 +295,8 @@ export const getMyCoachProfile = async (
       return;
     }
 
-    // Convert to JSON and transform _id to id
-    const coachData = transformDocument(coach.toJSON());
+    // Transform to the API response shape (id already normalized by the service)
+    const coachData = transformDocument(coach);
 
     console.log("getMyCoachProfile returning:", {
       id: coachData.id,
@@ -394,7 +393,7 @@ export const updateMyCoachAvailability = async (
         return true;
       });
 
-    const coachId = (coach.id || coach._id.toString()) as string;
+    const coachId = coach.id as string;
     const updated = await updateCoach(coachId, {
       availabilityBySport: normalizedBySport,
       availability: flattened,
@@ -403,7 +402,7 @@ export const updateMyCoachAvailability = async (
     res.status(200).json({
       success: true,
       message: "Availability updated successfully",
-      data: transformDocument(updated?.toJSON()),
+      data: transformDocument(updated),
     });
   } catch (error) {
     res.status(500).json({
@@ -484,8 +483,8 @@ export const updateCoachProfile = async (
 
     const coach = await updateCoach(coachId, updates);
 
-    // Convert to JSON and transform _id to id
-    const coachData = transformDocument(coach?.toJSON());
+    // Transform to the API response shape (id already normalized by the service)
+    const coachData = transformDocument(coach);
 
     res.status(200).json({
       success: true,
@@ -655,29 +654,32 @@ export const getCoachAvailability = async (
       }
     });
 
-    const activeBookings = await Booking.find({
-      coachId,
-      date: {
-        $gte: new Date(
-          targetDate.getFullYear(),
-          targetDate.getMonth(),
-          targetDate.getDate(),
-        ),
-        $lt: new Date(
-          targetDate.getFullYear(),
-          targetDate.getMonth(),
-          targetDate.getDate() + 1,
-        ),
+    const activeBookings = await prisma.booking.findMany({
+      where: {
+        coachId,
+        date: {
+          gte: new Date(
+            targetDate.getFullYear(),
+            targetDate.getMonth(),
+            targetDate.getDate(),
+          ),
+          lt: new Date(
+            targetDate.getFullYear(),
+            targetDate.getMonth(),
+            targetDate.getDate() + 1,
+          ),
+        },
+        status: {
+          in: [
+            "PENDING_CONFIRMATION",
+            "PENDING_INVITES",
+            "CONFIRMED",
+            "IN_PROGRESS",
+          ],
+        },
       },
-      status: {
-        $in: [
-          "PENDING_CONFIRMATION",
-          "PENDING_INVITES",
-          "CONFIRMED",
-          "IN_PROGRESS",
-        ],
-      },
-    }).select("startTime endTime");
+      select: { startTime: true, endTime: true },
+    });
 
     const bookedSlots = activeBookings.map((booking) => ({
       startTime: booking.startTime,
@@ -795,7 +797,10 @@ const hasCoordinates = (
 
 const hasStep1Completed = async (userId: string, bioCandidate?: string) => {
   const [existingUser, existingCoach] = await Promise.all([
-    User.findById(userId).select("phone photoUrl"),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { phone: true, photoUrl: true },
+    }),
     getCoachByUserId(userId),
   ]);
 
@@ -850,7 +855,10 @@ export const saveCoachVerificationStep1Handler = async (
       return;
     }
 
-    const user = await User.findById(req.user.id).select("photoUrl");
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { photoUrl: true },
+    });
     if (!user?.photoUrl?.trim()) {
       res.status(400).json({
         success: false,
@@ -859,7 +867,10 @@ export const saveCoachVerificationStep1Handler = async (
       return;
     }
 
-    await User.findByIdAndUpdate(req.user.id, { phone: mobileNumber });
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { phone: mobileNumber },
+    });
 
     const existingCoach = await getCoachByUserId(req.user.id);
 
@@ -872,8 +883,7 @@ export const saveCoachVerificationStep1Handler = async (
       return;
     }
 
-    const coachId = (existingCoach.id ||
-      existingCoach._id?.toString()) as string;
+    const coachId = existingCoach.id as string;
     const coach = await updateCoach(coachId, {
       bio,
       onboardingProgressStep: Math.max(
@@ -882,7 +892,7 @@ export const saveCoachVerificationStep1Handler = async (
       ) as 1 | 2 | 3,
     });
 
-    const coachData = transformDocument(coach?.toJSON());
+    const coachData = transformDocument(coach);
 
     res.status(200).json({
       success: true,
@@ -1100,8 +1110,7 @@ export const saveCoachVerificationStep2Handler = async (
     const existingCoach = await getCoachByUserId(req.user.id);
 
     if (existingCoach) {
-      const coachId = (existingCoach.id ||
-        existingCoach._id?.toString()) as string;
+      const coachId = existingCoach.id as string;
       const updatePayload: any = {
         bio,
         sports,
@@ -1136,7 +1145,7 @@ export const saveCoachVerificationStep2Handler = async (
 
       const coach = await updateCoach(coachId, updatePayload);
 
-      const coachData = transformDocument(coach?.toJSON());
+      const coachData = transformDocument(coach);
 
       res.status(200).json({
         success: true,
@@ -1178,7 +1187,7 @@ export const saveCoachVerificationStep2Handler = async (
 
     const coach = await createCoach(createPayload);
 
-    const coachData = transformDocument(coach.toJSON());
+    const coachData = transformDocument(coach);
 
     res.status(201).json({
       success: true,
@@ -1283,7 +1292,7 @@ export const submitCoachVerificationStep3Handler = async (
       documents: normalizedDocs,
     });
 
-    const coachData = transformDocument(coach?.toJSON());
+    const coachData = transformDocument(coach);
 
     res.status(200).json({
       success: true,
@@ -1385,12 +1394,12 @@ export const getCoachVerificationUploadUrlHandler = async (
         ? await s3Service.generateCoachVenueImageUploadUrl(
             fileName,
             contentType,
-            coach._id.toString(),
+            coach.id.toString(),
           )
         : await s3Service.generateCoachVerificationUploadUrl(
             fileName,
             contentType,
-            coach._id.toString(),
+            coach.id.toString(),
             documentType,
           );
 

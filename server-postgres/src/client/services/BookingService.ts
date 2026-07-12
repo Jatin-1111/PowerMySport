@@ -1,19 +1,23 @@
 import { randomBytes } from "crypto";
-import mongoose, { ClientSession } from "mongoose";
-import { Booking, BookingDocument } from "../models/Booking";
-import { BookingSlotLock } from "../models/BookingSlotLock";
-import { Coach } from "../models/Coach";
-import { CoachSubscription } from "../models/CoachSubscription";
-import { User } from "../models/User";
-import { Player } from "../models/Player";
-import { Venue, VenueDocument } from "../models/Venue";
-import Academy from "../../admin/models/Academy";
+import prisma from "../../lib/prisma";
+import { Prisma } from "@prisma/client";
+import type {
+  Booking,
+  BookingPaymentLeg,
+  BookingParticipant,
+  BookingWaitlist,
+  BookingStatus,
+  PaymentUserType,
+  PaymentLegStatus,
+  Venue,
+  VenueOpeningHour,
+} from "@prisma/client";
+import type { OpeningHours } from "../../types/index";
 import {
   sendBookingLifecycleEmail,
   sendBookingInvitationEmail,
   sendWaitlistSlotAvailableEmail,
 } from "../../utils/email";
-import { getBookingExpirationTime } from "../../utils/timer";
 import { validatePromoCode, applyPromoCode } from "./PromoCodeService";
 import {
   isWithinOpeningHours,
@@ -21,11 +25,6 @@ import {
   IST_OFFSET_MINUTES,
 } from "../../utils/openingHours";
 import friendService from "./FriendService";
-import BookingInvitation from "../models/BookingInvitation";
-import {
-  BookingWaitlist,
-  BookingWaitlistDocument,
-} from "../models/BookingWaitlist";
 import {
   calculateGroupPaymentSplits,
   calculateSplitAmounts,
@@ -34,7 +33,6 @@ import { generateDynamicSlots } from "../../utils/booking";
 import { emitSlotLocked } from "../sockets/bookingSocket";
 import { NotificationService } from "./NotificationService";
 import { ScheduledNotificationService } from "./ScheduledNotificationService";
-import { BookingPaymentTransaction } from "../models/BookingPayment";
 import {
   getPhonePeRefundStatus,
   initiatePhonePeRefund,
@@ -46,6 +44,22 @@ import {
  * CONFIRMED -> CANCELLED
  * CONFIRMED -> NO_SHOW
  */
+
+// ---------------------------------------------------------------------------
+// Local types. There is no per-model file / Mongoose document anymore; a
+// "booking document" is a Prisma Booking row plus its normalized children
+// (payments = BookingPaymentLeg, participants = BookingParticipant) hydrated
+// via `include`, so the response JSON keeps the historical embedded shape.
+// ---------------------------------------------------------------------------
+type BookingDocument = Booking & {
+  payments: BookingPaymentLeg[];
+  participants: BookingParticipant[];
+};
+
+type BookingWaitlistDocument = BookingWaitlist;
+type VenueDocument = Venue;
+
+const bookingChildren = { payments: true, participants: true } as const;
 
 export interface InitiateBookingPayload {
   userId: string;
@@ -81,11 +95,36 @@ export interface InitiateBookingResponse {
 
 const TIME_FORMAT_REGEX = /^([01]?\d|2[0-3]):([0-5]\d)$/;
 const CHECK_IN_CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-const MAX_TRANSACTION_RETRIES = 3;
 const COACH_SUBSCRIPTIONS_ENFORCE_BOOKING =
   process.env.COACH_SUBSCRIPTIONS_ENFORCE_BOOKING === "true";
 const SERVICE_FEE_RATE = Number(process.env.SERVICE_FEE_RATE ?? 0);
 const TAX_RATE = Number(process.env.TAX_RATE ?? 0.05);
+
+// Statuses considered "occupying" for conflict/listing checks.
+const ACTIVE_STATUSES: BookingStatus[] = [
+  "PENDING_CONFIRMATION",
+  "PENDING_INVITES",
+  "CONFIRMED",
+  "IN_PROGRESS",
+];
+
+const PROVIDER_LIST_STATUSES: BookingStatus[] = [
+  "PENDING_CONFIRMATION",
+  "PENDING_INVITES",
+  "CONFIRMED",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "NO_SHOW",
+];
+
+// Amount columns are integers in Postgres; the historical rupee math can yield
+// fractional values, so round on write. Return values keep original precision.
+const toInt = (value: number): number => Math.round(value);
+
+// Replaces mongoose ObjectId validity checks — Postgres ids are cuids, so we
+// only guard against empty / missing ids to preserve the "Invalid ID" throws.
+const isValidId = (value: unknown): boolean =>
+  typeof value === "string" && value.trim().length > 0;
 
 interface BookingCreatePayload {
   userId: string;
@@ -103,7 +142,7 @@ interface BookingCreatePayload {
   discountAmount?: number;
   checkInCode: string;
   participantName: string;
-  participantId: mongoose.Types.ObjectId | string;
+  participantId: string;
   participantAge?: number;
   organizerId: string;
   payments?: any[];
@@ -124,7 +163,10 @@ const generateRandomCheckInCode = (): string => {
 const generateUniqueCheckInCode = async (): Promise<string> => {
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const code = generateRandomCheckInCode();
-    const exists = await Booking.exists({ checkInCode: code });
+    const exists = await prisma.booking.findFirst({
+      where: { checkInCode: code },
+      select: { id: true },
+    });
     if (!exists) {
       return code;
     }
@@ -166,22 +208,77 @@ const getDateKey = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-const hasErrorLabel = (error: unknown, label: string): boolean => {
-  if (!error || typeof error !== "object") {
-    return false;
+// Reconstruct the embedded OpeningHours object (keyed by day name) from the
+// normalized VenueOpeningHour rows so isWithinOpeningHours works unchanged.
+const buildOpeningHours = (
+  rows: VenueOpeningHour[] | undefined | null,
+): OpeningHours | null => {
+  if (!rows || rows.length === 0) {
+    return null;
   }
-
-  const possibleError = error as { hasErrorLabel?: (value: string) => boolean };
-  return typeof possibleError.hasErrorLabel === "function"
-    ? possibleError.hasErrorLabel(label)
-    : false;
+  const result: any = {};
+  for (const row of rows) {
+    result[row.day] = {
+      isOpen: row.isOpen,
+      openTime: row.openTime,
+      closeTime: row.closeTime,
+      slots: Array.isArray(row.slots) ? (row.slots as any) : [],
+    };
+  }
+  return result as OpeningHours;
 };
 
-const isRetryableTransactionError = (error: unknown): boolean => {
-  return (
-    hasErrorLabel(error, "TransientTransactionError") ||
-    hasErrorLabel(error, "UnknownTransactionCommitResult")
+const uniqueStrings = (values: Array<string | null | undefined>): string[] =>
+  Array.from(
+    new Set(values.filter((v): v is string => typeof v === "string" && !!v)),
   );
+
+// Mongoose `.populate()` replaced the String-FK field with the referenced
+// document. There is no relation defined for these refs, so we fetch the
+// related rows in a single follow-up query and attach them the same way.
+const attachRefs = async (
+  bookings: BookingDocument[],
+  opts: { user?: boolean; venue?: boolean; coach?: boolean },
+): Promise<BookingDocument[]> => {
+  const [users, venues, coaches] = await Promise.all([
+    opts.user
+      ? prisma.user.findMany({
+          where: { id: { in: uniqueStrings(bookings.map((b) => b.userId)) } },
+        })
+      : Promise.resolve([]),
+    opts.venue
+      ? prisma.venue.findMany({
+          where: { id: { in: uniqueStrings(bookings.map((b) => b.venueId)) } },
+        })
+      : Promise.resolve([]),
+    opts.coach
+      ? prisma.coach.findMany({
+          where: { id: { in: uniqueStrings(bookings.map((b) => b.coachId)) } },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const usersById = new Map(users.map((u) => [u.id, u]));
+  const venuesById = new Map(venues.map((v) => [v.id, v]));
+  const coachesById = new Map(coaches.map((c) => [c.id, c]));
+
+  return bookings.map((booking) => {
+    const augmented: any = { ...booking };
+    if (opts.user) {
+      augmented.userId = usersById.get(booking.userId) ?? booking.userId;
+    }
+    if (opts.venue) {
+      augmented.venueId = booking.venueId
+        ? (venuesById.get(booking.venueId) ?? booking.venueId)
+        : booking.venueId;
+    }
+    if (opts.coach) {
+      augmented.coachId = booking.coachId
+        ? (coachesById.get(booking.coachId) ?? booking.coachId)
+        : booking.coachId;
+    }
+    return augmented as BookingDocument;
+  });
 };
 
 const hasConflictingVenueBooking = async (
@@ -190,35 +287,24 @@ const hasConflictingVenueBooking = async (
   startTime: string,
   endTime: string,
   userId?: string | null,
-  session?: ClientSession,
+  db: Prisma.TransactionClient = prisma,
 ): Promise<boolean> => {
   const { start, end } = toDayRange(date);
-  const query = Booking.findOne({
-    venueId,
-    date: {
-      $gte: start,
-      $lt: end,
-    },
-    status: {
-      $in: [
-        "PENDING_CONFIRMATION",
-        "PENDING_INVITES",
-        "CONFIRMED",
-        "IN_PROGRESS",
+  const conflicts = await db.booking.findFirst({
+    where: {
+      venueId,
+      date: {
+        gte: start,
+        lt: end,
+      },
+      status: { in: ACTIVE_STATUSES },
+      OR: [
+        { startTime: { lte: startTime }, endTime: { gt: startTime } },
+        { startTime: { lt: endTime }, endTime: { gte: endTime } },
+        { startTime: { gte: startTime }, endTime: { lte: endTime } },
       ],
     },
-    $or: [
-      { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
-      { startTime: { $lt: endTime }, endTime: { $gte: endTime } },
-      { startTime: { $gte: startTime }, endTime: { $lte: endTime } },
-    ],
   });
-
-  if (session) {
-    query.session(session);
-  }
-
-  const conflicts = await query;
 
   if (conflicts) {
     // If the conflict is an unpaid checkout by the same user, cancel it and ignore the conflict
@@ -229,14 +315,14 @@ const hasConflictingVenueBooking = async (
         conflicts.status === "PENDING_INVITES") &&
       !conflicts.paymentConfirmedAt
     ) {
-      conflicts.status = "CANCELLED";
-      conflicts.cancellationReason =
-        "Overwritten by a new booking attempt from the same user";
-      if (session) {
-        await conflicts.save({ session });
-      } else {
-        await conflicts.save();
-      }
+      await db.booking.update({
+        where: { id: conflicts.id },
+        data: {
+          status: "CANCELLED",
+          cancellationReason:
+            "Overwritten by a new booking attempt from the same user",
+        },
+      });
       return false; // Not a conflict anymore
     }
   }
@@ -250,35 +336,24 @@ const hasConflictingCoachBooking = async (
   startTime: string,
   endTime: string,
   userId?: string | null,
-  session?: ClientSession,
+  db: Prisma.TransactionClient = prisma,
 ): Promise<boolean> => {
   const { start, end } = toDayRange(date);
-  const query = Booking.findOne({
-    coachId,
-    date: {
-      $gte: start,
-      $lt: end,
-    },
-    status: {
-      $in: [
-        "PENDING_CONFIRMATION",
-        "PENDING_INVITES",
-        "CONFIRMED",
-        "IN_PROGRESS",
+  const conflicts = await db.booking.findFirst({
+    where: {
+      coachId,
+      date: {
+        gte: start,
+        lt: end,
+      },
+      status: { in: ACTIVE_STATUSES },
+      OR: [
+        { startTime: { lte: startTime }, endTime: { gt: startTime } },
+        { startTime: { lt: endTime }, endTime: { gte: endTime } },
+        { startTime: { gte: startTime }, endTime: { lte: endTime } },
       ],
     },
-    $or: [
-      { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
-      { startTime: { $lt: endTime }, endTime: { $gte: endTime } },
-      { startTime: { $gte: startTime }, endTime: { $lte: endTime } },
-    ],
   });
-
-  if (session) {
-    query.session(session);
-  }
-
-  const conflicts = await query;
 
   if (conflicts) {
     // If the conflict is an unpaid checkout by the same user, cancel it and ignore the conflict
@@ -289,14 +364,14 @@ const hasConflictingCoachBooking = async (
         conflicts.status === "PENDING_INVITES") &&
       !conflicts.paymentConfirmedAt
     ) {
-      conflicts.status = "CANCELLED";
-      conflicts.cancellationReason =
-        "Overwritten by a new booking attempt from the same user";
-      if (session) {
-        await conflicts.save({ session });
-      } else {
-        await conflicts.save();
-      }
+      await db.booking.update({
+        where: { id: conflicts.id },
+        data: {
+          status: "CANCELLED",
+          cancellationReason:
+            "Overwritten by a new booking attempt from the same user",
+        },
+      });
       return false; // Not a conflict anymore
     }
   }
@@ -309,173 +384,148 @@ const acquireResourceSlotLock = async (
   resourceId: string,
   date: Date,
   startTime: string,
-  session: ClientSession,
+  db: Prisma.TransactionClient,
 ): Promise<void> => {
-  if (!mongoose.Types.ObjectId.isValid(resourceId)) {
+  if (!isValidId(resourceId)) {
     throw new Error(
       `Invalid resource ID format for ${resourceType}: ${resourceId}`,
     );
   }
-  await BookingSlotLock.findOneAndUpdate(
-    {
+  const dateKey = `${getDateKey(date)}-${startTime}`;
+  await db.bookingSlotLock.upsert({
+    where: {
+      unique_booking_slot_lock: {
+        resourceType,
+        resourceId,
+        dateKey,
+      },
+    },
+    create: {
       resourceType,
-      resourceId: new mongoose.Types.ObjectId(resourceId),
-      dateKey: `${getDateKey(date)}-${startTime}`,
+      resourceId,
+      dateKey,
+      version: 1,
+      lastLockedAt: new Date(),
     },
-    {
-      $inc: { version: 1 },
-      $set: { lastLockedAt: new Date() },
+    update: {
+      version: { increment: 1 },
+      lastLockedAt: new Date(),
     },
-    {
-      upsert: true,
-      new: true,
-      session,
-      setDefaultsOnInsert: true,
-    },
-  );
+  });
 };
 
 const createBookingAtomically = async (
   payload: BookingCreatePayload,
 ): Promise<BookingDocument> => {
-  let lastError: unknown;
+  return prisma.$transaction(async (tx) => {
+    if (payload.venueId) {
+      await acquireResourceSlotLock(
+        "VENUE_SLOT",
+        payload.venueId,
+        payload.date,
+        payload.startTime,
+        tx,
+      );
 
-  for (let attempt = 1; attempt <= MAX_TRANSACTION_RETRIES; attempt += 1) {
-    const session = await mongoose.startSession();
-
-    try {
-      let createdBooking: BookingDocument | null = null;
-
-      await session.withTransaction(async () => {
-        if (payload.venueId) {
-          await acquireResourceSlotLock(
-            "VENUE_SLOT",
-            payload.venueId,
-            payload.date,
-            payload.startTime,
-            session,
-          );
-
-          emitSlotLocked(payload.venueId, {
-            slotStartTime: payload.startTime,
-            dateKey: getDateKey(payload.date),
-          });
-
-          const hasVenueConflict = await hasConflictingVenueBooking(
-            payload.venueId,
-            payload.date,
-            payload.startTime,
-            payload.endTime,
-            payload.userId,
-            session,
-          );
-
-          if (hasVenueConflict) {
-            throw new Error(
-              "Selected time slot is already booked for this venue",
-            );
-          }
-        }
-
-        if (payload.coachId) {
-          await acquireResourceSlotLock(
-            "COACH_SLOT",
-            payload.coachId,
-            payload.date,
-            payload.startTime,
-            session,
-          );
-
-          const hasCoachConflict = await hasConflictingCoachBooking(
-            payload.coachId,
-            payload.date,
-            payload.startTime,
-            payload.endTime,
-            payload.userId,
-            session,
-          );
-
-          if (hasCoachConflict) {
-            throw new Error(
-              "Coach is not available for the selected time slot",
-            );
-          }
-        }
-
-        console.log(
-          "[createBookingAtomically] about to construct Booking. userId:",
-          JSON.stringify(payload.userId),
-          "venueId:",
-          JSON.stringify(payload.venueId),
-          "coachId:",
-          JSON.stringify(payload.coachId),
-          "organizerId:",
-          JSON.stringify(payload.organizerId),
-          "participantId:",
-          JSON.stringify(payload.participantId?.toString()),
-          "payments:",
-          JSON.stringify(payload.payments),
-        );
-        const booking = new Booking({
-          userId: new mongoose.Types.ObjectId(payload.userId),
-          ...(payload.venueId
-            ? { venueId: new mongoose.Types.ObjectId(payload.venueId) }
-            : {}),
-          ...(payload.coachId
-            ? { coachId: new mongoose.Types.ObjectId(payload.coachId) }
-            : {}),
-          ...(payload.academyId
-            ? { academyId: new mongoose.Types.ObjectId(payload.academyId) }
-            : {}),
-          sport: payload.sport,
-          date: payload.date,
-          startTime: payload.startTime,
-          endTime: payload.endTime,
-          totalAmount: payload.totalAmount,
-          serviceFee: payload.serviceFee,
-          taxAmount: payload.taxAmount,
-          ...(payload.promoCode ? { promoCode: payload.promoCode } : {}),
-          ...(payload.discountAmount
-            ? { discountAmount: payload.discountAmount }
-            : {}),
-          status: "PENDING_CONFIRMATION",
-          expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes expiry
-          checkInCode: payload.checkInCode,
-          // Awaiting provider confirmation before booking is confirmed
-          participantName: payload.participantName,
-          participantId: payload.participantId,
-          ...(payload.participantAge !== undefined
-            ? { participantAge: payload.participantAge }
-            : {}),
-          organizerId: new mongoose.Types.ObjectId(payload.organizerId),
-          payments: payload.payments || [],
-        });
-
-        await booking.save({ session });
-        createdBooking = booking;
+      emitSlotLocked(payload.venueId, {
+        slotStartTime: payload.startTime,
+        dateKey: getDateKey(payload.date),
       });
 
-      if (!createdBooking) {
-        throw new Error("Failed to create booking");
-      }
+      const hasVenueConflict = await hasConflictingVenueBooking(
+        payload.venueId,
+        payload.date,
+        payload.startTime,
+        payload.endTime,
+        payload.userId,
+        tx,
+      );
 
-      return createdBooking;
-    } catch (error) {
-      lastError = error;
-      if (
-        !isRetryableTransactionError(error) ||
-        attempt === MAX_TRANSACTION_RETRIES
-      ) {
-        throw error;
+      if (hasVenueConflict) {
+        throw new Error("Selected time slot is already booked for this venue");
       }
-    } finally {
-      await session.endSession();
     }
-  }
 
-  throw lastError instanceof Error
-    ? lastError
-    : new Error("Failed to create booking after multiple retries");
+    if (payload.coachId) {
+      await acquireResourceSlotLock(
+        "COACH_SLOT",
+        payload.coachId,
+        payload.date,
+        payload.startTime,
+        tx,
+      );
+
+      const hasCoachConflict = await hasConflictingCoachBooking(
+        payload.coachId,
+        payload.date,
+        payload.startTime,
+        payload.endTime,
+        payload.userId,
+        tx,
+      );
+
+      if (hasCoachConflict) {
+        throw new Error("Coach is not available for the selected time slot");
+      }
+    }
+
+    console.log(
+      "[createBookingAtomically] about to construct Booking. userId:",
+      JSON.stringify(payload.userId),
+      "venueId:",
+      JSON.stringify(payload.venueId),
+      "coachId:",
+      JSON.stringify(payload.coachId),
+      "organizerId:",
+      JSON.stringify(payload.organizerId),
+      "participantId:",
+      JSON.stringify(payload.participantId?.toString()),
+      "payments:",
+      JSON.stringify(payload.payments),
+    );
+
+    const booking = await tx.booking.create({
+      data: {
+        userId: payload.userId,
+        ...(payload.venueId ? { venueId: payload.venueId } : {}),
+        ...(payload.coachId ? { coachId: payload.coachId } : {}),
+        ...(payload.academyId ? { academyId: payload.academyId } : {}),
+        sport: payload.sport,
+        date: payload.date,
+        startTime: payload.startTime,
+        endTime: payload.endTime,
+        totalAmount: toInt(payload.totalAmount),
+        serviceFee: toInt(payload.serviceFee),
+        taxAmount: toInt(payload.taxAmount),
+        ...(payload.promoCode ? { promoCode: payload.promoCode } : {}),
+        ...(payload.discountAmount
+          ? { discountAmount: toInt(payload.discountAmount) }
+          : {}),
+        status: "PENDING_CONFIRMATION",
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes expiry
+        checkInCode: payload.checkInCode,
+        // Awaiting provider confirmation before booking is confirmed
+        participantName: payload.participantName,
+        participantId: String(payload.participantId),
+        ...(payload.participantAge !== undefined
+          ? { participantAge: payload.participantAge }
+          : {}),
+        organizerId: payload.organizerId,
+        payments: {
+          create: (payload.payments || []).map((p: any) => ({
+            userId: String(p.userId),
+            userType: p.userType as PaymentUserType,
+            amount: toInt(p.amount),
+            status: (p.status ?? "PENDING") as PaymentLegStatus,
+            ...(p.paidAt ? { paidAt: p.paidAt } : {}),
+          })),
+        },
+      },
+      include: bookingChildren,
+    });
+
+    return booking;
+  });
 };
 
 const toRadians = (value: number): number => (value * Math.PI) / 180;
@@ -593,32 +643,39 @@ export const getAlternateVenueSlots = async (
 export const createBookingWaitlistEntry = async (
   payload: CreateBookingWaitlistPayload,
 ): Promise<BookingWaitlistDocument> => {
-  const waitlist = await BookingWaitlist.findOneAndUpdate(
-    {
-      userId: payload.userId,
-      ...(payload.venueId ? { venueId: payload.venueId } : {}),
-      ...(payload.coachId ? { coachId: payload.coachId } : {}),
-      date: payload.date,
-      startTime: payload.startTime,
-      status: "ACTIVE",
-    },
-    {
-      $set: {
-        userId: payload.userId,
-        ...(payload.venueId ? { venueId: payload.venueId } : {}),
-        ...(payload.coachId ? { coachId: payload.coachId } : {}),
-        sport: payload.sport,
-        date: payload.date,
-        startTime: payload.startTime,
-        endTime: payload.endTime,
-        alternateSlots: payload.alternateSlots || [],
-        status: "ACTIVE",
-      },
-    },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
-  );
+  // No unique constraint matches this lookup, so emulate the old upsert:
+  // find the active entry for this exact slot, then update or create.
+  const where = {
+    userId: payload.userId,
+    ...(payload.venueId ? { venueId: payload.venueId } : {}),
+    ...(payload.coachId ? { coachId: payload.coachId } : {}),
+    date: payload.date,
+    startTime: payload.startTime,
+    status: "ACTIVE" as const,
+  };
 
-  return waitlist;
+  const existing = await prisma.bookingWaitlist.findFirst({ where });
+
+  const data = {
+    userId: payload.userId,
+    ...(payload.venueId ? { venueId: payload.venueId } : {}),
+    ...(payload.coachId ? { coachId: payload.coachId } : {}),
+    sport: payload.sport,
+    date: payload.date,
+    startTime: payload.startTime,
+    endTime: payload.endTime,
+    alternateSlots: payload.alternateSlots || [],
+    status: "ACTIVE" as const,
+  };
+
+  if (existing) {
+    return prisma.bookingWaitlist.update({
+      where: { id: existing.id },
+      data,
+    });
+  }
+
+  return prisma.bookingWaitlist.create({ data });
 };
 
 /**
@@ -656,22 +713,18 @@ export const initiateBooking = async (
       JSON.stringify({
         userId: payload.userId,
         userIdType: typeof payload.userId,
-        userIdIsValid: mongoose.Types.ObjectId.isValid(payload.userId),
+        userIdIsValid: isValidId(payload.userId),
         venueId: payload.venueId,
-        venueIdIsValid: payload.venueId
-          ? mongoose.Types.ObjectId.isValid(payload.venueId)
-          : "N/A",
+        venueIdIsValid: payload.venueId ? isValidId(payload.venueId) : "N/A",
         coachId: payload.coachId,
-        coachIdIsValid: payload.coachId
-          ? mongoose.Types.ObjectId.isValid(payload.coachId)
-          : "N/A",
+        coachIdIsValid: payload.coachId ? isValidId(payload.coachId) : "N/A",
         sport: payload.sport,
         date: payload.date,
         startTime: payload.startTime,
         endTime: payload.endTime,
         dependentId: payload.dependentId,
         dependentIdIsValid: payload.dependentId
-          ? mongoose.Types.ObjectId.isValid(payload.dependentId)
+          ? isValidId(payload.dependentId)
           : "N/A",
         hasPlayerLocation: Boolean(payload.playerLocation),
       }),
@@ -685,14 +738,14 @@ export const initiateBooking = async (
       "type:",
       typeof payload.userId,
     );
-    if (!mongoose.Types.ObjectId.isValid(payload.userId)) {
+    if (!isValidId(payload.userId)) {
       throw new Error("Invalid user ID format");
     }
-    const user = await User.findById(payload.userId);
+    const user = await prisma.user.findUnique({ where: { id: payload.userId } });
     if (!user) {
       throw new Error("User not found");
     }
-    console.log("[initiateBooking] STEP 1 OK: user =", user._id.toString());
+    console.log("[initiateBooking] STEP 1 OK: user =", user.id.toString());
 
     // Clean up any existing abandoned booking for this exact same slot by this user
     // This allows them to "try again" immediately without hitting "Coach/Venue is not available"
@@ -704,29 +757,31 @@ export const initiateBooking = async (
       ),
     );
 
-    const cleanupQuery: any = {
-      userId: user._id,
+    const cleanupWhere: any = {
+      userId: user.id,
       date: {
-        $gte: startOfDay,
-        $lt: new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000),
+        gte: startOfDay,
+        lt: new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000),
       },
       startTime: normalizedStartTime,
       endTime: normalizedEndTime,
       status: "PENDING_CONFIRMATION",
     };
-    if (payload.coachId) cleanupQuery.coachId = payload.coachId;
-    if (payload.venueId) cleanupQuery.venueId = payload.venueId;
+    if (payload.coachId) cleanupWhere.coachId = payload.coachId;
+    if (payload.venueId) cleanupWhere.venueId = payload.venueId;
 
-    const deletedAbandoned = await Booking.deleteMany(cleanupQuery);
-    if (deletedAbandoned.deletedCount > 0) {
+    const deletedAbandoned = await prisma.booking.deleteMany({
+      where: cleanupWhere,
+    });
+    if (deletedAbandoned.count > 0) {
       console.log(
-        `[initiateBooking] Cleaned up ${deletedAbandoned.deletedCount} abandoned booking(s) for user ${user._id} attempting to re-book`,
+        `[initiateBooking] Cleaned up ${deletedAbandoned.count} abandoned booking(s) for user ${user.id} attempting to re-book`,
       );
     }
 
     // Determine participant details
     let participantName = user.name;
-    let participantId: any = user._id;
+    let participantId: string = user.id;
     let participantAge: number | undefined = undefined;
 
     if (payload.dependentId) {
@@ -734,17 +789,16 @@ export const initiateBooking = async (
         "[initiateBooking] STEP 2: validating dependentId =",
         JSON.stringify(payload.dependentId),
       );
-      if (
-        payload.dependentId === "undefined" ||
-        !mongoose.Types.ObjectId.isValid(payload.dependentId)
-      ) {
+      if (payload.dependentId === "undefined" || !isValidId(payload.dependentId)) {
         throw new Error("Invalid dependent ID format");
       }
       // Booking is for a dependent (child)
-      const dependent = await Player.findOne({
-        _id: payload.dependentId,
-        userId: user._id,
-        type: "DEPENDENT",
+      const dependent = await prisma.player.findFirst({
+        where: {
+          id: payload.dependentId,
+          userId: user.id,
+          type: "DEPENDENT",
+        },
       });
       if (!dependent) {
         throw new Error("Dependent not found");
@@ -756,11 +810,11 @@ export const initiateBooking = async (
       }
 
       participantName = dependent.name;
-      participantId = dependent._id;
+      participantId = dependent.id;
       participantAge = dependent.age;
       console.log(
         "[initiateBooking] STEP 2 OK: dependent =",
-        dependent._id.toString(),
+        dependent.id.toString(),
         "participantId type:",
         typeof participantId,
         "value:",
@@ -780,30 +834,37 @@ export const initiateBooking = async (
       }
     } else {
       // Booking is for the parent/user themselves
-      participantId = user._id;
+      participantId = user.id;
       console.log(
         "[initiateBooking] STEP 2: no dependent, participantId =",
         participantId?.toString(),
       );
     }
 
-    let venue: VenueDocument | null = null;
+    let venue:
+      | Prisma.VenueGetPayload<{
+          include: { sportPricing: true; openingHours: true };
+        }>
+      | null = null;
 
     if (payload.venueId) {
       console.log(
         "[initiateBooking] STEP 3: validating venueId =",
         JSON.stringify(payload.venueId),
       );
-      if (!mongoose.Types.ObjectId.isValid(payload.venueId)) {
+      if (!isValidId(payload.venueId)) {
         throw new Error("Invalid venue ID format");
       }
-      venue = await Venue.findById(payload.venueId).populate("ownerId");
+      venue = await prisma.venue.findUnique({
+        where: { id: payload.venueId },
+        include: { sportPricing: true, openingHours: true },
+      });
       if (!venue) {
         throw new Error("Venue not found");
       }
       console.log(
         "[initiateBooking] STEP 3 OK: venue =",
-        venue._id.toString(),
+        venue.id.toString(),
         "ownerId raw =",
         JSON.stringify(venue.ownerId),
         "ownerId type:",
@@ -826,12 +887,13 @@ export const initiateBooking = async (
       }
 
       // Validate booking falls within venue opening hours
-      if (venue.openingHours) {
+      const openingHours = buildOpeningHours(venue.openingHours);
+      if (openingHours) {
         const hoursCheck = isWithinOpeningHours(
           payload.date,
           normalizedStartTime,
           normalizedEndTime,
-          venue.openingHours,
+          openingHours,
         );
 
         if (!hoursCheck.isValid) {
@@ -857,7 +919,9 @@ export const initiateBooking = async (
     const hours = totalMinutes / 60; // Supports 0.5, 0.75, etc.
     let venuePrice = 0;
     if (venue) {
-      const sportPrice = venue.sportPricing?.[payload.sport];
+      const sportPrice = venue.sportPricing.find(
+        (sp) => sp.sport === payload.sport,
+      )?.price;
       const basePrice =
         typeof sportPrice === "number" && sportPrice >= 0
           ? sportPrice
@@ -872,18 +936,25 @@ export const initiateBooking = async (
 
     // If coach is requested, validate and calculate coach price
     if (payload.coachId) {
-      if (!mongoose.Types.ObjectId.isValid(payload.coachId)) {
+      if (!isValidId(payload.coachId)) {
         throw new Error("Invalid coach ID format");
       }
-      const coach = await Coach.findById(payload.coachId).populate("userId");
+      const coach = await prisma.coach.findUnique({
+        where: { id: payload.coachId },
+        include: {
+          sportPricing: true,
+          availability: true,
+          sportAvailability: true,
+        },
+      });
       if (!coach) {
         throw new Error("Coach not found");
       }
       console.log(
         "[initiateBooking] STEP 4 OK: coach =",
-        coach._id.toString(),
+        coach.id.toString(),
         "userId raw =",
-        JSON.stringify((coach as any).userId),
+        JSON.stringify(coach.userId),
         "serviceMode:",
         coach.serviceMode,
       );
@@ -891,20 +962,21 @@ export const initiateBooking = async (
       if (COACH_SUBSCRIPTIONS_ENFORCE_BOOKING) {
         const now = new Date();
 
-        const query: any = {
-          coachId: coach._id,
-          userId: user._id,
-          status: { $in: ["ACTIVE", "PAST_DUE"] },
+        const subscriptionWhere: any = {
+          coachId: coach.id,
+          userId: user.id,
+          status: { in: ["ACTIVE", "PAST_DUE"] },
         };
 
         if (payload.dependentId) {
-          query.dependentId = payload.dependentId;
+          subscriptionWhere.dependentId = payload.dependentId;
         } else {
-          query.dependentId = { $exists: false };
+          subscriptionWhere.dependentId = null;
         }
 
-        const coachSubscription = await CoachSubscription.findOne(query).sort({
-          createdAt: -1,
+        const coachSubscription = await prisma.coachSubscription.findFirst({
+          where: subscriptionWhere,
+          orderBy: { createdAt: "desc" },
         });
 
         if (!coachSubscription) {
@@ -938,7 +1010,10 @@ export const initiateBooking = async (
         (coach.serviceMode === "FREELANCE" || coach.serviceMode === "HYBRID") &&
         payload.playerLocation
       ) {
-        const coachBaseCoordinates = coach.baseLocation?.coordinates;
+        const coachBaseCoordinates: [number, number] | undefined =
+          coach.baseLng != null && coach.baseLat != null
+            ? [coach.baseLng, coach.baseLat]
+            : undefined;
         if (!coachBaseCoordinates || coachBaseCoordinates.length !== 2) {
           throw new Error("Coach service location is not configured");
         }
@@ -977,10 +1052,9 @@ export const initiateBooking = async (
         throw new Error("Coach is not available for the selected time slot");
       }
 
-      const coachSportRate =
-        payload.sport && typeof coach.sportPricing?.[payload.sport] === "number"
-          ? coach.sportPricing[payload.sport]
-          : undefined;
+      const coachSportRate = payload.sport
+        ? coach.sportPricing.find((sp) => sp.sport === payload.sport)?.price
+        : undefined;
       const effectiveCoachRate =
         typeof coachSportRate === "number" && coachSportRate > 0
           ? coachSportRate
@@ -992,10 +1066,12 @@ export const initiateBooking = async (
     let academyPrice = 0;
 
     if (payload.academyId) {
-      if (!mongoose.Types.ObjectId.isValid(payload.academyId)) {
+      if (!isValidId(payload.academyId)) {
         throw new Error("Invalid academy ID format");
       }
-      const academy = await Academy.findById(payload.academyId);
+      const academy = await prisma.academy.findUnique({
+        where: { id: payload.academyId },
+      });
       if (!academy) {
         throw new Error("Academy not found");
       }
@@ -1045,12 +1121,13 @@ export const initiateBooking = async (
 
     let singlePaymentSplits: any[] = [];
     if (payload.venueId || payload.coachId || payload.academyId) {
-      const venueOwnerIdStr = venue?.ownerId
-        ? (venue.ownerId as any)._id?.toString() || venue.ownerId.toString()
-        : undefined;
+      const venueOwnerIdStr = venue?.ownerId || undefined;
       let coachUserIdStr: string | undefined;
       if (payload.coachId) {
-        const coachInfo = await Coach.findById(payload.coachId);
+        const coachInfo = await prisma.coach.findUnique({
+          where: { id: payload.coachId },
+          select: { userId: true },
+        });
         if (coachInfo && coachInfo.userId) {
           coachUserIdStr = coachInfo.userId.toString();
         }
@@ -1060,15 +1137,11 @@ export const initiateBooking = async (
         "[initiateBooking] STEP 5 splits input: venueOwnerIdStr =",
         JSON.stringify(venueOwnerIdStr),
         "venueOwnerIdValid:",
-        venueOwnerIdStr
-          ? mongoose.Types.ObjectId.isValid(venueOwnerIdStr)
-          : false,
+        venueOwnerIdStr ? isValidId(venueOwnerIdStr) : false,
         "coachUserIdStr =",
         JSON.stringify(coachUserIdStr),
         "coachUserIdValid:",
-        coachUserIdStr
-          ? mongoose.Types.ObjectId.isValid(coachUserIdStr)
-          : false,
+        coachUserIdStr ? isValidId(coachUserIdStr) : false,
         "payerUserId =",
         JSON.stringify(payload.userId),
         "venuePrice =",
@@ -1094,7 +1167,7 @@ export const initiateBooking = async (
       );
 
       singlePaymentSplits = calculatedSplits
-        .filter((p) => p.userId && mongoose.Types.ObjectId.isValid(p.userId))
+        .filter((p) => p.userId && isValidId(p.userId))
         .map((p) => ({
           userId: p.userId,
           userType: p.userType,
@@ -1134,18 +1207,14 @@ export const initiateBooking = async (
       "[initiateBooking] STEP 6 bookingPayload:",
       JSON.stringify({
         userId: bookingPayload.userId,
-        userIdValid: mongoose.Types.ObjectId.isValid(bookingPayload.userId),
+        userIdValid: isValidId(bookingPayload.userId),
         venueId: bookingPayload.venueId,
         coachId: bookingPayload.coachId,
         organizerId: bookingPayload.organizerId,
-        organizerIdValid: mongoose.Types.ObjectId.isValid(
-          bookingPayload.organizerId,
-        ),
+        organizerIdValid: isValidId(bookingPayload.organizerId),
         participantId: bookingPayload.participantId?.toString(),
         participantIdValid: bookingPayload.participantId
-          ? mongoose.Types.ObjectId.isValid(
-              bookingPayload.participantId.toString(),
-            )
+          ? isValidId(bookingPayload.participantId.toString())
           : false,
         paymentsCount: bookingPayload.payments?.length,
         payments: bookingPayload.payments,
@@ -1155,40 +1224,49 @@ export const initiateBooking = async (
     const booking =
       payload.venueId || payload.coachId || payload.academyId
         ? await createBookingAtomically(bookingPayload)
-        : await Booking.create({
-            userId: new mongoose.Types.ObjectId(bookingPayload.userId),
-            ...(bookingPayload.venueId
-              ? { venueId: new mongoose.Types.ObjectId(bookingPayload.venueId) }
-              : {}),
-            ...(bookingPayload.coachId
-              ? { coachId: new mongoose.Types.ObjectId(bookingPayload.coachId) }
-              : {}),
-            sport: bookingPayload.sport,
-            date: bookingPayload.date,
-            startTime: bookingPayload.startTime,
-            endTime: bookingPayload.endTime,
-            totalAmount: bookingPayload.totalAmount,
-            serviceFee: bookingPayload.serviceFee,
-            taxAmount: bookingPayload.taxAmount,
-            ...(bookingPayload.promoCode
-              ? { promoCode: bookingPayload.promoCode }
-              : {}),
-            ...(bookingPayload.discountAmount
-              ? { discountAmount: bookingPayload.discountAmount }
-              : {}),
-            status: "PENDING_CONFIRMATION",
-            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes expiry
-            checkInCode: bookingPayload.checkInCode,
-            // Awaiting provider confirmation before booking is confirmed
-            participantName: bookingPayload.participantName,
-            participantId: bookingPayload.participantId,
-            ...(bookingPayload.participantAge !== undefined
-              ? { participantAge: bookingPayload.participantAge }
-              : {}),
-            organizerId: new mongoose.Types.ObjectId(
-              bookingPayload.organizerId,
-            ),
-            payments: bookingPayload.payments || [],
+        : await prisma.booking.create({
+            data: {
+              userId: bookingPayload.userId,
+              ...(bookingPayload.venueId
+                ? { venueId: bookingPayload.venueId }
+                : {}),
+              ...(bookingPayload.coachId
+                ? { coachId: bookingPayload.coachId }
+                : {}),
+              sport: bookingPayload.sport,
+              date: bookingPayload.date,
+              startTime: bookingPayload.startTime,
+              endTime: bookingPayload.endTime,
+              totalAmount: toInt(bookingPayload.totalAmount),
+              serviceFee: toInt(bookingPayload.serviceFee),
+              taxAmount: toInt(bookingPayload.taxAmount),
+              ...(bookingPayload.promoCode
+                ? { promoCode: bookingPayload.promoCode }
+                : {}),
+              ...(bookingPayload.discountAmount
+                ? { discountAmount: toInt(bookingPayload.discountAmount) }
+                : {}),
+              status: "PENDING_CONFIRMATION",
+              expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes expiry
+              checkInCode: bookingPayload.checkInCode,
+              // Awaiting provider confirmation before booking is confirmed
+              participantName: bookingPayload.participantName,
+              participantId: String(bookingPayload.participantId),
+              ...(bookingPayload.participantAge !== undefined
+                ? { participantAge: bookingPayload.participantAge }
+                : {}),
+              organizerId: bookingPayload.organizerId,
+              payments: {
+                create: (bookingPayload.payments || []).map((p: any) => ({
+                  userId: String(p.userId),
+                  userType: p.userType as PaymentUserType,
+                  amount: toInt(p.amount),
+                  status: (p.status ?? "PENDING") as PaymentLegStatus,
+                  ...(p.paidAt ? { paidAt: p.paidAt } : {}),
+                })),
+              },
+            },
+            include: bookingChildren,
           });
 
     // Record promo code usage after successful booking
@@ -1196,7 +1274,7 @@ export const initiateBooking = async (
       await applyPromoCode(
         validPromoCode,
         payload.userId,
-        booking._id.toString(),
+        booking.id.toString(),
         null,
         discountAmount,
       );
@@ -1216,9 +1294,6 @@ export const initiateBooking = async (
 /**
  * Get all bookings for a user
  */
-/**
- * Get all bookings for a user
- */
 export const getUserBookings = async (
   userId: string,
   page: number = 1,
@@ -1230,15 +1305,18 @@ export const getUserBookings = async (
   totalPages: number;
 }> => {
   const skip = (page - 1) * limit;
-  const query = { userId };
+  const where = { userId };
 
-  const total = await Booking.countDocuments(query);
-  const bookings = await Booking.find(query)
-    .select("+checkInCode")
-    .populate("venueId coachId")
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
+  const total = await prisma.booking.count({ where });
+  const rows = await prisma.booking.findMany({
+    where,
+    include: bookingChildren,
+    orderBy: { createdAt: "desc" },
+    skip,
+    take: limit,
+  });
+
+  const bookings = await attachRefs(rows, { venue: true, coach: true });
 
   return { bookings, total, page, totalPages: Math.ceil(total / limit) };
 };
@@ -1256,27 +1334,22 @@ export const getVenueBookings = async (
   page: number;
   totalPages: number;
 }> => {
-  const query = {
+  const where = {
     venueId,
-    status: {
-      $in: [
-        "PENDING_CONFIRMATION",
-        "PENDING_INVITES",
-        "CONFIRMED",
-        "IN_PROGRESS",
-        "COMPLETED",
-        "NO_SHOW",
-      ],
-    },
+    status: { in: PROVIDER_LIST_STATUSES },
   };
   const skip = (page - 1) * limit;
 
-  const total = await Booking.countDocuments(query);
-  const bookings = await Booking.find(query)
-    .populate("userId coachId")
-    .sort({ date: 1 })
-    .skip(skip)
-    .limit(limit);
+  const total = await prisma.booking.count({ where });
+  const rows = await prisma.booking.findMany({
+    where,
+    include: bookingChildren,
+    orderBy: { date: "asc" },
+    skip,
+    take: limit,
+  });
+
+  const bookings = await attachRefs(rows, { user: true, coach: true });
 
   return { bookings, total, page, totalPages: Math.ceil(total / limit) };
 };
@@ -1296,21 +1369,19 @@ export const getVenueBookingsForDate = async (
   );
   const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
 
-  return Booking.find({
-    venueId,
-    date: {
-      $gte: startOfDay,
-      $lte: endOfDay,
+  const rows = await prisma.booking.findMany({
+    where: {
+      venueId,
+      date: {
+        gte: startOfDay,
+        lte: endOfDay,
+      },
+      status: { in: ACTIVE_STATUSES },
     },
-    status: {
-      $in: [
-        "PENDING_CONFIRMATION",
-        "PENDING_INVITES",
-        "CONFIRMED",
-        "IN_PROGRESS",
-      ],
-    },
-  }).select("startTime endTime");
+    select: { startTime: true, endTime: true },
+  });
+
+  return rows as unknown as BookingDocument[];
 };
 
 /**
@@ -1327,31 +1398,33 @@ export const getVenueListerBookings = async (
   totalPages: number;
 }> => {
   // Find all venues owned by this user
-  const venues = await Venue.find({ ownerId });
-  const venueIds = venues.map((v) => v._id);
+  const venues = await prisma.venue.findMany({
+    where: { ownerId },
+    select: { id: true },
+  });
+  const venueIds = venues.map((v) => v.id);
 
-  const query = {
-    venueId: { $in: venueIds },
-    status: {
-      $in: [
-        "PENDING_CONFIRMATION",
-        "PENDING_INVITES",
-        "CONFIRMED",
-        "IN_PROGRESS",
-        "COMPLETED",
-        "NO_SHOW",
-      ],
-    },
+  const where = {
+    venueId: { in: venueIds },
+    status: { in: PROVIDER_LIST_STATUSES },
   };
   const skip = (page - 1) * limit;
 
   // Find all bookings for these venues
-  const total = await Booking.countDocuments(query);
-  const bookings = await Booking.find(query)
-    .populate("userId venueId coachId")
-    .sort({ date: -1 })
-    .skip(skip)
-    .limit(limit);
+  const total = await prisma.booking.count({ where });
+  const rows = await prisma.booking.findMany({
+    where,
+    include: bookingChildren,
+    orderBy: { date: "desc" },
+    skip,
+    take: limit,
+  });
+
+  const bookings = await attachRefs(rows, {
+    user: true,
+    venue: true,
+    coach: true,
+  });
 
   return { bookings, total, page, totalPages: Math.ceil(total / limit) };
 };
@@ -1369,32 +1442,34 @@ export const getCoachBookings = async (
   page: number;
   totalPages: number;
 }> => {
-  const coach = await Coach.findOne({ userId }).select("_id");
+  const coach = await prisma.coach.findFirst({
+    where: { userId },
+    select: { id: true },
+  });
   if (!coach) {
     throw new Error("Coach profile not found");
   }
 
-  const query = {
-    coachId: coach._id,
-    status: {
-      $in: [
-        "PENDING_CONFIRMATION",
-        "PENDING_INVITES",
-        "CONFIRMED",
-        "IN_PROGRESS",
-        "COMPLETED",
-        "NO_SHOW",
-      ],
-    },
+  const where = {
+    coachId: coach.id,
+    status: { in: PROVIDER_LIST_STATUSES },
   };
   const skip = (page - 1) * limit;
 
-  const total = await Booking.countDocuments(query);
-  const bookings = await Booking.find(query)
-    .populate("userId venueId coachId")
-    .sort({ date: -1 })
-    .skip(skip)
-    .limit(limit);
+  const total = await prisma.booking.count({ where });
+  const rows = await prisma.booking.findMany({
+    where,
+    include: bookingChildren,
+    orderBy: { date: "desc" },
+    skip,
+    take: limit,
+  });
+
+  const bookings = await attachRefs(rows, {
+    user: true,
+    venue: true,
+    coach: true,
+  });
 
   return { bookings, total, page, totalPages: Math.ceil(total / limit) };
 };
@@ -1422,7 +1497,10 @@ const getBookingLifecycleRecipients = async (
     role: "Player" | "PROVIDER";
   }> = [];
 
-  const player = await User.findById(booking.userId).select("name email");
+  const player = await prisma.user.findUnique({
+    where: { id: booking.userId },
+    select: { name: true, email: true },
+  });
   if (player?.email) {
     recipients.push({
       name: player.name || "Player",
@@ -1432,11 +1510,16 @@ const getBookingLifecycleRecipients = async (
   }
 
   if (booking.coachId) {
-    const coach = await Coach.findById(booking.coachId)
-      .populate("userId", "name email")
-      .select("userId");
-    const coachUser = coach?.userId as
-      { name?: string; email?: string } | undefined;
+    const coach = await prisma.coach.findUnique({
+      where: { id: booking.coachId },
+      select: { userId: true },
+    });
+    const coachUser = coach?.userId
+      ? await prisma.user.findUnique({
+          where: { id: coach.userId },
+          select: { name: true, email: true },
+        })
+      : null;
     if (coachUser?.email) {
       recipients.push({
         name: coachUser.name || "Coach",
@@ -1447,11 +1530,16 @@ const getBookingLifecycleRecipients = async (
   }
 
   if (booking.venueId) {
-    const venue = await Venue.findById(booking.venueId)
-      .populate("ownerId", "name email")
-      .select("ownerId");
-    const venueOwner = venue?.ownerId as
-      { name?: string; email?: string } | undefined;
+    const venue = await prisma.venue.findUnique({
+      where: { id: booking.venueId },
+      select: { ownerId: true },
+    });
+    const venueOwner = venue?.ownerId
+      ? await prisma.user.findUnique({
+          where: { id: venue.ownerId },
+          select: { name: true, email: true },
+        })
+      : null;
     if (venueOwner?.email) {
       recipients.push({
         name: venueOwner.name || "Venue Owner",
@@ -1482,8 +1570,13 @@ const sendBookingLifecycleEmails = async (
   } = {},
 ): Promise<void> => {
   const recipients = await getBookingLifecycleRecipients(booking);
-  const venueName =
-    (await Venue.findById(booking.venueId).select("name"))?.name || "Venue";
+  const venueRow = booking.venueId
+    ? await prisma.venue.findUnique({
+        where: { id: booking.venueId },
+        select: { name: true },
+      })
+    : null;
+  const venueName = venueRow?.name || "Venue";
 
   await Promise.all(
     recipients.map(async (recipient) => {
@@ -1566,11 +1659,14 @@ const initiateBookingRefunds = async (
   for (const target of targets) {
     // Accept PENDING transactions too — payment may still be settling at PhonePe
     // when the user cancels immediately after paying. The retry job picks these up.
-    const transaction = await BookingPaymentTransaction.findOne({
-      bookingId: booking._id,
-      userId: target.userId,
-      status: { $in: ["COMPLETED", "PENDING"] },
-    }).sort({ createdAt: -1 });
+    const transaction = await prisma.bookingPaymentTransaction.findFirst({
+      where: {
+        bookingId: booking.id,
+        userId: target.userId,
+        status: { in: ["COMPLETED", "PENDING"] },
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
     if (!transaction) {
       // No payment record at all — defer to retry job rather than hard-fail.
@@ -1602,12 +1698,16 @@ const initiateBookingRefunds = async (
       const refundState = refundResponse.state || "INITIATED";
       const refundId = refundResponse.refundId ?? transaction.refundId;
 
-      transaction.refundMerchantId = refundMerchantId;
-      if (refundId) transaction.refundId = refundId;
-      transaction.refundState = refundState;
-      transaction.refundAmount = target.amountPaise;
-      transaction.refundResponse = refundResponse.raw;
-      await transaction.save();
+      await prisma.bookingPaymentTransaction.update({
+        where: { id: transaction.id },
+        data: {
+          refundMerchantId,
+          ...(refundId ? { refundId } : {}),
+          refundState,
+          refundAmount: target.amountPaise,
+          refundResponse: refundResponse.raw as any,
+        },
+      });
 
       totalRefundPaise += target.amountPaise;
 
@@ -1615,14 +1715,18 @@ const initiateBookingRefunds = async (
       if (refundState !== "COMPLETED") hasPending = true;
     } catch (err) {
       // PhonePe threw — record the attempt and defer. Never hard-reject here.
-      transaction.refundMerchantId = refundMerchantId;
-      transaction.refundState = "FAILED";
-      transaction.refundAmount = target.amountPaise;
-      await transaction.save();
+      await prisma.bookingPaymentTransaction.update({
+        where: { id: transaction.id },
+        data: {
+          refundMerchantId,
+          refundState: "FAILED",
+          refundAmount: target.amountPaise,
+        },
+      });
       hasPending = true;
       totalRefundPaise += target.amountPaise;
       console.error(
-        `[initiateBookingRefunds] PhonePe call failed for booking ${booking._id}, will retry:`,
+        `[initiateBookingRefunds] PhonePe call failed for booking ${booking.id}, will retry:`,
         err,
       );
     }
@@ -1635,7 +1739,8 @@ const initiateBookingRefunds = async (
       refundAmount:
         skippedRefundPaise > 0
           ? skippedRefundPaise / 100
-          : booking.refundAmount ?? Math.round((booking.totalAmount * refundPercentage) / 100),
+          : (booking.refundAmount ??
+            Math.round((booking.totalAmount * refundPercentage) / 100)),
     };
   }
 
@@ -1655,7 +1760,10 @@ export const processBookingRefund = async (
   refundPercentage: number;
   refundStatus: "PENDING" | "PROCESSED" | "REJECTED";
 }> => {
-  const booking = await Booking.findById(bookingId);
+  let booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: bookingChildren,
+  });
 
   if (!booking) {
     throw new Error("Booking not found");
@@ -1670,29 +1778,49 @@ export const processBookingRefund = async (
   // initial attempt failed transiently — and in that case the admin should be
   // able to re-trigger it or switch method (Store Credit / Bank Transfer).
   if (booking.refundStatus === "PENDING") {
-    const inFlight = await BookingPaymentTransaction.exists({
-      bookingId: booking._id,
-      refundState: "INITIATED",
+    const inFlight = await prisma.bookingPaymentTransaction.findFirst({
+      where: {
+        bookingId: booking.id,
+        refundState: "INITIATED",
+      },
+      select: { id: true },
     });
     if (inFlight) {
-      throw new Error("Refund already submitted to PhonePe and is awaiting confirmation. No further action needed.");
+      throw new Error(
+        "Refund already submitted to PhonePe and is awaiting confirmation. No further action needed.",
+      );
     }
   }
 
-  let refundResult: { refundStatus: "PENDING" | "PROCESSED" | "REJECTED"; refundAmount: number };
+  let refundResult: {
+    refundStatus: "PENDING" | "PROCESSED" | "REJECTED";
+    refundAmount: number;
+  };
   try {
-    refundResult = await initiateBookingRefunds(booking, refundPercentage, reason);
+    refundResult = await initiateBookingRefunds(
+      booking,
+      refundPercentage,
+      reason,
+    );
   } catch (error) {
-    booking.refundStatus = "REJECTED";
-    await booking.save();
+    booking = await prisma.booking.update({
+      where: { id: booking.id },
+      data: { refundStatus: "REJECTED" },
+      include: bookingChildren,
+    });
     throw error;
   }
 
-  if (refundResult.refundAmount > 0) {
-    booking.refundAmount = refundResult.refundAmount;
-  }
-  booking.refundStatus = refundResult.refundStatus;
-  await booking.save();
+  booking = await prisma.booking.update({
+    where: { id: booking.id },
+    data: {
+      ...(refundResult.refundAmount > 0
+        ? { refundAmount: toInt(refundResult.refundAmount) }
+        : {}),
+      refundStatus: refundResult.refundStatus,
+    },
+    include: bookingChildren,
+  });
 
   return {
     booking,
@@ -1716,21 +1844,28 @@ export const getBookingPhonePeRefundStatus = async (
     amount: number;
   }>;
 }> => {
-  const booking = await Booking.findById(bookingId).select(
-    "refundStatus refundAmount",
-  );
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    select: { id: true, refundStatus: true, refundAmount: true },
+  });
 
   if (!booking) {
     throw new Error("Booking not found");
   }
 
-  const refundableTransactions = await BookingPaymentTransaction.find({
-    bookingId,
-    refundMerchantId: { $exists: true, $ne: null },
-    // Exclude BANK_TRANSFER refunds — their IDs are not PhonePe IDs and
-    // would cause the gateway call to fail or corrupt stored state.
-    "refundResponse.method": { $ne: "BANK_TRANSFER" },
-  }).sort({ createdAt: -1 });
+  // TODO(prisma): the old query filtered `refundResponse.method != BANK_TRANSFER`
+  // as a nested-JSON condition inside Mongo. Prisma JSON `not` filters do not
+  // reliably exclude rows where the key is absent, so we fetch by refundMerchantId
+  // and drop BANK_TRANSFER rows in-code, which matches the original intent.
+  const refundableTransactions = (
+    await prisma.bookingPaymentTransaction.findMany({
+      where: {
+        bookingId,
+        refundMerchantId: { not: null },
+      },
+      orderBy: { createdAt: "desc" },
+    })
+  ).filter((t) => (t.refundResponse as any)?.method !== "BANK_TRANSFER");
 
   if (refundableTransactions.length === 0) {
     throw new Error("No PhonePe refund transaction found for this booking");
@@ -1763,13 +1898,15 @@ export const getBookingPhonePeRefundStatus = async (
         : transaction.refundAmount || 0;
     const refundId = refundStatus.refundId ?? transaction.refundId;
 
-    if (refundId) {
-      transaction.refundId = refundId;
-    }
-    transaction.refundState = latestState;
-    transaction.refundAmount = latestAmount;
-    transaction.refundResponse = refundStatus.raw;
-    await transaction.save();
+    await prisma.bookingPaymentTransaction.update({
+      where: { id: transaction.id },
+      data: {
+        ...(refundId ? { refundId } : {}),
+        refundState: latestState,
+        refundAmount: toInt(latestAmount),
+        refundResponse: refundStatus.raw as any,
+      },
+    });
 
     if (latestState === "FAILED") {
       hasFailure = true;
@@ -1794,9 +1931,13 @@ export const getBookingPhonePeRefundStatus = async (
       ? "PENDING"
       : "PROCESSED";
 
-  booking.refundStatus = aggregateRefundStatus;
-  booking.refundAmount = Math.round(totalRefundPaise) / 100;
-  await booking.save();
+  await prisma.booking.update({
+    where: { id: bookingId },
+    data: {
+      refundStatus: aggregateRefundStatus,
+      refundAmount: toInt(Math.round(totalRefundPaise) / 100),
+    },
+  });
 
   return {
     bookingId,
@@ -1829,17 +1970,13 @@ export const cancelBooking = async (
 }> => {
   // Scope to the booking's organizer so a user can only cancel their OWN
   // booking (prevents IDOR: cancelling/refunding arbitrary bookings).
-  const booking = await Booking.findOne({
-    _id: bookingId,
-    organizerId: requesterId,
-    status: {
-      $in: [
-        "PENDING_CONFIRMATION",
-        "PENDING_INVITES",
-        "CONFIRMED",
-        "IN_PROGRESS",
-      ],
+  const booking = await prisma.booking.findFirst({
+    where: {
+      id: bookingId,
+      organizerId: requesterId,
+      status: { in: ACTIVE_STATUSES },
     },
+    include: bookingChildren,
   });
 
   if (!booking) {
@@ -1870,37 +2007,38 @@ export const cancelBooking = async (
     (booking.totalAmount * refundPercentage) / 100,
   );
 
-  // Update booking status
-  const updatedBooking = await Booking.findOneAndUpdate(
-    {
-      _id: bookingId,
+  // Update booking status — conditional (only if still in an active status),
+  // mirroring findOneAndUpdate({new:true}): null when nothing matched.
+  const cancelResult = await prisma.booking.updateMany({
+    where: {
+      id: bookingId,
       organizerId: requesterId,
-      status: {
-        $in: [
-          "PENDING_CONFIRMATION",
-          "PENDING_INVITES",
-          "CONFIRMED",
-          "IN_PROGRESS",
-        ],
-      },
+      status: { in: ACTIVE_STATUSES },
     },
-    {
-      $set: {
-        status: "CANCELLED",
-        cancelledAt: new Date(),
-        cancellationReason: cancellationReason || "Cancelled by user",
-        refundAmount,
-        // Don't pre-set refundStatus here — PhonePe hasn't been called yet.
-        // initiateBookingRefunds sets the real status (PENDING/PROCESSED/REJECTED)
-        // after the gateway responds; the catch block sets REJECTED on failure.
-      },
+    data: {
+      status: "CANCELLED",
+      cancelledAt: new Date(),
+      cancellationReason: cancellationReason || "Cancelled by user",
+      refundAmount: toInt(refundAmount),
+      // Don't pre-set refundStatus here — PhonePe hasn't been called yet.
+      // initiateBookingRefunds sets the real status (PENDING/PROCESSED/REJECTED)
+      // after the gateway responds; the catch block sets REJECTED on failure.
     },
-    { new: true },
-  );
+  });
+
+  let updatedBooking =
+    cancelResult.count > 0
+      ? await prisma.booking.findUnique({
+          where: { id: bookingId },
+          include: bookingChildren,
+        })
+      : null;
 
   // Send cancellation notifications to all participants
   if (updatedBooking) {
-    const venue = await Venue.findById(updatedBooking.venueId);
+    const venue = updatedBooking.venueId
+      ? await prisma.venue.findUnique({ where: { id: updatedBooking.venueId } })
+      : null;
 
     if (venue) {
       // Get all participant user IDs (organizer + accepted participants)
@@ -1919,7 +2057,7 @@ export const cancelBooking = async (
           title: "Booking Cancelled",
           message: `Your booking for ${updatedBooking.sport} at ${venue.name} has been cancelled. ${refundPercentage > 0 ? `You will receive a ${refundPercentage}% refund.` : "No refund available."}`,
           data: {
-            bookingId: updatedBooking._id.toString(),
+            bookingId: updatedBooking.id.toString(),
             venueName: venue.name,
             sport: updatedBooking.sport,
             date: updatedBooking.date.toISOString(),
@@ -1942,23 +2080,22 @@ export const cancelBooking = async (
           title: "Booking status changed",
           message: `Your booking is now CANCELLED for ${updatedBooking.sport}.`,
           data: {
-            bookingId: updatedBooking._id.toString(),
+            bookingId: updatedBooking.id.toString(),
             status: "CANCELLED",
             date: updatedBooking.date.toISOString(),
             startTime: updatedBooking.startTime,
             endTime: updatedBooking.endTime,
           },
         }).catch(() => {});
-
       }
     }
 
     // Cancel all pending reminders for this booking
     ScheduledNotificationService.cancelBookingReminders(
-      updatedBooking._id,
+      updatedBooking.id,
     ).catch((err: Error) =>
       console.error(
-        `Failed to cancel booking reminders for ${updatedBooking._id}:`,
+        `Failed to cancel booking reminders for ${updatedBooking.id}:`,
         err,
       ),
     );
@@ -1970,9 +2107,14 @@ export const cancelBooking = async (
           refundPercentage,
           cancellationReason || "Cancelled by user",
         );
-        updatedBooking.refundStatus = refundResult.refundStatus;
-        updatedBooking.refundAmount = refundResult.refundAmount;
-        await updatedBooking.save();
+        updatedBooking = await prisma.booking.update({
+          where: { id: updatedBooking.id },
+          data: {
+            refundStatus: refundResult.refundStatus,
+            refundAmount: toInt(refundResult.refundAmount),
+          },
+          include: bookingChildren,
+        });
         // Notify the organizer only after the refund has actually been initiated
         NotificationService.send({
           userId: updatedBooking.organizerId.toString(),
@@ -1980,7 +2122,7 @@ export const cancelBooking = async (
           title: "Refund Initiated",
           message: `A ${refundPercentage}% refund of ₹${refundAmount} has been initiated for your cancelled booking${venue ? ` at ${venue.name}` : ""}.`,
           data: {
-            bookingId: updatedBooking._id.toString(),
+            bookingId: updatedBooking.id.toString(),
             ...(venue ? { venueName: venue.name } : {}),
             sport: updatedBooking.sport,
             refundAmount,
@@ -1992,23 +2134,30 @@ export const cancelBooking = async (
         );
       } catch (refundError) {
         console.error(
-          `Failed to initiate refund for booking ${updatedBooking._id.toString()}:`,
+          `Failed to initiate refund for booking ${updatedBooking.id.toString()}:`,
           refundError,
         );
         // Keep as PENDING so the retry job can attempt it — never auto-reject.
-        updatedBooking.refundStatus = "PENDING";
-        await updatedBooking.save().catch(() => {});
+        updatedBooking = await prisma.booking
+          .update({
+            where: { id: updatedBooking.id },
+            data: { refundStatus: "PENDING" },
+            include: bookingChildren,
+          })
+          .catch(() => updatedBooking);
       }
     }
 
-    await sendBookingLifecycleEmails(updatedBooking, "CANCELLED", {
-      cancellationReason: cancellationReason || "Cancelled by user",
-      refundAmount,
-      refundPercentage,
-    });
+    if (updatedBooking) {
+      await sendBookingLifecycleEmails(updatedBooking, "CANCELLED", {
+        cancellationReason: cancellationReason || "Cancelled by user",
+        refundAmount,
+        refundPercentage,
+      });
 
-    // A slot just freed up — alert anyone on the waitlist (fire-and-forget).
-    void notifyWaitlistForFreedSlot(updatedBooking);
+      // A slot just freed up — alert anyone on the waitlist (fire-and-forget).
+      void notifyWaitlistForFreedSlot(updatedBooking);
+    }
   }
 
   return {
@@ -2029,9 +2178,10 @@ export const checkInBookingByCode = async (
     throw new Error("Check-in code must be 8 characters");
   }
 
-  const booking = await Booking.findOne({ checkInCode: normalizedCode }).select(
-    "+checkInCode",
-  );
+  const booking = await prisma.booking.findFirst({
+    where: { checkInCode: normalizedCode },
+    include: bookingChildren,
+  });
 
   if (!booking) {
     throw new Error("Invalid check-in code");
@@ -2046,14 +2196,20 @@ export const checkInBookingByCode = async (
     let isAuthorized = false;
 
     if (requesterRole === "Coach" && booking.coachId) {
-      const coach = await Coach.findById(booking.coachId).select("userId");
+      const coach = await prisma.coach.findUnique({
+        where: { id: booking.coachId },
+        select: { userId: true },
+      });
       if (coach?.userId?.toString() === requesterUserId) {
         isAuthorized = true;
       }
     }
 
     if (!isAuthorized && booking.venueId) {
-      const venue = await Venue.findById(booking.venueId).select("ownerId");
+      const venue = await prisma.venue.findUnique({
+        where: { id: booking.venueId },
+        select: { ownerId: true },
+      });
       if (venue?.ownerId?.toString() === requesterUserId) {
         isAuthorized = true;
       }
@@ -2079,10 +2235,7 @@ export const checkInBookingByCode = async (
   }
 
   // UTC-safe — see combineDateAndTimeIST
-  const bookingDateTime = combineDateAndTimeIST(
-    booking.date,
-    booking.startTime,
-  );
+  const bookingDateTime = combineDateAndTimeIST(booking.date, booking.startTime);
 
   // Check-in window: 15 minutes before start time
   const checkInWindow = new Date(bookingDateTime.getTime() - 15 * 60 * 1000);
@@ -2093,10 +2246,7 @@ export const checkInBookingByCode = async (
   }
 
   // Check-in code expiration: exactly at booking end time
-  const bookingEndDateTime = combineDateAndTimeIST(
-    booking.date,
-    booking.endTime,
-  );
+  const bookingEndDateTime = combineDateAndTimeIST(booking.date, booking.endTime);
 
   if (now > bookingEndDateTime) {
     throw new Error(
@@ -2104,16 +2254,21 @@ export const checkInBookingByCode = async (
     );
   }
 
-  const updatedBooking = await Booking.findOneAndUpdate(
-    {
-      _id: booking._id,
+  const updateResult = await prisma.booking.updateMany({
+    where: {
+      id: booking.id,
       status: "CONFIRMED",
     },
-    {
-      $set: { status: "IN_PROGRESS" },
-    },
-    { new: true },
-  );
+    data: { status: "IN_PROGRESS" },
+  });
+
+  const updatedBooking =
+    updateResult.count > 0
+      ? await prisma.booking.findUnique({
+          where: { id: booking.id },
+          include: bookingChildren,
+        })
+      : null;
 
   if (!updatedBooking) {
     throw new Error("Cannot check-in. Booking status changed, please retry");
@@ -2125,7 +2280,7 @@ export const checkInBookingByCode = async (
     title: "Booking checked in",
     message: `Your booking is now IN_PROGRESS for ${updatedBooking.sport}.`,
     data: {
-      bookingId: updatedBooking._id.toString(),
+      bookingId: updatedBooking.id.toString(),
       status: "IN_PROGRESS",
       date: updatedBooking.date.toISOString(),
       startTime: updatedBooking.startTime,
@@ -2147,24 +2302,26 @@ const checkCoachAvailabilityForBooking = async (
   endTime: string,
   sport?: string,
 ): Promise<boolean> => {
-  const coach = await Coach.findById(coachId);
+  const coach = await prisma.coach.findUnique({
+    where: { id: coachId },
+    include: { availability: true, sportAvailability: true },
+  });
   if (!coach) return false;
 
   const dayOfWeek = date.getUTCDay(); // date is UTC-midnight-anchored — see combineDateAndTimeIST
 
-  // Resolve slots: prefer sport-specific availability, fall back to generic availability.
-  // availabilityBySport is stored as a Mongoose Map — always use Map API.
-  const availabilityBySport = (coach as any).availabilityBySport as
-    | Map<
-        string,
-        Array<{ dayOfWeek: number; startTime: string; endTime: string }>
-      >
-    | undefined;
-
-  const sportSlots =
-    sport && availabilityBySport instanceof Map
-      ? availabilityBySport.get(sport)
-      : undefined;
+  // Resolve slots: prefer sport-specific availability, fall back to generic
+  // availability. availabilityBySport is now the normalized CoachSportAvailability
+  // rows filtered by sport.
+  const sportSlots = sport
+    ? coach.sportAvailability
+        .filter((sa) => sa.sport === sport)
+        .map((sa) => ({
+          dayOfWeek: sa.dayOfWeek,
+          startTime: sa.startTime,
+          endTime: sa.endTime,
+        }))
+    : undefined;
 
   const sourceSlots: Array<{
     dayOfWeek: number;
@@ -2196,25 +2353,20 @@ const checkCoachAvailabilityForBooking = async (
 
   // Check for conflicting bookings on the same day.
   const { start: dayStart, end: dayEnd } = toDayRange(date);
-  const existingBooking = await Booking.findOne({
-    coachId,
-    date: {
-      $gte: dayStart,
-      $lt: dayEnd,
-    },
-    status: {
-      $in: [
-        "PENDING_CONFIRMATION",
-        "PENDING_INVITES",
-        "CONFIRMED",
-        "IN_PROGRESS",
+  const existingBooking = await prisma.booking.findFirst({
+    where: {
+      coachId,
+      date: {
+        gte: dayStart,
+        lt: dayEnd,
+      },
+      status: { in: ACTIVE_STATUSES },
+      OR: [
+        { startTime: { lte: startTime }, endTime: { gt: startTime } },
+        { startTime: { lt: endTime }, endTime: { gte: endTime } },
+        { startTime: { gte: startTime }, endTime: { lte: endTime } },
       ],
     },
-    $or: [
-      { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
-      { startTime: { $lt: endTime }, endTime: { $gte: endTime } },
-      { startTime: { $gte: startTime }, endTime: { $lte: endTime } },
-    ],
   });
   return !existingBooking;
 };
@@ -2226,7 +2378,10 @@ export const confirmMockPaymentSuccess = async (
   bookingId: string,
   userId: string,
 ): Promise<BookingDocument> => {
-  const booking = await Booking.findById(bookingId).select("+checkInCode");
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: bookingChildren,
+  });
 
   if (!booking) {
     throw new Error("Booking not found");
@@ -2240,30 +2395,33 @@ export const confirmMockPaymentSuccess = async (
     throw new Error("Cannot confirm payment for a cancelled booking");
   }
 
-  await Booking.findOneAndUpdate(
-    {
-      _id: bookingId,
+  await prisma.booking.updateMany({
+    where: {
+      id: bookingId,
       userId,
-      status: { $ne: "CANCELLED" },
-      paymentConfirmedAt: { $exists: false },
+      status: { not: "CANCELLED" },
+      paymentConfirmedAt: null,
     },
-    {
-      $set: { paymentConfirmedAt: new Date() },
-    },
-  );
+    data: { paymentConfirmedAt: new Date() },
+  });
 
-  const emailClaimedBooking = await Booking.findOneAndUpdate(
-    {
-      _id: bookingId,
+  const emailClaim = await prisma.booking.updateMany({
+    where: {
+      id: bookingId,
       userId,
-      status: { $in: ["PENDING_CONFIRMATION", "CONFIRMED"] },
-      confirmationEmailSentAt: { $exists: false },
+      status: { in: ["PENDING_CONFIRMATION", "CONFIRMED"] },
+      confirmationEmailSentAt: null,
     },
-    {
-      $set: { confirmationEmailSentAt: new Date() },
-    },
-    { new: true },
-  ).select("+checkInCode");
+    data: { confirmationEmailSentAt: new Date() },
+  });
+
+  const emailClaimedBooking =
+    emailClaim.count > 0
+      ? await prisma.booking.findUnique({
+          where: { id: bookingId },
+          include: bookingChildren,
+        })
+      : null;
 
   if (emailClaimedBooking) {
     await sendBookingLifecycleEmails(
@@ -2274,21 +2432,28 @@ export const confirmMockPaymentSuccess = async (
     );
   }
 
-  const updatedBooking =
-    await Booking.findById(bookingId).select("+checkInCode");
+  const updatedBooking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: bookingChildren,
+  });
   if (!updatedBooking) {
     throw new Error("Booking not found");
   }
 
   // Send payment confirmation notification
-  const venue = await Venue.findById(updatedBooking.venueId).select("name");
+  const venue = updatedBooking.venueId
+    ? await prisma.venue.findUnique({
+        where: { id: updatedBooking.venueId },
+        select: { name: true },
+      })
+    : null;
   NotificationService.send({
     userId: userId,
     type: "PAYMENT_CONFIRMED",
     title: "Payment Confirmed",
     message: `Your payment for ${updatedBooking.sport} at ${venue?.name || "the venue"} has been confirmed!`,
     data: {
-      bookingId: updatedBooking._id.toString(),
+      bookingId: updatedBooking.id.toString(),
       venueName: venue?.name || "Venue",
       sport: updatedBooking.sport,
       date: updatedBooking.date.toISOString(),
@@ -2309,7 +2474,7 @@ export const confirmMockPaymentSuccess = async (
       title: "Awaiting provider confirmation",
       message: `Your booking for ${updatedBooking.sport} is awaiting provider confirmation.`,
       data: {
-        bookingId: updatedBooking._id.toString(),
+        bookingId: updatedBooking.id.toString(),
         status: updatedBooking.status,
         date: updatedBooking.date.toISOString(),
         startTime: updatedBooking.startTime,
@@ -2326,7 +2491,7 @@ export const confirmMockPaymentSuccess = async (
     title: "Booking confirmed",
     message: `Your booking for ${updatedBooking.sport} is confirmed.`,
     data: {
-      bookingId: updatedBooking._id.toString(),
+      bookingId: updatedBooking.id.toString(),
       status: updatedBooking.status,
       date: updatedBooking.date.toISOString(),
       startTime: updatedBooking.startTime,
@@ -2335,13 +2500,17 @@ export const confirmMockPaymentSuccess = async (
   }).catch(() => {});
 
   // Create booking reminders
-  const user = await User.findById(userId).select(
-    "reminderPreferences notificationPreferences",
-  );
-  if (user && user.reminderPreferences?.bookingReminders?.enabled) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { reminderPreferences: true, notificationPreferences: true },
+  });
+  const reminderPreferences = (user?.reminderPreferences as any) || undefined;
+  const notificationPreferences =
+    (user?.notificationPreferences as any) || undefined;
+  if (user && reminderPreferences?.bookingReminders?.enabled) {
     ScheduledNotificationService.createBookingReminders(
       {
-        bookingId: updatedBooking._id,
+        bookingId: updatedBooking.id,
         userId: updatedBooking.userId,
         bookingDate: updatedBooking.date,
         startTime: updatedBooking.startTime,
@@ -2350,11 +2519,11 @@ export const confirmMockPaymentSuccess = async (
         venueName: venue?.name,
         coachName: undefined,
       },
-      user.reminderPreferences.bookingReminders,
+      reminderPreferences.bookingReminders,
       {
-        email: user.notificationPreferences?.email?.bookingReminders ?? true,
-        push: user.notificationPreferences?.push?.bookingReminders ?? true,
-        inApp: user.notificationPreferences?.inApp?.bookingReminders ?? true,
+        email: notificationPreferences?.email?.bookingReminders ?? true,
+        push: notificationPreferences?.push?.bookingReminders ?? true,
+        inApp: notificationPreferences?.inApp?.bookingReminders ?? true,
       },
     ).catch((err: Error) =>
       console.error(`Failed to create booking reminders for ${userId}:`, err),
@@ -2367,22 +2536,30 @@ export const confirmMockPaymentSuccess = async (
 const sendBookingPaymentConfirmation = async (
   bookingId: string,
 ): Promise<void> => {
-  const booking = await Booking.findById(bookingId).select("+checkInCode");
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: bookingChildren,
+  });
 
   if (!booking) {
     return;
   }
 
-  const emailClaimedBooking = await Booking.findOneAndUpdate(
-    {
-      _id: bookingId,
-      confirmationEmailSentAt: { $exists: false },
+  const emailClaim = await prisma.booking.updateMany({
+    where: {
+      id: bookingId,
+      confirmationEmailSentAt: null,
     },
-    {
-      $set: { confirmationEmailSentAt: new Date() },
-    },
-    { new: true },
-  ).select("+checkInCode");
+    data: { confirmationEmailSentAt: new Date() },
+  });
+
+  const emailClaimedBooking =
+    emailClaim.count > 0
+      ? await prisma.booking.findUnique({
+          where: { id: bookingId },
+          include: bookingChildren,
+        })
+      : null;
 
   if (emailClaimedBooking) {
     await sendBookingLifecycleEmails(
@@ -2393,14 +2570,19 @@ const sendBookingPaymentConfirmation = async (
     );
   }
 
-  const venue = await Venue.findById(booking.venueId).select("name");
+  const venue = booking.venueId
+    ? await prisma.venue.findUnique({
+        where: { id: booking.venueId },
+        select: { name: true },
+      })
+    : null;
   NotificationService.send({
     userId: booking.userId.toString(),
     type: "PAYMENT_CONFIRMED",
     title: "Payment Confirmed",
     message: `Your payment for ${booking.sport} at ${venue?.name || "the venue"} has been confirmed!`,
     data: {
-      bookingId: booking._id.toString(),
+      bookingId: booking.id.toString(),
       venueName: venue?.name || "Venue",
       sport: booking.sport,
       date: booking.date.toISOString(),
@@ -2422,7 +2604,7 @@ const sendBookingPaymentConfirmation = async (
       title: "Awaiting provider confirmation",
       message: `Your booking for ${booking.sport} is awaiting provider confirmation.`,
       data: {
-        bookingId: booking._id.toString(),
+        bookingId: booking.id.toString(),
         status: booking.status,
         date: booking.date.toISOString(),
         startTime: booking.startTime,
@@ -2439,7 +2621,7 @@ const sendBookingPaymentConfirmation = async (
     title: "Booking confirmed",
     message: `Your booking for ${booking.sport} is confirmed.`,
     data: {
-      bookingId: booking._id.toString(),
+      bookingId: booking.id.toString(),
       status: booking.status,
       date: booking.date.toISOString(),
       startTime: booking.startTime,
@@ -2447,13 +2629,17 @@ const sendBookingPaymentConfirmation = async (
     },
   }).catch(() => {});
 
-  const user = await User.findById(booking.userId).select(
-    "reminderPreferences notificationPreferences",
-  );
-  if (user && user.reminderPreferences?.bookingReminders?.enabled) {
+  const user = await prisma.user.findUnique({
+    where: { id: booking.userId },
+    select: { reminderPreferences: true, notificationPreferences: true },
+  });
+  const reminderPreferences = (user?.reminderPreferences as any) || undefined;
+  const notificationPreferences =
+    (user?.notificationPreferences as any) || undefined;
+  if (user && reminderPreferences?.bookingReminders?.enabled) {
     ScheduledNotificationService.createBookingReminders(
       {
-        bookingId: booking._id,
+        bookingId: booking.id,
         userId: booking.userId,
         bookingDate: booking.date,
         startTime: booking.startTime,
@@ -2462,11 +2648,11 @@ const sendBookingPaymentConfirmation = async (
         venueName: venue?.name,
         coachName: undefined,
       },
-      user.reminderPreferences.bookingReminders,
+      reminderPreferences.bookingReminders,
       {
-        email: user.notificationPreferences?.email?.bookingReminders ?? true,
-        push: user.notificationPreferences?.push?.bookingReminders ?? true,
-        inApp: user.notificationPreferences?.inApp?.bookingReminders ?? true,
+        email: notificationPreferences?.email?.bookingReminders ?? true,
+        push: notificationPreferences?.push?.bookingReminders ?? true,
+        inApp: notificationPreferences?.inApp?.bookingReminders ?? true,
       },
     ).catch((err: Error) =>
       console.error(
@@ -2481,14 +2667,14 @@ export const updatePaymentStatus = async (
   bookingId: string,
   payerUserId: string,
   status: "PAID" | "PENDING" | "FAILED",
-  session?: ClientSession,
+  tx?: Prisma.TransactionClient,
 ): Promise<BookingDocument> => {
-  const bookingQuery = Booking.findById(bookingId);
-  if (session) {
-    bookingQuery.session(session);
-  }
+  const db = tx ?? prisma;
 
-  const booking = await bookingQuery;
+  const booking: any = await db.booking.findUnique({
+    where: { id: bookingId },
+    include: bookingChildren,
+  });
 
   if (!booking) {
     throw new Error("Booking not found");
@@ -2497,21 +2683,25 @@ export const updatePaymentStatus = async (
   const wasPaymentConfirmed = Boolean(booking.paymentConfirmedAt);
 
   if (booking.payments && booking.payments.length > 0) {
-    booking.payments = booking.payments.map((payment) => {
+    // Mutate the in-memory shape (preserves the return payload) and persist the
+    // matching payment leg(s).
+    booking.payments = booking.payments.map((payment: any) => {
       if (payment.userId.toString() !== payerUserId) {
         return payment;
       }
-
-      // Use toObject() to safely spread Mongoose subdocuments
-      const plain =
-        typeof (payment as any).toObject === "function"
-          ? (payment as any).toObject()
-          : payment;
       return {
-        ...plain,
+        ...payment,
         status,
         ...(status === "PAID" ? { paidAt: new Date() } : {}),
       };
+    });
+
+    await db.bookingPaymentLeg.updateMany({
+      where: { bookingId, userId: payerUserId },
+      data: {
+        status: status as PaymentLegStatus,
+        ...(status === "PAID" ? { paidAt: new Date() } : {}),
+      },
     });
   }
 
@@ -2522,16 +2712,14 @@ export const updatePaymentStatus = async (
     status === "PAID" &&
     (!booking.payments.length ||
       booking.payments
-        .filter((payment) => payment.userType === "Player")
-        .every((payment) => payment.status === "PAID"))
+        .filter((payment: any) => payment.userType === "Player")
+        .every((payment: any) => payment.status === "PAID"))
   ) {
     booking.paymentConfirmedAt = new Date();
-  }
-
-  if (session) {
-    await booking.save({ session });
-  } else {
-    await booking.save();
+    await db.booking.update({
+      where: { id: bookingId },
+      data: { paymentConfirmedAt: booking.paymentConfirmedAt },
+    });
   }
 
   if (status === "PAID" && booking.paymentConfirmedAt && !wasPaymentConfirmed) {
@@ -2542,28 +2730,31 @@ export const updatePaymentStatus = async (
   if (status === "FAILED") {
     // Automatically delete the booking if payment fails
     // This removes unpaid bookings from showing up for coaches/venues/players
-    if (session) {
-      await Booking.deleteOne({ _id: booking._id }, { session });
-    } else {
-      await Booking.deleteOne({ _id: booking._id });
-    }
+    // (payment legs / participants cascade on delete).
+    await db.booking.delete({ where: { id: booking.id } });
 
-    const venue = await Venue.findById(booking.venueId).select("name");
+    const venue = booking.venueId
+      ? await prisma.venue.findUnique({
+          where: { id: booking.venueId },
+          select: { name: true },
+        })
+      : null;
     NotificationService.send({
       userId: payerUserId,
       type: "PAYMENT_FAILED",
       title: "Payment Failed",
       message: `Your payment for ${booking.sport} at ${venue?.name || "the venue"} has failed. Please try again.`,
       data: {
-        bookingId: booking._id.toString(),
+        bookingId: booking.id.toString(),
         venueName: venue?.name || "Venue",
         sport: booking.sport,
         date: booking.date.toISOString(),
         startTime: booking.startTime,
         endTime: booking.endTime,
         amount:
-          booking.payments.find((p) => p.userId.toString() === payerUserId)
-            ?.amount || 0,
+          booking.payments.find(
+            (p: any) => p.userId.toString() === payerUserId,
+          )?.amount || 0,
       },
     }).catch((err: Error) =>
       console.error(
@@ -2591,9 +2782,6 @@ export interface InitiateGroupBookingPayload extends InitiateBookingPayload {
 export const initiateGroupBooking = async (
   payload: InitiateGroupBookingPayload,
 ): Promise<InitiateBookingResponse> => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     // Validate friend list
     if (!payload.invitedFriendIds || payload.invitedFriendIds.length === 0) {
@@ -2607,15 +2795,19 @@ export const initiateGroupBooking = async (
         friendId,
       );
       if (!areFriends) {
-        const friendUser = await User.findById(friendId);
+        const friendUser = await prisma.user.findUnique({
+          where: { id: friendId },
+        });
         throw new Error(`${friendUser?.name || "User"} is not your friend`);
       }
     }
 
     // Fetch invitee details
-    const invitees = await User.find({
-      _id: { $in: payload.invitedFriendIds },
-      role: "Player",
+    const invitees = await prisma.user.findMany({
+      where: {
+        id: { in: payload.invitedFriendIds },
+        role: "Player",
+      },
     });
 
     if (invitees.length !== payload.invitedFriendIds.length) {
@@ -2624,44 +2816,18 @@ export const initiateGroupBooking = async (
 
     // Create the base booking using the standard flow
     const baseBookingResult = await initiateBooking(payload);
-    const booking = baseBookingResult.booking;
-
-    // Convert to group booking
-    booking.bookingType = "GROUP";
-    booking.organizerId = new mongoose.Types.ObjectId(payload.userId);
-    booking.paymentType = payload.paymentType;
-    booking.splitMethod = "EQUAL";
-
-    // Set status to pending invites
-    booking.status = "PENDING_INVITES";
+    const booking: any = baseBookingResult.booking;
 
     // Add organizer as first participant (auto-accepted)
-    const organizer = await User.findById(payload.userId);
+    const organizer = await prisma.user.findUnique({
+      where: { id: payload.userId },
+    });
     if (!organizer) {
       throw new Error("Organizer not found");
     }
 
-    booking.participants = [
-      {
-        userId: new mongoose.Types.ObjectId(payload.userId),
-        name: organizer.name,
-        status: "ACCEPTED",
-        invitedAt: new Date(),
-        respondedAt: new Date(),
-      },
-    ];
-
-    // Add invited friends as participants
-    for (const invitee of invitees) {
-      booking.participants.push({
-        userId: invitee._id as mongoose.Types.ObjectId,
-        name: invitee.name,
-        status: "INVITED",
-        invitedAt: new Date(),
-      });
-    }
-
     // Calculate payment splits if split payment
+    let newPaymentLegs: any[] | null = null;
     if (payload.paymentType === "SPLIT") {
       // Get venue and coach info for payments
       let venueOwnerId: string | undefined;
@@ -2670,9 +2836,11 @@ export const initiateGroupBooking = async (
       let coachPrice = 0;
 
       if (booking.venueId) {
-        const venue = await Venue.findById(booking.venueId).populate("ownerId");
+        const venue = await prisma.venue.findUnique({
+          where: { id: booking.venueId },
+        });
         if (venue && venue.ownerId) {
-          venueOwnerId = (venue.ownerId as any)._id.toString();
+          venueOwnerId = venue.ownerId;
           // Calculate venue price from booking
           const subtotal =
             booking.totalAmount -
@@ -2680,11 +2848,11 @@ export const initiateGroupBooking = async (
             (booking.taxAmount || 0) +
             (booking.discountAmount || 0);
           if (booking.coachId) {
-            const coach = await Coach.findById(booking.coachId).populate(
-              "userId",
-            );
+            const coach = await prisma.coach.findUnique({
+              where: { id: booking.coachId },
+            });
             if (coach && coach.userId) {
-              coachUserId = (coach.userId as any)._id.toString();
+              coachUserId = coach.userId;
               // Rough estimation: split subtotal proportionally
               // This is simplified; in production you'd track exact venue/coach prices
               venuePrice = Math.round(subtotal * 0.6); // Assume 60% venue
@@ -2709,52 +2877,118 @@ export const initiateGroupBooking = async (
           coachUserId,
         );
 
-        // Convert IPayment[] to BookingPayment[] (string userId to ObjectId)
-        booking.payments = paymentSplits.map((payment) => ({
-          ...payment,
-          userId: new mongoose.Types.ObjectId(payment.userId),
+        newPaymentLegs = paymentSplits.map((payment) => ({
+          userId: payment.userId,
+          userType: payment.userType,
+          amount: payment.amount,
+          status: payment.status,
         }));
       }
-    } else {
-      // Single payment - organizer pays everything
-      // Keep existing payment structure (venue + optional coach)
     }
 
-    await booking.save({ session });
+    // Estimated per-invitee amount (used in invitations + emails)
+    const estimatedAmount =
+      payload.paymentType === "SPLIT"
+        ? Math.round(booking.totalAmount / (invitees.length + 1))
+        : 0;
 
-    // Create booking invitations
-    const invitations = invitees.map((invitee) => ({
-      bookingId: booking._id,
-      inviterId: new mongoose.Types.ObjectId(payload.userId),
-      inviteeId: invitee._id,
-      venueId: booking.venueId,
-      ...(booking.coachId ? { coachId: booking.coachId } : {}),
-      sport: booking.sport,
-      date: booking.date,
-      startTime: booking.startTime,
-      endTime: booking.endTime,
-      estimatedAmount:
-        payload.paymentType === "SPLIT"
-          ? Math.round((booking.totalAmount / (invitees.length + 1)) * 100) /
-            100
-          : 0,
-      status: "PENDING",
-    }));
+    // Persist the conversion to a group booking + participants + split legs +
+    // invitations atomically.
+    const insertedInvitations = await prisma.$transaction(async (txn) => {
+      await txn.booking.update({
+        where: { id: booking.id },
+        data: {
+          bookingType: "GROUP",
+          organizerId: payload.userId,
+          paymentType: payload.paymentType,
+          splitMethod: "EQUAL",
+          status: "PENDING_INVITES",
+        },
+      });
 
-    const insertedInvitations = await BookingInvitation.insertMany(
-      invitations,
-      { session },
-    );
+      // Add organizer as first participant (auto-accepted)
+      await txn.bookingParticipant.create({
+        data: {
+          bookingId: booking.id,
+          userId: payload.userId,
+          name: organizer.name,
+          status: "ACCEPTED",
+          invitedAt: new Date(),
+          respondedAt: new Date(),
+        },
+      });
+
+      // Add invited friends as participants
+      for (const invitee of invitees) {
+        await txn.bookingParticipant.create({
+          data: {
+            bookingId: booking.id,
+            userId: invitee.id,
+            name: invitee.name,
+            status: "INVITED",
+            invitedAt: new Date(),
+          },
+        });
+      }
+
+      if (newPaymentLegs) {
+        await txn.bookingPaymentLeg.deleteMany({
+          where: { bookingId: booking.id },
+        });
+        await txn.bookingPaymentLeg.createMany({
+          data: newPaymentLegs.map((p) => ({
+            bookingId: booking.id,
+            userId: p.userId,
+            userType: p.userType as PaymentUserType,
+            amount: toInt(p.amount),
+            status: (p.status ?? "PENDING") as PaymentLegStatus,
+          })),
+        });
+      }
+
+      // Create booking invitations
+      const created = [];
+      for (const invitee of invitees) {
+        const invitation = await txn.bookingInvitation.create({
+          data: {
+            bookingId: booking.id,
+            inviterId: payload.userId,
+            inviteeId: invitee.id,
+            venueId: booking.venueId ?? "",
+            ...(booking.coachId ? { coachId: booking.coachId } : {}),
+            sport: booking.sport,
+            date: booking.date,
+            startTime: booking.startTime,
+            endTime: booking.endTime,
+            estimatedAmount,
+            status: "PENDING",
+          },
+        });
+        created.push(invitation);
+      }
+      return created;
+    });
+
+    // Reflect the group conversion on the in-memory object.
+    booking.bookingType = "GROUP";
+    booking.organizerId = payload.userId;
+    booking.paymentType = payload.paymentType;
+    booking.splitMethod = "EQUAL";
+    booking.status = "PENDING_INVITES";
 
     // Send invitation emails/notifications
-    const venue = await Venue.findById(booking.venueId).session(session);
-    const inviter = await User.findById(payload.userId).session(session);
+    const venue = booking.venueId
+      ? await prisma.venue.findUnique({ where: { id: booking.venueId } })
+      : null;
+    const inviter = await prisma.user.findUnique({
+      where: { id: payload.userId },
+    });
 
     if (venue && inviter) {
       // Send emails to all invitees (async, don't wait)
       for (const invitee of invitees) {
         const invitation = insertedInvitations.find(
-          (inv) => inv.inviteeId.toString() === invitee._id.toString(),
+          (inv) => inv.inviteeId.toString() === invitee.id.toString(),
         );
         if (invitation) {
           sendBookingInvitationEmail({
@@ -2776,12 +3010,12 @@ export const initiateGroupBooking = async (
 
           // Send real-time notification
           NotificationService.send({
-            userId: invitee._id.toString(),
+            userId: invitee.id.toString(),
             type: "BOOKING_INVITATION",
             title: "New Booking Invitation",
             message: `${inviter.name} invited you to play ${booking.sport} at ${venue.name}`,
             data: {
-              bookingId: booking._id.toString(),
+              bookingId: booking.id.toString(),
               organizerId: payload.userId,
               organizerName: inviter.name,
               venueName: venue.name,
@@ -2793,7 +3027,7 @@ export const initiateGroupBooking = async (
             },
           }).catch((err: Error) =>
             console.error(
-              `Failed to send booking invitation notification to ${invitee._id}:`,
+              `Failed to send booking invitation notification to ${invitee.id}:`,
               err,
             ),
           );
@@ -2801,13 +3035,13 @@ export const initiateGroupBooking = async (
       }
     }
 
-    await session.commitTransaction();
-    session.endSession();
+    const finalBooking = await prisma.booking.findUnique({
+      where: { id: booking.id },
+      include: bookingChildren,
+    });
 
-    return { booking };
+    return { booking: finalBooking as BookingDocument };
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     throw new Error(
       `Failed to initiate group booking: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
@@ -2822,134 +3056,179 @@ export const respondToBookingInvitation = async (
   invitationId: string,
   accept: boolean,
 ): Promise<BookingDocument> => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    const invitation =
-      await BookingInvitation.findById(invitationId).session(session);
+    const result = await prisma.$transaction(async (txn) => {
+      const invitation = await txn.bookingInvitation.findUnique({
+        where: { id: invitationId },
+      });
 
-    if (!invitation) {
-      throw new Error("Invitation not found");
-    }
+      if (!invitation) {
+        throw new Error("Invitation not found");
+      }
 
-    if (invitation.inviteeId.toString() !== userId) {
-      throw new Error("Not authorized to respond to this invitation");
-    }
+      if (invitation.inviteeId.toString() !== userId) {
+        throw new Error("Not authorized to respond to this invitation");
+      }
 
-    if (invitation.status !== "PENDING") {
-      throw new Error("Invitation has already been responded to");
-    }
+      if (invitation.status !== "PENDING") {
+        throw new Error("Invitation has already been responded to");
+      }
 
-    // Update invitation status
-    invitation.status = accept ? "ACCEPTED" : "DECLINED";
-    invitation.respondedAt = new Date();
-    await invitation.save({ session });
+      // Update invitation status
+      await txn.bookingInvitation.update({
+        where: { id: invitationId },
+        data: {
+          status: accept ? "ACCEPTED" : "DECLINED",
+          respondedAt: new Date(),
+        },
+      });
 
-    // Update booking participant status
-    const booking = await Booking.findById(invitation.bookingId).session(
-      session,
-    );
-    if (!booking) {
-      throw new Error("Booking not found");
-    }
+      // Update booking participant status
+      const booking: any = await txn.booking.findUnique({
+        where: { id: invitation.bookingId },
+        include: bookingChildren,
+      });
+      if (!booking) {
+        throw new Error("Booking not found");
+      }
 
-    const participant = booking.participants.find(
-      (p) => p.userId.toString() === userId,
-    );
-
-    if (!participant) {
-      throw new Error("Participant not found in booking");
-    }
-
-    participant.status = accept ? "ACCEPTED" : "DECLINED";
-    participant.respondedAt = new Date();
-
-    // If declined and payment is split, recalculate payments
-    if (!accept && booking.paymentType === "SPLIT") {
-      // Remove this user's payment
-      booking.payments = booking.payments.filter(
-        (p) => p.userId.toString() !== userId || p.userType !== "Player",
+      const participant = booking.participants.find(
+        (p: any) => p.userId.toString() === userId,
       );
 
-      // Recalculate split among remaining accepted participants
-      const acceptedParticipants = booking.participants.filter(
-        (p) => p.status === "ACCEPTED",
+      if (!participant) {
+        throw new Error("Participant not found in booking");
+      }
+
+      await txn.bookingParticipant.update({
+        where: { id: participant.id },
+        data: {
+          status: accept ? "ACCEPTED" : "DECLINED",
+          respondedAt: new Date(),
+        },
+      });
+      participant.status = accept ? "ACCEPTED" : "DECLINED";
+      participant.respondedAt = new Date();
+
+      // If declined and payment is split, recalculate payments
+      if (!accept && booking.paymentType === "SPLIT") {
+        // Remove this user's payment
+        booking.payments = booking.payments.filter(
+          (p: any) => p.userId.toString() !== userId || p.userType !== "Player",
+        );
+
+        // Recalculate split among remaining accepted participants
+        const acceptedParticipants = booking.participants.filter(
+          (p: any) => p.status === "ACCEPTED",
+        );
+
+        if (acceptedParticipants.length > 0) {
+          const playerPayments = booking.payments.filter(
+            (p: any) => p.userType === "Player",
+          );
+          const totalPlayerAmount = playerPayments.reduce(
+            (sum: number, p: any) => sum + p.amount,
+            0,
+          );
+
+          // Redistribute total among accepted participants
+          const amountPerPerson =
+            Math.round((totalPlayerAmount / acceptedParticipants.length) * 100) /
+            100;
+          const sumOfSplits =
+            amountPerPerson * (acceptedParticipants.length - 1);
+          const lastPersonAmount =
+            Math.round((totalPlayerAmount - sumOfSplits) * 100) / 100;
+
+          // Update player payments
+          const nonPlayerPayments = booking.payments.filter(
+            (p: any) => p.userType !== "Player",
+          );
+          booking.payments = [
+            ...nonPlayerPayments,
+            ...acceptedParticipants.map((p: any, index: number) => ({
+              userId: p.userId,
+              userType: "Player" as const,
+              amount:
+                index === acceptedParticipants.length - 1
+                  ? lastPersonAmount
+                  : amountPerPerson,
+              status: "PENDING" as const,
+            })),
+          ];
+        }
+
+        // Persist the recomputed legs.
+        await txn.bookingPaymentLeg.deleteMany({
+          where: { bookingId: booking.id },
+        });
+        if (booking.payments.length > 0) {
+          await txn.bookingPaymentLeg.createMany({
+            data: booking.payments.map((p: any) => ({
+              bookingId: booking.id,
+              userId: p.userId,
+              userType: p.userType as PaymentUserType,
+              amount: toInt(p.amount),
+              status: (p.status ?? "PENDING") as PaymentLegStatus,
+              ...(p.paidAt ? { paidAt: p.paidAt } : {}),
+            })),
+          });
+        }
+      }
+
+      // Check if all invitations have been responded to
+      const allInvitations = await txn.bookingInvitation.findMany({
+        where: { bookingId: booking.id },
+      });
+
+      const allResponded = allInvitations.every(
+        (inv: any) => inv.status !== "PENDING",
       );
 
-      if (acceptedParticipants.length > 0) {
-        const playerPayments = booking.payments.filter(
-          (p) => p.userType === "Player",
-        );
-        const totalPlayerAmount = playerPayments.reduce(
-          (sum, p) => sum + p.amount,
-          0,
-        );
+      const anyAccepted = booking.participants.some(
+        (p: any) =>
+          p.status === "ACCEPTED" &&
+          p.userId.toString() !== booking.organizerId.toString(),
+      );
 
-        // Redistribute total among accepted participants
-        const amountPerPerson =
-          Math.round((totalPlayerAmount / acceptedParticipants.length) * 100) /
-          100;
-        const sumOfSplits = amountPerPerson * (acceptedParticipants.length - 1);
-        const lastPersonAmount =
-          Math.round((totalPlayerAmount - sumOfSplits) * 100) / 100;
-
-        // Update player payments
-        const nonPlayerPayments = booking.payments.filter(
-          (p) => p.userType !== "Player",
-        );
-        booking.payments = [
-          ...nonPlayerPayments,
-          ...acceptedParticipants.map((p, index) => ({
-            userId: p.userId,
-            userType: "Player" as const,
-            amount:
-              index === acceptedParticipants.length - 1
-                ? lastPersonAmount
-                : amountPerPerson,
-            status: "PENDING" as const,
-          })),
-        ];
+      // Update booking status if all have responded
+      const bookingUpdate: any = {};
+      if (allResponded) {
+        if (anyAccepted || booking.participants.length === 1) {
+          // At least one person accepted, or organizer booking alone after declines
+          booking.status = "PENDING_CONFIRMATION";
+          bookingUpdate.status = "PENDING_CONFIRMATION";
+        } else {
+          // Everyone declined
+          booking.status = "CANCELLED";
+          booking.cancelledAt = new Date();
+          booking.cancellationReason = "All invitations declined";
+          bookingUpdate.status = "CANCELLED";
+          bookingUpdate.cancelledAt = booking.cancelledAt;
+          bookingUpdate.cancellationReason = booking.cancellationReason;
+        }
       }
-    }
 
-    // Check if all invitations have been responded to
-    const allInvitations = await BookingInvitation.find({
-      bookingId: booking._id,
-    }).session(session);
-
-    const allResponded = allInvitations.every(
-      (inv: any) => inv.status !== "PENDING",
-    );
-
-    const anyAccepted = booking.participants.some(
-      (p) =>
-        p.status === "ACCEPTED" &&
-        p.userId.toString() !== booking.organizerId.toString(),
-    );
-
-    // Update booking status if all have responded
-    if (allResponded) {
-      if (anyAccepted || booking.participants.length === 1) {
-        // At least one person accepted, or organizer booking alone after declines
-        booking.status = "PENDING_CONFIRMATION";
-      } else {
-        // Everyone declined
-        booking.status = "CANCELLED";
-        booking.cancelledAt = new Date();
-        booking.cancellationReason = "All invitations declined";
+      if (Object.keys(bookingUpdate).length > 0) {
+        await txn.booking.update({
+          where: { id: booking.id },
+          data: bookingUpdate,
+        });
       }
-    }
 
-    await booking.save({ session });
+      return booking as BookingDocument;
+    });
 
-    await session.commitTransaction();
-    session.endSession();
+    const booking = result;
 
     // Send notifications after successful transaction
-    const invitee = await User.findById(userId);
-    const organizer = await User.findById(booking.organizerId);
-    const venue = await Venue.findById(booking.venueId);
+    const invitee = await prisma.user.findUnique({ where: { id: userId } });
+    const organizer = await prisma.user.findUnique({
+      where: { id: booking.organizerId },
+    });
+    const venue = booking.venueId
+      ? await prisma.venue.findUnique({ where: { id: booking.venueId } })
+      : null;
 
     if (accept && invitee && organizer && venue) {
       // Notify organizer that someone accepted
@@ -2959,7 +3238,7 @@ export const respondToBookingInvitation = async (
         title: "Booking Invitation Accepted",
         message: `${invitee.name} accepted your invitation to play ${booking.sport} at ${venue.name}`,
         data: {
-          bookingId: booking._id.toString(),
+          bookingId: booking.id.toString(),
           participantId: userId,
           participantName: invitee.name,
           venueName: venue.name,
@@ -2984,7 +3263,9 @@ export const respondToBookingInvitation = async (
         );
 
         for (const participant of acceptedParticipants) {
-          const participantUser = await User.findById(participant.userId);
+          const participantUser = await prisma.user.findUnique({
+            where: { id: participant.userId },
+          });
           if (participantUser) {
             NotificationService.send({
               userId: participant.userId.toString(),
@@ -2992,7 +3273,7 @@ export const respondToBookingInvitation = async (
               title: "Booking awaiting confirmation",
               message: `Your booking for ${booking.sport} at ${venue.name} is awaiting provider confirmation.`,
               data: {
-                bookingId: booking._id.toString(),
+                bookingId: booking.id.toString(),
                 venueName: venue.name,
                 sport: booking.sport,
                 date: booking.date.toISOString(),
@@ -3013,8 +3294,6 @@ export const respondToBookingInvitation = async (
 
     return booking;
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     throw new Error(
       `Failed to respond to invitation: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
@@ -3029,16 +3308,22 @@ const isProviderAuthorizedForBooking = async (
 
   if (booking.coachId) {
     checks.push(
-      Coach.findById(booking.coachId)
-        .select("userId")
+      prisma.coach
+        .findUnique({
+          where: { id: booking.coachId },
+          select: { userId: true },
+        })
         .then((coach) => coach?.userId?.toString() === providerUserId),
     );
   }
 
   if (booking.venueId) {
     checks.push(
-      Venue.findById(booking.venueId)
-        .select("ownerId")
+      prisma.venue
+        .findUnique({
+          where: { id: booking.venueId },
+          select: { ownerId: true },
+        })
         .then((venue) => venue?.ownerId?.toString() === providerUserId),
     );
   }
@@ -3055,7 +3340,10 @@ export const confirmBookingByProvider = async (
   bookingId: string,
   providerUserId: string,
 ): Promise<BookingDocument> => {
-  const booking = await Booking.findById(bookingId).select("+checkInCode");
+  let booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: bookingChildren,
+  });
 
   if (!booking) {
     throw new Error("Booking not found");
@@ -3077,10 +3365,18 @@ export const confirmBookingByProvider = async (
     throw new Error("Payment has not been confirmed yet");
   }
 
-  booking.status = "CONFIRMED";
-  await booking.save();
+  booking = await prisma.booking.update({
+    where: { id: booking.id },
+    data: { status: "CONFIRMED" },
+    include: bookingChildren,
+  });
 
-  const venue = await Venue.findById(booking.venueId).select("name");
+  const venue = booking.venueId
+    ? await prisma.venue.findUnique({
+        where: { id: booking.venueId },
+        select: { name: true },
+      })
+    : null;
   const participantIds = getBookingParticipantIds(booking);
 
   for (const participantId of participantIds) {
@@ -3090,7 +3386,7 @@ export const confirmBookingByProvider = async (
       title: "Booking confirmed",
       message: `Your booking for ${booking.sport} at ${venue?.name || "the venue"} is confirmed.`,
       data: {
-        bookingId: booking._id.toString(),
+        bookingId: booking.id.toString(),
         venueName: venue?.name || "Venue",
         sport: booking.sport,
         date: booking.date.toISOString(),
@@ -3103,13 +3399,17 @@ export const confirmBookingByProvider = async (
 
   await sendBookingLifecycleEmails(booking, "CONFIRMED");
 
-  const user = await User.findById(booking.userId).select(
-    "reminderPreferences notificationPreferences",
-  );
-  if (user && user.reminderPreferences?.bookingReminders?.enabled) {
+  const user = await prisma.user.findUnique({
+    where: { id: booking.userId },
+    select: { reminderPreferences: true, notificationPreferences: true },
+  });
+  const reminderPreferences = (user?.reminderPreferences as any) || undefined;
+  const notificationPreferences =
+    (user?.notificationPreferences as any) || undefined;
+  if (user && reminderPreferences?.bookingReminders?.enabled) {
     ScheduledNotificationService.createBookingReminders(
       {
-        bookingId: booking._id,
+        bookingId: booking.id,
         userId: booking.userId,
         bookingDate: booking.date,
         startTime: booking.startTime,
@@ -3118,11 +3418,11 @@ export const confirmBookingByProvider = async (
         venueName: venue?.name,
         coachName: undefined,
       },
-      user.reminderPreferences.bookingReminders,
+      reminderPreferences.bookingReminders,
       {
-        email: user.notificationPreferences?.email?.bookingReminders ?? true,
-        push: user.notificationPreferences?.push?.bookingReminders ?? true,
-        inApp: user.notificationPreferences?.inApp?.bookingReminders ?? true,
+        email: notificationPreferences?.email?.bookingReminders ?? true,
+        push: notificationPreferences?.push?.bookingReminders ?? true,
+        inApp: notificationPreferences?.inApp?.bookingReminders ?? true,
       },
     ).catch((err: Error) =>
       console.error(
@@ -3146,11 +3446,14 @@ export const rescheduleBookingByCoach = async (
   newStartTime: string,
   newEndTime: string,
 ): Promise<BookingDocument> => {
-  if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+  if (!isValidId(bookingId)) {
     throw new Error("Invalid booking ID");
   }
 
-  const booking = await Booking.findById(bookingId);
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: bookingChildren,
+  });
   if (!booking) throw new Error("Booking not found");
 
   if (booking.status !== "CONFIRMED") {
@@ -3158,20 +3461,28 @@ export const rescheduleBookingByCoach = async (
   }
 
   // Verify the requesting user is actually the assigned coach
-  const coach = await Coach.findOne({ userId: coachUserId }).select("_id");
+  const coach = await prisma.coach.findFirst({
+    where: { userId: coachUserId },
+    select: { id: true },
+  });
   if (!coach) throw new Error("Coach profile not found");
 
-  if (!booking.coachId || booking.coachId.toString() !== coach._id.toString()) {
+  if (!booking.coachId || booking.coachId.toString() !== coach.id.toString()) {
     throw new Error("Not authorized to reschedule this booking");
   }
 
   // Check that the new slot doesn't conflict with another booking
-  const conflict = await Booking.findOne({
-    _id: { $ne: booking._id },
-    coachId: coach._id,
-    date: newDate,
-    status: { $in: ["CONFIRMED", "IN_PROGRESS", "PENDING_CONFIRMATION"] },
-    $or: [{ startTime: { $lt: newEndTime }, endTime: { $gt: newStartTime } }],
+  const conflict = await prisma.booking.findFirst({
+    where: {
+      id: { not: booking.id },
+      coachId: coach.id,
+      date: newDate,
+      status: {
+        in: ["CONFIRMED", "IN_PROGRESS", "PENDING_CONFIRMATION"],
+      },
+      startTime: { lt: newEndTime },
+      endTime: { gt: newStartTime },
+    },
   });
 
   if (conflict) {
@@ -3180,12 +3491,17 @@ export const rescheduleBookingByCoach = async (
     );
   }
 
-  booking.date = newDate;
-  booking.startTime = newStartTime;
-  booking.endTime = newEndTime;
-  await booking.save();
+  const updatedBooking = await prisma.booking.update({
+    where: { id: booking.id },
+    data: {
+      date: newDate,
+      startTime: newStartTime,
+      endTime: newEndTime,
+    },
+    include: bookingChildren,
+  });
 
-  return booking;
+  return updatedBooking;
 };
 
 export const rejectBookingByProvider = async (
@@ -3197,7 +3513,10 @@ export const rejectBookingByProvider = async (
   refundAmount: number;
   refundStatus?: "PENDING" | "PROCESSED" | "REJECTED";
 }> => {
-  const booking = await Booking.findById(bookingId);
+  let booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: bookingChildren,
+  });
 
   if (!booking) {
     throw new Error("Booking not found");
@@ -3215,10 +3534,16 @@ export const rejectBookingByProvider = async (
     throw new Error("Not authorized to reject this booking");
   }
 
-  booking.status = "CANCELLED";
-  booking.cancelledAt = new Date();
-  booking.cancellationReason = reason || "Rejected by provider";
-  await booking.save();
+  const cancellationReason = reason || "Rejected by provider";
+  booking = await prisma.booking.update({
+    where: { id: booking.id },
+    data: {
+      status: "CANCELLED",
+      cancelledAt: new Date(),
+      cancellationReason,
+    },
+    include: bookingChildren,
+  });
 
   let refundAmount = 0;
   let refundStatus: "PENDING" | "PROCESSED" | "REJECTED" | undefined;
@@ -3227,7 +3552,7 @@ export const rejectBookingByProvider = async (
       const refund = await processBookingRefund(
         bookingId,
         100,
-        booking.cancellationReason,
+        booking.cancellationReason || cancellationReason,
       );
       refundAmount = refund.refundAmount;
       refundStatus = refund.refundStatus;
@@ -3236,7 +3561,12 @@ export const rejectBookingByProvider = async (
     }
   }
 
-  const venue = await Venue.findById(booking.venueId).select("name");
+  const venue = booking.venueId
+    ? await prisma.venue.findUnique({
+        where: { id: booking.venueId },
+        select: { name: true },
+      })
+    : null;
   const participantIds = getBookingParticipantIds(booking);
 
   for (const participantId of participantIds) {
@@ -3246,7 +3576,7 @@ export const rejectBookingByProvider = async (
       title: "Booking declined",
       message: `Your booking for ${booking.sport} at ${venue?.name || "the venue"} was declined by the provider.`,
       data: {
-        bookingId: booking._id.toString(),
+        bookingId: booking.id.toString(),
         venueName: venue?.name || "Venue",
         sport: booking.sport,
         date: booking.date.toISOString(),
@@ -3259,12 +3589,12 @@ export const rejectBookingByProvider = async (
     }).catch(() => {});
   }
 
-  ScheduledNotificationService.cancelBookingReminders(booking._id).catch(
+  ScheduledNotificationService.cancelBookingReminders(booking.id).catch(
     () => {},
   );
 
   await sendBookingLifecycleEmails(booking, "CANCELLED", {
-    cancellationReason: booking.cancellationReason,
+    cancellationReason: booking.cancellationReason || cancellationReason,
     refundAmount,
     refundPercentage: 100,
   });
@@ -3283,7 +3613,10 @@ export const coverUnpaidShares = async (
   bookingId: string,
   organizerId: string,
 ): Promise<BookingDocument> => {
-  const booking = await Booking.findById(bookingId);
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: bookingChildren,
+  });
 
   if (!booking) {
     throw new Error("Booking not found");
@@ -3313,44 +3646,55 @@ export const coverUnpaidShares = async (
   const coveredUserIds = unpaidPlayerPayments.map((p) => p.userId.toString());
 
   // Calculate total unpaid amount
-  const totalUnpaid = unpaidPlayerPayments.reduce(
-    (sum, p) => sum + p.amount,
-    0,
-  );
+  const totalUnpaid = unpaidPlayerPayments.reduce((sum, p) => sum + p.amount, 0);
 
   // Find organizer's payment
   const organizerPayment = booking.payments.find(
     (p) => p.userId.toString() === organizerId && p.userType === "Player",
   );
 
-  if (organizerPayment) {
-    // Increase organizer's payment to cover unpaid shares
-    organizerPayment.amount += totalUnpaid;
-  } else {
-    // Create new payment for organizer covering unpaid shares
-    booking.payments.push({
-      userId: new mongoose.Types.ObjectId(organizerId),
-      userType: "Player",
-      amount: totalUnpaid,
-      status: "PENDING",
+  await prisma.$transaction(async (txn) => {
+    if (organizerPayment) {
+      // Increase organizer's payment to cover unpaid shares
+      await txn.bookingPaymentLeg.update({
+        where: { id: organizerPayment.id },
+        data: { amount: { increment: totalUnpaid } },
+      });
+    } else {
+      // Create new payment for organizer covering unpaid shares
+      await txn.bookingPaymentLeg.create({
+        data: {
+          bookingId: booking.id,
+          userId: organizerId,
+          userType: "Player",
+          amount: toInt(totalUnpaid),
+          status: "PENDING",
+        },
+      });
+    }
+
+    // Remove unpaid payments from other users
+    await txn.bookingPaymentLeg.deleteMany({
+      where: {
+        bookingId: booking.id,
+        userType: "Player",
+        status: "PENDING",
+        userId: { not: organizerId },
+      },
     });
-  }
-
-  // Remove unpaid payments from other users
-  booking.payments = booking.payments.filter(
-    (p) =>
-      !(
-        p.userType === "Player" &&
-        p.status === "PENDING" &&
-        p.userId.toString() !== organizerId
-      ),
-  );
-
-  await booking.save();
+  });
 
   // Send notifications to users whose payments were covered
-  const venue = await Venue.findById(booking.venueId).select("name");
-  const organizer = await User.findById(organizerId).select("name");
+  const venue = booking.venueId
+    ? await prisma.venue.findUnique({
+        where: { id: booking.venueId },
+        select: { name: true },
+      })
+    : null;
+  const organizer = await prisma.user.findUnique({
+    where: { id: organizerId },
+    select: { name: true },
+  });
 
   for (const userId of coveredUserIds) {
     NotificationService.send({
@@ -3359,7 +3703,7 @@ export const coverUnpaidShares = async (
       title: "Payment Covered",
       message: `${organizer?.name || "The organizer"} has covered your share for ${booking.sport} at ${venue?.name || "the venue"}.`,
       data: {
-        bookingId: booking._id.toString(),
+        bookingId: booking.id.toString(),
         venueName: venue?.name || "Venue",
         sport: booking.sport,
         date: booking.date.toISOString(),
@@ -3376,7 +3720,12 @@ export const coverUnpaidShares = async (
     );
   }
 
-  return booking;
+  const finalBooking = await prisma.booking.findUnique({
+    where: { id: booking.id },
+    include: bookingChildren,
+  });
+
+  return finalBooking as BookingDocument;
 };
 
 /**
@@ -3386,19 +3735,56 @@ export const getUserBookingInvitations = async (
   userId: string,
   status?: "PENDING" | "ACCEPTED" | "DECLINED",
 ): Promise<any[]> => {
-  const query: any = { inviteeId: userId };
+  const where: any = { inviteeId: userId };
   if (status) {
-    query.status = status;
+    where.status = status;
   }
 
-  const invitations = await BookingInvitation.find(query)
-    .populate("inviterId", "name email photoUrl")
-    .populate("venueId", "name location address")
-    .populate("coachId", "name sport")
-    .populate("bookingId")
-    .sort({ createdAt: -1 });
+  const invitations = await prisma.bookingInvitation.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+  });
 
-  return invitations;
+  // Populate the String-FK refs (inviterId/venueId/coachId/bookingId) via
+  // follow-up queries and attach them the way Mongoose populate did.
+  const [inviters, venues, coaches, bookings] = await Promise.all([
+    prisma.user.findMany({
+      where: { id: { in: uniqueStrings(invitations.map((i) => i.inviterId)) } },
+      select: { id: true, name: true, email: true, photoUrl: true },
+    }),
+    prisma.venue.findMany({
+      where: { id: { in: uniqueStrings(invitations.map((i) => i.venueId)) } },
+      select: { id: true, name: true, address: true },
+    }),
+    prisma.coach.findMany({
+      where: { id: { in: uniqueStrings(invitations.map((i) => i.coachId)) } },
+      select: { id: true, sports: true },
+    }),
+    prisma.booking.findMany({
+      where: { id: { in: uniqueStrings(invitations.map((i) => i.bookingId)) } },
+      include: bookingChildren,
+    }),
+  ]);
+
+  const invitersById = new Map(inviters.map((u) => [u.id, u]));
+  const venuesById = new Map(venues.map((v) => [v.id, v]));
+  const coachesById = new Map(coaches.map((c) => [c.id, c]));
+  const bookingsById = new Map(bookings.map((b) => [b.id, b]));
+
+  return invitations.map((invitation) => {
+    const augmented: any = { ...invitation };
+    augmented.inviterId =
+      invitersById.get(invitation.inviterId) ?? invitation.inviterId;
+    augmented.venueId = invitation.venueId
+      ? (venuesById.get(invitation.venueId) ?? invitation.venueId)
+      : invitation.venueId;
+    augmented.coachId = invitation.coachId
+      ? (coachesById.get(invitation.coachId) ?? invitation.coachId)
+      : invitation.coachId;
+    augmented.bookingId =
+      bookingsById.get(invitation.bookingId) ?? invitation.bookingId;
+    return augmented;
+  });
 };
 
 // Legacy function for backward compatibility
@@ -3418,11 +3804,11 @@ export const cleanupStaleBookingLocks = async (): Promise<number> => {
     .slice(0, 10);
 
   // Delete locks with dateKey < today (past dates)
-  const result = await BookingSlotLock.deleteMany({
-    dateKey: { $lt: todayKey },
+  const result = await prisma.bookingSlotLock.deleteMany({
+    where: { dateKey: { lt: todayKey } },
   });
 
-  return result.deletedCount || 0;
+  return result.count || 0;
 };
 
 /**
@@ -3434,13 +3820,15 @@ export const cleanupStaleBookingLocks = async (): Promise<number> => {
 export const cleanupExpiredBookings = async (): Promise<number> => {
   const now = new Date();
 
-  const result = await Booking.deleteMany({
-    status: { $in: ["PENDING_CONFIRMATION", "PENDING_INVITES"] },
-    paymentConfirmedAt: { $exists: false },
-    expiresAt: { $lt: now },
+  const result = await prisma.booking.deleteMany({
+    where: {
+      status: { in: ["PENDING_CONFIRMATION", "PENDING_INVITES"] },
+      paymentConfirmedAt: null,
+      expiresAt: { lt: now },
+    },
   });
 
-  return result.deletedCount || 0;
+  return result.count || 0;
 };
 
 // ============================================
@@ -3498,8 +3886,8 @@ export const reconcileBookingPaymentFromWebhookPayload = async (
     return null;
   }
 
-  const transaction = await BookingPaymentTransaction.findOne({
-    merchantOrderId,
+  const transaction = await prisma.bookingPaymentTransaction.findUnique({
+    where: { merchantOrderId },
   });
   if (!transaction) {
     return null;
@@ -3524,12 +3912,10 @@ export const reconcileBookingPaymentFromWebhookPayload = async (
 
   const state = normalizeState(rawState);
 
-  // Store the webhook callback on the transaction
-  transaction.callbackPayload = payload as any;
-  transaction.state = state;
+  let newStatus: "COMPLETED" | "FAILED" | undefined;
 
   if (state === "COMPLETED" && transaction.status !== "COMPLETED") {
-    transaction.status = "COMPLETED";
+    newStatus = "COMPLETED";
     await updatePaymentStatus(
       transaction.bookingId.toString(),
       transaction.userId.toString(),
@@ -3539,7 +3925,7 @@ export const reconcileBookingPaymentFromWebhookPayload = async (
       `[BookingWebhook] Payment confirmed for booking ${transaction.bookingId}, merchantOrderId=${merchantOrderId}`,
     );
   } else if (state === "FAILED" && transaction.status !== "FAILED") {
-    transaction.status = "FAILED";
+    newStatus = "FAILED";
     await updatePaymentStatus(
       transaction.bookingId.toString(),
       transaction.userId.toString(),
@@ -3550,8 +3936,17 @@ export const reconcileBookingPaymentFromWebhookPayload = async (
     );
   }
 
-  await transaction.save();
-  return transaction;
+  // Store the webhook callback on the transaction (+ state / status change).
+  const updated = await prisma.bookingPaymentTransaction.update({
+    where: { id: transaction.id },
+    data: {
+      callbackPayload: payload as any,
+      state,
+      ...(newStatus ? { status: newStatus } : {}),
+    },
+  });
+
+  return updated;
 };
 
 /**
@@ -3563,35 +3958,42 @@ const notifyWaitlistForFreedSlot = async (
   booking: BookingDocument,
 ): Promise<void> => {
   try {
-    const match: Record<string, unknown> = {
+    const where: Record<string, unknown> = {
       status: "ACTIVE",
       date: booking.date,
       startTime: booking.startTime,
     };
     if (booking.coachId) {
-      match.coachId = booking.coachId;
+      where.coachId = booking.coachId;
     } else if (booking.venueId) {
-      match.venueId = booking.venueId;
+      where.venueId = booking.venueId;
     } else {
       return;
     }
 
-    const entries = await BookingWaitlist.find(match).limit(50);
+    const entries = await prisma.bookingWaitlist.findMany({
+      where: where as any,
+      take: 50,
+    });
     if (entries.length === 0) {
       return;
     }
 
     let venueName = "your coach";
     if (booking.venueId) {
-      const venue = await Venue.findById(booking.venueId).select("name").lean();
+      const venue = await prisma.venue.findUnique({
+        where: { id: booking.venueId },
+        select: { name: true },
+      });
       venueName = venue?.name || "the venue";
     }
 
     for (const entry of entries) {
       try {
-        const user = await User.findById(entry.userId)
-          .select("name email")
-          .lean();
+        const user = await prisma.user.findUnique({
+          where: { id: entry.userId },
+          select: { name: true, email: true },
+        });
         if (user?.email) {
           await sendWaitlistSlotAvailableEmail({
             name: user.name,
@@ -3603,12 +4005,14 @@ const notifyWaitlistForFreedSlot = async (
             endTime: booking.endTime,
           });
         }
-        entry.status = "NOTIFIED";
-        await entry.save();
+        await prisma.bookingWaitlist.update({
+          where: { id: entry.id },
+          data: { status: "NOTIFIED" },
+        });
       } catch (perEntryError) {
         console.error(
           "Failed to notify waitlist entry",
-          entry._id?.toString(),
+          entry.id?.toString(),
           perEntryError,
         );
       }

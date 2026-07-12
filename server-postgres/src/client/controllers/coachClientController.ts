@@ -5,7 +5,7 @@ import {
   addClientNote,
   deleteClientNote,
 } from "../services/CoachClientService";
-import { NoteType } from "../models/CoachClientNote";
+import type { NoteType } from "@prisma/client";
 
 export const getCoachClientsHandler = async (
   req: Request,

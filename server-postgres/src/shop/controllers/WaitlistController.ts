@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { ShopWaitlist } from "../models/ShopWaitlist";
+import prisma from "../../lib/prisma";
 
 export const joinWaitlist = async (
   req: Request,
@@ -26,8 +26,8 @@ export const joinWaitlist = async (
       return;
     }
 
-    const existingEntry = await ShopWaitlist.findOne({
-      email: email.toLowerCase(),
+    const existingEntry = await prisma.shopWaitlist.findFirst({
+      where: { email: email.toLowerCase() },
     });
 
     if (existingEntry) {
@@ -38,7 +38,7 @@ export const joinWaitlist = async (
       return;
     }
 
-    await ShopWaitlist.create({ email: email.toLowerCase() });
+    await prisma.shopWaitlist.create({ data: { email: email.toLowerCase() } });
 
     res.status(201).json({
       success: true,
