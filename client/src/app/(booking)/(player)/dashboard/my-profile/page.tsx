@@ -87,6 +87,39 @@ const formatGender = (gender?: string) => {
   return null;
 };
 
+const AMBITION_LABELS: Record<string, string> = {
+  fun: "Plays for fun",
+  competitive: "Competitive",
+  national: "National goal",
+  professional: "Professional path",
+};
+const ENERGY_LABELS: Record<string, string> = {
+  explosive: "Explosive energy",
+  endurance: "Endurance type",
+};
+const FOCUS_LABELS: Record<string, string> = {
+  bursts: "Focuses in bursts",
+  sustained: "Sustained focus",
+};
+const DECISION_LABELS: Record<string, string> = {
+  react: "Instinctive",
+  strategic: "Strategic thinker",
+};
+const BUILD_LABELS: Record<string, string> = {
+  lean: "Lean build",
+  average: "Average build",
+  stocky: "Strong build",
+};
+const HEIGHT_LABELS: Record<string, string> = {
+  short: "Compact for age",
+  average: "Average height",
+  tall: "Tall for age",
+};
+
+function depChip(val: string | undefined, map: Record<string, string>) {
+  return val ? map[val] ?? null : null;
+}
+
 function ProfilePageSkeleton() {
   return (
     <div className="space-y-6">
@@ -1183,50 +1216,109 @@ export default function ProfilePage() {
                               </p>
                             )}
 
-                            {dependent.sportsFocus &&
-                              dependent.sportsFocus.length > 0 && (
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                  {dependent.sportsFocus.map(
-                                    (sport: string) => (
-                                      <Badge
-                                        key={sport}
-                                        className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50"
-                                      >
-                                        {sport}
-                                      </Badge>
-                                    ),
-                                  )}
+                            {/* Wizard sport picks */}
+                            {(dependent.sportMatches?.length ?? 0) > 0 ? (
+                              <div className="mt-3">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                  Assessment picks
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {dependent.sportMatches!.map((m, i) => (
+                                    <div
+                                      key={m.sport}
+                                      className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
+                                        i === 0
+                                          ? "border-turf-green/30 bg-turf-green/10 text-turf-green"
+                                          : "border-slate-200 bg-white text-slate-600"
+                                      }`}
+                                    >
+                                      <span className="text-xs font-semibold">
+                                        {m.sport}
+                                      </span>
+                                      <span className="text-[10px] opacity-60">
+                                        {m.fitLabel}
+                                      </span>
+                                    </div>
+                                  ))}
                                 </div>
-                              )}
+                              </div>
+                            ) : dependent.sportsFocus && dependent.sportsFocus.length > 0 ? (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {dependent.sportsFocus.map((sport: string) => (
+                                  <Badge
+                                    key={sport}
+                                    className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50"
+                                  >
+                                    {sport}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : null}
 
-                            {((dependent as any).heightCm ||
-                              (dependent as any).weightKg) && (
-                              <p className="mt-2 text-xs text-slate-500">
-                                {(dependent as any).heightCm
-                                  ? `${(dependent as any).heightCm} cm`
-                                  : ""}
-                                {(dependent as any).heightCm &&
-                                (dependent as any).weightKg
-                                  ? " · "
-                                  : ""}
-                                {(dependent as any).weightKg
-                                  ? `${(dependent as any).weightKg} kg`
-                                  : ""}
-                              </p>
+                            {/* Physical + personality trait chips */}
+                            {(dependent.energyType ||
+                              dependent.ambition ||
+                              dependent.build ||
+                              dependent.focusStyle ||
+                              dependent.decisionStyle ||
+                              dependent.heightCm) && (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {(dependent.heightCm || dependent.weightKg) && (
+                                  <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-500">
+                                    {dependent.heightCm
+                                      ? `${dependent.heightCm} cm`
+                                      : ""}
+                                    {dependent.heightCm && dependent.weightKg
+                                      ? " · "
+                                      : ""}
+                                    {dependent.weightKg
+                                      ? `${dependent.weightKg} kg`
+                                      : ""}
+                                    {dependent.build
+                                      ? ` · ${BUILD_LABELS[dependent.build]}`
+                                      : ""}
+                                    {dependent.heightCategory && !dependent.build
+                                      ? ` · ${HEIGHT_LABELS[dependent.heightCategory]}`
+                                      : ""}
+                                  </span>
+                                )}
+                                {depChip(dependent.energyType, ENERGY_LABELS) && (
+                                  <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] text-blue-600">
+                                    {depChip(dependent.energyType, ENERGY_LABELS)}
+                                  </span>
+                                )}
+                                {depChip(dependent.ambition, AMBITION_LABELS) && (
+                                  <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] text-indigo-600">
+                                    {depChip(dependent.ambition, AMBITION_LABELS)}
+                                  </span>
+                                )}
+                                {depChip(dependent.focusStyle, FOCUS_LABELS) && (
+                                  <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-500">
+                                    {depChip(dependent.focusStyle, FOCUS_LABELS)}
+                                  </span>
+                                )}
+                                {depChip(dependent.decisionStyle, DECISION_LABELS) && (
+                                  <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-500">
+                                    {depChip(
+                                      dependent.decisionStyle,
+                                      DECISION_LABELS,
+                                    )}
+                                  </span>
+                                )}
+                              </div>
                             )}
 
-                            {(dependent as any).medicalConditions?.length > 0 && (
+                            {/* Medical conditions */}
+                            {(dependent.medicalConditions?.length ?? 0) > 0 && (
                               <div className="mt-2 flex flex-wrap gap-1.5">
-                                {(dependent as any).medicalConditions.map(
-                                  (cond: string) => (
-                                    <Badge
-                                      key={cond}
-                                      className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50 text-[11px]"
-                                    >
-                                      {cond}
-                                    </Badge>
-                                  ),
-                                )}
+                                {dependent.medicalConditions!.map((cond) => (
+                                  <Badge
+                                    key={cond}
+                                    className="border-amber-200 bg-amber-50 text-[11px] text-amber-700 hover:bg-amber-50"
+                                  >
+                                    {cond}
+                                  </Badge>
+                                ))}
                               </div>
                             )}
                           </div>

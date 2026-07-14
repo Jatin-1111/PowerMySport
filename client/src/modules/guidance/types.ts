@@ -20,6 +20,23 @@ export type GuidanceFormState = {
   parent_sport_interest?: string[];
   /** How long the parent has been involved or interested in sport, in years (0 = just starting) */
   parent_involvement_years?: number;
+  // Wizard assessment signals — populated from child profile when available
+  wizard_build?: "lean" | "average" | "stocky";
+  wizard_height?: "short" | "average" | "tall";
+  wizard_energy_type?: "explosive" | "endurance";
+  wizard_motor_type?: "gross" | "fine";
+  wizard_visual_tracking?: "strong" | "moderate" | "weak";
+  wizard_team_individual?: number;
+  wizard_competitive_response?: "fired-up" | "calm" | "discouraged";
+  wizard_focus_style?: "bursts" | "sustained";
+  wizard_decision_style?: "react" | "strategic";
+  wizard_pressure_response?: "thrives" | "manages" | "avoids";
+  wizard_repetition_tolerance?: "high" | "low";
+  wizard_contact_comfort?: "loves" | "neutral" | "avoids";
+  wizard_environment?: "outdoor" | "indoor" | "no-preference";
+  wizard_water_comfort?: "comfortable" | "neutral" | "uncomfortable";
+  wizard_eyesight?: "sharp" | "corrected" | "limited";
+  wizard_agility?: "high" | "moderate" | "low";
 };
 
 export type BurnoutRisk = {
@@ -96,4 +113,29 @@ export type PlayerProfile = {
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;
+  // Wizard fields
+  heightCm?: number;
+  weightKg?: number;
+  build?: "lean" | "average" | "stocky";
+  heightCategory?: "short" | "average" | "tall";
+  energyType?: "explosive" | "endurance";
+  motorType?: "gross" | "fine";
+  visualTracking?: "strong" | "moderate" | "weak";
+  teamIndividual?: number;
+  competitiveResponse?: "fired-up" | "calm" | "discouraged";
+  focusStyle?: "bursts" | "sustained";
+  decisionStyle?: "react" | "strategic";
+  pressureResponse?: "thrives" | "manages" | "avoids";
+  repetitionTolerance?: "high" | "low";
+  contactComfort?: "loves" | "neutral" | "avoids";
+  environment?: "outdoor" | "indoor" | "no-preference";
+  waterComfort?: "comfortable" | "neutral" | "uncomfortable";
+  budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
+  ambition?: "fun" | "competitive" | "national" | "professional";
+  eyesight?: "sharp" | "corrected" | "limited";
+  agility?: "high" | "moderate" | "low";
+  weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
+  wizardCity?: string;
+  sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
+  wizardCompletedAt?: string;
 };

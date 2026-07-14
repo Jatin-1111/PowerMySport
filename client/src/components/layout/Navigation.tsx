@@ -16,6 +16,7 @@ import {
     Menu,
     Settings,
     ShoppingBag,
+    Star,
     User,
     Users,
     X,
@@ -46,6 +47,12 @@ const servicesItems = [
 ];
 
 const exploreItems = [
+  {
+    href: "/pathway",
+    label: "Find Your Sport",
+    description: "Sport recommendation for your child",
+    icon: Star,
+  },
   {
     href: "/roadmap",
     label: "Roadmap",

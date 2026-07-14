@@ -513,6 +513,29 @@ export interface AddDependentPayload {
   heightCm?: number;
   weightKg?: number;
   medicalConditions?: string[];
+  // Wizard physical
+  build?: "lean" | "average" | "stocky";
+  heightCategory?: "short" | "average" | "tall";
+  energyType?: "explosive" | "endurance";
+  motorType?: "gross" | "fine";
+  visualTracking?: "strong" | "moderate" | "weak";
+  // Wizard personality
+  teamIndividual?: number;
+  competitiveResponse?: "fired-up" | "calm" | "discouraged";
+  focusStyle?: "bursts" | "sustained";
+  decisionStyle?: "react" | "strategic";
+  pressureResponse?: "thrives" | "manages" | "avoids";
+  repetitionTolerance?: "high" | "low";
+  // Wizard comfort
+  contactComfort?: "loves" | "neutral" | "avoids";
+  environment?: "outdoor" | "indoor" | "no-preference";
+  waterComfort?: "comfortable" | "neutral" | "uncomfortable";
+  // Wizard practical
+  budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
+  ambition?: "fun" | "competitive" | "national" | "professional";
+  wizardCity?: string;
+  sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
+  wizardCompletedAt?: string | Date;
 }
 
 function calculateAge(dob: Date): number {
@@ -615,6 +638,32 @@ export const updateDependent = async (
   if (payload.heightCm !== undefined) (dependent as any).heightCm = payload.heightCm;
   if (payload.weightKg !== undefined) (dependent as any).weightKg = payload.weightKg;
   if (payload.medicalConditions !== undefined) (dependent as any).medicalConditions = payload.medicalConditions;
+  // Wizard physical
+  if (payload.build !== undefined) (dependent as any).build = payload.build;
+  if (payload.heightCategory !== undefined) (dependent as any).heightCategory = payload.heightCategory;
+  if (payload.energyType !== undefined) (dependent as any).energyType = payload.energyType;
+  if (payload.motorType !== undefined) (dependent as any).motorType = payload.motorType;
+  if (payload.visualTracking !== undefined) (dependent as any).visualTracking = payload.visualTracking;
+  // Wizard personality
+  if (payload.teamIndividual !== undefined) (dependent as any).teamIndividual = payload.teamIndividual;
+  if (payload.competitiveResponse !== undefined) (dependent as any).competitiveResponse = payload.competitiveResponse;
+  if (payload.focusStyle !== undefined) (dependent as any).focusStyle = payload.focusStyle;
+  if (payload.decisionStyle !== undefined) (dependent as any).decisionStyle = payload.decisionStyle;
+  if (payload.pressureResponse !== undefined) (dependent as any).pressureResponse = payload.pressureResponse;
+  if (payload.repetitionTolerance !== undefined) (dependent as any).repetitionTolerance = payload.repetitionTolerance;
+  // Wizard comfort
+  if (payload.contactComfort !== undefined) (dependent as any).contactComfort = payload.contactComfort;
+  if (payload.environment !== undefined) (dependent as any).environment = payload.environment;
+  if (payload.waterComfort !== undefined) (dependent as any).waterComfort = payload.waterComfort;
+  // Wizard practical
+  if (payload.budgetRange !== undefined) (dependent as any).budgetRange = payload.budgetRange;
+  if (payload.ambition !== undefined) (dependent as any).ambition = payload.ambition;
+  if (payload.wizardCity !== undefined) (dependent as any).wizardCity = payload.wizardCity;
+  if (payload.sportMatches !== undefined) (dependent as any).sportMatches = payload.sportMatches;
+  if (payload.wizardCompletedAt !== undefined) {
+    const d = new Date(payload.wizardCompletedAt);
+    if (!isNaN(d.getTime())) (dependent as any).wizardCompletedAt = d;
+  }
 
   await dependent.save();
   return dependent;

@@ -28,6 +28,7 @@ import { Sport, sportsApi } from "@/modules/sports/services/sports";
 import { AnimatePresence, motion } from "framer-motion";
 import Fuse from "fuse.js";
 import {
+    ArrowLeft,
     ArrowRight,
     BadgeCheck,
     Briefcase,
@@ -176,6 +177,7 @@ export function PathwayExplorerSection() {
     budget: string;
     state: string;
   } | null>(null);
+  const [hasWizardResults, setHasWizardResults] = useState(false);
 
   // Restore cached pathway result before the browser paints — prevents any
   // loading/idle flash when the user navigates back from a federation or
@@ -258,6 +260,18 @@ export function PathwayExplorerSection() {
     if (typeof window !== "undefined" && !localStorage.getItem(INTRO_KEY)) {
       setIntroModalOpen(true);
     }
+  }, []);
+
+  // Show "Back to assessment" link when wizard results exist in localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("pms_wizard_results");
+      if (!raw) return;
+      const { savedAt } = JSON.parse(raw);
+      if (Date.now() - new Date(savedAt).getTime() < 24 * 60 * 60 * 1000) {
+        setHasWizardResults(true);
+      }
+    } catch {}
   }, []);
 
   const handleSavedChange = (items: SavedItem[]) => {
@@ -468,8 +482,9 @@ export function PathwayExplorerSection() {
     const sport = searchParams.get("sport");
     const level = searchParams.get("level");
     const state = searchParams.get("state");
-    const age = searchParams.get("age");
-    const budget = searchParams.get("budget");
+    // Support both legacy "age"/"budget" and wizard-generated "childAge"/"budgetTier"
+    const age = searchParams.get("childAge") || searchParams.get("age");
+    const budget = searchParams.get("budgetTier") || searchParams.get("budget");
 
     if (state) handleStateChange(state);
 
@@ -566,6 +581,19 @@ export function PathwayExplorerSection() {
             your child needs at every level.
           </motion.p>
         </motion.div>
+
+        {/* Back-to-assessment pill — visible when wizard results are in localStorage */}
+        {hasWizardResults && (
+          <div className="flex justify-center mb-5">
+            <a
+              href="/pathway"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-medium text-slate-500 shadow-sm hover:border-power-orange hover:text-power-orange transition-all"
+            >
+              <ArrowLeft className="h-3 w-3" />
+              Back to your assessment
+            </a>
+          </div>
+        )}
 
         {/* Search bar + P2 State selector */}
         <motion.div

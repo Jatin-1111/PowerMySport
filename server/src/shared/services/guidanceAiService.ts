@@ -25,6 +25,23 @@ export const guidanceRequestSchema = z.object({
   parent_bio: z.string().trim().max(300).optional(),
   parent_sport_interest: z.array(z.string().trim()).optional(),
   parent_involvement_years: z.number().min(0).max(40).optional(),
+  // Wizard assessment signals — physical and psychological profile from the sport-finder wizard
+  wizard_build: z.enum(["lean", "average", "stocky"]).optional(),
+  wizard_height: z.enum(["short", "average", "tall"]).optional(),
+  wizard_energy_type: z.enum(["explosive", "endurance"]).optional(),
+  wizard_motor_type: z.enum(["gross", "fine"]).optional(),
+  wizard_visual_tracking: z.enum(["strong", "moderate", "weak"]).optional(),
+  wizard_team_individual: z.number().min(1).max(5).optional(),
+  wizard_competitive_response: z.enum(["fired-up", "calm", "discouraged"]).optional(),
+  wizard_focus_style: z.enum(["bursts", "sustained"]).optional(),
+  wizard_decision_style: z.enum(["react", "strategic"]).optional(),
+  wizard_pressure_response: z.enum(["thrives", "manages", "avoids"]).optional(),
+  wizard_repetition_tolerance: z.enum(["high", "low"]).optional(),
+  wizard_contact_comfort: z.enum(["loves", "neutral", "avoids"]).optional(),
+  wizard_environment: z.enum(["outdoor", "indoor", "no-preference"]).optional(),
+  wizard_water_comfort: z.enum(["comfortable", "neutral", "uncomfortable"]).optional(),
+  wizard_eyesight: z.enum(["sharp", "corrected", "limited"]).optional(),
+  wizard_agility: z.enum(["high", "moderate", "low"]).optional(),
 });
 
 export const burnoutRiskSchema = z.object({
@@ -96,6 +113,7 @@ export const getYouthSportsGuidanceSystemPrompt = (
 ) => `You are an expert Youth Sports Consultant advising an Indian parent. You will receive a child's profile strictly in JSON format.
 ${groundingContext ? `\nGROUNDING CONTEXT (OFFICIAL PATHWAY DATA):\n${groundingContext}\n\nYou must anchor your journey phases to these official benchmarks. Do not invent contradictory timelines or criteria.\n` : ""}
 WRITE IN THE SIMPLEST POSSIBLE ENGLISH: every field must read like you are speaking out loud to a parent who has never played sport and does not use advanced English. Use only simple, everyday words — prefer short common words over long or formal ones (say "help" not "facilitate", "start" not "commence", "show" not "demonstrate", "use" not "utilize", "enough" not "sufficient"). Use short sentences and active voice. Never use a sport-federation acronym (AITA, ITF, FIDE, SAI, BCCI, WTA, etc.) without immediately explaining it in plain words the first time it appears. Avoid dense, jargon-heavy, or fancy/sophisticated phrasing anywhere in the response — this applies to every field, not just names and acronyms.
+If the profile includes wizard assessment fields (wizard_build, wizard_height, wizard_energy_type, wizard_motor_type, wizard_visual_tracking, wizard_team_individual, wizard_competitive_response, wizard_focus_style, wizard_decision_style, wizard_pressure_response, wizard_repetition_tolerance, wizard_contact_comfort, wizard_environment, wizard_water_comfort, wizard_eyesight, wizard_agility), use them to deepen your profileAnalysis and coaching style — they are direct observations about the child's physical build, energy pattern, motor skills, eyesight quality, agility level, and psychological tendencies from a structured assessment. When present, prefer them over generic inferences from age and personality_tags alone. wizard_eyesight (sharp/corrected/limited) is relevant for precision sports and activities requiring strong visual tracking. wizard_agility (high/moderate/low) is relevant for sports demanding quick footwork and flexibility like gymnastics, badminton, or kabaddi.
 GIVE EACH FIELD ONE JOB, NEVER REPEAT CONTENT ACROSS FIELDS: "profileAnalysis" ONLY covers the child's personality/fitness/age and never discusses whether their goal is realistic. "goalAssessment.rationale" ONLY covers the realism reasoning (timeframe, level, hours) and must NOT re-describe the child's personality — assume the reader already read profileAnalysis. "recommendedPlatformActions" ONLY lists actions the parent takes on the PowerMySport platform itself (e.g. book a trial with a coach, message a coach, browse a nearby academy listing) and must NEVER list training drills or practice milestones — those belong only in journeyPhases milestones.
 ${
   hasSport
