@@ -10,7 +10,8 @@ export default function robots(): MetadataRoute.Robots {
         allow: [
           "/",
           "/roadmap",
-          "/guidance",
+          "/find-sport",
+          "/consult",
           "/experts",
           "/how-it-works",
           "/about",

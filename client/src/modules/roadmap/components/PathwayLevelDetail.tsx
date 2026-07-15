@@ -198,7 +198,7 @@ export function PathwayLevelDetail({
   const leadLevel = displayLevels[displayLevels.length - 1];
   const ageRangeLabel = mergeAgeRanges(displayLevels.map((l) => l.ageRange));
   const guidanceHref = sName
-    ? `/guidance?sport=${encodeURIComponent(sName)}&level=${representativeLevel}&mode=level-plan&levelLabel=${encodeURIComponent(lLabel)}${state ? `&state=${encodeURIComponent(state)}` : ""}`
+    ? `/consult?sport=${encodeURIComponent(sName)}&level=${representativeLevel}&mode=level-plan&levelLabel=${encodeURIComponent(lLabel)}${state ? `&state=${encodeURIComponent(state)}` : ""}`
     : "";
 
   return (

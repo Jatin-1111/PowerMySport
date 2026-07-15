@@ -34,7 +34,7 @@ function getActionUrl(step: string, sport?: string): string | null {
   if (s.includes("communit") || s.includes("parent")) return "/community";
   if (s.includes("tournament") || s.includes("compet") || s.includes("opportunit")) return `/roadmap${sportParam}`;
   if (s.includes("roadmap") || s.includes("pathway")) return `/roadmap${sportParam}`;
-  if (s.includes("guidance") || s.includes("assessment") || s.includes("personalised")) return "/guidance";
+  if (s.includes("guidance") || s.includes("assessment") || s.includes("personalised")) return "/consult";
   return null;
 }
 
@@ -129,7 +129,7 @@ export function ResultsView({
             </p>
           </div>
           <Link
-            href={`/register?redirect=${encodeURIComponent("/guidance")}`}
+            href={`/register?redirect=${encodeURIComponent("/consult")}`}
             className="shrink-0 rounded-lg bg-power-orange px-3 py-2 text-[11px] font-bold text-white hover:bg-orange-600 transition"
           >
             Save free

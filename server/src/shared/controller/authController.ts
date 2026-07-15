@@ -178,6 +178,34 @@ export const getProfile = async (
         heightCm: p.heightCm,
         weightKg: p.weightKg,
         medicalConditions: p.medicalConditions || [],
+        // Wizard physical
+        build: p.build,
+        heightCategory: p.heightCategory,
+        energyType: p.energyType,
+        motorType: p.motorType,
+        visualTracking: p.visualTracking,
+        eyesight: p.eyesight,
+        agility: p.agility,
+        // Wizard personality
+        teamIndividual: p.teamIndividual,
+        competitiveResponse: p.competitiveResponse,
+        focusStyle: p.focusStyle,
+        decisionStyle: p.decisionStyle,
+        pressureResponse: p.pressureResponse,
+        repetitionTolerance: p.repetitionTolerance,
+        // Wizard comfort
+        contactComfort: p.contactComfort,
+        environment: p.environment,
+        waterComfort: p.waterComfort,
+        // Wizard practical
+        budgetRange: p.budgetRange,
+        ambition: p.ambition,
+        weeklyHoursCategory: p.weeklyHoursCategory,
+        experienceLevel: p.experienceLevel,
+        trainingType: p.trainingType,
+        // Results
+        sportMatches: p.sportMatches || [],
+        wizardCompletedAt: p.wizardCompletedAt,
       }));
 
     const selfPlayer = allPlayers.find((p: any) => p.type === "SELF");

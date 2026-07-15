@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      { source: "/pathway", destination: "/find-sport", permanent: true },
+      { source: "/guidance", destination: "/consult", permanent: true },
+    ];
+  },
   async rewrites() {
     return [
       // Base community route

@@ -519,6 +519,8 @@ export interface AddDependentPayload {
   energyType?: "explosive" | "endurance";
   motorType?: "gross" | "fine";
   visualTracking?: "strong" | "moderate" | "weak";
+  eyesight?: "sharp" | "corrected" | "limited";
+  agility?: "high" | "moderate" | "low";
   // Wizard personality
   teamIndividual?: number;
   competitiveResponse?: "fired-up" | "calm" | "discouraged";
@@ -533,6 +535,9 @@ export interface AddDependentPayload {
   // Wizard practical
   budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
   ambition?: "fun" | "competitive" | "national" | "professional";
+  weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
+  experienceLevel?: "beginner" | "intermediate" | "competitive";
+  trainingType?: "self" | "club" | "academy" | "private";
   wizardCity?: string;
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
   wizardCompletedAt?: string | Date;
@@ -588,6 +593,34 @@ export const addDependent = async (
     heightCm: payload.heightCm,
     weightKg: payload.weightKg,
     medicalConditions: payload.medicalConditions || [],
+    // Wizard physical
+    build: payload.build,
+    heightCategory: payload.heightCategory,
+    energyType: payload.energyType,
+    motorType: payload.motorType,
+    visualTracking: payload.visualTracking,
+    eyesight: payload.eyesight,
+    agility: payload.agility,
+    // Wizard personality
+    teamIndividual: payload.teamIndividual,
+    competitiveResponse: payload.competitiveResponse,
+    focusStyle: payload.focusStyle,
+    decisionStyle: payload.decisionStyle,
+    pressureResponse: payload.pressureResponse,
+    repetitionTolerance: payload.repetitionTolerance,
+    // Wizard comfort
+    contactComfort: payload.contactComfort,
+    environment: payload.environment,
+    waterComfort: payload.waterComfort,
+    // Wizard practical
+    budgetRange: payload.budgetRange,
+    ambition: payload.ambition,
+    weeklyHoursCategory: payload.weeklyHoursCategory,
+    experienceLevel: payload.experienceLevel,
+    trainingType: payload.trainingType,
+    // Wizard results
+    sportMatches: payload.sportMatches,
+    wizardCompletedAt: payload.wizardCompletedAt ? new Date(payload.wizardCompletedAt) : undefined,
   });
 
   await newDependent.save();
@@ -658,6 +691,9 @@ export const updateDependent = async (
   // Wizard practical
   if (payload.budgetRange !== undefined) (dependent as any).budgetRange = payload.budgetRange;
   if (payload.ambition !== undefined) (dependent as any).ambition = payload.ambition;
+  if (payload.weeklyHoursCategory !== undefined) (dependent as any).weeklyHoursCategory = payload.weeklyHoursCategory;
+  if (payload.experienceLevel !== undefined) (dependent as any).experienceLevel = payload.experienceLevel;
+  if (payload.trainingType !== undefined) (dependent as any).trainingType = payload.trainingType;
   if (payload.wizardCity !== undefined) (dependent as any).wizardCity = payload.wizardCity;
   if (payload.sportMatches !== undefined) (dependent as any).sportMatches = payload.sportMatches;
   if (payload.wizardCompletedAt !== undefined) {

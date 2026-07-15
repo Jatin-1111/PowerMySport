@@ -21,6 +21,11 @@ import { ResultsView } from "./results/ResultsView";
 import { SectionTransition } from "./SectionTransition";
 import type { SportResult } from "../types";
 import type { PlayerProfile } from "@/modules/guidance/types";
+import {
+  buildDependentPayload,
+  cmToFeetInches,
+  prefillFromPlayer,
+} from "../utils/dependentMapping";
 
 // ─── Step sequence definition ─────────────────────────────────────────────────
 
@@ -75,145 +80,6 @@ const STEPS: Step[] = [
 
 const QUESTION_STEPS = STEPS.filter((s) => s.kind === "question");
 const TOTAL_QUESTIONS = QUESTION_STEPS.length; // 20
-
-// ─── Mapping helpers ──────────────────────────────────────────────────────────
-
-function budgetRangeToTier(range: WizardAnswers["budget"]): "Budget" | "Moderate" | "Premium" {
-  if (range === "under-3k" || range === "3k-7k") return "Budget";
-  if (range === "7k-15k") return "Moderate";
-  return "Premium";
-}
-
-function cmToFeetInches(cm: number): string {
-  const totalInches = cm / 2.54;
-  const feet = Math.floor(totalInches / 12);
-  const inches = Math.round(totalInches % 12);
-  return `${feet}′ ${inches}″`;
-}
-
-function weeklyHoursToNumber(h: WizardAnswers["weeklyHours"]): number | undefined {
-  if (!h) return undefined;
-  return h === "1-3" ? 2 : h === "4-7" ? 5 : h === "8-12" ? 10 : 15;
-}
-
-function ambitionToObjective(ambition: WizardAnswers["ambition"]): "Recreational" | "Fitness" | "Compete" {
-  if (ambition === "fun") return "Recreational";
-  if (ambition === "competitive") return "Fitness";
-  return "Compete";
-}
-
-function buildDependentPayload(
-  answers: WizardAnswers,
-  scored: SportResult[],
-  name?: string,
-) {
-  const genderMap =
-    answers.gender === "boy" ? "MALE"
-    : answers.gender === "girl" ? "FEMALE"
-    : answers.gender === "prefer-not" ? "OTHER"
-    : undefined;
-  return {
-    ...(name ? { name } : {}),
-    age: answers.age ?? undefined,
-    gender: genderMap,
-    location: answers.state ?? undefined,
-    sportsFocus: answers.priorSports.length ? answers.priorSports : undefined,
-    heightCm: answers.height ?? undefined,
-    weightKg: answers.weight ?? undefined,
-    heightCategory: answers.height ? deriveHeightCategoryFromCm(answers.height, answers.age) : undefined,
-    build: answers.height && answers.weight ? deriveBuild(answers.weight, answers.height) : undefined,
-    energyType: answers.energyType ?? undefined,
-    motorType: answers.motorType ?? undefined,
-    visualTracking: answers.visualTracking ?? undefined,
-    teamIndividual: answers.teamIndividual ?? undefined,
-    competitiveResponse: answers.competitiveResponse ?? undefined,
-    focusStyle: answers.focusStyle ?? undefined,
-    decisionStyle: answers.decisionStyle ?? undefined,
-    pressureResponse: answers.pressureResponse ?? undefined,
-    repetitionTolerance: answers.repetitionTolerance ?? undefined,
-    contactComfort: answers.contactComfort ?? undefined,
-    environment: answers.environment ?? undefined,
-    waterComfort: answers.waterComfort ?? undefined,
-    eyesight: answers.eyesight ?? undefined,
-    agility: answers.agility ?? undefined,
-    budgetRange: answers.budget ?? undefined,
-    budgetTier: answers.budget ? budgetRangeToTier(answers.budget) : undefined,
-    ambition: answers.ambition ?? undefined,
-    primaryObjective: answers.ambition ? ambitionToObjective(answers.ambition) : undefined,
-    weeklyTimeCommitment: weeklyHoursToNumber(answers.weeklyHours),
-    weeklyHoursCategory: answers.weeklyHours ?? undefined,
-    sportMatches: scored
-      .slice(0, 3)
-      .map((r) => ({ sport: r.sport.name, fitLabel: r.fitLabel, score: r.score })),
-    wizardCompletedAt: new Date().toISOString(),
-  };
-}
-
-function deriveHeightCategoryFromCm(cm: number, age: number | null): "short" | "average" | "tall" {
-  const avg = age ? Math.min(175, 85 + age * 5.5) : 140;
-  if (cm < avg * 0.93) return "short";
-  if (cm > avg * 1.07) return "tall";
-  return "average";
-}
-
-function deriveBuild(weightKg: number, heightCm: number): "lean" | "average" | "stocky" {
-  const bmi = weightKg / ((heightCm / 100) ** 2);
-  if (bmi < 17) return "lean";
-  if (bmi > 22) return "stocky";
-  return "average";
-}
-
-function prefillFromPlayer(player: PlayerProfile): Partial<WizardAnswers> {
-  const out: Partial<WizardAnswers> = {};
-  if (player.age) out.age = player.age;
-  if (player.gender === "MALE") out.gender = "boy";
-  else if (player.gender === "FEMALE") out.gender = "girl";
-  else if (player.gender === "OTHER") out.gender = "prefer-not";
-
-  if (player.location) out.state = player.location;
-
-  if (player.sportsFocus?.length) out.priorSports = player.sportsFocus;
-
-  // Wizard physical — prefer exact numeric values for round-tripping
-  if (player.heightCm) out.height = player.heightCm;
-  if (player.weightKg) out.weight = player.weightKg;
-  if (player.energyType) out.energyType = player.energyType;
-  if (player.motorType) out.motorType = player.motorType;
-  if (player.visualTracking) out.visualTracking = player.visualTracking;
-  // Wizard personality
-  if (player.teamIndividual !== undefined) out.teamIndividual = player.teamIndividual;
-  if (player.competitiveResponse) out.competitiveResponse = player.competitiveResponse;
-  if (player.focusStyle) out.focusStyle = player.focusStyle;
-  if (player.decisionStyle) out.decisionStyle = player.decisionStyle;
-  if (player.pressureResponse) out.pressureResponse = player.pressureResponse;
-  if (player.repetitionTolerance) out.repetitionTolerance = player.repetitionTolerance;
-  // Wizard comfort
-  if (player.contactComfort) out.contactComfort = player.contactComfort;
-  if (player.environment) out.environment = player.environment;
-  if (player.waterComfort) out.waterComfort = player.waterComfort;
-  // Wizard practical
-  if (player.budgetRange) {
-    out.budget = player.budgetRange;
-  } else if (player.budgetTier) {
-    const map: Record<string, WizardAnswers["budget"]> = {
-      Budget: "3k-7k",
-      Moderate: "7k-15k",
-      Premium: "15k-plus",
-    };
-    out.budget = map[player.budgetTier] ?? null;
-  }
-  if (player.ambition) out.ambition = player.ambition;
-  if (player.eyesight) out.eyesight = player.eyesight;
-  if (player.agility) out.agility = player.agility;
-  if (player.weeklyHoursCategory) {
-    out.weeklyHours = player.weeklyHoursCategory;
-  } else if (player.weeklyTimeCommitment) {
-    const wh = player.weeklyTimeCommitment;
-    out.weeklyHours = wh <= 3 ? "1-3" : wh <= 7 ? "4-7" : wh <= 12 ? "8-12" : "13-plus";
-  }
-
-  return out;
-}
 
 // ─── Left sidebar metadata ────────────────────────────────────────────────────
 

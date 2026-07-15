@@ -48,21 +48,21 @@ const servicesItems = [
 
 const exploreItems = [
   {
-    href: "/pathway",
+    href: "/find-sport",
     label: "Find Your Sport",
     description: "Sport recommendation for your child",
     icon: Star,
   },
   {
     href: "/roadmap",
-    label: "Roadmap",
-    description: "Discover sports pathways & plans",
+    label: "My Roadmap",
+    description: "Explore the journey ahead for your child's sport",
     icon: Map,
   },
   {
-    href: "/guidance",
-    label: "Guidance",
-    description: "AI-powered sports guidance portal",
+    href: "/consult",
+    label: "Get Expert Help",
+    description: "Problem-solving & expert consultation",
     icon: BrainCircuit,
   },
 ];

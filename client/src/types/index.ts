@@ -96,6 +96,8 @@ export interface Dependent {
   eyesight?: "sharp" | "corrected" | "limited";
   agility?: "high" | "moderate" | "low";
   weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
+  experienceLevel?: "beginner" | "intermediate" | "competitive";
+  trainingType?: "self" | "club" | "academy" | "private";
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
   wizardCompletedAt?: string;
 }

@@ -11,63 +11,24 @@ import {
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import api from "@/lib/api/axios";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { BinaryCards } from "./inputs/BinaryCards";
 import { FourContextCards } from "./inputs/FourContextCards";
-import { SpectrumSlider } from "./inputs/SpectrumSlider";
+import { SportSearchInput } from "./inputs/SportSearchInput";
 import { StateSelector } from "./inputs/StateSelector";
 import { ThreeOptionCards } from "./inputs/ThreeOptionCards";
+import {
+  EMPTY_FORM,
+  buildGoalChips,
+  buildProfileChips,
+  isAnswered,
+} from "../utils/sportKnownFlowUtils";
+import type { KnownSportForm } from "../utils/sportKnownFlowUtils";
+import { JourneyPipeline } from "./JourneyPipeline";
 
-// ─── Sports ──────────────────────────────────────────────────────────────────
-
-const SPORTS = [
-  { name: "Cricket", emoji: "🏏" },
-  { name: "Football", emoji: "⚽" },
-  { name: "Badminton", emoji: "🏸" },
-  { name: "Table Tennis", emoji: "🏓" },
-  { name: "Tennis", emoji: "🎾" },
-  { name: "Basketball", emoji: "🏀" },
-  { name: "Volleyball", emoji: "🏐" },
-  { name: "Swimming", emoji: "🏊" },
-  { name: "Athletics", emoji: "🏃" },
-  { name: "Gymnastics", emoji: "🤸" },
-  { name: "Kabaddi", emoji: "🤼" },
-  { name: "Wrestling", emoji: "🤼‍♂️" },
-  { name: "Chess", emoji: "♟️" },
-  { name: "Shooting", emoji: "🎯" },
-] as const;
-
-// ─── Form ─────────────────────────────────────────────────────────────────────
-
-interface KnownSportForm {
-  sport: string;
-  childName: string;
-  age: string;
-  gender: string | null;
-  state: string | null;
-  experienceLevel: string | null;
-  energyType: string | null;
-  teamIndividual: number | null;
-  ambition: string | null;
-  weeklyHours: string | null;
-  budgetRange: string | null;
-}
-
-const EMPTY_FORM: KnownSportForm = {
-  sport: "",
-  childName: "",
-  age: "",
-  gender: null,
-  state: null,
-  experienceLevel: null,
-  energyType: null,
-  teamIndividual: null,
-  ambition: null,
-  weeklyHours: null,
-  budgetRange: null,
-};
-
-// ─── Step definitions ─────────────────────────────────────────────────────────
+// ─── Wizard step definitions ─────────────────────────────────────────────────
 
 type QuestionId = keyof KnownSportForm;
 
@@ -104,10 +65,10 @@ const STEPS: WizardStep[] = [
   },
   {
     kind: "question",
-    id: "age",
+    id: "dateOfBirth",
     required: false,
-    heading: (f) => `How old is ${f.childName || "your child"}?`,
-    sub: "Optional — calibrates milestones to their development stage.",
+    heading: (f) => `When was ${f.childName || "your child"} born?`,
+    sub: "Optional — helps us send age-appropriate milestones and track their development over time.",
   },
   {
     kind: "question",
@@ -126,7 +87,7 @@ const STEPS: WizardStep[] = [
   {
     kind: "transition",
     text: "Good. Now let's understand how they play.",
-    sub: "3 quick questions about their experience and style.",
+    sub: "3 quick questions about their experience, training and energy.",
   },
   {
     kind: "question",
@@ -137,6 +98,13 @@ const STEPS: WizardStep[] = [
   },
   {
     kind: "question",
+    id: "trainingType",
+    required: true,
+    heading: (f) => `How is ${f.childName || "your child"} currently training?`,
+    sub: "Helps us place them accurately on the roadmap and show the right next step.",
+  },
+  {
+    kind: "question",
     id: "energyType",
     required: false,
     heading: (f) => `How would you describe ${f.childName || "their"} energy?`,
@@ -144,10 +112,17 @@ const STEPS: WizardStep[] = [
   },
   {
     kind: "question",
-    id: "teamIndividual",
+    id: "motorType",
     required: false,
-    heading: (f) => `Is ${f.childName || "your child"} more of a team or solo player?`,
-    sub: "Optional — useful for sport fit and academy recommendations.",
+    heading: (f) => `What kind of movements does ${f.childName || "your child"} excel at?`,
+    sub: "Optional — helps match sports that reward their natural physical style.",
+  },
+  {
+    kind: "question",
+    id: "heightCm",
+    required: false,
+    heading: (f) => `What are ${f.childName || "your child"}'s physical stats?`,
+    sub: "Optional — used to refine sport matches based on body type.",
   },
   {
     kind: "transition",
@@ -185,13 +160,6 @@ const STEP_Q_NUMS: (number | null)[] = STEPS.map((s, i) =>
 );
 const TOTAL_QUESTIONS = STEPS.filter((s) => s.kind === "question").length;
 
-function isAnswered(id: QuestionId, form: KnownSportForm): boolean {
-  const v = form[id];
-  if (typeof v === "string") return v.length > 0;
-  if (typeof v === "number") return true;
-  return v !== null;
-}
-
 // ─── Slide variants ───────────────────────────────────────────────────────────
 
 const slide = {
@@ -214,23 +182,11 @@ function QuestionInput({
   switch (id) {
     case "sport":
       return (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {SPORTS.map((s) => (
-            <button
-              key={s.name}
-              type="button"
-              onClick={() => set("sport", s.name)}
-              className={`flex items-center gap-2 rounded-2xl border-2 px-3 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97] ${
-                form.sport === s.name
-                  ? "border-power-orange bg-power-orange/5 text-power-orange"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-              }`}
-            >
-              <span className="text-base">{s.emoji}</span>
-              <span className="truncate">{s.name}</span>
-            </button>
-          ))}
-        </div>
+        <SportSearchInput
+          value={form.sport}
+          onChange={(v) => set("sport", v)}
+          required
+        />
       );
 
     case "childName":
@@ -245,17 +201,16 @@ function QuestionInput({
         />
       );
 
-    case "age":
+    case "dateOfBirth":
       return (
         <input
-          type="number"
+          type="date"
           autoFocus // eslint-disable-line jsx-a11y/no-autofocus
-          value={form.age}
-          onChange={(e) => set("age", e.target.value)}
-          placeholder="e.g. 10"
-          min={3}
-          max={25}
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-base text-slate-900 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+          value={form.dateOfBirth}
+          onChange={(e) => set("dateOfBirth", e.target.value)}
+          max={new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().slice(0, 10)}
+          min={new Date(new Date().setFullYear(new Date().getFullYear() - 30)).toISOString().slice(0, 10)}
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-base text-slate-900 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
         />
       );
 
@@ -278,12 +233,26 @@ function QuestionInput({
       return (
         <ThreeOptionCards
           options={[
-            { value: "beginner", label: "Just starting out — no prior training" },
-            { value: "recreational", label: "Plays for fun or at school / local club" },
-            { value: "competitive", label: "Trains regularly or already competes" },
+            { value: "beginner", label: "Beginner — city / neighbourhood level, just getting started" },
+            { value: "intermediate", label: "Intermediate — school, club or district level, training regularly" },
+            { value: "competitive", label: "Competitive — state or national level, serious competition" },
           ]}
           value={form.experienceLevel}
           onChange={(v) => set("experienceLevel", v)}
+        />
+      );
+
+    case "trainingType":
+      return (
+        <FourContextCards
+          options={[
+            { value: "self", label: "Self-practice", context: "Playing at home or local grounds, no formal coaching" },
+            { value: "club", label: "School / Club", context: "Group coaching at school or local club, 1–2x per week" },
+            { value: "academy", label: "Academy", context: "Enrolled in a structured programme with regular sessions" },
+            { value: "private", label: "Private coaching", context: "One-on-one sessions with a dedicated coach" },
+          ]}
+          value={form.trainingType}
+          onChange={(v) => set("trainingType", v)}
         />
       );
 
@@ -307,16 +276,69 @@ function QuestionInput({
         />
       );
 
-    case "teamIndividual":
+    case "motorType":
       return (
-        <SpectrumSlider
-          value={form.teamIndividual}
-          onChange={(v) => set("teamIndividual", v)}
-          leftLabel="Individual"
-          rightLabel="Team"
-          leftExamples="Chess, Athletics, Swimming"
-          rightExamples="Cricket, Football, Kabaddi"
+        <BinaryCards
+          options={[
+            {
+              value: "gross",
+              title: "Gross motor",
+              sub: "Big whole-body movements — running, jumping, throwing",
+            },
+            {
+              value: "fine",
+              title: "Fine motor",
+              sub: "Precise, controlled movements — aim, balance, accuracy",
+            },
+          ]}
+          value={form.motorType}
+          onChange={(v) => set("motorType", v)}
         />
+      );
+
+    case "heightCm":
+      return (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-500">Height (cm)</label>
+              <input
+                type="number"
+                min="50"
+                max="220"
+                placeholder="e.g., 135"
+                value={form.heightCm ?? ""}
+                onChange={(e) =>
+                  set("heightCm", e.target.value === "" ? null : parseFloat(e.target.value))
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-500">Weight (kg)</label>
+              <input
+                type="number"
+                min="10"
+                max="150"
+                placeholder="e.g., 32"
+                value={form.weightKg ?? ""}
+                onChange={(e) =>
+                  set("weightKg", e.target.value === "" ? null : parseFloat(e.target.value))
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+              />
+            </div>
+          </div>
+          {form.heightCm && form.weightKg && (
+            <p className="text-center text-xs text-slate-400">
+              {Math.floor(form.heightCm / 30.48)}′ {Math.round((form.heightCm / 2.54) % 12)}″ ·{" "}
+              {(() => {
+                const bmi = form.weightKg / ((form.heightCm / 100) ** 2);
+                return bmi < 17 ? "Lean build" : bmi > 22 ? "Stocky build" : "Average build";
+              })()}
+            </p>
+          )}
+        </div>
       );
 
     case "ambition":
@@ -379,54 +401,9 @@ function Chip({ label }: { label: string }) {
 // ─── Results ──────────────────────────────────────────────────────────────────
 
 function ResultsView({ form, onReset }: { form: KnownSportForm; onReset: () => void }) {
-  const sport = SPORTS.find((s) => s.name === form.sport);
-  const sportEmoji = sport?.emoji ?? "🏆";
-
-  const profileChips = [
-    form.gender === "MALE" ? "Boy" : form.gender === "FEMALE" ? "Girl" : null,
-    form.age ? `Age ${form.age}` : null,
-    form.state,
-    form.experienceLevel === "beginner"
-      ? "Just starting out"
-      : form.experienceLevel === "recreational"
-      ? "Plays for fun"
-      : form.experienceLevel === "competitive"
-      ? "Actively competing"
-      : null,
-    form.energyType === "explosive"
-      ? "High energy"
-      : form.energyType === "endurance"
-      ? "Calm & focused"
-      : null,
-  ].filter(Boolean) as string[];
-
-  const goalChips = [
-    form.ambition === "fun"
-      ? "Just for fun"
-      : form.ambition === "competitive"
-      ? "Local competitions"
-      : form.ambition === "national"
-      ? "State / national level"
-      : form.ambition === "professional"
-      ? "Professional pathway"
-      : null,
-    form.weeklyHours
-      ? ({
-          "1-3": "1–3 hrs/week",
-          "4-7": "4–7 hrs/week",
-          "8-12": "8–12 hrs/week",
-          "13-plus": "13+ hrs/week",
-        } as Record<string, string>)[form.weeklyHours] ?? null
-      : null,
-    form.budgetRange
-      ? ({
-          "under-3k": "Under ₹3k/mo",
-          "3k-7k": "₹3k–7k/mo",
-          "7k-15k": "₹7k–15k/mo",
-          "15k-plus": "₹15k+/mo",
-        } as Record<string, string>)[form.budgetRange] ?? null
-      : null,
-  ].filter(Boolean) as string[];
+  const sportEmoji = "🏅";
+  const profileChips = buildProfileChips(form);
+  const goalChips = buildGoalChips(form);
 
   return (
     <motion.div
@@ -489,6 +466,11 @@ function ResultsView({ form, onReset }: { form: KnownSportForm; onReset: () => v
           )}
         </div>
 
+        <JourneyPipeline
+          childName={form.childName || ""}
+          topSport={form.sport || undefined}
+        />
+
         <div className="space-y-3">
           <Link
             href={`/roadmap?sport=${encodeURIComponent(form.sport)}`}
@@ -522,10 +504,63 @@ function ResultsView({ form, onReset }: { form: KnownSportForm; onReset: () => v
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export function SportKnownFlow({ onBack }: { onBack: () => void }) {
+  const { token } = useAuthStore();
   const [idx, setIdx] = useState(0);
   const [done, setDone] = useState(false);
   const [form, setForm] = useState<KnownSportForm>(EMPTY_FORM);
   const [dir, setDir] = useState<1 | -1>(1);
+  const [dependents, setDependents] = useState<any[]>([]);
+  const [matchedDep, setMatchedDep] = useState<any | null>(null);
+
+  // Fetch logged-in user's dependents once on mount
+  useEffect(() => {
+    if (!token) return;
+    api.get<{ success: boolean; data: any[] }>("/auth/players")
+      .then(res => {
+        if (!res.data.success) return;
+        setDependents((res.data.data || []).filter((p: any) => p.type === "DEPENDENT"));
+      })
+      .catch(() => {});
+  }, [token]);
+
+  // Match a dependent by name (+ dob when available)
+  useEffect(() => {
+    if (!form.childName.trim() || dependents.length === 0) {
+      setMatchedDep(null);
+      return;
+    }
+    const normName = form.childName.trim().toLowerCase();
+    // Prefer name + dob match
+    if (form.dateOfBirth) {
+      const withDob = dependents.find(d => {
+        const dDob = d.dob ? new Date(d.dob).toISOString().slice(0, 10) : null;
+        return d.name?.toLowerCase() === normName && dDob === form.dateOfBirth;
+      });
+      if (withDob) { setMatchedDep(withDob); return; }
+    }
+    // Fall back to name-only match
+    setMatchedDep(dependents.find(d => d.name?.toLowerCase() === normName) ?? null);
+  }, [form.childName, form.dateOfBirth, dependents]);
+
+  // Pre-fill unanswered form fields when a match is found
+  useEffect(() => {
+    if (!matchedDep) return;
+    setForm(prev => ({
+      ...prev,
+      dateOfBirth: prev.dateOfBirth || (matchedDep.dob ? new Date(matchedDep.dob).toISOString().slice(0, 10) : ""),
+      gender: prev.gender ?? matchedDep.gender ?? null,
+      state: prev.state ?? matchedDep.location ?? null,
+      experienceLevel: prev.experienceLevel ?? matchedDep.experienceLevel ?? null,
+      trainingType: prev.trainingType ?? matchedDep.trainingType ?? null,
+      energyType: prev.energyType ?? matchedDep.energyType ?? null,
+      motorType: prev.motorType ?? matchedDep.motorType ?? null,
+      heightCm: prev.heightCm ?? matchedDep.heightCm ?? null,
+      weightKg: prev.weightKg ?? matchedDep.weightKg ?? null,
+      ambition: prev.ambition ?? matchedDep.ambition ?? null,
+      weeklyHours: prev.weeklyHours ?? matchedDep.weeklyHoursCategory ?? null,
+      budgetRange: prev.budgetRange ?? matchedDep.budgetRange ?? null,
+    }));
+  }, [matchedDep]);
 
   const set = <K extends keyof KnownSportForm>(k: K, v: KnownSportForm[K]) =>
     setForm((p) => ({ ...p, [k]: v }));
@@ -540,8 +575,39 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
 
   const goNext = () => {
     setDir(1);
-    if (idx < STEPS.length - 1) setIdx((i) => i + 1);
-    else setDone(true);
+    if (idx < STEPS.length - 1) {
+      setIdx((i) => i + 1);
+    } else {
+      if (token) {
+        const wizardFields = {
+          ...(form.sport ? { sportsFocus: [form.sport] } : {}),
+          ...(form.gender ? { gender: form.gender } : {}),
+          ...(form.state ? { location: form.state } : {}),
+          ...(form.experienceLevel ? { experienceLevel: form.experienceLevel } : {}),
+          ...(form.trainingType ? { trainingType: form.trainingType } : {}),
+          ...(form.energyType ? { energyType: form.energyType } : {}),
+          ...(form.motorType ? { motorType: form.motorType } : {}),
+          ...(form.heightCm ? { heightCm: form.heightCm } : {}),
+          ...(form.weightKg ? { weightKg: form.weightKg } : {}),
+          ...(form.ambition ? { ambition: form.ambition } : {}),
+          ...(form.weeklyHours ? { weeklyHoursCategory: form.weeklyHours } : {}),
+          ...(form.budgetRange ? { budgetRange: form.budgetRange } : {}),
+          ...(form.dateOfBirth ? { dob: form.dateOfBirth } : {}),
+        };
+
+        if (matchedDep?._id) {
+          // Update the existing matched dependent
+          api.put(`/auth/dependents/${matchedDep._id}`, wizardFields).catch(() => {});
+        } else if (form.childName.trim()) {
+          // Create a new dependent with all wizard fields in one call
+          api.post("/auth/dependents", {
+            name: form.childName.trim(),
+            ...wizardFields,
+          }).catch(() => {});
+        }
+      }
+      setDone(true);
+    }
   };
 
   const goPrev = () => {
@@ -555,6 +621,7 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
     setIdx(0);
     setDone(false);
     setDir(1);
+    setMatchedDep(null);
   };
 
   if (done) return <ResultsView form={form} onReset={reset} />;
@@ -640,6 +707,12 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
               transition={{ duration: 0.22, ease: "easeOut" }}
               className="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_10px_40px_-18px_rgba(15,23,42,0.2)] ring-1 ring-slate-900/[0.03] sm:p-7"
             >
+                {matchedDep && (
+                  <div className="flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 mb-4">
+                    <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                    Pre-filling from {matchedDep.name}&apos;s saved profile
+                  </div>
+                )}
                 <div className="mb-5">
                   <h2 className="font-title text-xl font-bold text-slate-900 mb-1.5">
                     {current.heading(form)}

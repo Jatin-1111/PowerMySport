@@ -42,6 +42,8 @@ export interface PlayerDocument extends Document {
   eyesight?: "sharp" | "corrected" | "limited";
   agility?: "high" | "moderate" | "low";
   weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
+  experienceLevel?: "beginner" | "intermediate" | "competitive";
+  trainingType?: "self" | "club" | "academy" | "private";
   wizardCity?: string; // city picked in wizard (location holds state)
   // Wizard results
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
@@ -148,6 +150,8 @@ const playerSchema = new Schema<PlayerDocument>(
     eyesight: { type: String, enum: ["sharp", "corrected", "limited"] },
     agility: { type: String, enum: ["high", "moderate", "low"] },
     weeklyHoursCategory: { type: String, enum: ["1-3", "4-7", "8-12", "13-plus"] },
+    experienceLevel: { type: String, enum: ["beginner", "intermediate", "competitive"] },
+    trainingType: { type: String, enum: ["self", "club", "academy", "private"] },
     wizardCity: { type: String, trim: true },
     sportMatches: [{ sport: String, fitLabel: String, score: Number }],
     wizardCompletedAt: { type: Date },

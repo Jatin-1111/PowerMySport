@@ -17,6 +17,31 @@ import { ProfileFormSelect } from "@/modules/player/components/ProfileFormSelect
 import { ProfileInfoField } from "@/modules/player/components/ProfileInfoField";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { formatDependentRelation } from "@/modules/player/constants/dependentRelations";
+import {
+  AGILITY_LABELS,
+  AMBITION_LABELS,
+  BUDGET_RANGE_LABELS,
+  BUILD_LABELS,
+  COMPETITIVE_RESPONSE_LABELS,
+  CONTACT_LABELS,
+  DECISION_LABELS,
+  ENERGY_LABELS,
+  ENV_LABELS,
+  EYESIGHT_LABELS,
+  FOCUS_LABELS,
+  GENDER_LABELS,
+  HEIGHT_LABELS,
+  MATCH_RANK_META,
+  PRESSURE_LABELS,
+  REPETITION_LABELS,
+  TEAM_INDIVIDUAL_LABELS,
+  VISUAL_TRACKING_LABELS,
+  WATER_COMFORT_LABELS,
+  WEEKLY_HOURS_LABELS,
+  wizardChip,
+} from "@/modules/player/constants/wizardLabels";
+import { getDependentAge } from "@/modules/player/utils/dependentAge";
+import { calculateDependentCompletion } from "@/modules/player/utils/dependentCompletion";
 import { calculateProfileCompletion } from "@/modules/player/utils/profileCompletion";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent, CardFooter } from "@/modules/shared/ui/Card";
@@ -54,24 +79,6 @@ const getErrorMessage = (error: unknown): string => {
   return "An error occurred";
 };
 
-const getDependentAge = (dob?: string | Date) => {
-  if (!dob) return null;
-
-  const birthDate = new Date(dob);
-  if (Number.isNaN(birthDate.getTime())) return null;
-
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  if (
-    monthDiff < 0 ||
-    (monthDiff === 0 && today.getDate() < birthDate.getDate())
-  ) {
-    age -= 1;
-  }
-  return age;
-};
-
 const getInitials = (name: string) =>
   name
     .split(" ")
@@ -80,45 +87,7 @@ const getInitials = (name: string) =>
     .map((part) => part[0]?.toUpperCase())
     .join("");
 
-const formatGender = (gender?: string) => {
-  if (gender === "MALE") return "Male";
-  if (gender === "FEMALE") return "Female";
-  if (gender === "OTHER") return "Other";
-  return null;
-};
-
-const AMBITION_LABELS: Record<string, string> = {
-  fun: "Plays for fun",
-  competitive: "Competitive",
-  national: "National goal",
-  professional: "Professional path",
-};
-const ENERGY_LABELS: Record<string, string> = {
-  explosive: "Explosive energy",
-  endurance: "Endurance type",
-};
-const FOCUS_LABELS: Record<string, string> = {
-  bursts: "Focuses in bursts",
-  sustained: "Sustained focus",
-};
-const DECISION_LABELS: Record<string, string> = {
-  react: "Instinctive",
-  strategic: "Strategic thinker",
-};
-const BUILD_LABELS: Record<string, string> = {
-  lean: "Lean build",
-  average: "Average build",
-  stocky: "Strong build",
-};
-const HEIGHT_LABELS: Record<string, string> = {
-  short: "Compact for age",
-  average: "Average height",
-  tall: "Tall for age",
-};
-
-function depChip(val: string | undefined, map: Record<string, string>) {
-  return val ? map[val] ?? null : null;
-}
+const formatGender = (gender?: string) => wizardChip(gender, GENDER_LABELS);
 
 function ProfilePageSkeleton() {
   return (
@@ -288,22 +257,7 @@ export default function ProfilePage() {
     setShowDependentModal(true);
   };
 
-  const handleSaveDependent = async (dependentData: {
-    name: string;
-    dob: string | Date;
-    gender?: "MALE" | "FEMALE" | "OTHER";
-    relation?: string;
-    sports?: string[];
-    yearsPlaying?: number;
-    personalityTags?: string[];
-    primaryObjective?: "Recreational" | "Fitness" | "Compete";
-    weeklyTimeCommitment?: number;
-    budgetTier?: "Budget" | "Moderate" | "Premium";
-    location?: string;
-    heightCm?: number;
-    weightKg?: number;
-    medicalConditions?: string[];
-  }) => {
+  const handleSaveDependent = async (dependentData: Dependent) => {
     try {
       if (dependentModalMode === "add") {
         setSavingDependentId("new");
@@ -1152,7 +1106,42 @@ export default function ProfilePage() {
                   const isEligible = age !== null && age >= 18;
                   const genderLabel = formatGender(dependent.gender);
                   const dependentCompletion =
-                    calculateProfileCompletion(dependent);
+                    calculateDependentCompletion(dependent);
+
+                  const physicalChips = [
+                    dependent.heightCm && dependent.weightKg
+                      ? `${dependent.heightCm} cm · ${dependent.weightKg} kg`
+                      : null,
+                    wizardChip(dependent.build, BUILD_LABELS),
+                    wizardChip(dependent.heightCategory, HEIGHT_LABELS),
+                    wizardChip(dependent.energyType, ENERGY_LABELS),
+                    wizardChip(dependent.visualTracking, VISUAL_TRACKING_LABELS),
+                    wizardChip(dependent.eyesight, EYESIGHT_LABELS),
+                    wizardChip(dependent.agility, AGILITY_LABELS),
+                  ].filter(Boolean) as string[];
+
+                  const personalityChips = [
+                    dependent.teamIndividual !== undefined
+                      ? TEAM_INDIVIDUAL_LABELS[dependent.teamIndividual as number]
+                      : null,
+                    wizardChip(dependent.competitiveResponse, COMPETITIVE_RESPONSE_LABELS),
+                    wizardChip(dependent.focusStyle, FOCUS_LABELS),
+                    wizardChip(dependent.decisionStyle, DECISION_LABELS),
+                    wizardChip(dependent.pressureResponse, PRESSURE_LABELS),
+                    wizardChip(dependent.repetitionTolerance, REPETITION_LABELS),
+                  ].filter(Boolean) as string[];
+
+                  const comfortChips = [
+                    wizardChip(dependent.contactComfort, CONTACT_LABELS),
+                    wizardChip(dependent.environment, ENV_LABELS),
+                    wizardChip(dependent.waterComfort, WATER_COMFORT_LABELS),
+                  ].filter(Boolean) as string[];
+
+                  const practicalChips = [
+                    wizardChip(dependent.budgetRange, BUDGET_RANGE_LABELS),
+                    wizardChip(dependent.ambition, AMBITION_LABELS),
+                    wizardChip(dependent.weeklyHoursCategory, WEEKLY_HOURS_LABELS),
+                  ].filter(Boolean) as string[];
 
                   return (
                     <div
@@ -1216,33 +1205,8 @@ export default function ProfilePage() {
                               </p>
                             )}
 
-                            {/* Wizard sport picks */}
-                            {(dependent.sportMatches?.length ?? 0) > 0 ? (
-                              <div className="mt-3">
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                                  Assessment picks
-                                </p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {dependent.sportMatches!.map((m, i) => (
-                                    <div
-                                      key={m.sport}
-                                      className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
-                                        i === 0
-                                          ? "border-turf-green/30 bg-turf-green/10 text-turf-green"
-                                          : "border-slate-200 bg-white text-slate-600"
-                                      }`}
-                                    >
-                                      <span className="text-xs font-semibold">
-                                        {m.sport}
-                                      </span>
-                                      <span className="text-[10px] opacity-60">
-                                        {m.fitLabel}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : dependent.sportsFocus && dependent.sportsFocus.length > 0 ? (
+                            {/* Sport focus / match results */}
+                            {dependent.sportsFocus && dependent.sportsFocus.length > 0 ? (
                               <div className="mt-3 flex flex-wrap gap-2">
                                 {dependent.sportsFocus.map((sport: string) => (
                                   <Badge
@@ -1253,58 +1217,116 @@ export default function ProfilePage() {
                                   </Badge>
                                 ))}
                               </div>
+                            ) : (dependent.sportMatches?.length ?? 0) > 0 ? (
+                              <div className="mt-3 space-y-1.5">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                  Sport match results
+                                </p>
+                                {dependent.sportMatches!.slice(0, 3).map((m, i) => {
+                                  const meta = MATCH_RANK_META[i] ?? MATCH_RANK_META[2];
+                                  const RankIcon = meta.icon;
+                                  return (
+                                    <div
+                                      key={m.sport}
+                                      className={`flex items-center justify-between rounded-lg border ${meta.ring} bg-white px-3 py-1.5`}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <span
+                                          className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${meta.badge}`}
+                                        >
+                                          <RankIcon className="h-3 w-3" />
+                                        </span>
+                                        <span className="text-sm font-semibold text-slate-800">
+                                          {m.sport}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-slate-500">
+                                          {m.fitLabel}
+                                        </span>
+                                        <span className="text-[11px] tabular-nums text-slate-300">
+                                          {m.score}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             ) : null}
 
-                            {/* Physical + personality trait chips */}
-                            {(dependent.energyType ||
-                              dependent.ambition ||
-                              dependent.build ||
-                              dependent.focusStyle ||
-                              dependent.decisionStyle ||
-                              dependent.heightCm) && (
-                              <div className="mt-2 flex flex-wrap gap-1">
-                                {(dependent.heightCm || dependent.weightKg) && (
-                                  <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-500">
-                                    {dependent.heightCm
-                                      ? `${dependent.heightCm} cm`
-                                      : ""}
-                                    {dependent.heightCm && dependent.weightKg
-                                      ? " · "
-                                      : ""}
-                                    {dependent.weightKg
-                                      ? `${dependent.weightKg} kg`
-                                      : ""}
-                                    {dependent.build
-                                      ? ` · ${BUILD_LABELS[dependent.build]}`
-                                      : ""}
-                                    {dependent.heightCategory && !dependent.build
-                                      ? ` · ${HEIGHT_LABELS[dependent.heightCategory]}`
-                                      : ""}
-                                  </span>
-                                )}
-                                {depChip(dependent.energyType, ENERGY_LABELS) && (
-                                  <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] text-blue-600">
-                                    {depChip(dependent.energyType, ENERGY_LABELS)}
-                                  </span>
-                                )}
-                                {depChip(dependent.ambition, AMBITION_LABELS) && (
-                                  <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] text-indigo-600">
-                                    {depChip(dependent.ambition, AMBITION_LABELS)}
-                                  </span>
-                                )}
-                                {depChip(dependent.focusStyle, FOCUS_LABELS) && (
-                                  <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-500">
-                                    {depChip(dependent.focusStyle, FOCUS_LABELS)}
-                                  </span>
-                                )}
-                                {depChip(dependent.decisionStyle, DECISION_LABELS) && (
-                                  <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-500">
-                                    {depChip(
-                                      dependent.decisionStyle,
-                                      DECISION_LABELS,
-                                    )}
-                                  </span>
-                                )}
+                            {/* Physical profile */}
+                            {physicalChips.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                  Physical profile
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {physicalChips.map((chip) => (
+                                    <span
+                                      key={chip}
+                                      className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700"
+                                    >
+                                      {chip}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Personality & play style */}
+                            {personalityChips.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                  Personality &amp; play style
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {personalityChips.map((chip) => (
+                                    <span
+                                      key={chip}
+                                      className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-[11px] font-medium text-indigo-700"
+                                    >
+                                      {chip}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Comfort & environment */}
+                            {comfortChips.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                  Comfort &amp; environment
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {comfortChips.map((chip) => (
+                                    <span
+                                      key={chip}
+                                      className="rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-[11px] font-medium text-teal-700"
+                                    >
+                                      {chip}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Practical */}
+                            {practicalChips.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                  Practical
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {practicalChips.map((chip) => (
+                                    <span
+                                      key={chip}
+                                      className="rounded-full border border-amber-100 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700"
+                                    >
+                                      {chip}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
                             )}
 
@@ -1327,7 +1349,7 @@ export default function ProfilePage() {
                         <div className="flex flex-wrap gap-2 sm:justify-end">
                           <Button
                             onClick={() => handleEditDependent(dependent)}
-                            variant="secondary"
+                            variant="outline"
                             size="sm"
                             disabled={savingDependentId === dependent._id}
                             icon={<Edit2 size={14} />}
@@ -1336,10 +1358,10 @@ export default function ProfilePage() {
                           </Button>
                           <Button
                             onClick={() => setDependentToDelete(dependent)}
-                            variant="secondary"
+                            variant="ghost"
                             size="sm"
                             disabled={isDeletingDependentId === dependent._id}
-                            className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                            className="border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                             icon={<Trash2 size={14} />}
                           >
                             {isDeletingDependentId === dependent._id

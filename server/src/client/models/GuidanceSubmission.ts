@@ -48,7 +48,7 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
       parent_specific_question: {
         type: String,
         trim: true,
-        maxlength: 1000,
+        maxlength: 3000,
       },
       sport: { type: String, trim: true },
       location: { type: String, trim: true },

@@ -12,14 +12,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import type { SportResult, WizardAnswers } from "../../types";
+import { JourneyPipeline } from "../JourneyPipeline";
 
-function buildRoadmapHref(sportName: string, answers: WizardAnswers): string {
-  const params = new URLSearchParams({ sport: sportName });
-  if (answers.state) params.set("state", answers.state);
-  if (answers.age) params.set("childAge", String(answers.age));
-  if (answers.budget) params.set("budgetTier", answers.budget);
-  return `/roadmap?${params.toString()}`;
-}
 
 const RANK_META = [
   {
@@ -144,22 +138,11 @@ function SportCard({
         )}
       </div>
 
-      {/* CTA */}
+      {/* Footer meta */}
       <div className="px-5 pb-5">
-        <p className="text-[10px] text-slate-400 text-center mb-2">
+        <p className="text-[10px] text-slate-400 text-center">
           {name} · {answers.state ?? "India"} · {result.sport.costRange}
         </p>
-        <a
-          href={buildRoadmapHref(result.sport.name, answers)}
-          className={`flex items-center justify-center gap-1.5 w-full rounded-xl py-2.5 text-xs font-semibold transition-colors ${
-            rank === 1
-              ? "bg-power-orange text-white hover:bg-power-orange/90"
-              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-          }`}
-        >
-          See {result.sport.name} pathway
-          <ArrowRight className="w-3.5 h-3.5" />
-        </a>
       </div>
     </div>
   );
@@ -223,6 +206,12 @@ export function ResultsView({
           <SportCard key={result.sport.id} result={result} answers={answers} rank={i + 1} />
         ))}
       </div>
+
+      {/* Journey pipeline */}
+      <JourneyPipeline
+        childName={name}
+        topSport={topResults[0]?.sport.name}
+      />
 
       {/* Bottom row: expert CTA + guest save */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">

@@ -12,7 +12,7 @@ export const guidanceRequestSchema = z.object({
   primary_objective: z.enum(["Recreational", "Fitness", "Compete", "Elite"]),
   weekly_time_commitment: z.number().min(0).max(40),
   budget_tier: z.enum(["Budget", "Moderate", "Premium"]),
-  parent_specific_question: z.string().trim().max(1000).optional(),
+  parent_specific_question: z.string().trim().max(3000).optional(),
   sport: z.string().trim().optional(),
   location: z.string().trim().max(80).optional(), // Indian state for local scheme recommendations
   current_pathway_level: z.number().int().min(1).max(5).optional(),

@@ -13,7 +13,7 @@ import {
   Trophy,
   Wrench,
 } from "lucide-react";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import api from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
@@ -25,9 +25,12 @@ import { downloadGuidanceReportPdf } from "@/modules/guidance/services/guidance"
 import type { GuidanceFormState, GuidanceSubmission } from "@/modules/guidance/types";
 import { BinaryCards } from "@/modules/pathway/components/inputs/BinaryCards";
 import { FourContextCards } from "@/modules/pathway/components/inputs/FourContextCards";
-import { SpectrumSlider } from "@/modules/pathway/components/inputs/SpectrumSlider";
+import { SportSearchInput } from "@/modules/pathway/components/inputs/SportSearchInput";
 import { StateSelector } from "@/modules/pathway/components/inputs/StateSelector";
 import { ThreeOptionCards } from "@/modules/pathway/components/inputs/ThreeOptionCards";
+import { getAgeFromDob } from "@/modules/pathway/utils/sportKnownFlowUtils";
+import { EMPTY_FORM, buildPayload, buildQuestion } from "./consultUtils";
+import type { ConsultForm, ProblemId } from "./consultUtils";
 
 // ─── Problem type config (picker only) ───────────────────────────────────────
 
@@ -77,50 +80,6 @@ const PROBLEM_TYPES = [
       "Describe any sports challenge — routine, coach selection, burnout, diet, mental blocks — and get targeted expert-backed advice.",
   },
 ] as const;
-
-type ProblemId = (typeof PROBLEM_TYPES)[number]["id"];
-
-// ─── Wizard form (unified for all problem types) ──────────────────────────────
-
-interface ConsultForm {
-  sport: string;
-  age: string;
-  gender: string | null;
-  state: string | null;
-  experienceLevel: string | null;
-  weeklyHours: string | null;
-  budgetRange: string | null;
-  // Weakness
-  weaknessArea: string | null;
-  weaknessDuration: string | null;
-  // Tournament
-  timeline: string | null;
-  tournamentGap: string | null;
-  // Level up
-  currentLevel: string | null;
-  targetLevel: string | null;
-  levelBlocker: string | null;
-  // Custom
-  challenge: string;
-}
-
-const EMPTY_FORM: ConsultForm = {
-  sport: "",
-  age: "",
-  gender: null,
-  state: null,
-  experienceLevel: null,
-  weeklyHours: null,
-  budgetRange: null,
-  weaknessArea: null,
-  weaknessDuration: null,
-  timeline: null,
-  tournamentGap: null,
-  currentLevel: null,
-  targetLevel: null,
-  levelBlocker: null,
-  challenge: "",
-};
 
 // ─── Step definitions ─────────────────────────────────────────────────────────
 
@@ -190,87 +149,133 @@ const sharedSteps = {
 
 // Per-problem step sequences
 const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
+  // ── Fix a weakness ─────────────────────────────────────────────────────────
   weakness: [
-    sharedSteps.sport("We'll tailor the weakness fix plan specifically to this sport."),
-    sharedSteps.state(),
+    sharedSteps.sport("We'll tailor the entire fix plan to this sport's specific demands."),
+    sharedSteps.age(),
     {
       kind: "question",
       id: "experienceLevel",
       required: true,
       heading: (f) => `What's their current level in ${f.sport || "the sport"}?`,
-      sub: "Sets the baseline — the fix plan will match where they actually are.",
+      sub: "Sets the baseline — the fix plan will match exactly where they are right now.",
     },
     {
       kind: "question",
       id: "weaknessArea",
       required: true,
-      heading: () => "What's the main weakness?",
-      sub: "We'll build the entire plan around fixing this specific area.",
+      heading: (f) => `What's the main weakness holding ${f.sport ? `their ${f.sport}` : "them"} back?`,
+      sub: "We'll build the entire plan around addressing this specific gap.",
+    },
+    {
+      kind: "question",
+      id: "weaknessContext",
+      required: true,
+      heading: () => "When does this weakness show up most?",
+      sub: "Knowing the context helps us design drills that fix it in the right situations.",
+    },
+    {
+      kind: "question",
+      id: "weaknessAttempts",
+      required: false,
+      heading: () => "What have you already tried to fix it?",
+      sub: "Optional — so we don't repeat what hasn't worked.",
     },
     {
       kind: "question",
       id: "weaknessDuration",
       required: true,
       heading: () => "How long has this been a problem?",
-      sub: "Helps us understand how deep-rooted it is and how to approach it.",
+      sub: "Tells us how deep-rooted it is — a recent flaw needs a different approach than a long-standing habit.",
     },
     {
       kind: "transition",
-      text: "We know what to fix. Let's look at the logistics.",
-      sub: "2 final questions to calibrate the plan's intensity.",
+      text: "Good — we know exactly what to target.",
+      sub: "Two quick logistics questions and your plan is ready.",
     },
-    sharedSteps.weeklyHours("The plan will match how much time you can realistically commit."),
+    sharedSteps.weeklyHours("The drill schedule will fit around the time you can realistically commit."),
     sharedSteps.budgetRange(),
   ],
+
+  // ── Tournament prep ────────────────────────────────────────────────────────
   tournament: [
-    sharedSteps.sport("We'll build a preparation plan specific to this sport's demands."),
+    sharedSteps.sport("We'll build a prep plan specific to this sport's match demands."),
     {
       kind: "question",
       id: "timeline",
       required: true,
       heading: () => "How soon is the tournament?",
-      sub: "This defines the length and structure of the preparation plan.",
+      sub: "Defines the phases and length of the preparation plan.",
     },
-    sharedSteps.state(),
+    {
+      kind: "question",
+      id: "tournamentLevel",
+      required: true,
+      heading: () => "What level is the tournament?",
+      sub: "The level sets the competition standard the plan needs to prepare them for.",
+    },
     {
       kind: "question",
       id: "experienceLevel",
       required: true,
       heading: (f) => `What's their current level in ${f.sport || "the sport"}?`,
-      sub: "Helps us calibrate the training intensity and goals for the event.",
+      sub: "Calibrates training intensity and realistic goals for the event.",
+    },
+    {
+      kind: "question",
+      id: "physicalReadiness",
+      required: true,
+      heading: () => "How is their match fitness right now?",
+      sub: "Match fitness determines how much of the plan focuses on conditioning vs. skills.",
     },
     {
       kind: "question",
       id: "tournamentGap",
       required: true,
-      heading: () => "What's the biggest gap to close before the tournament?",
-      sub: "This becomes the core focus of the preparation plan.",
+      heading: () => "What's the most important gap to close before the tournament?",
+      sub: "This becomes the core priority of the preparation plan.",
     },
+    sharedSteps.age(),
     {
       kind: "transition",
-      text: "Got it. Now the logistics.",
-      sub: "Almost done — 2 more questions.",
+      text: "Clear picture — now let's plan the prep.",
+      sub: "Two final questions to size the training commitment.",
     },
-    sharedSteps.weeklyHours("We'll build a weekly prep schedule around this availability."),
+    sharedSteps.weeklyHours("We'll build a week-by-week schedule around this availability."),
     sharedSteps.budgetRange(),
   ],
+
+  // ── Level up ───────────────────────────────────────────────────────────────
   levelup: [
-    sharedSteps.sport("We'll map out exactly what the next level looks like in this sport."),
+    sharedSteps.sport("We'll map out exactly what the next level requires in this sport."),
     {
       kind: "question",
       id: "currentLevel",
       required: true,
       heading: (f) => `Where is your child now in ${f.sport || "the sport"}?`,
-      sub: "This is the starting point for the level-up roadmap.",
+      sub: "This is the starting point — the roadmap builds from here.",
     },
     {
       kind: "question",
       id: "targetLevel",
       required: true,
-      heading: () => "What level are you aiming for?",
-      sub: "Sets the destination — we'll map out every step between here and there.",
+      heading: () => "What level are they aiming for?",
+      sub: "Sets the destination — we'll map every step between here and there.",
     },
-    sharedSteps.state(),
+    {
+      kind: "question",
+      id: "timeAtCurrentLevel",
+      required: true,
+      heading: () => "How long have they been at their current level?",
+      sub: "Tells us whether this is a natural plateau or something more specific holding them back.",
+    },
+    {
+      kind: "question",
+      id: "trainingType",
+      required: true,
+      heading: () => "How do they currently train?",
+      sub: "Shapes the kind of advice — what to add, upgrade, or change in their setup.",
+    },
     {
       kind: "question",
       id: "levelBlocker",
@@ -279,32 +284,54 @@ const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
       sub: "This is what the plan will address head-on.",
     },
     {
-      kind: "transition",
-      text: "Clear picture. Let's get the plan right.",
-      sub: "2 quick questions to size the commitment.",
+      kind: "question",
+      id: "topStrength",
+      required: false,
+      heading: (f) => `What does ${f.sport ? `your ${f.sport} player` : "your child"} actually do well?`,
+      sub: "Optional — helps us build the breakthrough plan around their strengths, not just their gaps.",
     },
-    sharedSteps.weeklyHours("The level-up timeline will be built around this training commitment."),
+    sharedSteps.age(),
+    {
+      kind: "transition",
+      text: "Got it — full picture of where they are.",
+      sub: "Two final questions to calibrate the timeline.",
+    },
+    sharedSteps.weeklyHours("The level-up roadmap will be built around this training commitment."),
     sharedSteps.budgetRange(),
   ],
+
+  // ── Ask anything ──────────────────────────────────────────────────────────
   custom: [
     sharedSteps.sport("Optional — skip if this isn't sport-specific."),
     sharedSteps.age(),
-    sharedSteps.state(),
+    {
+      kind: "question",
+      id: "challengeCategory",
+      required: true,
+      heading: () => "What type of challenge is this?",
+      sub: "Helps us frame the advice correctly from the start.",
+    },
     {
       kind: "question",
       id: "challenge",
       required: true,
       heading: () => "Tell us what you're facing.",
-      sub: "Describe the challenge in your own words — the more detail, the better the plan.",
+      sub: "The more detail you give, the more specific and useful the advice will be.",
+    },
+    {
+      kind: "question",
+      id: "desiredOutcome",
+      required: true,
+      heading: () => "What kind of help are you looking for?",
+      sub: "So the response is the right shape for what you actually need.",
     },
     {
       kind: "question",
       id: "experienceLevel",
       required: false,
-      heading: () => "What's their current level?",
-      sub: "Optional — gives us context for the advice.",
+      heading: () => "What's their current level overall?",
+      sub: "Optional — gives the AI useful context to calibrate the advice.",
     },
-    sharedSteps.weeklyHours("Optional — gives us context for the commitment level."),
   ],
 };
 
@@ -319,123 +346,6 @@ function getStepQNums(steps: WizardStep[]): (number | null)[] {
 
 function getTotalQuestions(steps: WizardStep[]): number {
   return steps.filter((s) => s.kind === "question").length;
-}
-
-// ─── API helpers ──────────────────────────────────────────────────────────────
-
-const FITNESS_MAP: Record<string, GuidanceFormState["current_fitness_level"]> = {
-  beginner: "Low",
-  recreational: "Moderate",
-  competitive: "High",
-};
-const HOURS_MAP: Record<string, number> = {
-  "1-3": 2,
-  "4-7": 6,
-  "8-12": 10,
-  "13-plus": 15,
-};
-const BUDGET_MAP: Record<string, GuidanceFormState["budget_tier"]> = {
-  "under-3k": "Budget",
-  "3k-7k": "Moderate",
-  "7k-15k": "Moderate",
-  "15k-plus": "Premium",
-};
-const OBJECTIVE_MAP: Record<ProblemId, GuidanceFormState["primary_objective"]> = {
-  weakness: "Compete",
-  tournament: "Compete",
-  levelup: "Elite",
-  custom: "Recreational",
-};
-
-const WEAKNESS_LABELS: Record<string, string> = {
-  technique: "technical execution (incorrect form, poor timing, faulty mechanics)",
-  fitness: "physical fitness (strength, speed, stamina, or agility)",
-  mental: "mental focus (concentration, pressure management, nerves)",
-  tactical: "tactical reading (game sense, decision-making, pattern recognition)",
-};
-const DURATION_LABELS: Record<string, string> = {
-  weeks: "a few weeks",
-  months: "several months",
-  "year-plus": "over a year",
-};
-const TOURNAMENT_GAP_LABELS: Record<string, string> = {
-  technique: "technical consistency under match pressure",
-  stamina: "physical stamina for full-match performance",
-  consistency: "reducing unforced errors and building consistency",
-  nerves: "mental composure and nerves during competition",
-};
-const CURRENT_LEVEL_LABELS: Record<string, string> = {
-  school: "school level",
-  club: "club / academy level",
-  district: "district or state competition level",
-};
-const TARGET_LEVEL_LABELS: Record<string, string> = {
-  club: "club / academy level",
-  district: "district or state competition level",
-  national: "national championship level",
-};
-const BLOCKER_LABELS: Record<string, string> = {
-  technique: "technical gaps in the fundamentals",
-  fitness: "physical conditioning not matching the next level",
-  coaching: "lack of the right coaching or structured guidance",
-  competition: "insufficient competitive exposure and match practice",
-};
-
-function buildQuestion(form: ConsultForm, problemId: ProblemId): string {
-  const sport = form.sport || "their chosen sport";
-  const level = form.experienceLevel
-    ? FITNESS_MAP[form.experienceLevel]?.toLowerCase() ?? form.experienceLevel
-    : "developing";
-
-  switch (problemId) {
-    case "weakness":
-      return [
-        `My child plays ${sport} at the ${level} level.`,
-        `They have been struggling with ${WEAKNESS_LABELS[form.weaknessArea ?? ""] ?? form.weaknessArea ?? "a specific weakness"} for ${DURATION_LABELS[form.weaknessDuration ?? ""] ?? "some time"}.`,
-        `Please create a targeted, actionable plan to fix this weakness. Include: specific drills and exercises, how often to practice, how to track progress, and what milestones indicate improvement.`,
-        `Make the plan realistic for their current ${level} level.`,
-      ].join(" ");
-
-    case "tournament":
-      return [
-        `My child plays ${sport} at the ${level} level and has a tournament coming up in ${form.timeline === "weeks" ? "2–4 weeks" : form.timeline === "months-1-3" ? "1–3 months" : "3–6 months"}.`,
-        `The most important gap to close before the tournament is: ${TOURNAMENT_GAP_LABELS[form.tournamentGap ?? ""] ?? form.tournamentGap ?? "overall preparation"}.`,
-        `Please build a week-by-week tournament preparation plan. Cover: phase-by-phase training focus, physical preparation, mental/match readiness, and a peak-week strategy.`,
-      ].join(" ");
-
-    case "levelup":
-      return [
-        `My child plays ${sport} and is currently at the ${CURRENT_LEVEL_LABELS[form.currentLevel ?? ""] ?? form.currentLevel ?? "current"} level.`,
-        `We want to reach the ${TARGET_LEVEL_LABELS[form.targetLevel ?? ""] ?? form.targetLevel ?? "next"} level.`,
-        `The main bottleneck is: ${BLOCKER_LABELS[form.levelBlocker ?? ""] ?? form.levelBlocker ?? "general development"}.`,
-        `Please map out exactly what the breakthrough requires — specific training focus, realistic timeline, key milestones, and what to address first to unlock progress.`,
-      ].join(" ");
-
-    case "custom":
-      return form.challenge ||
-        "Please provide personalised sports guidance and an actionable plan for my child.";
-
-    default:
-      return "Please provide personalised sports guidance for my child.";
-  }
-}
-
-function buildPayload(
-  form: ConsultForm,
-  problemId: ProblemId,
-): GuidanceFormState {
-  return {
-    child_age: form.age ? Number(form.age) : 10,
-    child_gender: form.gender === "FEMALE" ? "female" : "male",
-    current_fitness_level: FITNESS_MAP[form.experienceLevel ?? ""] ?? "Moderate",
-    personality_tags: [],
-    primary_objective: OBJECTIVE_MAP[problemId],
-    weekly_time_commitment: HOURS_MAP[form.weeklyHours ?? ""] ?? 6,
-    budget_tier: BUDGET_MAP[form.budgetRange ?? ""] ?? "Moderate",
-    parent_specific_question: buildQuestion(form, problemId),
-    sport: form.sport || "General",
-    location: form.state ?? "",
-  };
 }
 
 function buildWaUrl(q: GuidanceFormState): string {
@@ -461,25 +371,6 @@ const slide = {
   exit: (dir: number) => ({ opacity: 0, x: dir * -28 }),
 };
 
-// ─── Sport grid (shared with find-sport) ─────────────────────────────────────
-
-const SPORTS = [
-  { name: "Cricket", emoji: "🏏" },
-  { name: "Football", emoji: "⚽" },
-  { name: "Badminton", emoji: "🏸" },
-  { name: "Table Tennis", emoji: "🏓" },
-  { name: "Tennis", emoji: "🎾" },
-  { name: "Basketball", emoji: "🏀" },
-  { name: "Volleyball", emoji: "🏐" },
-  { name: "Swimming", emoji: "🏊" },
-  { name: "Athletics", emoji: "🏃" },
-  { name: "Gymnastics", emoji: "🤸" },
-  { name: "Kabaddi", emoji: "🤼" },
-  { name: "Wrestling", emoji: "🤼‍♂️" },
-  { name: "Chess", emoji: "♟️" },
-  { name: "Shooting", emoji: "🎯" },
-] as const;
-
 // ─── Question input renderer ──────────────────────────────────────────────────
 
 function QuestionInput({
@@ -495,58 +386,12 @@ function QuestionInput({
 }) {
   switch (id) {
     case "sport":
-      if (problemId === "custom") {
-        return (
-          <div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-              {SPORTS.map((s) => (
-                <button
-                  key={s.name}
-                  type="button"
-                  onClick={() =>
-                    set("sport", form.sport === s.name ? "" : s.name)
-                  }
-                  className={`flex items-center gap-2 rounded-2xl border-2 px-3 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97] ${
-                    form.sport === s.name
-                      ? "border-power-orange bg-power-orange/5 text-power-orange"
-                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-                  }`}
-                >
-                  <span className="text-base">{s.emoji}</span>
-                  <span className="truncate">{s.name}</span>
-                </button>
-              ))}
-            </div>
-            {form.sport && (
-              <button
-                type="button"
-                onClick={() => set("sport", "")}
-                className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                Clear selection
-              </button>
-            )}
-          </div>
-        );
-      }
       return (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {SPORTS.map((s) => (
-            <button
-              key={s.name}
-              type="button"
-              onClick={() => set("sport", s.name)}
-              className={`flex items-center gap-2 rounded-2xl border-2 px-3 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.97] ${
-                form.sport === s.name
-                  ? "border-power-orange bg-power-orange/5 text-power-orange"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-              }`}
-            >
-              <span className="text-base">{s.emoji}</span>
-              <span className="truncate">{s.name}</span>
-            </button>
-          ))}
-        </div>
+        <SportSearchInput
+          value={form.sport}
+          onChange={(v) => set("sport", v)}
+          required={problemId !== "custom"}
+        />
       );
 
     case "age":
@@ -582,9 +427,9 @@ function QuestionInput({
       return (
         <ThreeOptionCards
           options={[
-            { value: "beginner", label: "Just starting out — no prior training" },
-            { value: "recreational", label: "Plays for fun or at school / local club" },
-            { value: "competitive", label: "Trains regularly or already competes" },
+            { value: "beginner", label: "Beginner — city / neighbourhood level, just getting started" },
+            { value: "intermediate", label: "Intermediate — school, club or district level, training regularly" },
+            { value: "competitive", label: "Competitive — state or national level, serious competition" },
           ]}
           value={form.experienceLevel}
           onChange={(v) => set("experienceLevel", v)}
@@ -664,9 +509,9 @@ function QuestionInput({
         <FourContextCards
           options={[
             { value: "technique", label: "Technical consistency", context: "Technique breaks down under match pressure" },
-            { value: "stamina", label: "Physical stamina", context: "Doesn't have the fitness for full-match performance" },
-            { value: "consistency", label: "Reducing errors", context: "Too many unforced errors and inconsistent play" },
-            { value: "nerves", label: "Mental composure", context: "Nerves and pressure affect performance during competition" },
+            { value: "stamina", label: "Physical stamina", context: "Doesn't have the fitness for a full-day competition" },
+            { value: "nerves", label: "Mental composure", context: "Nerves and pressure significantly affect performance" },
+            { value: "matchplay", label: "Match experience", context: "Not enough competitive matches — struggles to read opponents and adapt" },
           ]}
           value={form.tournamentGap}
           onChange={(v) => set("tournamentGap", v)}
@@ -703,13 +548,137 @@ function QuestionInput({
       return (
         <FourContextCards
           options={[
-            { value: "technique", label: "Technique gaps", context: "Fundamental skills not at the required standard" },
-            { value: "fitness", label: "Physical conditioning", context: "Not fit or strong enough for the next level" },
-            { value: "coaching", label: "Coaching quality", context: "Needs better guidance or a higher-level coach" },
-            { value: "competition", label: "Lack of exposure", context: "Not getting enough competitive match practice" },
+            { value: "technique", label: "Technique gaps", context: "Fundamental skills not at the standard required for the next level" },
+            { value: "fitness", label: "Physical conditioning", context: "Not fit or strong enough to compete at the next level" },
+            { value: "mental", label: "Mental game", context: "Confidence, composure, or belief is holding them back" },
+            { value: "competition", label: "Lack of exposure", context: "Not getting enough competitive match practice at the right level" },
           ]}
           value={form.levelBlocker}
           onChange={(v) => set("levelBlocker", v)}
+        />
+      );
+
+    case "weaknessContext":
+      return (
+        <FourContextCards
+          options={[
+            { value: "training", label: "In training", context: "They know it's there — visible during practice" },
+            { value: "matches", label: "In matches", context: "Game pressure causes the breakdown" },
+            { value: "pressure", label: "Under scrutiny", context: "Performance drops when being watched or evaluated" },
+            { value: "always", label: "Everywhere", context: "Consistent in all situations — deeply ingrained" },
+          ]}
+          value={form.weaknessContext}
+          onChange={(v) => set("weaknessContext", v)}
+        />
+      );
+
+    case "weaknessAttempts":
+      return (
+        <FourContextCards
+          options={[
+            { value: "nothing", label: "Nothing yet", context: "We've just identified the problem" },
+            { value: "practice", label: "Extra practice", context: "Self-practice on their own" },
+            { value: "video", label: "Video analysis", context: "Watching footage to self-correct" },
+            { value: "coaching", label: "Tried coaching", context: "Worked with a coach but it hasn't stuck" },
+          ]}
+          value={form.weaknessAttempts}
+          onChange={(v) => set("weaknessAttempts", v)}
+        />
+      );
+
+    case "tournamentLevel":
+      return (
+        <FourContextCards
+          options={[
+            { value: "school", label: "School level", context: "Inter-school or intra-school competition" },
+            { value: "district", label: "District level", context: "Competing against players across the district" },
+            { value: "state", label: "State championship", context: "State-level tournament or selection trial" },
+            { value: "national", label: "National level", context: "National championship or national selection" },
+          ]}
+          value={form.tournamentLevel}
+          onChange={(v) => set("tournamentLevel", v)}
+        />
+      );
+
+    case "physicalReadiness":
+      return (
+        <ThreeOptionCards
+          options={[
+            { value: "low", label: "Not match-ready — fitness is a concern, gets tired quickly" },
+            { value: "moderate", label: "Reasonably fit — can compete but fades in the second half" },
+            { value: "high", label: "Match-fit — conditioning is not an issue, ready to perform" },
+          ]}
+          value={form.physicalReadiness}
+          onChange={(v) => set("physicalReadiness", v)}
+        />
+      );
+
+    case "timeAtCurrentLevel":
+      return (
+        <ThreeOptionCards
+          options={[
+            { value: "new", label: "Under 6 months — still settling in at this level" },
+            { value: "6-12m", label: "6–12 months — settled in but not progressing" },
+            { value: "1y-plus", label: "Over a year — definitely plateaued, feels stuck" },
+          ]}
+          value={form.timeAtCurrentLevel}
+          onChange={(v) => set("timeAtCurrentLevel", v)}
+        />
+      );
+
+    case "trainingType":
+      return (
+        <FourContextCards
+          options={[
+            { value: "self", label: "Self-practice", context: "On their own at home or with friends — no coaching" },
+            { value: "club", label: "Club or school", context: "Group sessions at a local club or school programme" },
+            { value: "academy", label: "Formal academy", context: "Enrolled at an academy with structured training" },
+            { value: "private", label: "Private coaching", context: "One-on-one or semi-private coaching sessions" },
+          ]}
+          value={form.trainingType}
+          onChange={(v) => set("trainingType", v)}
+        />
+      );
+
+    case "topStrength":
+      return (
+        <FourContextCards
+          options={[
+            { value: "technique", label: "Technical skills", context: "Clean execution, good form, strong fundamentals" },
+            { value: "tactical", label: "Game intelligence", context: "Reads play well, makes smart decisions" },
+            { value: "physical", label: "Physical athleticism", context: "Speed, strength, or stamina stands out" },
+            { value: "mental", label: "Mental strength", context: "Composure, focus, and resilience under pressure" },
+          ]}
+          value={form.topStrength}
+          onChange={(v) => set("topStrength", v)}
+        />
+      );
+
+    case "challengeCategory":
+      return (
+        <FourContextCards
+          options={[
+            { value: "motivation", label: "Motivation / confidence", context: "Mental blocks, fear of failure, loss of drive" },
+            { value: "injury", label: "Injury or recovery", context: "Physical health concern, rehab, return to sport" },
+            { value: "coaching", label: "Coaching or setup", context: "Coach selection, training programme, or structure" },
+            { value: "nutrition", label: "Nutrition or burnout", context: "Diet, body development, overtraining, balance" },
+          ]}
+          value={form.challengeCategory}
+          onChange={(v) => set("challengeCategory", v)}
+        />
+      );
+
+    case "desiredOutcome":
+      return (
+        <FourContextCards
+          options={[
+            { value: "plan", label: "Step-by-step plan", context: "A concrete action plan to follow immediately" },
+            { value: "advice", label: "Expert perspective", context: "Guidance and insight from a sports expert viewpoint" },
+            { value: "resources", label: "Resources to find", context: "Specific programmes, coaches, or tools to seek out" },
+            { value: "opinion", label: "Second opinion", context: "A fresh look at what we're currently doing" },
+          ]}
+          value={form.desiredOutcome}
+          onChange={(v) => set("desiredOutcome", v)}
         />
       );
 
@@ -870,6 +839,8 @@ function ResultsScreen({
 
 // ─── Problem wizard ───────────────────────────────────────────────────────────
 
+type PreFillPhase = "loading" | "select" | "ready";
+
 function ProblemWizardInner({
   problemId,
   onBack,
@@ -877,6 +848,7 @@ function ProblemWizardInner({
   problemId: ProblemId;
   onBack: () => void;
 }) {
+  const { token } = useAuthStore();
   const steps = WIZARD_STEPS[problemId];
   const qNums = getStepQNums(steps);
   const totalQ = getTotalQuestions(steps);
@@ -895,6 +867,47 @@ function ProblemWizardInner({
   const [loading, setLoading] = useState(false);
   const [submission, setSubmission] = useState<GuidanceSubmission | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dependents, setDependents] = useState<any[]>([]);
+  const [selectedDependentId, setSelectedDependentId] = useState<string | null>(null);
+  const [preFillPhase, setPreFillPhase] = useState<PreFillPhase>(token ? "loading" : "ready");
+
+  useEffect(() => {
+    if (!token) return;
+    const timeout = setTimeout(() => setPreFillPhase("ready"), 1500);
+    api.get<{ success: boolean; data: any[] }>("/auth/players")
+      .then(res => {
+        clearTimeout(timeout);
+        const deps = (res.data.data || []).filter((p: any) => p.type === "DEPENDENT");
+        setDependents(deps);
+        if (deps.length === 1) {
+          applyDependent(deps[0]);
+          setSelectedDependentId(deps[0]._id);
+          setPreFillPhase("ready");
+        } else if (deps.length > 1) {
+          setPreFillPhase("select");
+        } else {
+          setPreFillPhase("ready");
+        }
+      })
+      .catch(() => { clearTimeout(timeout); setPreFillPhase("ready"); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  function applyDependent(dep: any) {
+    setForm(prev => {
+      const age = dep.dob ? getAgeFromDob(new Date(dep.dob).toISOString().slice(0, 10)) : null;
+      return {
+        ...prev,
+        sport: prev.sport || dep.sportsFocus?.[0] || prev.sport,
+        age: prev.age || (age ? String(age) : prev.age),
+        gender: prev.gender ?? dep.gender ?? null,
+        state: prev.state ?? dep.location ?? null,
+        experienceLevel: prev.experienceLevel ?? dep.experienceLevel ?? null,
+        weeklyHours: prev.weeklyHours ?? dep.weeklyHoursCategory ?? null,
+        budgetRange: prev.budgetRange ?? dep.budgetRange ?? null,
+      };
+    });
+  }
 
   const set = <K extends ConsultField>(k: K, v: ConsultForm[K]) =>
     setForm((p) => ({ ...p, [k]: v }));
@@ -946,6 +959,18 @@ function ProblemWizardInner({
         return;
       }
 
+      // Sync shared profile fields back to the matched dependent
+      if (selectedDependentId) {
+        api.put(`/auth/dependents/${selectedDependentId}`, {
+          ...(form.sport ? { sportsFocus: [form.sport] } : {}),
+          ...(form.gender ? { gender: form.gender } : {}),
+          ...(form.state ? { location: form.state } : {}),
+          ...(form.experienceLevel ? { experienceLevel: form.experienceLevel } : {}),
+          ...(form.weeklyHours ? { weeklyHoursCategory: form.weeklyHours } : {}),
+          ...(form.budgetRange ? { budgetRange: form.budgetRange } : {}),
+        }).catch(() => {});
+      }
+
       setSubmission(res.data.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to generate plan. Please try again.");
@@ -960,10 +985,79 @@ function ProblemWizardInner({
     setLoading(false);
     setSubmission(null);
     setError(null);
+    setSelectedDependentId(null);
+    setPreFillPhase(dependents.length > 1 ? "select" : "ready");
   };
 
   if (loading) return <LoadingView problemId={problemId} />;
   if (submission) return <ResultsScreen submission={submission} problemId={problemId} onReset={reset} />;
+
+  // Brief loading state while we fetch dependents
+  if (preFillPhase === "loading") {
+    return (
+      <div className="relative min-h-screen flex items-center justify-center">
+        <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
+        </div>
+        <Loader2 className="h-6 w-6 animate-spin text-power-orange" />
+      </div>
+    );
+  }
+
+  // Dependent selector for users with multiple children
+  if (preFillPhase === "select") {
+    return (
+      <div className="relative min-h-screen flex items-center justify-center px-4">
+        <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
+          <div className="absolute -left-32 top-10 h-96 w-96 rounded-full bg-power-orange/8 blur-3xl" />
+        </div>
+        <div className="w-full max-w-sm">
+          <button
+            type="button"
+            onClick={onBack}
+            className="mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-700 transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back
+          </button>
+          <h2 className="font-title text-2xl font-bold text-slate-900 mb-2">
+            Who is this for?
+          </h2>
+          <p className="text-sm text-slate-500 mb-6">
+            Select a child to pre-fill their details, or continue manually.
+          </p>
+          <div className="space-y-3">
+            {dependents.map(dep => {
+              const age = dep.dob ? getAgeFromDob(new Date(dep.dob).toISOString().slice(0, 10)) : null;
+              return (
+                <button
+                  key={dep._id}
+                  type="button"
+                  onClick={() => {
+                    applyDependent(dep);
+                    setSelectedDependentId(dep._id);
+                    setPreFillPhase("ready");
+                  }}
+                  className="w-full flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-left text-sm font-medium text-slate-900 shadow-sm transition hover:border-power-orange hover:bg-orange-50"
+                >
+                  <span>{dep.name}</span>
+                  {age && <span className="text-xs text-slate-400">{age} yrs</span>}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setPreFillPhase("ready")}
+              className="w-full rounded-2xl border border-dashed border-slate-200 bg-transparent px-4 py-3 text-sm text-slate-400 transition hover:border-slate-300 hover:text-slate-600"
+            >
+              Continue without selecting
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const pt = PROBLEM_TYPES.find((p) => p.id === problemId)!;
 

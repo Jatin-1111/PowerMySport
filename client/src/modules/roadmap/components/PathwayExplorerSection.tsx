@@ -586,7 +586,7 @@ export function PathwayExplorerSection() {
         {hasWizardResults && (
           <div className="flex justify-center mb-5">
             <a
-              href="/pathway"
+              href="/find-sport"
               className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-medium text-slate-500 shadow-sm hover:border-power-orange hover:text-power-orange transition-all"
             >
               <ArrowLeft className="h-3 w-3" />
@@ -2020,7 +2020,7 @@ export function PathwayExplorerSection() {
                         </p>
                       </div>
                       <a
-                        href="/guidance"
+                        href="/consult"
                         className="shrink-0 text-xs font-semibold text-power-orange hover:underline"
                       >
                         Personalise for your child →

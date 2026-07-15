@@ -8,7 +8,7 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   closeButton?: boolean;
 }
 
@@ -16,6 +16,7 @@ const sizeClasses = {
   sm: "max-w-sm",
   md: "max-w-md",
   lg: "max-w-lg",
+  xl: "max-w-3xl",
 };
 
 export const Modal: React.FC<ModalProps> = ({
@@ -113,11 +114,11 @@ export const Modal: React.FC<ModalProps> = ({
             aria-modal="true"
             aria-labelledby={title ? "modal-title" : undefined}
             onKeyDown={handleKeyDown}
-            className={`relative z-10 w-full rounded-2xl bg-white shadow-2xl ${sizeClasses[size]}`}
+            className={`relative z-10 flex max-h-[90vh] w-full flex-col rounded-2xl bg-white shadow-2xl ${sizeClasses[size]}`}
           >
             {/* Header */}
             {(title || closeButton) && (
-              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+              <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4">
                 {title && (
                   <h2
                     id="modal-title"
@@ -140,11 +141,11 @@ export const Modal: React.FC<ModalProps> = ({
             )}
 
             {/* Body */}
-            <div className="p-6">{children}</div>
+            <div className="overflow-y-auto p-6">{children}</div>
 
             {/* Footer */}
             {footer && (
-              <div className="border-t border-slate-100 bg-slate-50/50 rounded-b-2xl px-6 py-4">
+              <div className="shrink-0 rounded-b-2xl border-t border-slate-100 bg-slate-50/50 px-6 py-4">
                 {footer}
               </div>
             )}
