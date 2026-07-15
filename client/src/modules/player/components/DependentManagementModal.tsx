@@ -77,6 +77,12 @@ const STEPS = [
   { id: "environment", title: "Environment & senses",   sub: "Preferences and sensory profile — optional",      required: false },
 ] as const;
 
+const stepVariants = {
+  enter: (d: number) => ({ opacity: 0, x: d * 32 }),
+  center: { opacity: 1, x: 0 },
+  exit: (d: number) => ({ opacity: 0, x: d * -32 }),
+};
+
 export default function DependentManagementModal({
   isOpen,
   onClose,
@@ -227,9 +233,10 @@ export default function DependentManagementModal({
           <motion.div
             key={stepIndex}
             custom={dir}
-            initial={(d: number) => ({ opacity: 0, x: d * 32 })}
-            animate={{ opacity: 1, x: 0 }}
-            exit={(d: number) => ({ opacity: 0, x: d * -32 })}
+            variants={stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
             transition={{ duration: 0.22, ease: "easeOut" }}
             className="space-y-5"
           >
