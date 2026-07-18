@@ -1,8 +1,20 @@
 import { Request, Response } from "express";
-import mongoose from "mongoose";
-import { SportPathway } from "../../shared/models/SportPathway";
+import prisma from "../../lib/prisma";
 import { recordAuditLog } from "../services/AuditLogService";
-import { buildSafeSearchRegexSource } from "../../utils/regex";
+
+// verifiedBy is a String FK -> Admin.id (no Prisma relation defined). The old
+// Mongoose `.populate("verifiedBy", "name email")` becomes a second lookup that
+// swaps the id for the admin's { id, name, email } (or null if missing).
+async function attachVerifiedByAdmin<T extends { verifiedBy: string | null }>(
+  pathway: T,
+): Promise<T & { verifiedBy: unknown }> {
+  if (!pathway.verifiedBy) return pathway;
+  const admin = await prisma.admin.findUnique({
+    where: { id: pathway.verifiedBy },
+    select: { id: true, name: true, email: true },
+  });
+  return { ...pathway, verifiedBy: admin };
+}
 
 // ─── GET /api/admin/sport-pathways ─────────────────────────────────────────────
 // List pathways with search + verified filter + pagination.
@@ -20,24 +32,38 @@ export const listPathwaysAdmin = async (
     const search = (req.query.search as string) || "";
     const verifiedParam = req.query.isVerified as string | undefined;
 
-    const filter: Record<string, unknown> = {};
+    const where: any = {};
     if (search.trim()) {
-      const regex = new RegExp(buildSafeSearchRegexSource(search), "i");
-      filter.$or = [{ sportName: regex }, { sportSlug: regex }];
+      where.OR = [
+        { sportName: { contains: search.trim(), mode: "insensitive" } },
+        { sportSlug: { contains: search.trim(), mode: "insensitive" } },
+      ];
     }
-    if (verifiedParam === "true") filter.isVerified = true;
-    if (verifiedParam === "false") filter.isVerified = { $ne: true };
+    if (verifiedParam === "true") where.isVerified = true;
+    if (verifiedParam === "false") where.isVerified = { not: true };
 
     const [docs, total] = await Promise.all([
-      SportPathway.find(filter)
-        .select(
-          "sportName sportSlug cacheKey category isVerified verifiedAt lookupCount lastRefreshedAt createdAt",
-        )
-        .sort({ sportName: 1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean(),
-      SportPathway.countDocuments(filter),
+      // TODO(prisma): original also selected `lastRefreshedAt`, which has no
+      // column in the Prisma schema (see contentRefreshedAt /
+      // financialDataRefreshedAt) — dropped from the projection.
+      prisma.sportPathway.findMany({
+        where,
+        select: {
+          id: true,
+          sportName: true,
+          sportSlug: true,
+          cacheKey: true,
+          category: true,
+          isVerified: true,
+          verifiedAt: true,
+          lookupCount: true,
+          createdAt: true,
+        },
+        orderBy: { sportName: "asc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.sportPathway.count({ where }),
     ]);
 
     res.status(200).json({
@@ -66,20 +92,22 @@ export const getPathwayAdminDetail = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
+    // TODO(prisma): ids are cuids now, not Mongo ObjectIds — dropped
+    // mongoose.isValidObjectId() guard; only presence/type is validated.
+    if (!id || typeof id !== "string") {
       res.status(400).json({ success: false, message: "Invalid pathway ID" });
       return;
     }
 
-    const pathway = await SportPathway.findById(id)
-      .populate("verifiedBy", "name email")
-      .lean();
+    const pathway = await prisma.sportPathway.findUnique({ where: { id } });
     if (!pathway) {
       res.status(404).json({ success: false, message: "Pathway not found" });
       return;
     }
 
-    res.status(200).json({ success: true, data: pathway });
+    res
+      .status(200)
+      .json({ success: true, data: await attachVerifiedByAdmin(pathway) });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -116,7 +144,9 @@ export const updatePathwayAdmin = async (
     }
 
     const { id } = req.params;
-    if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
+    // TODO(prisma): ids are cuids now, not Mongo ObjectIds — dropped
+    // mongoose.isValidObjectId() guard; only presence/type is validated.
+    if (!id || typeof id !== "string") {
       res.status(400).json({ success: false, message: "Invalid pathway ID" });
       return;
     }
@@ -146,16 +176,18 @@ export const updatePathwayAdmin = async (
       return;
     }
 
-    const pathway = await SportPathway.findByIdAndUpdate(
-      id,
-      { $set: update },
-      { new: true, runValidators: true },
-    ).populate("verifiedBy", "name email");
-
-    if (!pathway) {
+    // Original findByIdAndUpdate returned null (→ 404) when the id was missing;
+    // Prisma update throws, so check existence first.
+    const existing = await prisma.sportPathway.findUnique({ where: { id } });
+    if (!existing) {
       res.status(404).json({ success: false, message: "Pathway not found" });
       return;
     }
+
+    const pathway = await prisma.sportPathway.update({
+      where: { id },
+      data: update as any,
+    });
 
     void recordAuditLog({
       adminId: req.user.id,
@@ -166,9 +198,11 @@ export const updatePathwayAdmin = async (
       metadata: { fields: Object.keys(update) },
     });
 
-    res
-      .status(200)
-      .json({ success: true, message: "Pathway updated", data: pathway });
+    res.status(200).json({
+      success: true,
+      message: "Pathway updated",
+      data: await attachVerifiedByAdmin(pathway),
+    });
   } catch (error) {
     res.status(400).json({
       success: false,
@@ -193,14 +227,18 @@ export const setPathwayVerifiedAdmin = async (
     }
 
     const { id } = req.params;
-    if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
+    // TODO(prisma): ids are cuids now, not Mongo ObjectIds — dropped
+    // mongoose.isValidObjectId() guard; only presence/type is validated.
+    if (!id || typeof id !== "string") {
       res.status(400).json({ success: false, message: "Invalid pathway ID" });
       return;
     }
 
     const verified = req.body?.verified !== false; // default true
 
-    const existingPathway = await SportPathway.findById(id).lean();
+    const existingPathway = await prisma.sportPathway.findUnique({
+      where: { id },
+    });
     if (!existingPathway) {
       res.status(404).json({ success: false, message: "Pathway not found" });
       return;
@@ -222,24 +260,16 @@ export const setPathwayVerifiedAdmin = async (
       }
     }
 
-    const pathway = await SportPathway.findByIdAndUpdate(
-      id,
-      verified
+    const pathway = await prisma.sportPathway.update({
+      where: { id },
+      data: verified
         ? {
-            $set: {
-              isVerified: true,
-              verifiedAt: new Date(),
-              verifiedBy: req.user.id,
-            },
+            isVerified: true,
+            verifiedAt: new Date(),
+            verifiedBy: req.user.id,
           }
-        : { $set: { isVerified: false, verifiedAt: null, verifiedBy: null } },
-      { new: true },
-    ).populate("verifiedBy", "name email");
-
-    if (!pathway) {
-      res.status(404).json({ success: false, message: "Pathway not found" });
-      return;
-    }
+        : { isVerified: false, verifiedAt: null, verifiedBy: null },
+    });
 
     void recordAuditLog({
       adminId: req.user.id,
@@ -254,7 +284,7 @@ export const setPathwayVerifiedAdmin = async (
       message: verified
         ? "Pathway marked as verified"
         : "Pathway verification removed",
-      data: pathway,
+      data: await attachVerifiedByAdmin(pathway),
     });
   } catch (error) {
     res.status(400).json({

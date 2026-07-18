@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import { User, UserDocument } from "../models/User";
+import prisma from "../../lib/prisma";
+import type { RefundMethod } from "@prisma/client";
 
 type RefundMethodType = "ORIGINAL_CARD" | "BANK_ACCOUNT" | "STORE_CREDIT";
 
@@ -14,21 +15,6 @@ interface RefundMethodRecord {
   addedAt?: Date;
   updatedAt?: Date;
 }
-
-const normalizeMethods = (
-  methods: RefundMethodRecord[] = [],
-): RefundMethodRecord[] => {
-  if (methods.length === 0) {
-    return methods;
-  }
-
-  if (methods.some((method) => method.isDefault)) {
-    return methods;
-  }
-
-  methods[0]!.isDefault = true;
-  return methods;
-};
 
 const toMethodRecord = (
   payload: Record<string, unknown>,
@@ -100,6 +86,12 @@ const validateRefundMethod = (body: Record<string, unknown>): string | null => {
 
 const getUserId = (req: Request): string | undefined => req.user?.id;
 
+const listMethods = (userId: string): Promise<RefundMethod[]> =>
+  prisma.refundMethod.findMany({
+    where: { userId },
+    orderBy: { addedAt: "asc" },
+  });
+
 export const listRefundMethods = async (
   req: Request,
   res: Response,
@@ -111,8 +103,8 @@ export const listRefundMethods = async (
       return;
     }
 
-    const user = await User.findById(userId).select("refundMethods").lean();
-    res.json({ success: true, data: user?.refundMethods || [] });
+    const methods = await listMethods(userId);
+    res.json({ success: true, data: methods });
   } catch (error) {
     res
       .status(500)
@@ -139,24 +131,43 @@ export const addRefundMethod = async (
       return;
     }
 
-    const user = await User.findById(userId);
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
     if (!user) {
       res.status(404).json({ success: false, message: "User not found" });
       return;
     }
 
-    const methods = normalizeMethods(
-      (user.refundMethods || []) as RefundMethodRecord[],
-    );
+    const existing = await listMethods(userId);
     const nextMethod = toMethodRecord(req.body as Record<string, unknown>);
-    nextMethod.isDefault = methods.length === 0;
+    const makeDefault = existing.length === 0;
 
-    user.refundMethods = [...methods, nextMethod] as NonNullable<
-      UserDocument["refundMethods"]
-    >;
-    await user.save();
+    await prisma.$transaction(async (tx) => {
+      // normalizeMethods(): guarantee an existing default before appending.
+      if (existing.length > 0 && !existing.some((m) => m.isDefault)) {
+        await tx.refundMethod.update({
+          where: { id: existing[0]!.id },
+          data: { isDefault: true },
+        });
+      }
 
-    res.status(201).json({ success: true, data: user.refundMethods || [] });
+      await tx.refundMethod.create({
+        data: {
+          userId,
+          type: nextMethod.type,
+          accountHolderName: nextMethod.accountHolderName ?? null,
+          accountNumber: nextMethod.accountNumber ?? null,
+          ifscCode: nextMethod.ifscCode ?? null,
+          bankName: nextMethod.bankName ?? null,
+          isDefault: makeDefault,
+        },
+      });
+    });
+
+    const methods = await listMethods(userId);
+    res.status(201).json({ success: true, data: methods });
   } catch (error) {
     res
       .status(500)
@@ -185,15 +196,18 @@ export const updateRefundMethod = async (
       return;
     }
 
-    const user = await User.findById(userId);
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
     if (!user) {
       res.status(404).json({ success: false, message: "User not found" });
       return;
     }
 
-    const existing = (user.refundMethods || []).find(
-      (method) => method.id === methodId,
-    );
+    const existing = await prisma.refundMethod.findFirst({
+      where: { id: methodId, userId },
+    });
     if (!existing) {
       res
         .status(404)
@@ -203,16 +217,24 @@ export const updateRefundMethod = async (
 
     const updated = toMethodRecord(
       req.body as Record<string, unknown>,
-      existing as RefundMethodRecord,
+      existing as unknown as RefundMethodRecord,
     );
     updated.isDefault = existing.isDefault ?? false;
 
-    user.refundMethods = (user.refundMethods || []).map((method) =>
-      method.id === methodId ? updated : method,
-    ) as NonNullable<UserDocument["refundMethods"]>;
-    await user.save();
+    await prisma.refundMethod.update({
+      where: { id: methodId },
+      data: {
+        type: updated.type,
+        accountHolderName: updated.accountHolderName ?? null,
+        accountNumber: updated.accountNumber ?? null,
+        ifscCode: updated.ifscCode ?? null,
+        bankName: updated.bankName ?? null,
+        isDefault: updated.isDefault,
+      },
+    });
 
-    res.json({ success: true, data: user.refundMethods || [] });
+    const methods = await listMethods(userId);
+    res.json({ success: true, data: methods });
   } catch (error) {
     res
       .status(500)
@@ -233,21 +255,33 @@ export const deleteRefundMethod = async (
       return;
     }
 
-    const user = await User.findById(userId);
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
     if (!user) {
       res.status(404).json({ success: false, message: "User not found" });
       return;
     }
 
-    user.refundMethods = (user.refundMethods || []).filter(
-      (method) => method.id !== methodId,
-    ) as NonNullable<UserDocument["refundMethods"]>;
-    user.refundMethods = normalizeMethods(
-      (user.refundMethods || []) as RefundMethodRecord[],
-    ) as NonNullable<UserDocument["refundMethods"]>;
-    await user.save();
+    await prisma.$transaction(async (tx) => {
+      await tx.refundMethod.deleteMany({ where: { id: methodId, userId } });
 
-    res.json({ success: true, data: user.refundMethods || [] });
+      // normalizeMethods(): if any remain but none is default, promote the first.
+      const remaining = await tx.refundMethod.findMany({
+        where: { userId },
+        orderBy: { addedAt: "asc" },
+      });
+      if (remaining.length > 0 && !remaining.some((m) => m.isDefault)) {
+        await tx.refundMethod.update({
+          where: { id: remaining[0]!.id },
+          data: { isDefault: true },
+        });
+      }
+    });
+
+    const methods = await listMethods(userId);
+    res.json({ success: true, data: methods });
   } catch (error) {
     res
       .status(500)
@@ -268,19 +302,29 @@ export const setDefaultRefundMethod = async (
       return;
     }
 
-    const user = await User.findById(userId);
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
     if (!user) {
       res.status(404).json({ success: false, message: "User not found" });
       return;
     }
 
-    user.refundMethods = (user.refundMethods || []).map((method) => ({
-      ...method,
-      isDefault: method.id === methodId,
-    })) as NonNullable<UserDocument["refundMethods"]>;
-    await user.save();
+    // Setting a new default → unset every other method, then set the target.
+    await prisma.$transaction([
+      prisma.refundMethod.updateMany({
+        where: { userId, id: { not: methodId } },
+        data: { isDefault: false },
+      }),
+      prisma.refundMethod.updateMany({
+        where: { userId, id: methodId },
+        data: { isDefault: true },
+      }),
+    ]);
 
-    res.json({ success: true, data: user.refundMethods || [] });
+    const methods = await listMethods(userId);
+    res.json({ success: true, data: methods });
   } catch (error) {
     res
       .status(500)

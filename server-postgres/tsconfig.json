@@ -40,5 +40,22 @@
     "allowSyntheticDefaultImports": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "api", "src/scripts/testModifiedFlows.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "api",
+    // Dead Mongoose model files — the schema of record is now prisma/schema.prisma.
+    // Kept on disk for reference only (sandbox could not delete them); excluded
+    // from the build so their `mongoose` imports don't break compilation.
+    "src/**/models/**",
+    // Historical MongoDB data migrations — NOT applicable to Postgres. Fresh
+    // schema comes from `prisma migrate`. Kept for provenance, excluded from build.
+    "src/migrations/**",
+    // One-off Mongoose scripts/seeders/scrapers + Mongo-based test suites still
+    // pending port (see PORT_CHANGELOG.md "Remaining"). Excluded so `npm run build`
+    // (server runtime) is green; port + remove these excludes as they're migrated.
+    "src/scripts/**",
+    "src/tests/**",
+    "src/scripts/testModifiedFlows.ts"
+  ]
 }

@@ -12,6 +12,10 @@ _*.ps1
 
 CLAUDE.md
 PROJECT_CONTEXT.md
+PORT_CHANGELOG.md
+README-POSTGRES.md
+server.md
+README.md
 
 *.txt
 

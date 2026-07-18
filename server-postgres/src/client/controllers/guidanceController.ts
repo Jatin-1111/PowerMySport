@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import mongoose from "mongoose";
 import PDFDocument from "pdfkit";
 import {
   generateYouthSportsGuidance,
@@ -7,10 +6,7 @@ import {
   sportMatchRequestSchema,
   generateSportMatchRecommendation,
 } from "../../shared/services/guidanceAiService";
-import { GuidanceSubmission } from "../models/GuidanceSubmission";
-import { SportPathway } from "../../shared/models/SportPathway";
-import { Sport } from "../../shared/models/Sport";
-import { AnalyticsEvent } from "../../admin/models/AnalyticsEvent";
+import prisma from "../../lib/prisma";
 import { isSupportedSport, SUPPORTED_SPORTS } from "../../shared/constants/supportedSports";
 
 // ─── Rule-based burnout risk — zero AI cost ───────────────────────────────────
@@ -84,12 +80,16 @@ export const submitGuidance = async (
 
     const requestedSport = parsed.data.sport?.trim();
     if (requestedSport && !isSupportedSport(requestedSport)) {
-      AnalyticsEvent.create({
-        eventName: "unsupported_sport_search",
-        metadata: { sport: requestedSport, source: "guidance" },
-        source: "WEB",
-        ...(req.user ? { userId: req.user.id } : {}),
-      }).catch(() => {});
+      prisma.analyticsEvent
+        .create({
+          data: {
+            eventName: "unsupported_sport_search",
+            metadata: { sport: requestedSport, source: "guidance" },
+            source: "WEB",
+            ...(req.user ? { userId: req.user.id } : {}),
+          },
+        })
+        .catch(() => {});
 
       res.status(200).json({
         success: false,
@@ -117,13 +117,15 @@ export const submitGuidance = async (
     if (req.user?.id) {
       createPayload.userId = req.user.id;
     }
-    const guidanceSubmission = await GuidanceSubmission.create(createPayload);
+    const guidanceSubmission = await prisma.guidanceSubmission.create({
+      data: createPayload,
+    });
 
     res.status(201).json({
       success: true,
       message: "Guidance generated and saved",
       data: {
-        id: guidanceSubmission._id.toString(),
+        id: guidanceSubmission.id,
         query: guidanceSubmission.request,
         response: enrichedGuidance,
         createdAt: guidanceSubmission.createdAt,
@@ -171,17 +173,21 @@ export const deleteGuidance = async (
     }
 
     const id = req.params.id;
-    if (!id || !mongoose.isValidObjectId(id)) {
+    // TODO(prisma): ids are cuids now, not Mongo ObjectIds — dropped
+    // mongoose.isValidObjectId() guard; only presence is validated.
+    if (!id) {
       res.status(400).json({ success: false, message: "Invalid roadmap id" });
       return;
     }
 
-    const deleted = await GuidanceSubmission.findOneAndDelete({
-      _id: id,
-      userId: req.user.id,
+    const deleted = await prisma.guidanceSubmission.deleteMany({
+      where: {
+        id,
+        userId: req.user.id,
+      },
     });
 
-    if (!deleted) {
+    if (deleted.count === 0) {
       res.status(404).json({ success: false, message: "Roadmap not found" });
       return;
     }
@@ -205,14 +211,15 @@ export const getGuidanceHistory = async (
       return;
     }
 
-    const history = await GuidanceSubmission.find({ userId: req.user.id })
-      .sort({ createdAt: -1 })
-      .lean();
+    const history = await prisma.guidanceSubmission.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: "desc" },
+    });
 
     res.status(200).json({
       success: true,
       data: history.map((doc) => ({
-        id: doc._id.toString(),
+        id: doc.id,
         query: doc.request,
         response: doc.response,
         createdAt: doc.createdAt,
@@ -262,12 +269,16 @@ export const downloadGuidanceReportPdf = async (
 ): Promise<void> => {
   try {
     const id = req.params.id;
-    if (!id || !mongoose.isValidObjectId(id)) {
+    // TODO(prisma): ids are cuids now, not Mongo ObjectIds — dropped
+    // mongoose.isValidObjectId() guard; only presence is validated.
+    if (!id) {
       res.status(400).json({ success: false, message: "Invalid roadmap id" });
       return;
     }
 
-    const submission = await GuidanceSubmission.findById(id);
+    const submission = await prisma.guidanceSubmission.findUnique({
+      where: { id },
+    });
     if (!submission) {
       res.status(404).json({ success: false, message: "Roadmap not found" });
       return;
@@ -275,13 +286,15 @@ export const downloadGuidanceReportPdf = async (
 
     // Guest-generated submissions have no userId and are trusted by id
     // possession (same model already used to show guests their own results).
-    if (submission.userId && submission.userId.toString() !== req.user?.id) {
+    if (submission.userId && submission.userId !== req.user?.id) {
       res.status(403).json({ success: false, message: "Forbidden" });
       return;
     }
 
-    const q = submission.request;
-    const r = submission.response;
+    // TODO(prisma): request/response are stored as Json (untyped) — cast to
+    // any to preserve the original field access shape.
+    const q = submission.request as any;
+    const r = submission.response as any;
 
     const doc = new PDFDocument({ size: "A4", margin: 48 });
     const pageLeft = doc.page.margins.left;
@@ -370,7 +383,7 @@ export const downloadGuidanceReportPdf = async (
       .font("Helvetica")
       .fontSize(8)
       .text(
-        `Generated ${new Date(submission.createdAt).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" })} · Report ID ${submission._id.toString()}`,
+        `Generated ${new Date(submission.createdAt).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" })} · Report ID ${submission.id}`,
         pageLeft + 20,
         headerTop + 68,
       );
@@ -409,7 +422,7 @@ export const downloadGuidanceReportPdf = async (
     // ── Full Journey Roadmap ──
     if (r.journeyPhases && r.journeyPhases.length > 0) {
       drawSection("Full Journey Roadmap", () => {
-        r.journeyPhases!.forEach((phase, i) => {
+        r.journeyPhases!.forEach((phase: any, i: number) => {
           ensureSpace(60);
           doc
             .fillColor(BRAND.text)
@@ -423,7 +436,7 @@ export const downloadGuidanceReportPdf = async (
             );
           doc.moveDown(0.15);
           drawParagraph(phase.focus);
-          phase.milestones.forEach((m) => {
+          phase.milestones.forEach((m: string) => {
             const bulletHeight = doc.heightOfString(m, {
               width: pageWidth - 16,
             });
@@ -462,7 +475,7 @@ export const downloadGuidanceReportPdf = async (
     if (r.mentalSkillsRoadmap) {
       drawSection("Mental Skills Roadmap", () => {
         drawKeyValueRow("Focus now", r.mentalSkillsRoadmap!.currentFocus);
-        r.mentalSkillsRoadmap!.skills.forEach((s) => {
+        r.mentalSkillsRoadmap!.skills.forEach((s: any) => {
           drawKeyValueRow(s.skill, s.howToDevelop);
         });
       });
@@ -471,7 +484,7 @@ export const downloadGuidanceReportPdf = async (
     // ── Talent Identifiers ──
     if (r.talentIdentifiers && r.talentIdentifiers.length > 0) {
       drawSection("Talent Identifiers", () => {
-        r.talentIdentifiers!.forEach((t) => {
+        r.talentIdentifiers!.forEach((t: string) => {
           const h = doc.heightOfString(t, { width: pageWidth - 16 });
           ensureSpace(h + 4);
           doc
@@ -503,7 +516,7 @@ export const downloadGuidanceReportPdf = async (
       drawSection("Burnout Risk", () => {
         drawKeyValueRow("Level", r.burnoutRisk!.level.toUpperCase());
         drawParagraph(r.burnoutRisk!.message);
-        r.burnoutRisk!.recommendations.forEach((rec) => {
+        r.burnoutRisk!.recommendations.forEach((rec: string) => {
           const h = doc.heightOfString(rec, { width: pageWidth - 16 });
           ensureSpace(h + 4);
           doc
@@ -535,7 +548,7 @@ export const downloadGuidanceReportPdf = async (
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="guidance-report-${submission._id.toString()}.pdf"`,
+      `attachment; filename="guidance-report-${submission.id}.pdf"`,
     );
     res.status(200).send(pdfBuffer);
   } catch (error) {
@@ -639,12 +652,17 @@ export const recommendSport = async (
     const stateSlug = parsed.data.location.toLowerCase().replace(/\s+/g, "-");
 
     // 1. Get all verified sports (the full catalog)
-    const allSports = await Sport.find({ isVerified: true }).lean();
+    const allSports = await prisma.sport.findMany({
+      where: { isVerified: true },
+    });
 
     // 2. Fetch existing pathways for this specific state
-    const existingPathways = await SportPathway.find({
-      cacheKey: { $regex: new RegExp(`_${stateSlug}$`, "i") },
-    }).lean();
+    // Original Mongo regex `_${stateSlug}$` (i) → endsWith, case-insensitive.
+    const existingPathways = await prisma.sportPathway.findMany({
+      where: {
+        cacheKey: { endsWith: `_${stateSlug}`, mode: "insensitive" },
+      },
+    });
 
     // 3. Create a map of existing pathways by sport slug
     const pathwayBySlug = new Map<string, any>(
@@ -659,8 +677,22 @@ export const recommendSport = async (
     const scoredSports = allSports.map((sport) => {
       let score = 0;
 
+      // TODO(prisma): Sport.attributes was an embedded object; the Prisma model
+      // flattens it into attrInteractionType/attrDemand/attrContactLevel.
+      // Reconstruct the object to preserve scoring + response shape.
+      const attributes =
+        sport.attrInteractionType ||
+        sport.attrDemand ||
+        sport.attrContactLevel
+          ? {
+              interactionType: sport.attrInteractionType,
+              demand: sport.attrDemand,
+              contactLevel: sport.attrContactLevel,
+            }
+          : null;
+
       // Calculate category score (works without pathway data)
-      score += getCategoryScore(parsed.data.personality_tags, sport.attributes);
+      score += getCategoryScore(parsed.data.personality_tags, attributes);
 
       // Check if we have pathway data for this sport in this state
       const p = pathwayBySlug.get(sport.slug);
@@ -698,7 +730,7 @@ export const recommendSport = async (
         matchScore: normalizedScore,
         category: sport.category || "Other",
         sportDescription: sport.description || "",
-        attributes: sport.attributes || null,
+        attributes: attributes || null,
         keyFocus: level1?.keyFocus || null,
         mentalSkillsFocus: level1?.mentalSkillsFocus || null,
         levelDescription: level1?.description || null,

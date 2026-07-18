@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { Coach } from "../client/models/Coach";
-import { User } from "../client/models/User";
+import prisma from "../lib/prisma";
 import { isTokenRevoked, verifyToken } from "../utils/jwt";
 import { IUserPayload } from "../types";
 import {
@@ -10,7 +9,6 @@ import {
   isSystemAdminRole,
 } from "../utils/permissions";
 import { ADMIN_ROLES } from "../constants/adminPermissions";
-import Admin from "../admin/models/Admin";
 import redis from "../config/redis";
 
 declare global {
@@ -29,12 +27,14 @@ const touchAuthActivity = (userId: string): void => {
     .set(redisKey, "1", "PX", AUTH_ACTIVITY_WRITE_THROTTLE_MS, "NX")
     .then((result) => {
       if (result) {
-        User.updateOne(
-          { _id: userId },
-          { $set: { lastActiveAt: new Date() } },
-        ).catch((error: unknown) => {
-          console.error("Failed to persist auth activity:", error);
-        });
+        prisma.user
+          .updateMany({
+            where: { id: userId },
+            data: { lastActiveAt: new Date() },
+          })
+          .catch((error: unknown) => {
+            console.error("Failed to persist auth activity:", error);
+          });
       }
     })
     .catch((error) => {
@@ -83,9 +83,10 @@ export const authMiddleware = async (
     ];
 
     if (userRolesNeedingStatusCheck.includes(decoded.role)) {
-      const userRecord = await User.findById(decoded.id)
-        .select("isActive suspensionReason")
-        .lean();
+      const userRecord = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: { isActive: true, suspensionReason: true },
+      });
 
       if (!userRecord) {
         res.status(401).json({
@@ -314,9 +315,15 @@ export const coachVerificationCompletedMiddleware = async (
       return;
     }
 
-    const coach = await Coach.findOne({ userId: req.user.id }).select(
-      "bio sports verificationStatus isVerified",
-    );
+    const coach = await prisma.coach.findFirst({
+      where: { userId: req.user.id },
+      select: {
+        bio: true,
+        sports: true,
+        verificationStatus: true,
+        isVerified: true,
+      },
+    });
 
     if (!coach) {
       res.status(403).json({
@@ -367,9 +374,10 @@ export const coachVerifiedMiddleware = async (
       return;
     }
 
-    const coach = await Coach.findOne({ userId: req.user.id }).select(
-      "verificationStatus isVerified",
-    );
+    const coach = await prisma.coach.findFirst({
+      where: { userId: req.user.id },
+      select: { verificationStatus: true, isVerified: true },
+    });
 
     if (!coach) {
       res.status(403).json({
@@ -427,9 +435,10 @@ export const requirePermission = (requiredPermission: string) => {
       }
 
       // Fetch admin with permissions
-      const admin = await Admin.findById(req.user.id).select(
-        "role permissions isActive",
-      );
+      const admin = await prisma.admin.findUnique({
+        where: { id: req.user.id },
+        select: { role: true, permissions: true, isActive: true },
+      });
 
       if (!admin || !admin.isActive) {
         res.status(403).json({
@@ -478,9 +487,10 @@ export const requireAnyPermission = (requiredPermissions: string[]) => {
         return;
       }
 
-      const admin = await Admin.findById(req.user.id).select(
-        "role permissions isActive",
-      );
+      const admin = await prisma.admin.findUnique({
+        where: { id: req.user.id },
+        select: { role: true, permissions: true, isActive: true },
+      });
 
       if (!admin || !admin.isActive) {
         res.status(403).json({
@@ -530,9 +540,10 @@ export const requireAllPermissions = (requiredPermissions: string[]) => {
         return;
       }
 
-      const admin = await Admin.findById(req.user.id).select(
-        "role permissions isActive",
-      );
+      const admin = await prisma.admin.findUnique({
+        where: { id: req.user.id },
+        select: { role: true, permissions: true, isActive: true },
+      });
 
       if (!admin || !admin.isActive) {
         res.status(403).json({

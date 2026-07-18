@@ -1,7 +1,5 @@
 import { Request, Response } from "express";
-import mongoose from "mongoose";
-import { GuidanceSubmission } from "../models/GuidanceSubmission";
-import { GuidanceChatSession } from "../models/GuidanceChatSession";
+import prisma from "../../lib/prisma";
 import {
   buildChatSystemPrompt,
   streamGuidanceChatResponse,
@@ -49,7 +47,9 @@ export const getGuidanceChat = async (
     }
 
     const { submissionId } = req.params;
-    if (!submissionId || !mongoose.isValidObjectId(submissionId)) {
+    // TODO(prisma): ids are cuids now, not Mongo ObjectIds — dropped
+    // mongoose.isValidObjectId() guard; only presence is validated.
+    if (!submissionId) {
       res
         .status(400)
         .json({ success: false, message: "Invalid submission ID" });
@@ -57,7 +57,9 @@ export const getGuidanceChat = async (
     }
 
     // Load submission to verify existence & ownership
-    const submission = await GuidanceSubmission.findById(submissionId).lean();
+    const submission = await prisma.guidanceSubmission.findUnique({
+      where: { id: submissionId },
+    });
     if (!submission) {
       res
         .status(404)
@@ -66,44 +68,46 @@ export const getGuidanceChat = async (
     }
 
     // Ownership: if the submission has a userId, it must match the requester
-    if (submission.userId && submission.userId.toString() !== req.user.id) {
+    if (submission.userId && submission.userId !== req.user.id) {
       res.status(403).json({ success: false, message: "Access denied" });
       return;
     }
 
     // Lazily claim ownership if submission was created as guest
     if (!submission.userId) {
-      await GuidanceSubmission.updateOne(
-        { _id: submissionId },
-        { $set: { userId: req.user.id } },
-      );
+      await prisma.guidanceSubmission.update({
+        where: { id: submissionId },
+        data: { userId: req.user.id },
+      });
     }
 
+    const request = submission.request as any;
+
     // Find or create the session
-    let session = await GuidanceChatSession.findOne({
-      submissionId,
-      userId: req.user.id,
-    }).lean();
+    let session = await prisma.guidanceChatSession.findUnique({
+      where: {
+        submissionId_userId: { submissionId, userId: req.user.id },
+      },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    });
 
     if (!session) {
       // Seed with the opening assistant message
       const openingContent = buildOpeningMessage(
-        submission.request.sport,
-        submission.request.child_age,
-        submission.request.parent_specific_question,
+        request.sport,
+        request.child_age,
+        request.parent_specific_question,
       );
-      const newSession = await GuidanceChatSession.create({
-        submissionId,
-        userId: req.user.id,
-        messages: [
-          {
-            role: "assistant",
-            content: openingContent,
-            createdAt: new Date(),
+      session = await prisma.guidanceChatSession.create({
+        data: {
+          submissionId,
+          userId: req.user.id,
+          messages: {
+            create: [{ role: "assistant", content: openingContent }],
           },
-        ],
+        },
+        include: { messages: { orderBy: { createdAt: "asc" } } },
       });
-      session = newSession.toObject();
     }
 
     const dailyMessageCount = await getDailyMessageCount(req.user.id);
@@ -145,7 +149,9 @@ export const sendGuidanceChatMessage = async (
     }
 
     const { submissionId } = req.params;
-    if (!submissionId || !mongoose.isValidObjectId(submissionId)) {
+    // TODO(prisma): ids are cuids now, not Mongo ObjectIds — dropped
+    // mongoose.isValidObjectId() guard; only presence is validated.
+    if (!submissionId) {
       res
         .status(400)
         .json({ success: false, message: "Invalid submission ID" });
@@ -168,7 +174,9 @@ export const sendGuidanceChatMessage = async (
     }
 
     // Load submission
-    const submission = await GuidanceSubmission.findById(submissionId).lean();
+    const submission = await prisma.guidanceSubmission.findUnique({
+      where: { id: submissionId },
+    });
     if (!submission) {
       res
         .status(404)
@@ -177,37 +185,44 @@ export const sendGuidanceChatMessage = async (
     }
 
     // Ownership check
-    if (submission.userId && submission.userId.toString() !== req.user.id) {
+    if (submission.userId && submission.userId !== req.user.id) {
       res.status(403).json({ success: false, message: "Access denied" });
       return;
     }
 
     // Claim guest submission
     if (!submission.userId) {
-      await GuidanceSubmission.updateOne(
-        { _id: submissionId },
-        { $set: { userId: req.user.id } },
-      );
+      await prisma.guidanceSubmission.update({
+        where: { id: submissionId },
+        data: { userId: req.user.id },
+      });
     }
 
+    const request = submission.request as any;
+
     // Load or create session
-    let session = await GuidanceChatSession.findOne({
-      submissionId,
-      userId: req.user.id,
+    let session = await prisma.guidanceChatSession.findUnique({
+      where: {
+        submissionId_userId: { submissionId, userId: req.user.id },
+      },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
     });
 
     if (!session) {
       const openingContent = buildOpeningMessage(
-        submission.request.sport,
-        submission.request.child_age,
-        submission.request.parent_specific_question,
+        request.sport,
+        request.child_age,
+        request.parent_specific_question,
       );
-      session = await GuidanceChatSession.create({
-        submissionId,
-        userId: req.user.id,
-        messages: [
-          { role: "assistant", content: openingContent, createdAt: new Date() },
-        ],
+      session = await prisma.guidanceChatSession.create({
+        data: {
+          submissionId,
+          userId: req.user.id,
+          messages: {
+            create: [{ role: "assistant", content: openingContent }],
+          },
+        },
+        include: { messages: { orderBy: { createdAt: "asc" } } },
       });
     }
 
@@ -279,20 +294,20 @@ export const sendGuidanceChatMessage = async (
     res.end();
 
     // ── Persist both turns to the session ────────────────────────────────────
-    const userTurn = {
-      role: "user" as const,
-      content: userMessage,
-      createdAt: new Date(),
-    };
-    const assistantTurn = {
-      role: "assistant" as const,
-      content: fullAssistantResponse,
-      createdAt: new Date(),
-    };
-
-    session.messages.push(userTurn, assistantTurn);
-    session.totalMessageCount += 1;
-    await session.save();
+    // Nested-create the user + assistant turns and bump the lifetime counter
+    // (was: push subdocs + $inc-equivalent totalMessageCount += 1 + save()).
+    await prisma.guidanceChatSession.update({
+      where: { id: session.id },
+      data: {
+        totalMessageCount: { increment: 1 },
+        messages: {
+          create: [
+            { role: "user", content: userMessage },
+            { role: "assistant", content: fullAssistantResponse },
+          ],
+        },
+      },
+    });
   } catch (error) {
     // If headers not sent yet, return JSON error; otherwise end the stream
     if (!res.headersSent) {

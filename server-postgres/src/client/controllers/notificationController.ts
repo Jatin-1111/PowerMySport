@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { NotificationService } from "../services/NotificationService";
-import { NotificationCategory } from "../models/Notification";
+import type { NotificationCategory } from "@prisma/client";
 import { z } from "zod";
 import * as pushNotificationService from "../services/pushNotificationService";
-import { User } from "../models/User";
+import prisma from "../../lib/prisma";
 
 /**
  * Get notifications for the authenticated user
@@ -197,7 +197,10 @@ export const getNotificationPreferences = async (
   try {
     const userId = req.user!.id;
 
-    const user = await User.findById(userId).select("notificationPreferences");
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { notificationPreferences: true },
+    });
 
     if (!user) {
       res.status(404).json({
@@ -271,25 +274,37 @@ export const updateNotificationPreferences = async (
     const userId = req.user!.id;
     const preferences = notificationPreferencesSchema.parse(req.body);
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      {
-        $set: {
-          "notificationPreferences.email": preferences.email,
-          "notificationPreferences.push": preferences.push,
-          "notificationPreferences.inApp": preferences.inApp,
-        },
-      },
-      { new: true, runValidators: true },
-    ).select("notificationPreferences");
+    // notificationPreferences is a Json config blob; the Mongo code $set the
+    // email/push/inApp sub-paths. Merge onto the existing blob to preserve any
+    // other keys, then write the whole object back.
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { notificationPreferences: true },
+    });
 
-    if (!user) {
+    if (!existing) {
       res.status(404).json({
         success: false,
         message: "User not found",
       });
       return;
     }
+
+    const current =
+      (existing.notificationPreferences as Record<string, unknown>) || {};
+
+    const updatedPreferences = {
+      ...current,
+      email: preferences.email,
+      push: preferences.push,
+      inApp: preferences.inApp,
+    };
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { notificationPreferences: updatedPreferences },
+      select: { notificationPreferences: true },
+    });
 
     res.json({
       success: true,
@@ -332,8 +347,11 @@ export const subscribeToPush = async (
 
     const subscription = subscriptionSchema.parse(req.body);
 
-    // Check if subscription already exists
-    const user = await User.findById(userId);
+    // Check if the user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
     if (!user) {
       res.status(404).json({
         success: false,
@@ -342,9 +360,12 @@ export const subscribeToPush = async (
       return;
     }
 
-    const existingSubscription = user.pushSubscriptions?.find(
-      (sub) => sub.endpoint === subscription.endpoint,
-    );
+    // Check if subscription already exists
+    // TODO(prisma): pushSubscriptions is now the PushSubscription relation with
+    // flattened `p256dh`/`auth` columns (was a nested `keys` subdoc in Mongo).
+    const existingSubscription = await prisma.pushSubscription.findFirst({
+      where: { userId, endpoint: subscription.endpoint },
+    });
 
     if (existingSubscription) {
       res.json({
@@ -356,27 +377,20 @@ export const subscribeToPush = async (
     }
 
     // Add new subscription
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        $push: {
-          pushSubscriptions: {
-            endpoint: subscription.endpoint,
-            keys: subscription.keys,
-            userAgent: subscription.userAgent || "Unknown",
-            createdAt: new Date(),
-          },
-        },
+    const created = await prisma.pushSubscription.create({
+      data: {
+        userId,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+        userAgent: subscription.userAgent || "Unknown",
       },
-      { new: true },
-    ).select("pushSubscriptions");
+    });
 
     res.status(201).json({
       success: true,
       message: "Push subscription created successfully",
-      data: updatedUser?.pushSubscriptions?.[
-        updatedUser.pushSubscriptions.length - 1
-      ],
+      data: created,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -409,17 +423,12 @@ export const unsubscribeFromPush = async (
 
     const { endpoint } = endpointSchema.parse(req.body);
 
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        $pull: {
-          pushSubscriptions: { endpoint },
-        },
-      },
-      { new: true },
-    ).select("pushSubscriptions");
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
 
-    if (!updatedUser) {
+    if (!user) {
       res.status(404).json({
         success: false,
         message: "User not found",
@@ -427,10 +436,18 @@ export const unsubscribeFromPush = async (
       return;
     }
 
+    await prisma.pushSubscription.deleteMany({
+      where: { userId, endpoint },
+    });
+
+    const remaining = await prisma.pushSubscription.findMany({
+      where: { userId },
+    });
+
     res.json({
       success: true,
       message: "Push subscription removed successfully",
-      data: updatedUser.pushSubscriptions,
+      data: remaining,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -457,7 +474,10 @@ export const getPushSubscriptions = async (
   try {
     const userId = req.user!.id;
 
-    const user = await User.findById(userId).select("pushSubscriptions");
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
 
     if (!user) {
       res.status(404).json({
@@ -467,9 +487,13 @@ export const getPushSubscriptions = async (
       return;
     }
 
+    const subscriptions = await prisma.pushSubscription.findMany({
+      where: { userId },
+    });
+
     res.json({
       success: true,
-      data: user.pushSubscriptions || [],
+      data: subscriptions,
     });
   } catch (error) {
     next(error);
@@ -499,13 +523,11 @@ export const sendTestPushNotification = async (
     }
 
     // Get user's push subscriptions
-    const user = await User.findById(userId).select("pushSubscriptions");
+    const subscriptions = await prisma.pushSubscription.findMany({
+      where: { userId },
+    });
 
-    if (
-      !user ||
-      !user.pushSubscriptions ||
-      user.pushSubscriptions.length === 0
-    ) {
+    if (!subscriptions || subscriptions.length === 0) {
       res.status(400).json({
         success: false,
         message:
@@ -526,18 +548,25 @@ export const sendTestPushNotification = async (
       },
     };
 
+    // TODO(prisma): reshape flat rows back into the web-push subscription shape
+    // ({ endpoint, keys: { p256dh, auth } }) the push service expects.
+    const webPushSubscriptions = subscriptions.map((sub) => ({
+      endpoint: sub.endpoint,
+      keys: { p256dh: sub.p256dh, auth: sub.auth },
+      userAgent: sub.userAgent,
+    }));
+
     const result = await pushService.sendPushNotificationToMultiple(
-      user.pushSubscriptions as any[],
+      webPushSubscriptions as any[],
       payload,
     );
 
     // Remove expired subscriptions from database
     if (result.expiredEndpoints.length > 0) {
-      await User.findByIdAndUpdate(userId, {
-        $pull: {
-          pushSubscriptions: {
-            endpoint: { $in: result.expiredEndpoints },
-          },
+      await prisma.pushSubscription.deleteMany({
+        where: {
+          userId,
+          endpoint: { in: result.expiredEndpoints },
         },
       });
     }
@@ -546,7 +575,7 @@ export const sendTestPushNotification = async (
       success: true,
       message: "Test push notification sent",
       data: {
-        sentTo: user.pushSubscriptions.length,
+        sentTo: subscriptions.length,
         successful: result.successful,
         failed: result.failed,
         expiredSubscriptions: result.expiredEndpoints.length,

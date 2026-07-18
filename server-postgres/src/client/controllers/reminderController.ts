@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { ScheduledNotificationService } from "../services/ScheduledNotificationService";
-import { ScheduledNotification } from "../models/ScheduledNotification";
+import prisma from "../../lib/prisma";
 import { ReminderMonitoringService } from "../services/ReminderMonitoringService";
 import { z } from "zod";
-import { User } from "../models/User";
 
 /**
  * Get user's reminder preferences
@@ -17,7 +16,10 @@ export const getReminderPreferences = async (
   try {
     const userId = req.user!.id;
 
-    const user = await User.findById(userId).select("reminderPreferences");
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { reminderPreferences: true },
+    });
 
     if (!user) {
       res.status(404).json({
@@ -78,24 +80,35 @@ export const updateReminderPreferences = async (
 
     const validatedData = schema.parse(req.body);
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      {
-        $set: {
-          "reminderPreferences.bookingReminders":
-            validatedData.bookingReminders,
-        },
-      },
-      { new: true, runValidators: true },
-    ).select("reminderPreferences");
+    // reminderPreferences is a Json config blob; the Mongo code $set the
+    // bookingReminders sub-path. Merge onto the existing blob to preserve any
+    // other keys, then write the whole object back.
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { reminderPreferences: true },
+    });
 
-    if (!user) {
+    if (!existing) {
       res.status(404).json({
         success: false,
         message: "User not found",
       });
       return;
     }
+
+    const current =
+      (existing.reminderPreferences as Record<string, unknown>) || {};
+
+    const updatedPreferences = {
+      ...current,
+      bookingReminders: validatedData.bookingReminders,
+    };
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { reminderPreferences: updatedPreferences },
+      select: { reminderPreferences: true },
+    });
 
     res.json({
       success: true,
@@ -421,16 +434,20 @@ export const createReminder = async (
       const scheduledFor = new Date();
       scheduledFor.setDate(scheduledFor.getDate() + (daysFromNow || 7));
 
-      await ScheduledNotification.create({
-        userId,
-        type,
-        interval: "7_DAYS",
-        scheduledFor,
-        status: "PENDING",
-        title: "Document Reminder",
-        body: `It's time to gather your documents for ${itemName}!`,
-        data: { itemName, itemType },
-        channels: { inApp: true, email: true },
+      await prisma.scheduledNotification.create({
+        data: {
+          userId,
+          type,
+          interval: "7_DAYS",
+          scheduledFor,
+          status: "PENDING",
+          title: "Document Reminder",
+          body: `It's time to gather your documents for ${itemName}!`,
+          data: { itemName, itemType },
+          // channels (embedded obj) flattened to chEmail/chPush/chInApp
+          chInApp: true,
+          chEmail: true,
+        },
       });
 
       res.json({ success: true, message: "Reminder created successfully" });

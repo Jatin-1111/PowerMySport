@@ -3,7 +3,7 @@ import cors, { CorsOptions } from "cors";
 import "dotenv/config";
 import express, { Express } from "express";
 import { hostname as osHostname } from "os";
-import mongoose from "mongoose";
+import prisma from "./lib/prisma";
 import redis from "./config/redis";
 import { authMiddleware, adminMiddleware } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
@@ -190,14 +190,21 @@ app.use("/api/payout-methods", payoutMethodsRoutes);
 app.use("/api/v1", ecommerceRoutes);
 
 const getDetailedHealthPayload = async () => {
-  const dbReadyState = mongoose.connection.readyState;
-  const dbStateMap: Record<number, string> = {
-    0: "disconnected",
-    1: "connected",
-    2: "connecting",
-    3: "disconnecting",
-  };
-  const dbStatus = dbStateMap[dbReadyState] ?? "unknown";
+  // Prisma has no "readyState" like Mongoose; probe connectivity with a
+  // cheap SELECT 1 (with a short timeout so a busy DB never blocks the ALB
+  // health check). "connected" iff the probe succeeds.
+  let dbStatus = "disconnected";
+  try {
+    await Promise.race([
+      prisma.$queryRaw`SELECT 1`,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("db ping timeout")), 500),
+      ),
+    ]);
+    dbStatus = "connected";
+  } catch {
+    dbStatus = "disconnected";
+  }
 
   // Live Redis ping with a 500ms timeout so a busy Redis under load
   // never blocks the ALB health check and causes a false-positive Severe state.

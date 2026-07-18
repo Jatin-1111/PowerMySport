@@ -1,10 +1,6 @@
 import { Request, Response } from "express";
-import mongoose from "mongoose";
-import { Booking } from "../models/Booking";
-import { Coach } from "../models/Coach";
-import { Review } from "../models/Review";
-import { Venue } from "../models/Venue";
-import { User } from "../models/User";
+import { Prisma } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { NotificationService } from "../services/NotificationService";
 import {
   getFlaggedReviews,
@@ -46,48 +42,36 @@ const isBookingReviewable = (
 };
 
 const recomputeVenueRating = async (venueId: string): Promise<void> => {
-  const [stats] = await Review.aggregate([
-    {
-      $match: {
-        targetType: "VENUE",
-        targetId: new mongoose.Types.ObjectId(venueId),
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        averageRating: { $avg: "$rating" },
-        reviewCount: { $sum: 1 },
-      },
-    },
-  ]);
+  const stats = await prisma.review.aggregate({
+    where: { targetType: "VENUE", targetId: venueId },
+    _avg: { rating: true },
+    _count: { _all: true },
+  });
 
-  await Venue.findByIdAndUpdate(venueId, {
-    rating: stats?.averageRating || 0,
-    reviewCount: stats?.reviewCount || 0,
+  // updateMany (not update) preserves the original findByIdAndUpdate behaviour
+  // of silently no-op'ing when the venue is missing (no thrown error).
+  await prisma.venue.updateMany({
+    where: { id: venueId },
+    data: {
+      rating: stats._avg.rating || 0,
+      reviewCount: stats._count._all || 0,
+    },
   });
 };
 
 const recomputeCoachRating = async (coachId: string): Promise<void> => {
-  const [stats] = await Review.aggregate([
-    {
-      $match: {
-        targetType: "Coach",
-        targetId: new mongoose.Types.ObjectId(coachId),
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        averageRating: { $avg: "$rating" },
-        reviewCount: { $sum: 1 },
-      },
-    },
-  ]);
+  const stats = await prisma.review.aggregate({
+    where: { targetType: "Coach", targetId: coachId },
+    _avg: { rating: true },
+    _count: { _all: true },
+  });
 
-  await Coach.findByIdAndUpdate(coachId, {
-    rating: stats?.averageRating || 0,
-    reviewCount: stats?.reviewCount || 0,
+  await prisma.coach.updateMany({
+    where: { id: coachId },
+    data: {
+      rating: stats._avg.rating || 0,
+      reviewCount: stats._count._all || 0,
+    },
   });
 };
 
@@ -109,9 +93,16 @@ export const createReview = async (
       review?: string;
     };
 
-    const booking = await Booking.findById(bookingId).select(
-      "userId venueId coachId status date",
-    );
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: {
+        userId: true,
+        venueId: true,
+        coachId: true,
+        status: true,
+        date: true,
+      },
+    });
 
     if (!booking) {
       res.status(404).json({ success: false, message: "Booking not found" });
@@ -153,10 +144,10 @@ export const createReview = async (
       }
     }
 
-    const existing = await Review.findOne({
-      bookingId,
-      targetType,
-    }).select("_id");
+    const existing = await prisma.review.findFirst({
+      where: { bookingId, targetType },
+      select: { id: true },
+    });
 
     if (existing) {
       res.status(409).json({
@@ -166,22 +157,30 @@ export const createReview = async (
       return;
     }
 
-    const created = await Review.create({
-      bookingId,
-      userId: req.user.id,
-      targetType,
-      targetId,
-      rating,
-      ...(review ? { review } : {}),
-      isVerified: true,
+    const created = await prisma.review.create({
+      data: {
+        bookingId,
+        userId: req.user.id,
+        targetType,
+        targetId,
+        rating,
+        ...(review ? { review } : {}),
+        isVerified: true,
+      },
     });
 
     if (targetType === "VENUE") {
       await recomputeVenueRating(targetId);
 
       // Send notification to venue owner
-      const venue = await Venue.findById(targetId).select("ownerId name");
-      const reviewer = await User.findById(req.user.id).select("name");
+      const venue = await prisma.venue.findUnique({
+        where: { id: targetId },
+        select: { ownerId: true, name: true },
+      });
+      const reviewer = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { name: true },
+      });
 
       if (venue?.ownerId && reviewer) {
         NotificationService.send({
@@ -190,7 +189,7 @@ export const createReview = async (
           title: "New Review Received",
           message: `${reviewer.name} left a ${rating}-star review for ${venue.name}`,
           data: {
-            reviewId: created._id.toString(),
+            reviewId: created.id.toString(),
             venueId: targetId,
             venueName: venue.name,
             reviewerId: req.user.id,
@@ -206,8 +205,14 @@ export const createReview = async (
       await recomputeCoachRating(targetId);
 
       // Send notification to coach
-      const coach = await Coach.findById(targetId).select("userId");
-      const reviewer = await User.findById(req.user.id).select("name");
+      const coach = await prisma.coach.findUnique({
+        where: { id: targetId },
+        select: { userId: true },
+      });
+      const reviewer = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { name: true },
+      });
 
       if (coach?.userId && reviewer) {
         NotificationService.send({
@@ -216,7 +221,7 @@ export const createReview = async (
           title: "New Review Received",
           message: `${reviewer.name} left a ${rating}-star review for your coaching`,
           data: {
-            reviewId: created._id.toString(),
+            reviewId: created.id.toString(),
             coachId: targetId,
           },
         }).catch((err: Error) =>
@@ -231,10 +236,13 @@ export const createReview = async (
       data: created,
     });
   } catch (error) {
+    // Legacy Mongo duplicate-key (11000). If a unique constraint is added on
+    // (bookingId, targetType) in Postgres, Prisma surfaces this as P2002.
+    const code = (error as unknown as { code?: number | string }).code;
     if (
       error instanceof Error &&
-      "code" in (error as unknown as { code?: number }) &&
-      (error as unknown as { code?: number }).code === 11000
+      "code" in (error as unknown as { code?: number | string }) &&
+      (code === 11000 || code === "P2002")
     ) {
       res.status(409).json({
         success: false,
@@ -266,7 +274,9 @@ const listReviewsByTarget = async (
     const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 10));
     const skip = (page - 1) * limit;
 
-    if (!mongoose.Types.ObjectId.isValid(targetId)) {
+    // TODO(prisma): ids are now cuids, not Mongo ObjectIds — validate as a
+    // non-empty string instead of ObjectId.isValid.
+    if (!targetId || typeof targetId !== "string") {
       res.status(400).json({
         success: false,
         message: "Invalid target ID",
@@ -274,46 +284,51 @@ const listReviewsByTarget = async (
       return;
     }
 
-    const targetObjectId = new mongoose.Types.ObjectId(targetId);
-
     const query = {
       targetType,
-      targetId: targetObjectId,
-      isHidden: { $ne: true },
-      moderationStatus: { $ne: "REMOVED" },
+      targetId,
+      isHidden: false,
+      moderationStatus: { not: "REMOVED" as const },
     };
 
     const [reviews, total] = await Promise.all([
-      Review.find(query)
-        .populate("userId", "name photoUrl")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Review.countDocuments(query),
+      prisma.review.findMany({
+        where: query,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.review.count({ where: query }),
     ]);
 
-    const [stats] = await Review.aggregate([
-      {
-        $match: { targetType, targetId: targetObjectId },
-      },
-      {
-        $group: {
-          _id: null,
-          averageRating: { $avg: "$rating" },
-          reviewCount: { $sum: 1 },
-        },
-      },
-    ]);
+    // .populate("userId", "name photoUrl") → follow-up fetch joined under the
+    // original `userId` key. TODO(prisma): populated object now exposes `id`
+    // (was `_id`).
+    const userIds = [...new Set(reviews.map((r) => r.userId))];
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, photoUrl: true },
+    });
+    const usersById = new Map(users.map((u) => [u.id, u]));
+    const populatedReviews = reviews.map((r) => ({
+      ...r,
+      userId: usersById.get(r.userId) ?? null,
+    }));
+
+    const stats = await prisma.review.aggregate({
+      where: { targetType, targetId },
+      _avg: { rating: true },
+      _count: { _all: true },
+    });
 
     res.status(200).json({
       success: true,
       message: "Reviews fetched successfully",
       data: {
-        reviews,
+        reviews: populatedReviews,
         summary: {
-          averageRating: stats?.averageRating || 0,
-          reviewCount: stats?.reviewCount || 0,
+          averageRating: stats._avg.rating || 0,
+          reviewCount: stats._count._all || 0,
         },
       },
       pagination: {
@@ -364,7 +379,8 @@ export const getReviewEligibility = async (
       return;
     }
 
-    if (!mongoose.Types.ObjectId.isValid(targetId)) {
+    // TODO(prisma): ids are now cuids — validate as a non-empty string.
+    if (typeof targetId !== "string") {
       res.status(400).json({
         success: false,
         message: "Invalid target ID",
@@ -372,23 +388,19 @@ export const getReviewEligibility = async (
       return;
     }
 
-    const targetObjectId = new mongoose.Types.ObjectId(targetId);
-
-    const bookingFilter: Record<string, unknown> = {
-      userId: new mongoose.Types.ObjectId(req.user.id),
-      status: { $nin: ["CANCELLED", "NO_SHOW"] },
+    const bookingFilter: Prisma.BookingWhereInput = {
+      userId: req.user.id,
+      status: { notIn: ["CANCELLED", "NO_SHOW"] },
+      ...(targetType === "VENUE"
+        ? { venueId: targetId }
+        : { coachId: targetId }),
     };
 
-    if (targetType === "VENUE") {
-      bookingFilter.venueId = targetObjectId;
-    } else {
-      bookingFilter.coachId = targetObjectId;
-    }
-
-    const bookings = await Booking.find(bookingFilter)
-      .select("_id date status")
-      .sort({ date: -1 })
-      .lean();
+    const bookings = await prisma.booking.findMany({
+      where: bookingFilter,
+      select: { id: true, date: true, status: true },
+      orderBy: { date: "desc" },
+    });
 
     if (!bookings.length) {
       res.status(200).json({
@@ -403,12 +415,13 @@ export const getReviewEligibility = async (
       return;
     }
 
-    const reviewed = await Review.find({
-      targetType,
-      bookingId: { $in: bookings.map((booking) => booking._id) },
-    })
-      .select("bookingId")
-      .lean();
+    const reviewed = await prisma.review.findMany({
+      where: {
+        targetType,
+        bookingId: { in: bookings.map((booking) => booking.id) },
+      },
+      select: { bookingId: true },
+    });
 
     const reviewedIds = new Set(reviewed.map((item) => String(item.bookingId)));
 
@@ -416,7 +429,7 @@ export const getReviewEligibility = async (
       if (!isBookingReviewable(booking.status, booking.date)) {
         return false;
       }
-      return !reviewedIds.has(String(booking._id));
+      return !reviewedIds.has(String(booking.id));
     });
 
     if (!eligibleBooking) {
@@ -437,7 +450,7 @@ export const getReviewEligibility = async (
       message: "Eligibility checked",
       data: {
         eligible: true,
-        bookingId: String(eligibleBooking._id),
+        bookingId: String(eligibleBooking.id),
       },
     });
   } catch (error) {
@@ -491,7 +504,8 @@ export const moderateReview = async (
       moderationNotes?: string;
     };
 
-    if (!reviewId || !mongoose.Types.ObjectId.isValid(reviewId)) {
+    // TODO(prisma): ids are now cuids — validate as a non-empty string.
+    if (!reviewId || typeof reviewId !== "string") {
       res.status(400).json({ success: false, message: "Invalid review id" });
       return;
     }

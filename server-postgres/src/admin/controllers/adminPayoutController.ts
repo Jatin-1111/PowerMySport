@@ -1,17 +1,17 @@
 import { Request, Response } from "express";
-import { Booking } from "../../client/models/Booking";
-import { Coach, IPayoutMethod } from "../../client/models/Coach";
-import { Venue } from "../../client/models/Venue";
-import { User } from "../../client/models/User";
-import { Expert } from "../../client/models/ExpertProfile";
-import { ExpertSession } from "../../client/models/ExpertBooking";
+import type { PaymentUserType } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { markSessionPayoutDone } from "../../client/services/ExpertsService";
 import { sendPayoutProcessedEmail } from "../../utils/email";
-import mongoose from "mongoose";
 
-const getPrimaryPayoutMethod = (
-  payoutMethods?: IPayoutMethod[],
-): IPayoutMethod | null => {
+/**
+ * Returns the default payout method (or the first one) from a list of payout
+ * method rows. Works for coach/venue/expert payout methods (structurally
+ * identical child tables).
+ */
+const getPrimaryPayoutMethod = <T extends { isDefault: boolean }>(
+  payoutMethods?: T[],
+): T | null => {
   if (!payoutMethods || payoutMethods.length === 0) {
     return null;
   }
@@ -30,12 +30,21 @@ export const listPendingPayouts = async (
   res: Response,
 ): Promise<void> => {
   try {
-    // Find all completed bookings with pending payments for coaches or venue listers
-    const bookings = await Booking.find({
-      status: "COMPLETED",
-      "payments.status": "PENDING",
-      "payments.userType": { $in: ["VenueLister", "Coach"] },
-    }).lean();
+    // Find all completed bookings that carry pending payment legs for coaches
+    // or venue listers. Payment legs are normalized into their own table, so we
+    // filter on the relation and include the legs to iterate them.
+    const bookings = await prisma.booking.findMany({
+      where: {
+        status: "COMPLETED",
+        payments: {
+          some: {
+            status: "PENDING",
+            userType: { in: ["VenueLister", "Coach"] },
+          },
+        },
+      },
+      include: { payments: true },
+    });
 
     const payoutMap = new Map<string, any>();
 
@@ -45,7 +54,7 @@ export const listPendingPayouts = async (
           payment.status === "PENDING" &&
           (payment.userType === "VenueLister" || payment.userType === "Coach")
         ) {
-          const userIdStr = payment.userId.toString();
+          const userIdStr = payment.userId;
           const key = `${userIdStr}_${payment.userType}`;
 
           if (!payoutMap.has(key)) {
@@ -59,36 +68,34 @@ export const listPendingPayouts = async (
 
           const current = payoutMap.get(key)!;
           current.totalPendingAmount += payment.amount;
-          current.bookingIds.push(booking._id.toString());
+          current.bookingIds.push(booking.id);
         }
       });
     });
 
     // Expert sessions carry their payout owed directly on the session
     // (no nested payments array like Booking), so they're gathered separately.
-    const expertSessions = await ExpertSession.find({
-      status: "COMPLETED",
-      paymentStatus: "COMPLETED",
-      payoutStatus: "PENDING",
-    })
-      .select("expertId amount")
-      .lean();
+    const expertSessions = await prisma.expertSession.findMany({
+      where: {
+        status: "COMPLETED",
+        paymentStatus: "COMPLETED",
+        payoutStatus: "PENDING",
+      },
+      select: { id: true, expertId: true, amount: true },
+    });
 
     if (expertSessions.length > 0) {
-      const expertIds = [
-        ...new Set(expertSessions.map((s) => s.expertId.toString())),
-      ];
-      const experts = await Expert.find({ _id: { $in: expertIds } })
-        .select("userId")
-        .lean();
+      const expertIds = [...new Set(expertSessions.map((s) => s.expertId))];
+      const experts = await prisma.expert.findMany({
+        where: { id: { in: expertIds } },
+        select: { id: true, userId: true },
+      });
       const expertUserIdByExpertId = new Map(
-        experts.map((e) => [e._id.toString(), e.userId.toString()]),
+        experts.map((e) => [e.id, e.userId]),
       );
 
       for (const session of expertSessions) {
-        const expertUserId = expertUserIdByExpertId.get(
-          session.expertId.toString(),
-        );
+        const expertUserId = expertUserIdByExpertId.get(session.expertId);
         if (!expertUserId) continue;
         const key = `${expertUserId}_Expert`;
         if (!payoutMap.has(key)) {
@@ -101,7 +108,7 @@ export const listPendingPayouts = async (
         }
         const current = payoutMap.get(key)!;
         current.totalPendingAmount += session.amount || 0;
-        current.bookingIds.push(session._id.toString());
+        current.bookingIds.push(session.id);
       }
     }
 
@@ -110,32 +117,33 @@ export const listPendingPayouts = async (
     // Populate vendor details and payout methods
     const populatedPayouts = await Promise.all(
       pendingPayouts.map(async (payout) => {
-        const user = await User.findById(payout.vendorId)
-          .select("name email phone")
-          .lean();
+        const user = await prisma.user.findUnique({
+          where: { id: payout.vendorId },
+          select: { name: true, email: true, phone: true },
+        });
 
-        let payoutMethod: IPayoutMethod | null = null;
+        let payoutMethod: {
+          isDefault: boolean;
+          [key: string]: unknown;
+        } | null = null;
         if (payout.vendorRole === "Coach") {
-          const coach = await Coach.findOne({ userId: payout.vendorId })
-            .select("payoutMethods")
-            .lean();
-          payoutMethod = getPrimaryPayoutMethod(
-            coach?.payoutMethods as IPayoutMethod[] | undefined,
-          );
+          const coach = await prisma.coach.findFirst({
+            where: { userId: payout.vendorId },
+            select: { payoutMethods: true },
+          });
+          payoutMethod = getPrimaryPayoutMethod(coach?.payoutMethods);
         } else if (payout.vendorRole === "VenueLister") {
-          const venue = await Venue.findOne({ ownerId: payout.vendorId })
-            .select("payoutMethods")
-            .lean();
-          payoutMethod = getPrimaryPayoutMethod(
-            venue?.payoutMethods as IPayoutMethod[] | undefined,
-          );
+          const venue = await prisma.venue.findFirst({
+            where: { ownerId: payout.vendorId },
+            select: { payoutMethods: true },
+          });
+          payoutMethod = getPrimaryPayoutMethod(venue?.payoutMethods);
         } else if (payout.vendorRole === "Expert") {
-          const expert = await Expert.findOne({ userId: payout.vendorId })
-            .select("payoutMethods")
-            .lean();
-          payoutMethod = getPrimaryPayoutMethod(
-            expert?.payoutMethods as unknown as IPayoutMethod[] | undefined,
-          );
+          const expert = await prisma.expert.findFirst({
+            where: { userId: payout.vendorId },
+            select: { payoutMethods: true },
+          });
+          payoutMethod = getPrimaryPayoutMethod(expert?.payoutMethods);
         }
 
         return {
@@ -211,94 +219,86 @@ export const markPayoutsAsPaid = async (
       return;
     }
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    const now = new Date();
 
-    try {
-      const now = new Date();
-      let updatedCount = 0;
+    // Release the pending payment legs for the given bookings inside a single
+    // transaction. Each booking must be COMPLETED (guard preserved from the
+    // Mongo arrayFilters query) and only legs owned by this vendor/role that are
+    // still PENDING are flipped to PAID.
+    const updatedCount = await prisma.$transaction(async (tx) => {
+      let count = 0;
 
       for (const bookingId of bookingIds) {
-        const result = await Booking.updateOne(
-          {
-            _id: bookingId,
-            status: "COMPLETED",
-            "payments.userId": vendorId,
-            "payments.userType": vendorRole,
-            "payments.status": "PENDING",
-          },
-          {
-            $set: {
-              "payments.$[elem].status": "PAID",
-              "payments.$[elem].paidAt": now,
-            },
-          },
-          {
-            arrayFilters: [
-              {
-                "elem.userId": vendorId,
-                "elem.userType": vendorRole,
-                "elem.status": "PENDING",
-              },
-            ],
-            session,
-          },
-        );
+        const booking = await tx.booking.findFirst({
+          where: { id: bookingId, status: "COMPLETED" },
+          select: { id: true },
+        });
+        if (!booking) {
+          continue;
+        }
 
-        if (result.modifiedCount > 0) {
-          updatedCount++;
+        const result = await tx.bookingPaymentLeg.updateMany({
+          where: {
+            bookingId,
+            userId: vendorId,
+            userType: vendorRole as PaymentUserType,
+            status: "PENDING",
+          },
+          data: {
+            status: "PAID",
+            paidAt: now,
+          },
+        });
+
+        if (result.count > 0) {
+          count++;
         }
       }
 
-      await session.commitTransaction();
+      return count;
+    });
 
-      // Notify the vendor of the payout (fire-and-forget).
-      void (async () => {
-        try {
-          const vendorUser = await User.findById(vendorId)
-            .select("name email")
-            .lean();
-          if (vendorUser?.email) {
-            const paidBookings = await Booking.find({
-              _id: { $in: bookingIds },
-            })
-              .select("payments")
-              .lean();
-            let total = 0;
-            for (const b of paidBookings) {
-              for (const p of b.payments || []) {
-                if (
-                  p.userId?.toString() === vendorId &&
-                  p.userType === vendorRole &&
-                  p.status === "PAID"
-                ) {
-                  total += p.amount || 0;
-                }
+    // Notify the vendor of the payout (fire-and-forget).
+    void (async () => {
+      try {
+        const vendorUser = await prisma.user.findUnique({
+          where: { id: vendorId },
+          select: { name: true, email: true },
+        });
+        if (vendorUser?.email) {
+          const paidBookings = await prisma.booking.findMany({
+            where: { id: { in: bookingIds } },
+            include: { payments: true },
+          });
+          let total = 0;
+          for (const b of paidBookings) {
+            for (const p of b.payments || []) {
+              if (
+                p.userId === vendorId &&
+                p.userType === vendorRole &&
+                p.status === "PAID"
+              ) {
+                total += p.amount || 0;
               }
             }
-            await sendPayoutProcessedEmail({
-              name: vendorUser.name,
-              email: vendorUser.email,
-              amount: total,
-              bookingCount: bookingIds.length,
-              role: vendorRole as "Coach" | "VenueLister",
-            });
           }
-        } catch (emailError) {
-          console.error("Failed to send payout email:", emailError);
+          await sendPayoutProcessedEmail({
+            name: vendorUser.name,
+            email: vendorUser.email,
+            amount: total,
+            bookingCount: bookingIds.length,
+            role: vendorRole as "Coach" | "VenueLister",
+          });
         }
-      })();
+      } catch (emailError) {
+        console.error("Failed to send payout email:", emailError);
+      }
+    })();
 
-      res.status(200).json({
-        success: true,
-        message: `Successfully marked ${updatedCount} booking payments as PAID.`,
-      });
-    } catch (transactionError) {
-      await session.abortTransaction();
-      throw transactionError;
-    } finally {
-      session.endSession();
-    }
+    res.status(200).json({
+      success: true,
+      message: `Successfully marked ${updatedCount} booking payments as PAID.`,
+    });
   } catch (error) {
     console.error("markPayoutsAsPaid error:", error);
     res.status(500).json({

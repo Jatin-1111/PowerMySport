@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
-import { SportPathway } from "../../shared/models/SportPathway";
-import { RoadmapChatSession } from "../models/RoadmapChatSession";
+import prisma from "../../lib/prisma";
 import { buildRoadmapChatSystemPrompt } from "../../shared/services/roadmapChatService";
 import { streamGuidanceChatResponse } from "../../shared/services/guidanceChatService";
 import { getUpcomingEditions } from "../../shared/services/tournamentCalendarService";
@@ -38,7 +37,9 @@ export const getRoadmapChat = async (
       return;
     }
 
-    const pathway = await SportPathway.findOne({ sportSlug }).lean();
+    const pathway = await prisma.sportPathway.findFirst({
+      where: { sportSlug },
+    });
     if (!pathway) {
       res
         .status(404)
@@ -46,24 +47,29 @@ export const getRoadmapChat = async (
       return;
     }
 
-    let session = await RoadmapChatSession.findOne({
-      sportSlug,
-      userId: req.user.id,
-    }).lean();
+    let session = await prisma.roadmapChatSession.findUnique({
+      where: {
+        userId_sportSlug: { userId: req.user.id, sportSlug },
+      },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    });
 
     if (!session) {
-      const newSession = await RoadmapChatSession.create({
-        sportSlug,
-        userId: req.user.id,
-        messages: [
-          {
-            role: "assistant",
-            content: buildOpeningMessage(pathway.sportName),
-            createdAt: new Date(),
+      session = await prisma.roadmapChatSession.create({
+        data: {
+          sportSlug,
+          userId: req.user.id,
+          messages: {
+            create: [
+              {
+                role: "assistant",
+                content: buildOpeningMessage(pathway.sportName),
+              },
+            ],
           },
-        ],
+        },
+        include: { messages: { orderBy: { createdAt: "asc" } } },
       });
-      session = newSession.toObject();
     }
 
     const dailyMessageCount = await getDailyMessageCount(req.user.id);
@@ -129,7 +135,9 @@ export const sendRoadmapChatMessage = async (
       return;
     }
 
-    const pathway = await SportPathway.findOne({ sportSlug }).lean();
+    const pathway = await prisma.sportPathway.findFirst({
+      where: { sportSlug },
+    });
     if (!pathway) {
       res
         .status(404)
@@ -137,22 +145,28 @@ export const sendRoadmapChatMessage = async (
       return;
     }
 
-    let session = await RoadmapChatSession.findOne({
-      sportSlug,
-      userId: req.user.id,
+    let session = await prisma.roadmapChatSession.findUnique({
+      where: {
+        userId_sportSlug: { userId: req.user.id, sportSlug },
+      },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
     });
 
     if (!session) {
-      session = await RoadmapChatSession.create({
-        sportSlug,
-        userId: req.user.id,
-        messages: [
-          {
-            role: "assistant",
-            content: buildOpeningMessage(pathway.sportName),
-            createdAt: new Date(),
+      session = await prisma.roadmapChatSession.create({
+        data: {
+          sportSlug,
+          userId: req.user.id,
+          messages: {
+            create: [
+              {
+                role: "assistant",
+                content: buildOpeningMessage(pathway.sportName),
+              },
+            ],
           },
-        ],
+        },
+        include: { messages: { orderBy: { createdAt: "asc" } } },
       });
     }
 
@@ -187,7 +201,7 @@ export const sendRoadmapChatMessage = async (
       () => [],
     );
     const systemPrompt = buildRoadmapChatSystemPrompt(
-      pathway,
+      pathway as any,
       level,
       upcomingTournaments,
     );
@@ -227,20 +241,20 @@ export const sendRoadmapChatMessage = async (
     res.end();
 
     // ── Persist both turns to the session ────────────────────────────────────
-    const userTurn = {
-      role: "user" as const,
-      content: userMessage,
-      createdAt: new Date(),
-    };
-    const assistantTurn = {
-      role: "assistant" as const,
-      content: fullAssistantResponse,
-      createdAt: new Date(),
-    };
-
-    session.messages.push(userTurn, assistantTurn);
-    session.totalMessageCount += 1;
-    await session.save();
+    // Nested-create the user + assistant turns and bump the lifetime counter
+    // (was: push subdocs + totalMessageCount += 1 + save()).
+    await prisma.roadmapChatSession.update({
+      where: { id: session.id },
+      data: {
+        totalMessageCount: { increment: 1 },
+        messages: {
+          create: [
+            { role: "user", content: userMessage },
+            { role: "assistant", content: fullAssistantResponse },
+          ],
+        },
+      },
+    });
   } catch (error) {
     if (!res.headersSent) {
       res.status(500).json({

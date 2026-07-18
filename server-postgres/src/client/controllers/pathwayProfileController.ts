@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { UserPathwayProfile } from "../../shared/models/UserPathwayProfile";
+import prisma from "../../lib/prisma";
 
 export const getPathwayProfile = async (
   req: Request,
@@ -11,12 +11,14 @@ export const getPathwayProfile = async (
       return;
     }
 
-    let profile = await UserPathwayProfile.findOne({
-      userId: req.user.id,
-    }).lean();
+    let profile = await prisma.userPathwayProfile.findUnique({
+      where: { userId: req.user.id },
+    });
 
     if (!profile) {
-      profile = await UserPathwayProfile.create({ userId: req.user.id });
+      profile = await prisma.userPathwayProfile.create({
+        data: { userId: req.user.id },
+      });
     }
 
     res.status(200).json({
@@ -48,11 +50,11 @@ export const updatePathwayProfile = async (
     if (applications !== undefined) updateData.applications = applications;
     if (reminders !== undefined) updateData.reminders = reminders;
 
-    const profile = await UserPathwayProfile.findOneAndUpdate(
-      { userId: req.user.id },
-      { $set: updateData },
-      { new: true, upsert: true },
-    ).lean();
+    const profile = await prisma.userPathwayProfile.upsert({
+      where: { userId: req.user.id },
+      create: { userId: req.user.id, ...updateData },
+      update: updateData,
+    });
 
     res.status(200).json({
       success: true,

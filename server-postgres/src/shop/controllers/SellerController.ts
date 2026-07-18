@@ -1,13 +1,8 @@
 import { Request, Response } from "express";
-import mongoose from "mongoose";
-import {
-  Product as ProductModel,
-  Order as OrderModel,
-} from "../models/Ecommerce";
-import { User } from "../../client/models/User";
+import { FulfillmentStatus, OrderStatus } from "@prisma/client";
+import prisma from "../../lib/prisma";
 import { ProductService } from "../services/EcommerceService";
 import { v4 as uuidv4 } from "uuid";
-import { FulfillmentStatus, OrderStatus } from "../../types/ecommerce";
 
 export class SellerController {
   private productService: ProductService;
@@ -29,10 +24,14 @@ export class SellerController {
       }
 
       // Find active products for this seller
-      const products = await ProductModel.find({
-        seller: new mongoose.Types.ObjectId(sellerId),
-        isActive: true,
-      }).sort({ createdAt: -1 });
+      const products = await prisma.product.findMany({
+        where: {
+          seller: sellerId,
+          isActive: true,
+        },
+        orderBy: { createdAt: "desc" },
+        include: { variants: true },
+      });
 
       res.json({
         ok: true,
@@ -58,7 +57,7 @@ export class SellerController {
         return;
       }
 
-      const user = await User.findById(sellerId);
+      const user = await prisma.user.findUnique({ where: { id: sellerId } });
       if (!user) {
         res
           .status(404)
@@ -106,12 +105,13 @@ export class SellerController {
               "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=800&q=80",
             ];
 
-      // Setup default variant for the P2P item
+      // Setup default variant for the P2P item. attributes is stored as a JSON
+      // column now, so pass a plain object rather than a Mongo Map.
       const variants = [
         {
           sku: variantSku,
           variantLabel: "Standard",
-          attributes: new Map(Object.entries(attributes)),
+          attributes: { ...attributes },
           price: basePrice,
           stock: Number(stock),
           reorderLevel: 0,
@@ -145,7 +145,7 @@ export class SellerController {
         variants,
         totalStock: Number(stock),
         isActive: true,
-        seller: new mongoose.Types.ObjectId(sellerId),
+        seller: sellerId,
         sellerName: user.name,
         sellerType: finalSellerType,
         condition,
@@ -188,7 +188,10 @@ export class SellerController {
         return;
       }
 
-      const product = await ProductModel.findById(productId);
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+        include: { variants: true },
+      });
       if (!product) {
         res
           .status(404)
@@ -197,7 +200,7 @@ export class SellerController {
       }
 
       // Check ownership
-      if (product.seller?.toString() !== sellerId) {
+      if (product.seller !== sellerId) {
         res
           .status(403)
           .json({
@@ -214,7 +217,9 @@ export class SellerController {
       delete updateFields.sellerName;
       delete updateFields.sellerType;
 
-      // Handle stock and price updates on the default variant if variants aren't directly provided
+      // Handle stock and price updates on the default variant if variants aren't
+      // directly provided. With normalized ProductVariant rows we hand the
+      // service a variants array carrying the row id so it updates in place.
       if (
         updateFields.basePrice !== undefined ||
         updateFields.stock !== undefined
@@ -227,12 +232,19 @@ export class SellerController {
             }
             if (updateFields.stock !== undefined) {
               mainVariant.stock = Number(updateFields.stock);
-              product.totalStock = Number(updateFields.stock);
             }
             updateFields.variants = product.variants;
           }
         }
       }
+
+      // `stock` is not a Product column (it lives on the variant, handled above);
+      // Prisma updates are strict, so strip it before passing to the service.
+      // TODO(prisma): the Mongo original relied on Mongoose silently ignoring
+      // unknown paths in the update body. Prisma throws on unknown scalar keys,
+      // so if the seller edit UI ever sends fields that are not Product columns
+      // they must be whitelisted/stripped here too.
+      delete updateFields.stock;
 
       const updatedProduct = await this.productService.updateProduct(
         productId as string,
@@ -270,7 +282,9 @@ export class SellerController {
         return;
       }
 
-      const product = await ProductModel.findById(productId);
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+      });
       if (!product) {
         res
           .status(404)
@@ -279,7 +293,7 @@ export class SellerController {
       }
 
       // Check ownership
-      if (product.seller?.toString() !== sellerId) {
+      if (product.seller !== sellerId) {
         res
           .status(403)
           .json({
@@ -315,18 +329,19 @@ export class SellerController {
         return;
       }
 
-      const orders = await OrderModel.find({
-        "items.sellerId": new mongoose.Types.ObjectId(sellerId),
-      }).sort({ createdAt: -1 });
+      const orders = await prisma.order.findMany({
+        where: {
+          items: { some: { sellerId } },
+        },
+        orderBy: { createdAt: "desc" },
+        include: { items: true },
+      });
 
       // Format response to show order but only display items belonging to this seller
-      const formatted = orders.map((order) => {
-        const orderObj = order.toObject();
-        orderObj.items = orderObj.items.filter(
-          (item: any) => item.sellerId?.toString() === sellerId,
-        );
-        return orderObj;
-      });
+      const formatted = orders.map((order) => ({
+        ...order,
+        items: order.items.filter((item) => item.sellerId === sellerId),
+      }));
 
       res.json({
         ok: true,
@@ -368,7 +383,10 @@ export class SellerController {
         return;
       }
 
-      const order = await OrderModel.findById(orderId);
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
       if (!order) {
         res
           .status(404)
@@ -378,8 +396,7 @@ export class SellerController {
 
       const item = order.items.find(
         (i) =>
-          i.productVariantId.toString() === productVariantId &&
-          i.sellerId?.toString() === sellerId,
+          i.productVariantId === productVariantId && i.sellerId === sellerId,
       );
 
       if (!item) {
@@ -394,36 +411,54 @@ export class SellerController {
         return;
       }
 
+      // Update the item in memory (so the aggregate status calc below sees it)
+      // and persist the row.
       item.fulfillmentStatus = fulfillmentStatus;
       if (trackingNumber !== undefined) {
         item.trackingNumber = trackingNumber;
       }
+      await prisma.orderItem.update({
+        where: { id: item.id },
+        data: {
+          fulfillmentStatus,
+          ...(trackingNumber !== undefined ? { trackingNumber } : {}),
+        },
+      });
 
       // Compute overall order fulfillment status:
       // If all items are delivered -> DELIVERED
       // If any items are processed/shipped/delivered -> PROCESSING/SHIPPED
-      // Else -> PENDING
+      // Else -> unchanged
+      let newFulfillmentStatus = order.fulfillmentStatus;
+      let newStatus = order.status;
       const allStatuses = order.items.map((i) => i.fulfillmentStatus);
       if (allStatuses.every((s) => s === FulfillmentStatus.DELIVERED)) {
-        order.fulfillmentStatus = FulfillmentStatus.DELIVERED;
-        order.status = OrderStatus.DELIVERED;
+        newFulfillmentStatus = FulfillmentStatus.DELIVERED;
+        newStatus = OrderStatus.DELIVERED;
       } else if (
         allStatuses.some((s) =>
           [FulfillmentStatus.SHIPPED, FulfillmentStatus.DELIVERED].includes(s),
         )
       ) {
-        order.fulfillmentStatus = FulfillmentStatus.SHIPPED;
-        order.status = OrderStatus.SHIPPED;
+        newFulfillmentStatus = FulfillmentStatus.SHIPPED;
+        newStatus = OrderStatus.SHIPPED;
       } else if (allStatuses.some((s) => s === FulfillmentStatus.PROCESSING)) {
-        order.fulfillmentStatus = FulfillmentStatus.PROCESSING;
-        order.status = OrderStatus.PROCESSING;
+        newFulfillmentStatus = FulfillmentStatus.PROCESSING;
+        newStatus = OrderStatus.PROCESSING;
       }
 
-      await order.save();
+      const updatedOrder = await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          fulfillmentStatus: newFulfillmentStatus,
+          status: newStatus,
+        },
+        include: { items: true },
+      });
 
       res.json({
         ok: true,
-        data: order,
+        data: updatedOrder,
       });
     } catch (error: any) {
       res.status(500).json({

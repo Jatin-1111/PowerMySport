@@ -1,5 +1,4 @@
-import { Booking } from "../client/models/Booking";
-import { BookingPaymentTransaction } from "../client/models/BookingPayment";
+import prisma from "../lib/prisma";
 import { initiateRefund } from "../client/services/RefundService";
 import { NotificationService } from "../client/services/NotificationService";
 
@@ -29,9 +28,11 @@ export const expireOldBookings = async (): Promise<number> => {
     // this previously queried the non-existent status "PENDING_PAYMENT",
     // which is not a valid enum value on the Booking model, so this job
     // silently matched zero documents on every run since it was written.
-    const expiredCandidates = await Booking.find({
-      status: "PENDING_CONFIRMATION",
-      expiresAt: { $lte: now },
+    const expiredCandidates = await prisma.booking.findMany({
+      where: {
+        status: "PENDING_CONFIRMATION",
+        expiresAt: { lte: now },
+      },
     });
 
     let expiredCount = 0;
@@ -40,30 +41,30 @@ export const expireOldBookings = async (): Promise<number> => {
       try {
         // Guard the status in the filter too, in case something else raced
         // this booking to CONFIRMED/CANCELLED between the find() and here.
-        const updated = await Booking.findOneAndUpdate(
-          { _id: booking._id, status: "PENDING_CONFIRMATION" },
-          { $set: { status: "EXPIRED" } },
-        );
-        if (!updated) continue;
+        // updateMany's count tells us whether we actually won the transition.
+        const updated = await prisma.booking.updateMany({
+          where: { id: booking.id, status: "PENDING_CONFIRMATION" },
+          data: { status: "EXPIRED" },
+        });
+        if (updated.count === 0) continue;
         expiredCount++;
 
         // Refund any payment already collected — the parent shouldn't be
         // charged for a slot the venue/coach never confirmed.
-        const transaction = await BookingPaymentTransaction.findOne({
-          bookingId: booking._id,
-          status: "COMPLETED",
+        const transaction = await prisma.bookingPaymentTransaction.findFirst({
+          where: { bookingId: booking.id, status: "COMPLETED" },
         });
 
         if (transaction && !transaction.refundState) {
           try {
             await initiateRefund({
-              bookingPaymentTransactionId: transaction._id.toString(),
+              bookingPaymentTransactionId: transaction.id.toString(),
               amount: transaction.amount,
               reason:
                 "Booking expired — not confirmed by the venue/coach in time",
             });
             console.log(
-              `Auto-refunded expired booking ${booking._id} (transaction ${transaction._id})`,
+              `Auto-refunded expired booking ${booking.id} (transaction ${transaction.id})`,
             );
 
             // Let the parent know why — a silent refund with no explanation
@@ -76,12 +77,12 @@ export const expireOldBookings = async (): Promise<number> => {
                 type: "PAYMENT_REFUND",
                 title: "Booking expired — refund initiated",
                 message: `Your ${booking.sport} booking on ${booking.startTime}-${booking.endTime} wasn't confirmed by the venue/coach in time, so it has expired. We've initiated a refund of ₹${rupees} to your original payment method.`,
-                data: { bookingId: booking._id.toString() },
+                data: { bookingId: booking.id.toString() },
               },
               { sendEmail: true },
             ).catch((notifyError) => {
               console.error(
-                `Failed to send expiration/refund notification for booking ${booking._id}:`,
+                `Failed to send expiration/refund notification for booking ${booking.id}:`,
                 notifyError,
               );
             });
@@ -90,13 +91,13 @@ export const expireOldBookings = async (): Promise<number> => {
             // batch — this booking stays EXPIRED and needs manual refund
             // follow-up, which is preferable to silently retrying forever.
             console.error(
-              `Failed to auto-refund expired booking ${booking._id}:`,
+              `Failed to auto-refund expired booking ${booking.id}:`,
               refundError,
             );
           }
         }
       } catch (error) {
-        console.error(`Error expiring booking ${booking._id}:`, error);
+        console.error(`Error expiring booking ${booking.id}:`, error);
       }
     }
 

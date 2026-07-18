@@ -1,7 +1,12 @@
 import { Request, Response } from "express";
-import mongoose from "mongoose";
-import { SupportTicket } from "../models/SupportTicket";
-import { User } from "../models/User";
+import prisma from "../../lib/prisma";
+import type {
+  SupportStatus,
+  SupportPriority,
+  SupportCategory,
+  SupportRequesterType,
+  SupportNoteAuthorType,
+} from "@prisma/client";
 import {
   sendSupportTicketReceivedEmail,
   sendSupportTicketStatusEmail,
@@ -99,53 +104,59 @@ const createTicketFromRequest = async (
     }
   }
 
-  const notes = initialNote?.trim()
-    ? [
-        {
-          authorType: options.requireAuth
-            ? ("USER" as const)
-            : ("Admin" as const),
-          authorId: options.authorId
-            ? new mongoose.Types.ObjectId(options.authorId)
-            : new mongoose.Types.ObjectId(),
-          message: initialNote.trim(),
-          createdAt: new Date(),
-        },
-      ]
-    : [];
-
-  const ticket = await SupportTicket.create({
-    ...(options.requireAuth && options.authorId
-      ? { userId: new mongoose.Types.ObjectId(options.authorId) }
-      : {}),
-    ...(requesterName?.trim() ? { requesterName: requesterName.trim() } : {}),
-    ...(requesterEmail?.trim()
-      ? { requesterEmail: requesterEmail.trim().toLowerCase() }
-      : {}),
-    ...(requesterPhone?.trim()
-      ? { requesterPhone: requesterPhone.trim() }
-      : {}),
-    ...(requesterType ? { requesterType } : {}),
-    subject: subject.trim(),
-    description: description.trim(),
-    category: category || "OTHER",
-    priority: priority || "MEDIUM",
-    notes,
-    ...(options.authorId
-      ? { lastUpdatedBy: new mongoose.Types.ObjectId(options.authorId) }
-      : {}),
+  const ticket = await prisma.supportTicket.create({
+    data: {
+      ...(options.requireAuth && options.authorId
+        ? { userId: options.authorId }
+        : {}),
+      ...(requesterName?.trim() ? { requesterName: requesterName.trim() } : {}),
+      ...(requesterEmail?.trim()
+        ? { requesterEmail: requesterEmail.trim().toLowerCase() }
+        : {}),
+      ...(requesterPhone?.trim()
+        ? { requesterPhone: requesterPhone.trim() }
+        : {}),
+      ...(requesterType
+        ? { requesterType: requesterType as SupportRequesterType }
+        : {}),
+      subject: subject.trim(),
+      description: description.trim(),
+      category: (category || "OTHER") as SupportCategory,
+      priority: (priority || "MEDIUM") as SupportPriority,
+      ...(options.authorId ? { lastUpdatedBy: options.authorId } : {}),
+      ...(initialNote?.trim()
+        ? {
+            notes: {
+              create: [
+                {
+                  authorType: (options.requireAuth
+                    ? "USER"
+                    : "Admin") as SupportNoteAuthorType,
+                  // TODO(prisma): public tickets had no author; the Mongo code
+                  // generated a throwaway ObjectId here. authorId is a required
+                  // String column now, so fall back to an empty string.
+                  authorId: options.authorId ?? "",
+                  message: initialNote.trim(),
+                },
+              ],
+            },
+          }
+        : {}),
+    },
+    include: { notes: true },
   });
 
   // Acknowledge the ticket by email (fire-and-forget). Prefer the explicit
   // requester email; fall back to the authenticated user's account email.
   void (async () => {
     try {
-      let toEmail = ticket.requesterEmail;
-      let toName = ticket.requesterName;
+      let toEmail = ticket.requesterEmail ?? undefined;
+      let toName = ticket.requesterName ?? undefined;
       if (!toEmail && ticket.userId) {
-        const owner = await User.findById(ticket.userId)
-          .select("name email")
-          .lean();
+        const owner = await prisma.user.findUnique({
+          where: { id: ticket.userId },
+          select: { name: true, email: true },
+        });
         toEmail = owner?.email;
         toName = toName || owner?.name;
       }
@@ -153,7 +164,7 @@ const createTicketFromRequest = async (
         await sendSupportTicketReceivedEmail({
           name: toName,
           email: toEmail,
-          ticketId: String(ticket._id),
+          ticketId: String(ticket.id),
           subject: ticket.subject,
           category: ticket.category,
         });
@@ -188,21 +199,22 @@ export const getMySupportTickets = async (
     const status =
       typeof req.query.status === "string" ? req.query.status : undefined;
 
-    const query: Record<string, unknown> = {
-      userId: new mongoose.Types.ObjectId(req.user.id),
+    const where: Record<string, unknown> = {
+      userId: req.user.id,
     };
 
     if (status) {
-      query.status = status;
+      where.status = status as SupportStatus;
     }
 
     const [tickets, total] = await Promise.all([
-      SupportTicket.find(query)
-        .sort({ updatedAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      SupportTicket.countDocuments(query),
+      prisma.supportTicket.findMany({
+        where,
+        orderBy: { updatedAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.supportTicket.count({ where }),
     ]);
 
     res.status(200).json({
@@ -240,29 +252,57 @@ export const getSupportTicketsForAdmin = async (
     const priority =
       typeof req.query.priority === "string" ? req.query.priority : undefined;
 
-    const query: Record<string, unknown> = {};
+    const where: Record<string, unknown> = {};
     if (status) {
-      query.status = status;
+      where.status = status as SupportStatus;
     }
     if (priority) {
-      query.priority = priority;
+      where.priority = priority as SupportPriority;
     }
 
     const [tickets, total] = await Promise.all([
-      SupportTicket.find(query)
-        .populate("userId", "name email role")
-        .populate("assignedAdminId", "name email role")
-        .sort({ priority: -1, updatedAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      SupportTicket.countDocuments(query),
+      prisma.supportTicket.findMany({
+        where,
+        // TODO(prisma): the Mongo query sorted `priority: -1` alphabetically on
+        // the string values; Postgres enums sort by declaration order
+        // (LOW, MEDIUM, HIGH, URGENT). `desc` therefore yields a different
+        // ordering than Mongo did — confirm the intended ranking if it matters.
+        orderBy: [{ priority: "desc" }, { updatedAt: "desc" }],
+        skip,
+        take: limit,
+      }),
+      prisma.supportTicket.count({ where }),
     ]);
+
+    // Emulate .populate("userId"/"assignedAdminId", "name email role"): these are
+    // String FK refs with no relation, so resolve them with a follow-up query.
+    const refIds = [
+      ...new Set(
+        tickets
+          .flatMap((t) => [t.userId, t.assignedAdminId])
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const refUsers = refIds.length
+      ? await prisma.user.findMany({
+          where: { id: { in: refIds } },
+          select: { id: true, name: true, email: true, role: true },
+        })
+      : [];
+    const byId = new Map(refUsers.map((u) => [u.id, u]));
+
+    const data = tickets.map((t) => ({
+      ...t,
+      userId: t.userId ? byId.get(t.userId) ?? null : null,
+      assignedAdminId: t.assignedAdminId
+        ? byId.get(t.assignedAdminId) ?? null
+        : null,
+    }));
 
     res.status(200).json({
       success: true,
       message: "Support tickets retrieved",
-      data: tickets,
+      data,
       pagination: {
         total,
         page,
@@ -291,7 +331,8 @@ export const updateSupportTicketByAdmin = async (
     }
 
     const ticketId = (req.params as Record<string, unknown>).ticketId as string;
-    if (!ticketId || !mongoose.Types.ObjectId.isValid(ticketId)) {
+    // TODO(prisma): dropped mongoose ObjectId.isValid() — ids are cuids now.
+    if (!ticketId) {
       res.status(400).json({ success: false, message: "Invalid ticket id" });
       return;
     }
@@ -309,66 +350,82 @@ export const updateSupportTicketByAdmin = async (
     } = req.body;
 
     const update: Record<string, unknown> = {
-      lastUpdatedBy: new mongoose.Types.ObjectId(req.user.id),
+      lastUpdatedBy: req.user.id,
     };
 
     if (status) {
-      update.status = status;
+      update.status = status as SupportStatus;
     }
 
     if (priority) {
-      update.priority = priority;
+      update.priority = priority as SupportPriority;
     }
 
     if (assignedAdminId === null) {
       update.assignedAdminId = null;
-    } else if (
-      typeof assignedAdminId === "string" &&
-      mongoose.Types.ObjectId.isValid(assignedAdminId)
-    ) {
-      update.assignedAdminId = new mongoose.Types.ObjectId(assignedAdminId);
+    } else if (typeof assignedAdminId === "string" && assignedAdminId) {
+      update.assignedAdminId = assignedAdminId;
     }
 
-    const ticket = await SupportTicket.findByIdAndUpdate(
-      ticketId,
-      {
-        $set: update,
+    const existingTicket = await prisma.supportTicket.findUnique({
+      where: { id: ticketId },
+    });
+    if (!existingTicket) {
+      res.status(404).json({ success: false, message: "Ticket not found" });
+      return;
+    }
+
+    const ticket = await prisma.supportTicket.update({
+      where: { id: ticketId },
+      data: {
+        ...update,
         ...(note?.trim()
           ? {
-              $push: {
-                notes: {
-                  authorType: "Admin",
-                  authorId: new mongoose.Types.ObjectId(req.user.id),
+              notes: {
+                create: {
+                  authorType: "Admin" as SupportNoteAuthorType,
+                  authorId: req.user.id,
                   message: note.trim(),
-                  createdAt: new Date(),
                 },
               },
             }
           : {}),
       },
-      { new: true },
-    )
-      .populate("userId", "name email role")
-      .populate("assignedAdminId", "name email role");
+      include: { notes: true },
+    });
 
-    if (!ticket) {
-      res.status(404).json({ success: false, message: "Ticket not found" });
-      return;
-    }
+    // Emulate .populate("userId"/"assignedAdminId", "name email role").
+    const refIds = [ticket.userId, ticket.assignedAdminId].filter(
+      (id): id is string => Boolean(id),
+    );
+    const refUsers = refIds.length
+      ? await prisma.user.findMany({
+          where: { id: { in: refIds } },
+          select: { id: true, name: true, email: true, role: true },
+        })
+      : [];
+    const byId = new Map(refUsers.map((u) => [u.id, u]));
+    const populatedUser = ticket.userId
+      ? byId.get(ticket.userId) ?? null
+      : null;
+
+    const populatedTicket = {
+      ...ticket,
+      userId: populatedUser,
+      assignedAdminId: ticket.assignedAdminId
+        ? byId.get(ticket.assignedAdminId) ?? null
+        : null,
+    };
 
     // Notify the requester when the status changes (fire-and-forget).
     if (status) {
-      const populatedUser = ticket.userId as unknown as {
-        name?: string;
-        email?: string;
-      } | null;
       const toEmail = ticket.requesterEmail || populatedUser?.email;
       const toName = ticket.requesterName || populatedUser?.name;
       if (toEmail) {
         sendSupportTicketStatusEmail({
-          name: toName,
+          name: toName ?? undefined,
           email: toEmail,
-          ticketId: String(ticket._id),
+          ticketId: String(ticket.id),
           subject: ticket.subject,
           status,
           note: note?.trim() || undefined,
@@ -381,7 +438,7 @@ export const updateSupportTicketByAdmin = async (
     res.status(200).json({
       success: true,
       message: "Support ticket updated",
-      data: ticket,
+      data: populatedTicket,
     });
   } catch (error) {
     res.status(500).json({
