@@ -115,6 +115,8 @@ export interface AdminSportPathway {
   lastRefreshedAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  /** Unverified and not refreshed in 6+ months — same threshold the parent-facing site uses. */
+  isStale?: boolean;
 }
 
 export interface AcademyAdminQueueRecord {

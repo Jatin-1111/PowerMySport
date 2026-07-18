@@ -7,8 +7,8 @@
  * Run:  cd client && npx tsx tests/scorer-evaluation.ts
  */
 
-import { scoreSports } from "../src/modules/pathway/utils/scorer";
-import type { WizardAnswers } from "../src/modules/pathway/types";
+import { scoreSports } from "../src/modules/find-sport/utils/scorer";
+import type { WizardAnswers } from "../src/modules/find-sport/types";
 
 // ─── Console colours ──────────────────────────────────────────────────────────
 const G = "\x1b[32m", R = "\x1b[31m", Y = "\x1b[33m", C = "\x1b[36m";

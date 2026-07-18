@@ -1,7 +1,7 @@
 import { Info, Sparkles } from "lucide-react";
 
 export type AIDisclaimerVariant =
-  "roadmap" | "guidance" | "chat" | "sportmatch" | "pdf";
+  "roadmap" | "guidance" | "chat" | "pdf";
 
 interface AIDisclaimerProps {
   variant?: AIDisclaimerVariant;
@@ -15,8 +15,6 @@ export function AIDisclaimer({ variant, className = "" }: AIDisclaimerProps) {
   if (variant === "chat") {
     message =
       "AI-generated conversational coach. Verify advice with a professional.";
-  } else if (variant === "sportmatch") {
-    message = "AI-powered sport match. Verify with a coach before deciding.";
   } else if (variant === "roadmap") {
     message =
       "Pathway data sourced from India's sports development records. Verify milestones with a local academy.";

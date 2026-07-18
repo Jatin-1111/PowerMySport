@@ -6,75 +6,122 @@ import {
   CheckCircle,
   ChevronDown,
   RotateCcw,
-  Trophy,
-  Medal,
-  Star,
+  Target,
+  TrendingUp,
+  Shuffle,
+  Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 import type { SportResult, WizardAnswers } from "../../types";
-import { JourneyPipeline } from "../JourneyPipeline";
+// import { JourneyPipeline } from "../JourneyPipeline"; // SCREENING_DISABLED
 
+// ─── Portfolio roles ────────────────────────────────────────────────────────
+// Not a similarity ranking (1st/2nd/3rd best) — three different jobs. Best-fit
+// is the safest bet on the data; stretch is the higher-ceiling, more-demanding
+// pick; easy-start is the cheapest, lowest-commitment way to test interest.
 
-const RANK_META = [
+type PortfolioRole = "bestFit" | "stretch" | "easyStart";
+
+const PORTFOLIO_META: Record<
+  PortfolioRole,
   {
-    icon: Trophy,
-    label: "Best match",
+    icon: typeof Target;
+    label: string;
+    watchFor: (name: string) => string;
+    accentBorder: string;
+    badgeBg: string;
+    iconBg: string;
+    shadow: string;
+    scale: string;
+  }
+> = {
+  bestFit: {
+    icon: Target,
+    label: "Best fit",
+    watchFor: (name) => `Try it first — watch for ${name} asking to go back without being asked.`,
     accentBorder: "border-t-power-orange",
-    accentText: "text-power-orange",
-    accentBg: "bg-power-orange/8",
     badgeBg: "bg-power-orange/10 text-power-orange",
     iconBg: "bg-power-orange/10 text-power-orange",
     shadow: "shadow-lg shadow-slate-200/60",
     scale: "md:scale-[1.02] md:z-10",
   },
-  {
-    icon: Medal,
-    label: "Strong fit",
-    accentBorder: "border-t-slate-400",
-    accentText: "text-slate-700",
-    accentBg: "bg-slate-50",
-    badgeBg: "bg-slate-100 text-slate-600",
-    iconBg: "bg-slate-100 text-slate-500",
+  stretch: {
+    icon: TrendingUp,
+    label: "Stretch pick",
+    watchFor: (name) => `Asks more of ${name} — a good sign is wanting more even after the hard parts.`,
+    accentBorder: "border-t-indigo-400",
+    badgeBg: "bg-indigo-50 text-indigo-600",
+    iconBg: "bg-indigo-50 text-indigo-500",
     shadow: "shadow-sm",
     scale: "",
   },
-  {
-    icon: Star,
-    label: "Also consider",
-    accentBorder: "border-t-slate-300",
-    accentText: "text-slate-600",
-    accentBg: "bg-slate-50",
-    badgeBg: "bg-slate-100 text-slate-500",
-    iconBg: "bg-slate-100 text-slate-400",
+  easyStart: {
+    icon: Shuffle,
+    label: "Easy start",
+    watchFor: () => "Cheapest, lowest-commitment way to test real interest before going further.",
+    accentBorder: "border-t-emerald-400",
+    badgeBg: "bg-emerald-50 text-emerald-600",
+    iconBg: "bg-emerald-50 text-emerald-500",
     shadow: "shadow-sm",
     scale: "",
   },
-];
+};
+
+// Rough demand ordering from data already on the sport profile — no scoring
+// changes, just deciding which of the two non-best-fit picks reads as the
+// pricier/more time-hungry "stretch" vs the cheaper "easy start".
+const BUDGET_RANK: Record<string, number> = {
+  "under-3k": 0,
+  "3k-7k": 1,
+  "7k-15k": 2,
+  "15k-plus": 3,
+};
+
+function demandScore(result: SportResult): number {
+  return BUDGET_RANK[result.sport.minBudgetTier] * 10 + result.sport.minWeeklyHours;
+}
+
+/** Assigns portfolio roles to the top-3 results without touching the scorer. */
+function buildPortfolio(
+  results: SportResult[],
+): Array<{ result: SportResult; role: PortfolioRole }> {
+  if (results.length === 0) return [];
+  const [bestFit, ...rest] = results;
+  const sortedRest = [...rest].sort((a, b) => demandScore(b) - demandScore(a));
+  const [stretch, easyStart] = sortedRest;
+
+  const out: Array<{ result: SportResult; role: PortfolioRole }> = [
+    { result: bestFit, role: "bestFit" },
+  ];
+  if (stretch) out.push({ result: stretch, role: "stretch" });
+  if (easyStart) out.push({ result: easyStart, role: "easyStart" });
+  return out;
+}
 
 function SportCard({
   result,
   answers,
-  rank,
+  role,
 }: {
   result: SportResult;
   answers: WizardAnswers;
-  rank: number;
+  role: PortfolioRole;
 }) {
   const [pathwayOpen, setPathwayOpen] = useState(false);
   const name = answers.childName || "Your child";
-  const meta = RANK_META[rank - 1] ?? RANK_META[2];
-  const RankIcon = meta.icon;
+  const meta = PORTFOLIO_META[role];
+  const RoleIcon = meta.icon;
 
   return (
     <div
       className={`relative flex flex-col rounded-2xl bg-white border-2 border-slate-100 border-t-4 ${meta.accentBorder} ${meta.shadow} ${meta.scale} transition-transform`}
     >
-      {/* Rank badge */}
+      {/* Role badge */}
       <div className="px-5 pt-5 pb-4 border-b border-slate-50">
         <div className="flex items-center justify-between mb-3">
           <div className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${meta.badgeBg}`}>
-            <RankIcon className="w-3 h-3" />
-            <span>#{rank} · {meta.label}</span>
+            <RoleIcon className="w-3 h-3" />
+            <span>{meta.label}</span>
           </div>
           <span className="text-xs font-medium text-slate-400">{result.fitLabel}</span>
         </div>
@@ -92,7 +139,7 @@ function SportCard({
         </div>
       </div>
 
-      {/* Reasons */}
+      {/* Reasons — specific to this child's answers */}
       <div className="px-5 py-4 flex-1 space-y-2.5">
         {result.reasons.slice(0, 3).map((reason, i) => (
           <div key={i} className="flex gap-2.5 items-start">
@@ -102,6 +149,14 @@ function SportCard({
             <p className="text-xs text-slate-600 leading-relaxed">{reason}</p>
           </div>
         ))}
+      </div>
+
+      {/* What to watch for in a trial */}
+      <div className="mx-5 mb-4 rounded-xl bg-slate-50 px-3.5 py-3">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+          Cost to try: {result.sport.costRange}
+        </p>
+        <p className="text-xs text-slate-600 leading-relaxed">{meta.watchFor(name)}</p>
       </div>
 
       {/* Pathway preview */}
@@ -165,6 +220,8 @@ export function ResultsView({
 }) {
   const name = answers.childName || "Your child";
   const topResults = results.slice(0, 3);
+  const portfolio = buildPortfolio(topResults);
+  const isUnderTen = answers.age !== null && answers.age <= 10;
 
   return (
     <div className="pb-12 animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -177,9 +234,19 @@ export function ResultsView({
           Here&apos;s what we found for {name}
         </h1>
         <p className="text-sm text-slate-500">
-          Ranked by how well each sport fits {name}&apos;s physical profile, personality, and goals.
+          Three different picks, not a ranking — a safe best-fit, a stretch worth trying, and a cheap way to start.
         </p>
       </div>
+
+      {/* Under-10 multi-sport framing — don't push specialisation this young */}
+      {isUnderTen && (
+        <div className="flex items-start gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4 py-3.5 mb-6">
+          <Sparkles className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+          <p className="text-sm text-indigo-900 leading-relaxed">
+            At {answers.age}, we wouldn&apos;t pick just one yet — playing 2-3 of these together builds broader athleticism than specialising early. Treat the three below as sports to rotate between, not a single choice to commit to.
+          </p>
+        </div>
+      )}
 
       {/* Save status */}
       {savedStatus === "saving" && (
@@ -201,17 +268,18 @@ export function ResultsView({
       )}
 
       {/* Sport cards — side by side */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8 md:items-start">
-        {topResults.map((result, i) => (
-          <SportCard key={result.sport.id} result={result} answers={answers} rank={i + 1} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8 md:items-stretch">
+        {portfolio.map(({ result, role }) => (
+          <SportCard key={result.sport.id} result={result} answers={answers} role={role} />
         ))}
       </div>
 
-      {/* Journey pipeline */}
+      {/* Journey pipeline — SCREENING_DISABLED
       <JourneyPipeline
         childName={name}
         topSport={topResults[0]?.sport.name}
       />
+      */}
 
       {/* Bottom row: expert CTA + guest save */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">

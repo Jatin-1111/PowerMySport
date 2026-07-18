@@ -32,7 +32,8 @@ export type NotificationType =
   | "ACADEMY_REJECTED"
   | "DISPUTE_FILED"
   | "DISPUTE_RESOLVED"
-  | "MESSAGE_RECEIVED";
+  | "MESSAGE_RECEIVED"
+  | "PLAN_CHECKIN";
 
 export type NotificationCategory =
   "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY";
@@ -104,6 +105,7 @@ const notificationSchema = new Schema<
         "DISPUTE_FILED",
         "DISPUTE_RESOLVED",
         "MESSAGE_RECEIVED",
+        "PLAN_CHECKIN",
       ],
       required: true,
     },

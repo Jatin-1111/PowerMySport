@@ -25,6 +25,7 @@ import { buildFallbackJourney } from "../../utils";
 import { JourneyMap } from "../journey/JourneyMap";
 import { BurnoutRiskCard } from "../shared/BurnoutRiskCard";
 import { CostBreakdownCard } from "../shared/CostBreakdownCard";
+import { ShortTermPlanCard } from "./ShortTermPlanCard";
 import { VerdictHero } from "./VerdictHero";
 
 function getActionUrl(step: string, sport?: string): string | null {
@@ -34,7 +35,7 @@ function getActionUrl(step: string, sport?: string): string | null {
   if (s.includes("communit") || s.includes("parent")) return "/community";
   if (s.includes("tournament") || s.includes("compet") || s.includes("opportunit")) return `/roadmap${sportParam}`;
   if (s.includes("roadmap") || s.includes("pathway")) return `/roadmap${sportParam}`;
-  if (s.includes("guidance") || s.includes("assessment") || s.includes("personalised")) return "/consult";
+  if (s.includes("guidance") || s.includes("assessment") || s.includes("personalised")) return "/guidance";
   return null;
 }
 
@@ -70,6 +71,14 @@ export function ResultsView({
   const alreadyAtLevel = !!(
     levelContext && submission.query.current_pathway_level === levelContext.level
   );
+
+  // Short-horizon plans (weakness fixes, tournament prep) render week-by-week
+  // instead of the journey accordion. Guard on weeks.length — a Mongo round-trip
+  // can materialise shortTermPlan as { weeks: [] } even when it was absent.
+  const shortPlan =
+    r.shortTermPlan && r.shortTermPlan.weeks && r.shortTermPlan.weeks.length > 0
+      ? r.shortTermPlan
+      : null;
 
   // Time-phased roadmap from the AI, or synthesised from existing fields
   const journeyPhases =
@@ -129,7 +138,7 @@ export function ResultsView({
             </p>
           </div>
           <Link
-            href={`/register?redirect=${encodeURIComponent("/consult")}`}
+            href={`/register?redirect=${encodeURIComponent("/guidance")}`}
             className="shrink-0 rounded-lg bg-power-orange px-3 py-2 text-[11px] font-bold text-white hover:bg-orange-600 transition"
           >
             Save free
@@ -145,29 +154,33 @@ export function ResultsView({
         </motion.div>
       )}
 
-      {/* Your path forward */}
-      <div className="rounded-3xl border border-slate-200/60 bg-white p-5 sm:p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50">
-            <Route className="h-5 w-5 text-power-orange" />
+      {/* The plan — week-by-week for short-horizon requests, journey map otherwise */}
+      {shortPlan ? (
+        <ShortTermPlanCard plan={shortPlan} />
+      ) : (
+        <div className="rounded-3xl border border-slate-200/60 bg-white p-5 sm:p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50">
+              <Route className="h-5 w-5 text-power-orange" />
+            </div>
+            <div>
+              <h3 className="font-title text-lg font-bold text-slate-900 leading-tight">
+                Your Path Forward
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Step-by-step from today to the goal
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-title text-lg font-bold text-slate-900 leading-tight">
-              Your Path Forward
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Step-by-step from today to the goal
-            </p>
-          </div>
+          <JourneyMap
+            phases={journeyPhases}
+            goal={
+              r.goalAssessment?.statedGoal || submission.query.primary_objective
+            }
+            sport={submission.query.sport}
+          />
         </div>
-        <JourneyMap
-          phases={journeyPhases}
-          goal={
-            r.goalAssessment?.statedGoal || submission.query.primary_objective
-          }
-          sport={submission.query.sport}
-        />
-      </div>
+      )}
 
       {/* Investment Estimate — before action list so parents know the cost context */}
       {r.costBreakdown && <CostBreakdownCard c={r.costBreakdown} />}

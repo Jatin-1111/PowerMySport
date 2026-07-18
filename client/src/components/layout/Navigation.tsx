@@ -60,7 +60,7 @@ const exploreItems = [
     icon: Map,
   },
   {
-    href: "/consult",
+    href: "/guidance",
     label: "Get Expert Help",
     description: "Problem-solving & expert consultation",
     icon: BrainCircuit,

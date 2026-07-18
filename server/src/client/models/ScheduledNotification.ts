@@ -1,7 +1,9 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export type ReminderType = "BOOKING_REMINDER" | "PATHWAY_DOCUMENT_REMINDER";
-export type ReminderInterval = "24_HOURS" | "1_HOUR" | "15_MINUTES" | "7_DAYS";
+export type ReminderType = "BOOKING_REMINDER" | "PATHWAY_DOCUMENT_REMINDER" | "PLAN_CHECKIN";
+// "CUSTOM" is for reminders whose timing isn't "X before an event" (e.g. a
+// plan check-in due N weeks out) — scheduledFor is the only date that matters.
+export type ReminderInterval = "24_HOURS" | "1_HOUR" | "15_MINUTES" | "7_DAYS" | "CUSTOM";
 export type ScheduledNotificationStatus =
   "PENDING" | "SENT" | "FAILED" | "CANCELLED";
 
@@ -47,13 +49,13 @@ const scheduledNotificationSchema = new Schema<ScheduledNotificationDocument>(
     },
     type: {
       type: String,
-      enum: ["BOOKING_REMINDER", "PATHWAY_DOCUMENT_REMINDER"],
+      enum: ["BOOKING_REMINDER", "PATHWAY_DOCUMENT_REMINDER", "PLAN_CHECKIN"],
       required: true,
       default: "BOOKING_REMINDER",
     },
     interval: {
       type: String,
-      enum: ["24_HOURS", "1_HOUR", "15_MINUTES", "7_DAYS"],
+      enum: ["24_HOURS", "1_HOUR", "15_MINUTES", "7_DAYS", "CUSTOM"],
       required: true,
     },
     scheduledFor: {

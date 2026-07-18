@@ -24,7 +24,7 @@ import {
   DESIRED_OUTCOME_LABELS,
   type ConsultForm,
   type ProblemId,
-} from "./consultUtils";
+} from "./guidanceUtils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -228,6 +228,21 @@ describe("buildQuestion — weakness", () => {
     const q = buildQuestion(form({ sport: "Cricket", weeklyHours: null }), "weakness");
     expect(q).toContain("6 hours");
   });
+
+  it("includes the parent's specific weaknessDetail when provided", () => {
+    const q = buildQuestion(
+      form({ sport: "Tennis", weaknessArea: "technique", weaknessDetail: "Breaks down on backhand under pressure" }),
+      "weakness",
+    );
+    expect(q).toContain("Breaks down on backhand under pressure");
+    expect(q).toContain("do not default back to generic advice");
+  });
+
+  it("omits the specific-detail sentence when weaknessDetail is empty", () => {
+    const q = buildQuestion(form({ sport: "Tennis", weaknessArea: "technique" }), "weakness");
+    expect(q).not.toContain("Specifically, in their own words");
+    expect(q).not.toContain("do not default back to generic advice");
+  });
 });
 
 // ─── buildQuestion — tournament ───────────────────────────────────────────────
@@ -334,6 +349,31 @@ describe("buildQuestion — levelup", () => {
     // training is null → sentence should not appear
     expect(q).not.toContain("Current training setup");
   });
+
+  it("scopes the plan to the executor when answered", () => {
+    const q = buildQuestion(form({ sport: "Cricket", executor: "parent" }), "levelup");
+    expect(q).toContain("no coaching background");
+    const q2 = buildQuestion(form({ sport: "Cricket", executor: "child" }), "weakness");
+    expect(q2).toContain("on their own");
+    const q3 = buildQuestion(form({ sport: "Cricket", executor: "coach" }), "tournament");
+    expect(q3).toContain("coach or trainer");
+  });
+
+  it("omits the executor sentence when unanswered", () => {
+    const q = buildQuestion(form({ sport: "Cricket" }), "weakness");
+    expect(q).not.toContain("will be run by");
+  });
+
+  it("anchors the plan to a roadmap level when arriving via a level-plan CTA", () => {
+    const q = buildQuestion(form({ sport: "Cricket", roadmapLevelLabel: "District" }), "levelup");
+    expect(q).toContain("District");
+    expect(q).toContain("anchor the plan to that exact level");
+  });
+
+  it("omits the roadmap-level sentence when roadmapLevelLabel is null", () => {
+    const q = buildQuestion(form({ sport: "Cricket" }), "levelup");
+    expect(q).not.toContain("anchor the plan to that exact level");
+  });
 });
 
 // ─── buildQuestion — custom ───────────────────────────────────────────────────
@@ -419,9 +459,11 @@ describe("buildPayload", () => {
     expect(payload.child_gender).toBe("female");
   });
 
-  it("null gender defaults to 'male' (known limitation)", () => {
-    // This is a known limitation: gender is not yet collected in wizard steps.
-    // The test documents current behavior; it should be "neutral" once fixed.
+  it("null gender defaults to 'male' as a defensive fallback only", () => {
+    // The wizard now requires an answer to the gender question before submit
+    // (see sharedSteps.gender in page.tsx), so form.gender should never be
+    // null for a real submission. This only covers direct/programmatic calls
+    // to buildPayload that bypass that wizard gating.
     const payload = buildPayload(form({ sport: "Cricket", gender: null }), "weakness");
     expect(payload.child_gender).toBe("male");
   });
@@ -472,11 +514,27 @@ describe("buildPayload", () => {
     expect(payload.sport).toBe("General");
   });
 
-  it("objective maps correctly for all 4 problem types", () => {
+  it("objective maps correctly for weakness/tournament/levelup", () => {
     expect(buildPayload(form({ sport: "Tennis" }), "weakness").primary_objective).toBe("Compete");
     expect(buildPayload(form({ sport: "Tennis" }), "tournament").primary_objective).toBe("Compete");
     expect(buildPayload(form({ sport: "Tennis" }), "levelup").primary_objective).toBe("Elite");
-    expect(buildPayload(form({ sport: "Tennis" }), "custom").primary_objective).toBe("Recreational");
+  });
+
+  it("custom objective falls back to 'Fitness' when experienceLevel is unanswered", () => {
+    expect(buildPayload(form({ sport: "Tennis" }), "custom").primary_objective).toBe("Fitness");
+  });
+
+  it("custom objective is inferred from experienceLevel when answered", () => {
+    expect(buildPayload(form({ sport: "Tennis", experienceLevel: "beginner" }), "custom").primary_objective).toBe("Recreational");
+    expect(buildPayload(form({ sport: "Tennis", experienceLevel: "intermediate" }), "custom").primary_objective).toBe("Fitness");
+    expect(buildPayload(form({ sport: "Tennis", experienceLevel: "competitive" }), "custom").primary_objective).toBe("Compete");
+  });
+
+  it("plan_horizon is short for weakness/tournament, journey for levelup, auto for custom", () => {
+    expect(buildPayload(form({ sport: "Tennis" }), "weakness").plan_horizon).toBe("short");
+    expect(buildPayload(form({ sport: "Tennis" }), "tournament").plan_horizon).toBe("short");
+    expect(buildPayload(form({ sport: "Tennis" }), "levelup").plan_horizon).toBe("journey");
+    expect(buildPayload(form({ sport: "Tennis" }), "custom").plan_horizon).toBe("auto");
   });
 
   it("null weeklyHours defaults to 6", () => {

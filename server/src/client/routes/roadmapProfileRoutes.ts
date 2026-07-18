@@ -1,15 +1,15 @@
 import { Router } from "express";
 import {
-  getPathwayProfile,
-  updatePathwayProfile,
-} from "../controllers/pathwayProfileController";
+  getRoadmapProfile,
+  updateRoadmapProfile,
+} from "../controllers/roadmapProfileController";
 import { authMiddleware } from "../../middleware/auth";
 
 const router = Router();
 
 router.use(authMiddleware);
 
-router.get("/", getPathwayProfile);
-router.put("/", updatePathwayProfile);
+router.get("/", getRoadmapProfile);
+router.put("/", updateRoadmapProfile);
 
 export default router;

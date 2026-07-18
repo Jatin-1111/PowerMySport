@@ -2,7 +2,7 @@
 
 import {
     AthleteStory,
-} from "@/modules/sports/services/pathwayProfileApi";
+} from "@/modules/sports/services/roadmapProfileApi";
 import { motion } from "framer-motion";
 import {
     BadgeCheck,

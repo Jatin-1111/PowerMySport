@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description:
     "Tell us your child's challenge — a weakness to fix, a tournament to prepare for, or a level to break through — and get a personalised action plan. AI-powered, free to use.",
   alternates: {
-    canonical: "https://www.powermysport.com/consult",
+    canonical: "https://www.powermysport.com/guidance",
   },
   openGraph: {
     title: "Get Expert Sports Guidance — Problem Solver for Your Child",

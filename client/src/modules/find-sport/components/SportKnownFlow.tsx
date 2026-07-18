@@ -26,7 +26,7 @@ import {
   isAnswered,
 } from "../utils/sportKnownFlowUtils";
 import type { KnownSportForm } from "../utils/sportKnownFlowUtils";
-import { JourneyPipeline } from "./JourneyPipeline";
+// import { JourneyPipeline } from "./JourneyPipeline"; // SCREENING_DISABLED
 
 // ─── Wizard step definitions ─────────────────────────────────────────────────
 
@@ -107,14 +107,14 @@ const STEPS: WizardStep[] = [
     kind: "question",
     id: "energyType",
     required: false,
-    heading: (f) => `How would you describe ${f.childName || "their"} energy?`,
+    heading: (f) => `In a game of tag or running around with friends, what does ${f.childName || "your child"} usually do?`,
     sub: "Optional — helps us match training intensity and coaching style.",
   },
   {
     kind: "question",
     id: "motorType",
     required: false,
-    heading: (f) => `What kind of movements does ${f.childName || "your child"} excel at?`,
+    heading: (f) => `Think of ${f.childName || "your child"} building something or playing catch — they're better at:`,
     sub: "Optional — helps match sports that reward their natural physical style.",
   },
   {
@@ -262,13 +262,13 @@ function QuestionInput({
           options={[
             {
               value: "explosive",
-              title: "High energy",
-              sub: "Always on the move — loves fast-paced, short-burst action",
+              title: "Sprints hard, then needs a breather",
+              sub: "Goes flat out for a bit, gives everything — then sits out to recover",
             },
             {
               value: "endurance",
-              title: "Calm & focused",
-              sub: "Prefers steady, sustained effort — methodical over explosive",
+              title: "Keeps going the whole time",
+              sub: "Doesn't tire quickly — still going strong after everyone else has stopped",
             },
           ]}
           value={form.energyType}
@@ -282,13 +282,13 @@ function QuestionInput({
           options={[
             {
               value: "gross",
-              title: "Gross motor",
-              sub: "Big whole-body movements — running, jumping, throwing",
+              title: "Loves running, jumping, throwing things",
+              sub: "Whole-body movement — power and coordination, not precision",
             },
             {
               value: "fine",
-              title: "Fine motor",
-              sub: "Precise, controlled movements — aim, balance, accuracy",
+              title: "Better at careful, steady-handed tasks",
+              sub: "Stacking blocks, threading things, careful aim — precision over power",
             },
           ]}
           value={form.motorType}
@@ -466,10 +466,12 @@ function ResultsView({ form, onReset }: { form: KnownSportForm; onReset: () => v
           )}
         </div>
 
+        {/* SCREENING_DISABLED
         <JourneyPipeline
           childName={form.childName || ""}
           topSport={form.sport || undefined}
         />
+        */}
 
         <div className="space-y-3">
           <Link
@@ -480,7 +482,7 @@ function ResultsView({ form, onReset }: { form: KnownSportForm; onReset: () => v
             View {form.sport} Roadmap
           </Link>
           <Link
-            href={`/consult?sport=${encodeURIComponent(form.sport)}`}
+            href={`/guidance?sport=${encodeURIComponent(form.sport)}`}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 active:scale-[0.98]"
           >
             <MessageCircle className="h-4 w-4" />

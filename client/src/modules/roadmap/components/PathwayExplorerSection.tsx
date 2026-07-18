@@ -4,7 +4,6 @@ import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
-import { SportMatchModal } from "@/modules/guidance/components/wizard/SportMatchModal";
 import RoadmapIntroModal from "./RoadmapIntroModal";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { PathwayConciergeModal } from "@/modules/sports/components/PathwayConciergeModal";
@@ -22,8 +21,8 @@ import {
 import { FederationCard } from "./FederationCard";
 import {
     AthleteStory,
-    pathwayProfileApi,
-} from "@/modules/sports/services/pathwayProfileApi";
+    roadmapProfileApi,
+} from "@/modules/sports/services/roadmapProfileApi";
 import { Sport, sportsApi } from "@/modules/sports/services/sports";
 import { AnimatePresence, motion } from "framer-motion";
 import Fuse from "fuse.js";
@@ -94,6 +93,14 @@ import { AmbientBlob } from './SubComponents';
 
 // ─── Sport search section ──────────────────────────────────────────────────────
 
+// Maps 1:1 onto the 3 macro pathway tiers (MACRO_LEVEL_CONFIGS) — the same
+// enum already collected by the find-sport/guidance wizards.
+const EXPERIENCE_TO_MACRO_INDEX: Record<string, number> = {
+  beginner: 0,
+  intermediate: 1,
+  competitive: 2,
+};
+
 export function PathwayExplorerSection() {
   const [query, setQuery] = useState("");
   const [allSports, setAllSports] = useState<Sport[]>([]);
@@ -109,6 +116,7 @@ export function PathwayExplorerSection() {
     pathway: SportPathway;
     source: "db" | "generated";
   } | null>(null);
+  const [isStale, setIsStale] = useState(false);
   const [entitiesStatus, setEntitiesStatus] = useState<
     "idle" | "loading" | "ready"
   >("idle");
@@ -150,6 +158,11 @@ export function PathwayExplorerSection() {
   const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
   const [applications, setApplications] = useState<ApplicationRecord[]>([]);
 
+  // Which child the saved-items/progress/applications profile belongs to
+  const [dependents, setDependents] = useState<any[]>([]);
+  const [selectedDependentId, setSelectedDependentId] = useState<string | null>(null);
+  const ROADMAP_DEPENDENT_KEY = "pms_roadmap_dependent";
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { user } = useAuthStore();
@@ -157,16 +170,6 @@ export function PathwayExplorerSection() {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatLoginModalOpen, setChatLoginModalOpen] = useState(false);
   const [introModalOpen, setIntroModalOpen] = useState(false);
-  const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
-  const [isMatchModalCollapsed, setIsMatchModalCollapsed] = useState(false);
-  const [previewSport, setPreviewSport] = useState<string | null>(null);
-  const [previewSportDependentId, setPreviewSportDependentId] = useState<
-    string | null
-  >(null);
-  const [isSavingSport, setIsSavingSport] = useState(false);
-  const [showReengagePrompt, setShowReengagePrompt] = useState(false);
-  const [hasRunMatchThisSession, setHasRunMatchThisSession] = useState(false);
-  const hasShownReengageRef = useRef(false);
   const _cacheRestoredRef = useRef(false);
   const INTRO_KEY = "pms_roadmap_intro_v2";
 
@@ -207,30 +210,58 @@ export function PathwayExplorerSection() {
     } catch {}
   }, []);
 
+  const loadProfileForDependent = async (depId: string | null) => {
+    const dbProfile = await roadmapProfileApi.getProfile(depId);
+    if (dbProfile) {
+      setProgress(dbProfile.progress || DEFAULT_PROGRESS);
+      setSavedItems(dbProfile.savedItems || []);
+      setApplications(dbProfile.applications || []);
+    } else {
+      setProgress(DEFAULT_PROGRESS);
+      setSavedItems([]);
+      setApplications([]);
+    }
+  };
+
+  const selectDependent = (depId: string | null) => {
+    setSelectedDependentId(depId);
+    if (depId) localStorage.setItem(ROADMAP_DEPENDENT_KEY, depId);
+    else localStorage.removeItem(ROADMAP_DEPENDENT_KEY);
+    loadProfileForDependent(depId);
+  };
+
   // Load from DB or fallback to localStorage
   useEffect(() => {
     const initProfile = async () => {
       setSelectedState(loadState());
       if (user) {
-        const dbProfile = await pathwayProfileApi.getProfile();
-        if (dbProfile) {
-          setProgress(dbProfile.progress || DEFAULT_PROGRESS);
-          setSavedItems(dbProfile.savedItems || []);
-          setApplications(dbProfile.applications || []);
-          return;
+        const res = await authApi.getPlayers();
+        const deps = (res.data || []).filter((p: any) => p.type === "DEPENDENT");
+        setDependents(deps);
+
+        let initialDepId: string | null = null;
+        if (deps.length === 1) {
+          initialDepId = deps[0]._id;
+        } else if (deps.length > 1) {
+          const stored = localStorage.getItem(ROADMAP_DEPENDENT_KEY);
+          initialDepId = stored && deps.some((d: any) => d._id === stored) ? stored : null;
         }
+        setSelectedDependentId(initialDepId);
+        await loadProfileForDependent(initialDepId);
+        return;
       }
       setProgress(loadProgress());
       setSavedItems(loadSaved());
       setApplications(loadApplications());
     };
     initProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
     const fetchStories = async () => {
       if (result) {
-        const fetchedStories = await pathwayProfileApi.getStories(
+        const fetchedStories = await roadmapProfileApi.getStories(
           result.pathway.sportSlug,
           undefined,
           selectedState || undefined,
@@ -240,21 +271,6 @@ export function PathwayExplorerSection() {
     };
     fetchStories();
   }, [result, selectedState]);
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (
-      isMatchModalCollapsed &&
-      activeIdx >= 1 &&
-      !hasShownReengageRef.current
-    ) {
-      timer = setTimeout(() => {
-        setShowReengagePrompt(true);
-        hasShownReengageRef.current = true;
-      }, 4000);
-    }
-    return () => clearTimeout(timer);
-  }, [isMatchModalCollapsed, activeIdx]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && !localStorage.getItem(INTRO_KEY)) {
@@ -277,13 +293,13 @@ export function PathwayExplorerSection() {
   const handleSavedChange = (items: SavedItem[]) => {
     setSavedItems(items);
     saveSaved(items);
-    if (user) pathwayProfileApi.updateProfile({ savedItems: items });
+    if (user) roadmapProfileApi.updateProfile({ savedItems: items }, selectedDependentId);
   };
 
   const handleApplicationsChange = (items: ApplicationRecord[]) => {
     setApplications(items);
     saveApplications(items);
-    if (user) pathwayProfileApi.updateProfile({ applications: items });
+    if (user) roadmapProfileApi.updateProfile({ applications: items }, selectedDependentId);
   };
 
   const handleUpdateApplicationStatus = (
@@ -299,7 +315,7 @@ export function PathwayExplorerSection() {
   const handleProgressChange = (p: ProgressState) => {
     setProgress(p);
     saveProgress(p);
-    if (user) pathwayProfileApi.updateProfile({ progress: p });
+    if (user) roadmapProfileApi.updateProfile({ progress: p }, selectedDependentId);
   };
 
   const handleStateChange = (s: string) => {
@@ -358,6 +374,7 @@ export function PathwayExplorerSection() {
     setQuery(name);
     setStatus("loading");
     setResult(null);
+    setIsStale(false);
     setErrorMsg("");
     setEntitiesStatus("idle");
     setFederations([]);
@@ -391,8 +408,23 @@ export function PathwayExplorerSection() {
       }
 
       setResult(pr as any);
+      setIsStale(!!pr.isStale);
       setQuery(pr.pathway.sportName);
       setStatus("success");
+
+      // Position-first: if the selected child already plays this exact sport
+      // and told us their level, open there instead of always starting at
+      // Beginner — a returning parent shouldn't have to re-navigate to where
+      // their child already is.
+      const activeDependent = dependents.find((d) => d._id === selectedDependentId);
+      if (
+        activeDependent?.experienceLevel &&
+        (activeDependent.sportsFocus || []).some(
+          (s: string) => s.toLowerCase() === pr.pathway.sportName.toLowerCase(),
+        )
+      ) {
+        setActiveIdx(EXPERIENCE_TO_MACRO_INDEX[activeDependent.experienceLevel] ?? 0);
+      }
 
       // Cache for instant back-navigation restore
       try {
@@ -581,6 +613,29 @@ export function PathwayExplorerSection() {
             your child needs at every level.
           </motion.p>
         </motion.div>
+
+        {/* Whose progress is this — visible only when there's an actual choice to make */}
+        {dependents.length > 1 && (
+          <div className="flex flex-wrap justify-center gap-2 mb-5">
+            <span className="self-center text-xs font-medium text-slate-400 mr-1">
+              Whose progress is this?
+            </span>
+            {dependents.map((dep) => (
+              <button
+                key={dep._id}
+                type="button"
+                onClick={() => selectDependent(dep._id)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                  selectedDependentId === dep._id
+                    ? "border-power-orange bg-orange-50 text-power-orange"
+                    : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
+                }`}
+              >
+                {dep.name}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Back-to-assessment pill — visible when wizard results are in localStorage */}
         {hasWizardResults && (
@@ -897,13 +952,13 @@ export function PathwayExplorerSection() {
                   </button>
                 ))}
               </div>
-              <button
-                onClick={() => setIsMatchModalOpen(true)}
+              <a
+                href="/find-sport"
                 className="mt-2 flex items-center gap-2 rounded-full border border-power-orange/40 bg-orange-50 px-4 py-2 text-xs font-bold text-power-orange shadow-sm hover:bg-orange-100 hover:border-power-orange transition-colors"
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 Not sure which sport? Find the right fit
-              </button>
+              </a>
             </div>
             <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
@@ -1087,58 +1142,6 @@ export function PathwayExplorerSection() {
               {/* Header logic */}
               {result ? (
                 <>
-                  {previewSport === result.pathway.sportName &&
-                    previewSportDependentId && (
-                      <div className="mb-4 flex items-center gap-3 rounded-2xl bg-emerald-50 border border-emerald-100 p-4 shadow-sm">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                          <Target className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">
-                            Is {previewSport} the one?
-                          </p>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            Save to profile to track progress.
-                          </p>
-                        </div>
-                        <button
-                          disabled={isSavingSport}
-                          onClick={async () => {
-                            const targetDep = user?.dependents?.find(
-                              (d) => d._id === previewSportDependentId,
-                            );
-                            if (!targetDep || !targetDep._id) return;
-                            setIsSavingSport(true);
-                            try {
-                              const current = targetDep.sportsFocus || [];
-                              if (!current.includes(previewSport!)) {
-                                await authApi.updateDependent(targetDep._id, {
-                                  sportsFocus: [...current, previewSport!],
-                                });
-                                toast.success(
-                                  `Saved to ${targetDep.name}'s profile`,
-                                );
-                                setPreviewSport(null);
-                                setPreviewSportDependentId(null);
-                              } else {
-                                toast.success(
-                                  `Already in ${targetDep.name}'s profile`,
-                                );
-                                setPreviewSport(null);
-                                setPreviewSportDependentId(null);
-                              }
-                            } catch (e) {
-                              toast.error("Failed to save sport");
-                            } finally {
-                              setIsSavingSport(false);
-                            }
-                          }}
-                          className="ml-auto rounded-full bg-emerald-600 px-5 py-2 text-sm font-bold text-white hover:bg-emerald-700 transition shadow-sm"
-                        >
-                          {isSavingSport ? "Saving..." : "Yes, save it"}
-                        </button>
-                      </div>
-                    )}
                   <div className="mb-8 rounded-2xl border border-slate-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-sm sm:p-6">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       {/* Left: name + meta + overview */}
@@ -1191,7 +1194,37 @@ export function PathwayExplorerSection() {
                               {result.pathway.category}
                             </span>
                           )}
+                          {(() => {
+                            const lastCheckedRaw =
+                              result.pathway.lastRefreshedAt ||
+                              result.pathway.updatedAt ||
+                              result.pathway.createdAt;
+                            if (!lastCheckedRaw) return null;
+                            const label = new Date(lastCheckedRaw).toLocaleDateString("en-IN", {
+                              month: "short",
+                              year: "numeric",
+                            });
+                            return (
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium border ${
+                                  isStale
+                                    ? "bg-amber-50 text-amber-700 border-amber-200"
+                                    : "bg-slate-50 text-slate-400 border-slate-200"
+                                }`}
+                              >
+                                Last checked {label}
+                              </span>
+                            );
+                          })()}
                         </div>
+                        {isStale && (
+                          <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                            <Info className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                            <p className="text-xs text-amber-800 leading-relaxed">
+                              This pathway hasn&apos;t been rechecked in over 6 months — costs, tournaments, and academy details may have changed. We&apos;re refreshing it; check back soon or verify specifics with a local academy.
+                            </p>
+                          </div>
+                        )}
                         <h2 className="font-title text-2xl font-bold text-slate-900 break-words sm:text-3xl">
                           {result.pathway.sportName}
                           <span className="ml-2 text-slate-400 font-normal text-xl sm:text-2xl">
@@ -2020,7 +2053,7 @@ export function PathwayExplorerSection() {
                         </p>
                       </div>
                       <a
-                        href="/consult"
+                        href={`/guidance?sport=${encodeURIComponent(result.pathway.sportName)}&level=${selectedMacroLevel?.representativeRawLevel ?? 1}&mode=level-plan&levelLabel=${encodeURIComponent(selectedMacroLevel?.representativeLabel ?? "")}${selectedState ? `&state=${encodeURIComponent(selectedState)}` : ""}`}
                         className="shrink-0 text-xs font-semibold text-power-orange hover:underline"
                       >
                         Personalise for your child →
@@ -2063,28 +2096,7 @@ export function PathwayExplorerSection() {
           onNo={() => {
             localStorage.setItem(INTRO_KEY, "1");
             setIntroModalOpen(false);
-            setIsMatchModalOpen(true);
-          }}
-        />
-
-        <SportMatchModal
-          isOpen={isMatchModalOpen}
-          onClose={() => {
-            setIsMatchModalOpen(false);
-            if (hasRunMatchThisSession) {
-              setIsMatchModalCollapsed(true);
-            }
-          }}
-          onRecommendationsReady={() => setHasRunMatchThisSession(true)}
-          dependents={(user?.dependents as any) || undefined}
-          onExplore={(sportName, dependentId) => {
-            setIsMatchModalOpen(false);
-            setPreviewSport(sportName);
-            if (dependentId) setPreviewSportDependentId(dependentId);
-            handleSearch(sportName);
-            // Part 4: collapse to draggable icon
-            setIsMatchModalCollapsed(true);
-            hasShownReengageRef.current = false;
+            router.push("/find-sport");
           }}
         />
 
@@ -2119,47 +2131,6 @@ export function PathwayExplorerSection() {
             <span className="sm:hidden">Ask AI Coach</span>
           </motion.button>
         )}
-
-        {/* Part 4 & 5: Draggable floating icon and re-engage prompt */}
-        <AnimatePresence>
-          {isMatchModalCollapsed && (
-            <motion.div
-              drag
-              dragConstraints={{
-                left: -100,
-                right: 100,
-                top: -500,
-                bottom: 500,
-              }}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
-              className="fixed bottom-24 right-5 z-40 sm:bottom-24 sm:right-6 flex flex-col items-end gap-3"
-            >
-              <AnimatePresence>
-                {showReengagePrompt && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 shadow-md border border-slate-100"
-                  >
-                    2 more sports to compare
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <button
-                onClick={() => {
-                  setShowReengagePrompt(false);
-                  setIsMatchModalCollapsed(false);
-                  setIsMatchModalOpen(true);
-                }}
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-power-orange text-white shadow-xl hover:bg-orange-600 transition premium-shadow"
-              >
-                <Sparkles className="h-6 w-6" />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Roadmap chat drawer — opens inline, no navigation away from this page */}
         {result && (

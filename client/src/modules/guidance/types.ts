@@ -11,6 +11,12 @@ export type GuidanceFormState = {
   parent_specific_question: string;
   sport: string;
   location: string;
+  /** Which plan shape to generate: "short" = week-by-week fix/prep plan,
+   *  "journey" = multi-phase roadmap, "auto" = AI picks from the question.
+   *  Absent = "journey" (legacy callers). */
+  plan_horizon?: "short" | "journey" | "auto";
+  /** Which dependent this submission is for — used to scope the plan check-in nudge. */
+  dependent_id?: string;
   current_pathway_level?: number;
   /** How long the child has already been playing this sport, in years (0 = brand new) */
   years_playing?: number;
@@ -62,9 +68,29 @@ export type GuidanceResponse = {
   talentIdentifiers?: string[];
   multiSportAdvisory?: string;
   journeyPhases?: JourneyPhase[];
+  shortTermPlan?: ShortTermPlan;
   goalAssessment?: GoalAssessment;
   costBreakdown?: CostBreakdown;
   burnoutRisk?: BurnoutRisk;
+};
+
+/** Structured drill — new submissions; older ones stored a single string. */
+export type PlanSession = {
+  name: string;
+  minutes?: number;
+  how: string;
+  doneRight?: string;
+};
+
+export type ShortTermPlan = {
+  durationWeeks: number;
+  weeks: Array<{
+    label: string;
+    focus: string;
+    sessions: Array<PlanSession | string>;
+  }>;
+  /** One concrete, observable test the parent runs at the end to know it worked */
+  successCheck: string;
 };
 
 export type JourneyPhase = {

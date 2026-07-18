@@ -21,16 +21,17 @@ import { useAuthStore } from "@/modules/auth/store/authStore";
 import { GuidanceChatDrawer } from "@/modules/guidance/components/chat/GuidanceChatDrawer";
 import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
 import { ResultsView } from "@/modules/guidance/components/results/ResultsView";
-import { downloadGuidanceReportPdf } from "@/modules/guidance/services/guidance";
-import type { GuidanceFormState, GuidanceSubmission } from "@/modules/guidance/types";
-import { BinaryCards } from "@/modules/pathway/components/inputs/BinaryCards";
-import { FourContextCards } from "@/modules/pathway/components/inputs/FourContextCards";
-import { SportSearchInput } from "@/modules/pathway/components/inputs/SportSearchInput";
-import { StateSelector } from "@/modules/pathway/components/inputs/StateSelector";
-import { ThreeOptionCards } from "@/modules/pathway/components/inputs/ThreeOptionCards";
-import { getAgeFromDob } from "@/modules/pathway/utils/sportKnownFlowUtils";
-import { EMPTY_FORM, buildPayload, buildQuestion } from "./consultUtils";
-import type { ConsultForm, ProblemId } from "./consultUtils";
+import { TagAssistedTextarea } from "@/modules/guidance/components/shared/TagAssistedTextarea";
+import { downloadGuidanceReportPdf, getGuidanceWhatsAppUrl } from "@/modules/guidance/services/guidance";
+import type { GuidanceSubmission } from "@/modules/guidance/types";
+import { BinaryCards } from "@/modules/find-sport/components/inputs/BinaryCards";
+import { FourContextCards } from "@/modules/find-sport/components/inputs/FourContextCards";
+import { SportSearchInput } from "@/modules/find-sport/components/inputs/SportSearchInput";
+import { StateSelector } from "@/modules/find-sport/components/inputs/StateSelector";
+import { ThreeOptionCards } from "@/modules/find-sport/components/inputs/ThreeOptionCards";
+import { getAgeFromDob } from "@/modules/find-sport/utils/sportKnownFlowUtils";
+import { EMPTY_FORM, buildPayload, buildQuestion, COMMON_WEAKNESS_ISSUES } from "./guidanceUtils";
+import type { ConsultForm, ProblemId } from "./guidanceUtils";
 
 // ─── Problem type config (picker only) ───────────────────────────────────────
 
@@ -120,9 +121,9 @@ const sharedSteps = {
   gender: (): QuestionStep => ({
     kind: "question",
     id: "gender",
-    required: false,
+    required: true,
     heading: () => "Any other basics?",
-    sub: "Optional — some pathways and competition formats are gender-specific.",
+    sub: "Some pathways and competition formats are gender-specific.",
   }),
   state: (): QuestionStep => ({
     kind: "question",
@@ -137,6 +138,13 @@ const sharedSteps = {
     required: true,
     heading: () => "How much time can they dedicate each week?",
     sub,
+  }),
+  executor: (): QuestionStep => ({
+    kind: "question",
+    id: "executor",
+    required: true,
+    heading: () => "Who will actually run these sessions?",
+    sub: "The plan changes completely depending on who's guiding the drills — we'll only suggest what they can realistically deliver.",
   }),
   budgetRange: (): QuestionStep => ({
     kind: "question",
@@ -153,6 +161,7 @@ const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
   weakness: [
     sharedSteps.sport("We'll tailor the entire fix plan to this sport's specific demands."),
     sharedSteps.age(),
+    sharedSteps.gender(),
     {
       kind: "question",
       id: "experienceLevel",
@@ -166,6 +175,13 @@ const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
       required: true,
       heading: (f) => `What's the main weakness holding ${f.sport ? `their ${f.sport}` : "them"} back?`,
       sub: "We'll build the entire plan around addressing this specific gap.",
+    },
+    {
+      kind: "question",
+      id: "weaknessDetail",
+      required: true,
+      heading: () => "What exactly does this look like?",
+      sub: "Tap anything that matches, or describe it yourself — the more specific, the better the plan.",
     },
     {
       kind: "question",
@@ -191,10 +207,12 @@ const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
     {
       kind: "transition",
       text: "Good — we know exactly what to target.",
-      sub: "Two quick logistics questions and your plan is ready.",
+      sub: "A few quick logistics questions and your plan is ready.",
     },
+    sharedSteps.executor(),
     sharedSteps.weeklyHours("The drill schedule will fit around the time you can realistically commit."),
     sharedSteps.budgetRange(),
+    sharedSteps.state(),
   ],
 
   // ── Tournament prep ────────────────────────────────────────────────────────
@@ -236,13 +254,16 @@ const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
       sub: "This becomes the core priority of the preparation plan.",
     },
     sharedSteps.age(),
+    sharedSteps.gender(),
     {
       kind: "transition",
       text: "Clear picture — now let's plan the prep.",
-      sub: "Two final questions to size the training commitment.",
+      sub: "A few final questions to size the training commitment.",
     },
+    sharedSteps.executor(),
     sharedSteps.weeklyHours("We'll build a week-by-week schedule around this availability."),
     sharedSteps.budgetRange(),
+    sharedSteps.state(),
   ],
 
   // ── Level up ───────────────────────────────────────────────────────────────
@@ -291,11 +312,13 @@ const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
       sub: "Optional — helps us build the breakthrough plan around their strengths, not just their gaps.",
     },
     sharedSteps.age(),
+    sharedSteps.gender(),
     {
       kind: "transition",
       text: "Got it — full picture of where they are.",
-      sub: "Two final questions to calibrate the timeline.",
+      sub: "A few final questions to calibrate the timeline.",
     },
+    sharedSteps.executor(),
     sharedSteps.weeklyHours("The level-up roadmap will be built around this training commitment."),
     sharedSteps.budgetRange(),
   ],
@@ -304,6 +327,8 @@ const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
   custom: [
     sharedSteps.sport("Optional — skip if this isn't sport-specific."),
     sharedSteps.age(),
+    sharedSteps.gender(),
+    sharedSteps.state(),
     {
       kind: "question",
       id: "challengeCategory",
@@ -348,19 +373,11 @@ function getTotalQuestions(steps: WizardStep[]): number {
   return steps.filter((s) => s.kind === "question").length;
 }
 
-function buildWaUrl(q: GuidanceFormState): string {
-  const lines = [
-    `Hi! I used PowerMySport's consult tool for my child. Here are their details:`,
-    `• Sport: ${q.sport}`,
-    `• Age: ${q.child_age} (${q.child_gender})`,
-    `• Level: ${q.current_fitness_level}`,
-    `• Time: ${q.weekly_time_commitment} hrs/week`,
-    ``,
-    `My question: ${q.parent_specific_question}`,
-    ``,
-    `I'd love personalised support based on the plan.`,
-  ];
-  return `https://wa.me/918968582443?text=${encodeURIComponent(lines.join("\n"))}`;
+// Rough estimate so the picker's time label tracks each flow's actual step
+// count instead of a single hardcoded guess that drifts as steps are edited.
+function estimateMinutes(steps: WizardStep[]): string {
+  const minutes = Math.max(2, Math.round(getTotalQuestions(steps) / 2.5));
+  return `~${minutes} min`;
 }
 
 // ─── Slide animation ──────────────────────────────────────────────────────────
@@ -464,6 +481,19 @@ function QuestionInput({
         />
       );
 
+    case "executor":
+      return (
+        <ThreeOptionCards
+          options={[
+            { value: "child", label: "The child on their own — self-practice, no adult guiding sessions" },
+            { value: "parent", label: "Me (the parent) — I'll supervise, but I'm not a coach" },
+            { value: "coach", label: "A coach or trainer — professional guidance is available" },
+          ]}
+          value={form.executor}
+          onChange={(v) => set("executor", v)}
+        />
+      );
+
     case "weaknessArea":
       return (
         <FourContextCards
@@ -475,6 +505,15 @@ function QuestionInput({
           ]}
           value={form.weaknessArea}
           onChange={(v) => set("weaknessArea", v)}
+        />
+      );
+
+    case "weaknessDetail":
+      return (
+        <TagAssistedTextarea
+          value={form.weaknessDetail}
+          onChange={(v) => set("weaknessDetail", v)}
+          options={COMMON_WEAKNESS_ISSUES[form.weaknessArea ?? ""] ?? []}
         />
       );
 
@@ -812,7 +851,7 @@ function ResultsScreen({
                 onChatClick: handleChatClick,
                 onDownloadPdf: handleDownloadPdf,
                 downloadingPdf,
-                waUrl: buildWaUrl(submission.query),
+                waUrl: getGuidanceWhatsAppUrl(submission.id),
               }}
             />
           </div>
@@ -831,7 +870,7 @@ function ResultsScreen({
         isOpen={loginModalOpen}
         onClose={() => setLoginModalOpen(false)}
         sport={submission.query.sport}
-        redirectPath={`/consult?submissionId=${submission.id}&openChat=1`}
+        redirectPath={`/guidance?submissionId=${submission.id}&openChat=1`}
       />
     </div>
   );
@@ -854,12 +893,24 @@ function ProblemWizardInner({
   const totalQ = getTotalQuestions(steps);
 
   const [idx, setIdx] = useState(0);
+  const [levelPlanLabel] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get("mode") === "level-plan" ? sp.get("levelLabel") : null;
+  });
   const [form, setForm] = useState<ConsultForm>(() => {
-    // Pre-fill sport from URL search params if present
+    // Pre-fill from URL search params if present — sport always; state and
+    // roadmapLevelLabel only for a /roadmap level CTA (?mode=level-plan).
     if (typeof window !== "undefined") {
       const sp = new URLSearchParams(window.location.search);
       const sport = sp.get("sport") ?? "";
-      return { ...EMPTY_FORM, sport };
+      const isLevelPlan = sp.get("mode") === "level-plan";
+      return {
+        ...EMPTY_FORM,
+        sport,
+        state: isLevelPlan ? sp.get("state") : null,
+        roadmapLevelLabel: isLevelPlan ? sp.get("levelLabel") : null,
+      };
     }
     return EMPTY_FORM;
   });
@@ -879,15 +930,10 @@ function ProblemWizardInner({
         clearTimeout(timeout);
         const deps = (res.data.data || []).filter((p: any) => p.type === "DEPENDENT");
         setDependents(deps);
-        if (deps.length === 1) {
-          applyDependent(deps[0]);
-          setSelectedDependentId(deps[0]._id);
-          setPreFillPhase("ready");
-        } else if (deps.length > 1) {
-          setPreFillPhase("select");
-        } else {
-          setPreFillPhase("ready");
-        }
+        // Always show the picker when there's at least one dependent — even
+        // with exactly one, the parent needs the "Continue without selecting"
+        // option (e.g. this query is about a different child).
+        setPreFillPhase(deps.length > 0 ? "select" : "ready");
       })
       .catch(() => { clearTimeout(timeout); setPreFillPhase("ready"); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -900,7 +946,10 @@ function ProblemWizardInner({
         ...prev,
         sport: prev.sport || dep.sportsFocus?.[0] || prev.sport,
         age: prev.age || (age ? String(age) : prev.age),
-        gender: prev.gender ?? dep.gender ?? null,
+        // Only carry over MALE/FEMALE — the gender question offers just those
+        // two options, so an "OTHER" profile value must stay unset and force
+        // an explicit answer rather than silently failing to pre-fill.
+        gender: prev.gender ?? (dep.gender === "MALE" || dep.gender === "FEMALE" ? dep.gender : null),
         state: prev.state ?? dep.location ?? null,
         experienceLevel: prev.experienceLevel ?? dep.experienceLevel ?? null,
         weeklyHours: prev.weeklyHours ?? dep.weeklyHoursCategory ?? null,
@@ -942,6 +991,9 @@ function ProblemWizardInner({
     setLoading(true);
     try {
       const payload = buildPayload(form, problemId);
+      if (selectedDependentId) {
+        payload.dependent_id = selectedDependentId;
+      }
       const res = await api.post<{
         success: boolean;
         status?: string;
@@ -971,6 +1023,7 @@ function ProblemWizardInner({
         }).catch(() => {});
       }
 
+      setLoading(false);
       setSubmission(res.data.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to generate plan. Please try again.");
@@ -986,7 +1039,7 @@ function ProblemWizardInner({
     setSubmission(null);
     setError(null);
     setSelectedDependentId(null);
-    setPreFillPhase(dependents.length > 1 ? "select" : "ready");
+    setPreFillPhase(dependents.length > 0 ? "select" : "ready");
   };
 
   if (loading) return <LoadingView problemId={problemId} />;
@@ -1110,6 +1163,14 @@ function ProblemWizardInner({
       {current.kind === "question" && (
         <div className="px-4 pt-6 pb-10 sm:px-6">
           <div className="mx-auto w-full max-w-2xl">
+            {levelPlanLabel && (
+              <div className="mb-4 flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5">
+                <Sparkles className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                <p className="text-xs font-semibold text-indigo-700">
+                  Planning for {form.sport || "your sport"} · {levelPlanLabel}
+                </p>
+              </div>
+            )}
             {/* Nav row */}
             <div className="mb-5 flex items-center justify-between">
               <button
@@ -1257,7 +1318,9 @@ function ProblemPicker({ onSelect }: { onSelect: (id: ProblemId) => void }) {
                   {pt.description}
                 </p>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-400">~3 minutes</span>
+                  <span className="text-xs font-medium text-slate-400">
+                    {estimateMinutes(WIZARD_STEPS[pt.id])}
+                  </span>
                   <span
                     className={`text-sm font-bold ${pt.accentText} group-hover:translate-x-1 transition-transform duration-200 inline-flex`}
                   >
@@ -1284,8 +1347,17 @@ function ProblemPicker({ onSelect }: { onSelect: (id: ProblemId) => void }) {
 
 // ─── Default export ───────────────────────────────────────────────────────────
 
-export default function ConsultPage() {
-  const [problemType, setProblemType] = useState<ProblemId | null>(null);
+export default function GuidancePage() {
+  // A /roadmap level CTA (?mode=level-plan) always maps to "levelup" and
+  // skips the picker entirely — the parent already told us what they want by
+  // clicking a specific pathway level, so don't ask them again.
+  const [problemType, setProblemType] = useState<ProblemId | null>(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get("mode") === "level-plan") return "levelup";
+    }
+    return null;
+  });
 
   if (problemType) {
     return (

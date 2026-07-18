@@ -6,11 +6,14 @@ import {
   guidanceRequestSchema,
   sportMatchRequestSchema,
   generateSportMatchRecommendation,
+  diagnosisRequestSchema,
+  generateGuidanceDiagnosis,
 } from "../../shared/services/guidanceAiService";
 import { GuidanceSubmission } from "../models/GuidanceSubmission";
 import { SportPathway } from "../../shared/models/SportPathway";
 import { Sport } from "../../shared/models/Sport";
 import { AnalyticsEvent } from "../../admin/models/AnalyticsEvent";
+import { PlanCheckInService } from "../../shared/services/PlanCheckInService";
 import { isSupportedSport, SUPPORTED_SPORTS } from "../../shared/constants/supportedSports";
 
 // ─── Rule-based burnout risk — zero AI cost ───────────────────────────────────
@@ -119,6 +122,16 @@ export const submitGuidance = async (
     }
     const guidanceSubmission = await GuidanceSubmission.create(createPayload);
 
+    // Fire-and-forget — a scheduling failure shouldn't fail the guidance
+    // response the parent is actively waiting on.
+    PlanCheckInService.scheduleFromGuidance({
+      userId: req.user?.id,
+      dependentId: parsed.data.dependent_id,
+      sourceId: guidanceSubmission._id.toString(),
+      sport: parsed.data.sport || "General",
+      response: enrichedGuidance,
+    }).catch((err) => console.error("Failed to schedule plan check-in:", err));
+
     res.status(201).json({
       success: true,
       message: "Guidance generated and saved",
@@ -160,6 +173,36 @@ export const submitGuidance = async (
   }
 };
 
+/**
+ * Diagnosis-confirmation step, run before full plan generation.
+ * POST /guidance/diagnose
+ */
+export const diagnoseGuidance = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const parsed = diagnosisRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid diagnosis payload",
+        issues: parsed.error.flatten(),
+      });
+      return;
+    }
+
+    const diagnosis = await generateGuidanceDiagnosis(parsed.data);
+    res.status(200).json({ success: true, data: diagnosis });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to generate diagnosis",
+    });
+  }
+};
+
 export const deleteGuidance = async (
   req: Request,
   res: Response,
@@ -172,7 +215,7 @@ export const deleteGuidance = async (
 
     const id = req.params.id;
     if (!id || !mongoose.isValidObjectId(id)) {
-      res.status(400).json({ success: false, message: "Invalid roadmap id" });
+      res.status(400).json({ success: false, message: "Invalid guidance id" });
       return;
     }
 
@@ -182,15 +225,15 @@ export const deleteGuidance = async (
     });
 
     if (!deleted) {
-      res.status(404).json({ success: false, message: "Roadmap not found" });
+      res.status(404).json({ success: false, message: "Guidance not found" });
       return;
     }
 
-    res.status(200).json({ success: true, message: "Roadmap deleted" });
+    res.status(200).json({ success: true, message: "Guidance deleted" });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Failed to delete roadmap",
+      message: "Failed to delete guidance",
     });
   }
 };
@@ -263,13 +306,13 @@ export const downloadGuidanceReportPdf = async (
   try {
     const id = req.params.id;
     if (!id || !mongoose.isValidObjectId(id)) {
-      res.status(400).json({ success: false, message: "Invalid roadmap id" });
+      res.status(400).json({ success: false, message: "Invalid guidance id" });
       return;
     }
 
     const submission = await GuidanceSubmission.findById(id);
     if (!submission) {
-      res.status(404).json({ success: false, message: "Roadmap not found" });
+      res.status(404).json({ success: false, message: "Guidance not found" });
       return;
     }
 
@@ -444,6 +487,46 @@ export const downloadGuidanceReportPdf = async (
       });
     }
 
+    // ── Week-by-Week Plan (short-horizon requests) ──
+    if (r.shortTermPlan && r.shortTermPlan.weeks?.length > 0) {
+      const plan = r.shortTermPlan;
+      drawSection(`Your ${plan.durationWeeks}-Week Plan`, () => {
+        plan.weeks.forEach((week) => {
+          ensureSpace(50);
+          doc
+            .fillColor(BRAND.text)
+            .font("Helvetica-Bold")
+            .fontSize(11)
+            .text(`${week.label} — ${week.focus}`, pageLeft, doc.y, {
+              width: pageWidth,
+            });
+          doc.moveDown(0.15);
+          week.sessions.forEach((session) => {
+            // New submissions store structured {name, minutes, how, doneRight}
+            // sessions; older ones store a single pre-formatted string.
+            const s =
+              typeof session === "string"
+                ? session
+                : `${session.name}${session.minutes ? ` (${session.minutes} mins)` : ""}: ${session.how}${session.doneRight ? ` Done right: ${session.doneRight}` : ""}`;
+            const bulletHeight = doc.heightOfString(s, {
+              width: pageWidth - 16,
+            });
+            ensureSpace(bulletHeight + 4);
+            doc
+              .fillColor(BRAND.text)
+              .font("Helvetica")
+              .fontSize(9)
+              .text(`• ${s}`, pageLeft + 8, doc.y, { width: pageWidth - 16 });
+            doc.moveDown(0.15);
+          });
+          doc.moveDown(0.3);
+        });
+        if (plan.successCheck) {
+          drawKeyValueRow("Success check", plan.successCheck);
+        }
+      });
+    }
+
     // ── Investment ──
     if (r.costBreakdown) {
       drawSection("Investment", () => {
@@ -543,6 +626,62 @@ export const downloadGuidanceReportPdf = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to generate report",
+    });
+  }
+};
+
+const WHATSAPP_TEAM_NUMBER = "918968582443";
+
+/**
+ * Build the WhatsApp message server-side and redirect — keeps the child's
+ * details (age, gender, level, the parent's own question) out of any
+ * client-rendered URL, so it can't be captured by browser history, outbound
+ * link click-tracking, or DOM-scraping analytics.
+ * GET /guidance/:id/whatsapp
+ */
+export const redirectToWhatsApp = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const id = req.params.id;
+    if (!id || !mongoose.isValidObjectId(id)) {
+      res.status(400).json({ success: false, message: "Invalid guidance id" });
+      return;
+    }
+
+    const submission = await GuidanceSubmission.findById(id).lean();
+    if (!submission) {
+      res.status(404).json({ success: false, message: "Guidance not found" });
+      return;
+    }
+
+    // Same trust model as the PDF download: guest-generated submissions are
+    // trusted by id possession, ownership is only enforced when a userId exists.
+    if (submission.userId && submission.userId.toString() !== req.user?.id) {
+      res.status(403).json({ success: false, message: "Forbidden" });
+      return;
+    }
+
+    const q = submission.request;
+    const lines = [
+      `Hi! I used PowerMySport's guidance tool for my child. Here are their details:`,
+      `• Sport: ${q.sport}`,
+      `• Age: ${q.child_age} (${q.child_gender})`,
+      `• Level: ${q.current_fitness_level}`,
+      `• Time: ${q.weekly_time_commitment} hrs/week`,
+      ``,
+      `My question: ${q.parent_specific_question}`,
+      ``,
+      `I'd love personalised support based on the plan.`,
+    ];
+    const waUrl = `https://wa.me/${WHATSAPP_TEAM_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
+
+    res.redirect(302, waUrl);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to open WhatsApp",
     });
   }
 };

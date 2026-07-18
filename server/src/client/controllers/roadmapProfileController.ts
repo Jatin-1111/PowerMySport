@@ -1,7 +1,14 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { UserPathwayProfile } from "../../shared/models/UserPathwayProfile";
 
-export const getPathwayProfile = async (
+// Accepts a dependentId from the query/body only if it's a real ObjectId —
+// anything else (missing, empty string, garbage) falls back to the null
+// "no specific child" bucket rather than erroring.
+const parseDependentId = (raw: unknown): string | null =>
+  typeof raw === "string" && mongoose.isValidObjectId(raw) ? raw : null;
+
+export const getRoadmapProfile = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
@@ -11,12 +18,18 @@ export const getPathwayProfile = async (
       return;
     }
 
+    const dependentId = parseDependentId(req.query.dependentId);
+
     let profile = await UserPathwayProfile.findOne({
       userId: req.user.id,
+      dependentId,
     }).lean();
 
     if (!profile) {
-      profile = await UserPathwayProfile.create({ userId: req.user.id });
+      profile = await UserPathwayProfile.create({
+        userId: req.user.id,
+        dependentId,
+      });
     }
 
     res.status(200).json({
@@ -26,11 +39,11 @@ export const getPathwayProfile = async (
   } catch (error) {
     res
       .status(500)
-      .json({ success: false, message: "Failed to fetch pathway profile" });
+      .json({ success: false, message: "Failed to fetch roadmap profile" });
   }
 };
 
-export const updatePathwayProfile = async (
+export const updateRoadmapProfile = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
@@ -40,6 +53,7 @@ export const updatePathwayProfile = async (
       return;
     }
 
+    const dependentId = parseDependentId(req.body.dependentId);
     const { progress, savedItems, applications, reminders } = req.body;
 
     const updateData: any = {};
@@ -49,7 +63,7 @@ export const updatePathwayProfile = async (
     if (reminders !== undefined) updateData.reminders = reminders;
 
     const profile = await UserPathwayProfile.findOneAndUpdate(
-      { userId: req.user.id },
+      { userId: req.user.id, dependentId },
       { $set: updateData },
       { new: true, upsert: true },
     ).lean();
@@ -61,6 +75,6 @@ export const updatePathwayProfile = async (
   } catch (error) {
     res
       .status(500)
-      .json({ success: false, message: "Failed to update pathway profile" });
+      .json({ success: false, message: "Failed to update roadmap profile" });
   }
 };

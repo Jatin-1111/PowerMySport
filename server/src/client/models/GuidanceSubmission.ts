@@ -54,6 +54,11 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
       location: { type: String, trim: true },
       current_pathway_level: { type: Number, min: 1, max: 5 },
       years_playing: { type: Number, min: 0, max: 20 },
+      plan_horizon: {
+        type: String,
+        enum: ["short", "journey", "auto"],
+      },
+      dependent_id: { type: Schema.Types.ObjectId, ref: "Player" },
     },
     response: {
       profileAnalysis: { type: String, required: true },
@@ -85,9 +90,24 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
           milestones: { type: [String] },
           outcome: { type: String },
           estimatedCost: { type: String },
+          pathwayLevel: { type: Number, min: 1, max: 5 },
           _id: false,
         },
       ],
+      shortTermPlan: {
+        durationWeeks: { type: Number },
+        weeks: [
+          {
+            label: { type: String },
+            focus: { type: String },
+            // Mixed: new submissions store {name, minutes, how, doneRight}
+            // objects; pre-July-2026 ones store plain strings.
+            sessions: { type: [Schema.Types.Mixed] },
+            _id: false,
+          },
+        ],
+        successCheck: { type: String },
+      },
       goalAssessment: {
         statedGoal: { type: String },
         verdict: {

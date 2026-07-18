@@ -1,7 +1,7 @@
 "use client";
 
-import { SportKnownFlow } from "@/modules/pathway/components/SportKnownFlow";
-import { WizardShell } from "@/modules/pathway/components/WizardShell";
+import { SportKnownFlow } from "@/modules/find-sport/components/SportKnownFlow";
+import { WizardShell } from "@/modules/find-sport/components/WizardShell";
 import { motion } from "framer-motion";
 import { CheckCircle2, HelpCircle, Sparkles } from "lucide-react";
 import { useState } from "react";

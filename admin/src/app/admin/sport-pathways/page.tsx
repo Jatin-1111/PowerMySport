@@ -198,9 +198,16 @@ export default function AdminSportPathwaysPage() {
                     {pathway.lookupCount ?? 0}
                   </td>
                   <td className="px-4 py-3 text-slate-500">
-                    {pathway.lastRefreshedAt
-                      ? new Date(pathway.lastRefreshedAt).toLocaleDateString()
-                      : "Never"}
+                    <span className={pathway.isStale ? "font-semibold text-amber-700" : ""}>
+                      {pathway.lastRefreshedAt
+                        ? new Date(pathway.lastRefreshedAt).toLocaleDateString()
+                        : "Never"}
+                    </span>
+                    {pathway.isStale && (
+                      <span className="ml-2 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                        Stale
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">

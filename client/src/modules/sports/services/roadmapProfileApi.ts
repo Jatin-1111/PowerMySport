@@ -24,13 +24,18 @@ export interface AthleteStory {
   sourceUrls?: string[];
 }
 
-export const pathwayProfileApi = {
-  getProfile: async (): Promise<UserPathwayProfile | null> => {
+export const roadmapProfileApi = {
+  // dependentId scopes saved items/progress/applications to one child — pass
+  // the id of the currently-selected dependent, or omit it for the "no
+  // specific child" bucket (guests, or a parent who hasn't picked one yet).
+  getProfile: async (dependentId?: string | null): Promise<UserPathwayProfile | null> => {
     try {
       const resp = await axiosInstance.get<{
         success: boolean;
         data: UserPathwayProfile;
-      }>("/pathway-profile");
+      }>("/roadmap-profile", {
+        params: dependentId ? { dependentId } : undefined,
+      });
       return resp.data.data;
     } catch {
       return null;
@@ -39,12 +44,13 @@ export const pathwayProfileApi = {
 
   updateProfile: async (
     data: Partial<UserPathwayProfile>,
+    dependentId?: string | null,
   ): Promise<UserPathwayProfile | null> => {
     try {
       const resp = await axiosInstance.put<{
         success: boolean;
         data: UserPathwayProfile;
-      }>("/pathway-profile", data);
+      }>("/roadmap-profile", { ...data, dependentId: dependentId ?? undefined });
       return resp.data.data;
     } catch {
       return null;

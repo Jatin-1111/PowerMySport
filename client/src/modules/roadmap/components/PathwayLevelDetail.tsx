@@ -5,6 +5,7 @@ import { useAuthStore } from "@/modules/auth/store/authStore";
 import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
 import {
 
+    FUNNEL_AND_EXIT_VALUE,
     MacroLevel,
     mergeAgeRanges,
 } from "@/modules/sports/config/macroLevels";
@@ -198,7 +199,7 @@ export function PathwayLevelDetail({
   const leadLevel = displayLevels[displayLevels.length - 1];
   const ageRangeLabel = mergeAgeRanges(displayLevels.map((l) => l.ageRange));
   const guidanceHref = sName
-    ? `/consult?sport=${encodeURIComponent(sName)}&level=${representativeLevel}&mode=level-plan&levelLabel=${encodeURIComponent(lLabel)}${state ? `&state=${encodeURIComponent(state)}` : ""}`
+    ? `/guidance?sport=${encodeURIComponent(sName)}&level=${representativeLevel}&mode=level-plan&levelLabel=${encodeURIComponent(lLabel)}${state ? `&state=${encodeURIComponent(state)}` : ""}`
     : "";
 
   return (
@@ -292,6 +293,25 @@ export function PathwayLevelDetail({
         {/* ── What to Expect ── */}
         {innerTab === "expect" && (
           <div className="space-y-5">
+            {/* Straight talk — honest about the pyramid narrowing, and what
+                reaching or stopping at this tier is genuinely worth. General
+                truths about competitive pyramids, not sport-specific stats
+                we don't have real data for. */}
+            <div className={`rounded-2xl border bg-white/90 p-4 sm:p-5 ${colors.border} shadow-sm space-y-3`}>
+              <div className="flex items-start gap-2.5">
+                <BarChart3 className={`h-4 w-4 shrink-0 mt-0.5 ${colors.text}`} />
+                <p className="text-xs leading-relaxed text-slate-600">
+                  {FUNNEL_AND_EXIT_VALUE[macroLevel.id].funnelNote}
+                </p>
+              </div>
+              <div className="flex items-start gap-2.5 pt-3 border-t border-slate-100">
+                <Star className={`h-4 w-4 shrink-0 mt-0.5 ${colors.text}`} />
+                <p className="text-xs leading-relaxed text-slate-600">
+                  <span className="font-semibold text-slate-700">What this is worth: </span>
+                  {FUNNEL_AND_EXIT_VALUE[macroLevel.id].exitValueNote}
+                </p>
+              </div>
+            </div>
             {displayLevels.map((lvl, idx) => {
               const commitment =
                 (lvl as any).parentalCommitment ||

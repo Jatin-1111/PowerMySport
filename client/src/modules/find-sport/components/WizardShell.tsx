@@ -142,6 +142,33 @@ function getProfileChips(answers: WizardAnswers): { label: string; value: string
   return chips;
 }
 
+// ─── Trial check-in ────────────────────────────────────────────────────────
+// Schedules the 4-week "how did the trial go?" nudge for the top recommended
+// sport. Fire-and-forget — a failure here shouldn't affect the save the
+// parent already saw succeed.
+function scheduleTrialCheckIn(
+  dependentId: string | null,
+  scored: SportResult[],
+  childName: string,
+): void {
+  const top = scored[0];
+  if (!top) return;
+  const name = childName || "your child";
+  const signals = [
+    top.reasons[0],
+    `Did ${name} ask to play again without being asked?`,
+    "Was the cost and time commitment manageable for your family?",
+  ].filter((s): s is string => !!s);
+
+  api
+    .post("/plan-checkins/find-sport-trial", {
+      dependentId: dependentId || undefined,
+      sport: top.sport.name,
+      signals,
+    })
+    .catch(() => {});
+}
+
 // ─── Progress calculation (only question steps count) ─────────────────────────
 
 function questionProgress(stepIndex: number): number {
@@ -309,13 +336,13 @@ function QuestionScreen({
             options={[
               {
                 value: "explosive",
-                title: "Short bursts of intense energy",
-                sub: `${cap} runs fast, jumps high, gives everything — then needs a rest`,
+                title: "Sprints hard, then needs a breather",
+                sub: `${cap} goes flat out for a bit, gives everything — then sits out to recover`,
               },
               {
                 value: "endurance",
-                title: "Keeps going for a long time",
-                sub: `Doesn't tire quickly — steady energy for hours of play`,
+                title: "Keeps going the whole time",
+                sub: "Doesn't tire quickly — still going strong after everyone else has stopped",
               },
             ]}
             value={answers.energyType}
@@ -329,13 +356,13 @@ function QuestionScreen({
             options={[
               {
                 value: "gross",
-                title: "Big whole-body movements",
-                sub: "Running, jumping, throwing — physical power and coordination",
+                title: "Loves running, jumping, throwing things",
+                sub: "Whole-body movement — power and coordination, not precision",
               },
               {
                 value: "fine",
-                title: "Precise, controlled movements",
-                sub: "Careful aim, balance, placement — accuracy over power",
+                title: "Better at careful, steady-handed tasks",
+                sub: "Stacking blocks, threading things, careful aim — precision over power",
               },
             ]}
             value={answers.motorType}
@@ -387,13 +414,13 @@ function QuestionScreen({
             options={[
               {
                 value: "bursts",
-                title: "Short, intense bursts of focus",
-                sub: `${cap} is fully on for 20–30 minutes, then needs a break`,
+                title: "Focuses hard, then needs a break",
+                sub: `${cap} is fully locked in for 20–30 minutes, then needs to get up and move`,
               },
               {
                 value: "sustained",
-                title: "Long, sustained concentration",
-                sub: `${cap} can stay locked in for hours on something they care about`,
+                title: "Can stay with it for hours",
+                sub: `Once ${name} is absorbed in something they like, they lose track of time`,
               },
             ]}
             value={answers.focusStyle}
@@ -407,13 +434,13 @@ function QuestionScreen({
             options={[
               {
                 value: "react",
-                title: "Reacts fast and trusts instincts",
-                sub: `${cap} reads the situation and acts — thinking comes after`,
+                title: "Jumps in and figures it out by doing",
+                sub: `${cap} acts on instinct first — thinking about it comes after`,
               },
               {
                 value: "strategic",
-                title: "Thinks carefully before acting",
-                sub: `${cap} plans ahead, weighs options, prefers to have a strategy`,
+                title: "Watches and plans before joining in",
+                sub: `${cap} wants to understand the rules and think it through first`,
               },
             ]}
             value={answers.decisionStyle}
@@ -573,13 +600,13 @@ function QuestionScreen({
     priorSports: `Has ${name} tried any sport formally before?`,
     height: `How tall is ${name}?`,
     weight: `How much does ${name} weigh?`,
-    energyType: `When ${name} plays or moves around, which feels more natural?`,
-    motorType: "In physical activities, are they better at:",
+    energyType: `In a game of tag or running around with friends, what does ${name} usually do?`,
+    motorType: `Think of ${name} building something or playing catch — they're better at:`,
     visualTracking: `When something moves fast toward ${name} — a ball, a shuttle — they:`,
-    teamIndividual: `When playing games, does ${name} prefer to compete alone or as part of a team?`,
+    teamIndividual: `At a birthday party with a group game, does ${name} want a partner or team, or go it alone?`,
     competitiveResponse: `When ${name} loses a game or competition:`,
-    focusStyle: `For focus and attention, ${name} tends to:`,
-    decisionStyle: `In games and activities, does ${name} tend to:`,
+    focusStyle: `Think of ${name} doing homework or a puzzle — they tend to:`,
+    decisionStyle: `When ${name} plays a new game for the first time, they usually:`,
     pressureResponse: `When all attention is on ${name} — school event, family gathering:`,
     repetitionTolerance: `To get really good at something, is ${name} willing to:`,
     eyesight: `How is ${name}'s eyesight?`,
@@ -844,6 +871,7 @@ export function WizardShell() {
             await api.put(`/auth/dependents/${selectedDependentId}`, buildDependentPayload(answers, scored));
             setSavedForName(displayName || undefined);
             setSavedStatus("saved");
+            scheduleTrialCheckIn(selectedDependentId, scored, displayName || answers.childName);
           } catch {
             setSavedStatus("error");
           }
@@ -859,6 +887,7 @@ export function WizardShell() {
             if (res.data?.data?._id) setSelectedDependentId(res.data.data._id);
             setSavedForName(childName);
             setSavedStatus("saved");
+            scheduleTrialCheckIn(res.data?.data?._id ?? null, scored, childName);
           } catch {
             setSavedStatus("error");
           }

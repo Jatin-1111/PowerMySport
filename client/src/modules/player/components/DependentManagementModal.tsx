@@ -4,10 +4,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/toast";
 import { INDIAN_STATES } from "@/modules/guidance/constants";
-import { BinaryCards } from "@/modules/pathway/components/inputs/BinaryCards";
-import { FourContextCards } from "@/modules/pathway/components/inputs/FourContextCards";
-import { SpectrumSlider } from "@/modules/pathway/components/inputs/SpectrumSlider";
-import { ThreeOptionCards } from "@/modules/pathway/components/inputs/ThreeOptionCards";
+import { BinaryCards } from "@/modules/find-sport/components/inputs/BinaryCards";
+import { FourContextCards } from "@/modules/find-sport/components/inputs/FourContextCards";
+import { SpectrumSlider } from "@/modules/find-sport/components/inputs/SpectrumSlider";
+import { ThreeOptionCards } from "@/modules/find-sport/components/inputs/ThreeOptionCards";
 import {
   buildDependentPayload,
   cmToFeetInches,
@@ -15,8 +15,8 @@ import {
   deriveBuild,
   deriveHeightCategoryFromCm,
   hasWizardSignal,
-} from "@/modules/pathway/utils/dependentMapping";
-import { scoreSports } from "@/modules/pathway/utils/scorer";
+} from "@/modules/find-sport/utils/dependentMapping";
+import { scoreSports } from "@/modules/find-sport/utils/scorer";
 import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
 import { ProfileFormSelect } from "@/modules/player/components/ProfileFormSelect";
 import {

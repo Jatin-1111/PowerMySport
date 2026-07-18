@@ -11,7 +11,7 @@ export default function robots(): MetadataRoute.Robots {
           "/",
           "/roadmap",
           "/find-sport",
-          "/consult",
+          "/guidance",
           "/experts",
           "/how-it-works",
           "/about",
