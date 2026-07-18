@@ -1,5 +1,22 @@
 import mongoose, { Document, Schema } from "mongoose";
 
+export interface ProgressionPlanMilestone {
+  title: string;
+  description: string;
+  timeframe: string;
+}
+
+export interface ProgressionPlan {
+  gap: string;
+  prerequisites: string[];
+  milestones: ProgressionPlanMilestone[];
+  targetCompetitions: string[];
+  coachSignals: string[];
+  commonMistakes: string[];
+  typicalTimeline: string;
+  generatedAt: Date;
+}
+
 /** A single level in the progression pyramid */
 export interface PathwayLevel {
   level: number; // 1 = entry tier … 5 = elite/global tier (ascending, sport-agnostic)
@@ -60,6 +77,7 @@ export interface PathwayLevel {
   }>;
   academicIntegration?: string;
   proactiveDocuments?: string[];
+  progressionPlan?: ProgressionPlan;
 }
 
 export interface Tournament {
@@ -218,6 +236,23 @@ const pathwayLevelSchema = new Schema<PathwayLevel>(
     ],
     academicIntegration: { type: String },
     proactiveDocuments: [{ type: String }],
+    progressionPlan: {
+      gap: { type: String },
+      prerequisites: [{ type: String }],
+      milestones: [
+        {
+          title: { type: String },
+          description: { type: String },
+          timeframe: { type: String },
+          _id: false,
+        },
+      ],
+      targetCompetitions: [{ type: String }],
+      coachSignals: [{ type: String }],
+      commonMistakes: [{ type: String }],
+      typicalTimeline: { type: String },
+      generatedAt: { type: Date },
+    },
   },
   { _id: false },
 );

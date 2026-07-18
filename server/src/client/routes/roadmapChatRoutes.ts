@@ -3,13 +3,16 @@ import rateLimit from "express-rate-limit";
 import {
   getRoadmapChat,
   sendRoadmapChatMessage,
+  listRoadmapChatSessions,
+  createRoadmapChatSession,
+  getRoadmapChatSession,
+  sendRoadmapChatSessionMessage,
 } from "../controllers/roadmapChatController";
 import { authMiddleware } from "../../middleware/auth";
 import { createRedisRateLimitStore } from "../../middleware/rateLimit";
 
 const roadmapChatRouter = Router();
 
-// Burst limiter: 10 requests/minute per user, mirrors the guidance chat's burst guard.
 const chatBurstLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
@@ -25,12 +28,14 @@ const chatBurstLimiter = rateLimit({
   skip: (req) => !req.user,
 });
 
+// ── Session-based routes (must be defined before /:sportSlug) ─────────────────
+roadmapChatRouter.get("/sessions", authMiddleware, listRoadmapChatSessions);
+roadmapChatRouter.post("/sessions", authMiddleware, createRoadmapChatSession);
+roadmapChatRouter.get("/sessions/:sessionId", authMiddleware, getRoadmapChatSession);
+roadmapChatRouter.post("/sessions/:sessionId", authMiddleware, chatBurstLimiter, sendRoadmapChatSessionMessage);
+
+// ── Legacy sport-slug routes (backward compat) ────────────────────────────────
 roadmapChatRouter.get("/:sportSlug", authMiddleware, getRoadmapChat);
-roadmapChatRouter.post(
-  "/:sportSlug",
-  authMiddleware,
-  chatBurstLimiter,
-  sendRoadmapChatMessage,
-);
+roadmapChatRouter.post("/:sportSlug", authMiddleware, chatBurstLimiter, sendRoadmapChatMessage);
 
 export default roadmapChatRouter;

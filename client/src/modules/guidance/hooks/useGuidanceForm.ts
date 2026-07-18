@@ -14,10 +14,12 @@ export function useGuidanceForm({
   initialSport,
   initialLevel,
   initialLevelLabel,
+  initialState,
 }: {
   initialSport?: string;
   initialLevel?: number;
   initialLevelLabel?: string;
+  initialState?: string;
 } = {}) {
   const isLevelPlan = !!initialSport && !!initialLevel;
   const levelLabel =
@@ -36,6 +38,7 @@ export function useGuidanceForm({
     const base: GuidanceFormState = {
       ...initialForm,
       ...(initialSport ? { sport: initialSport } : {}),
+      ...(initialState ? { location: initialState } : {}),
     };
     if (isLevelPlan) {
       base.parent_specific_question = buildLevelPlanQuestion(
@@ -159,6 +162,21 @@ export function useGuidanceForm({
         next.location = player.location;
         filled.add("location");
       }
+      // Wizard assessment signals
+      if (player.build) next.wizard_build = player.build;
+      if (player.heightCategory) next.wizard_height = player.heightCategory;
+      if (player.energyType) next.wizard_energy_type = player.energyType;
+      if (player.motorType) next.wizard_motor_type = player.motorType;
+      if (player.visualTracking) next.wizard_visual_tracking = player.visualTracking;
+      if (player.teamIndividual !== undefined) next.wizard_team_individual = player.teamIndividual;
+      if (player.competitiveResponse) next.wizard_competitive_response = player.competitiveResponse;
+      if (player.focusStyle) next.wizard_focus_style = player.focusStyle;
+      if (player.decisionStyle) next.wizard_decision_style = player.decisionStyle;
+      if (player.pressureResponse) next.wizard_pressure_response = player.pressureResponse;
+      if (player.repetitionTolerance) next.wizard_repetition_tolerance = player.repetitionTolerance;
+      if (player.contactComfort) next.wizard_contact_comfort = player.contactComfort;
+      if (player.environment) next.wizard_environment = player.environment;
+      if (player.waterComfort) next.wizard_water_comfort = player.waterComfort;
       return next;
     });
     setAutofillFields(filled);
@@ -207,7 +225,7 @@ export function useGuidanceForm({
 
   const nextStep = () => {
     const messages = [
-      "Step Complete!",
+      "Great start! ✨",
       "Keep Going! ⚡",
       "Almost There! 🔥",
       "Final Step! 🏆",

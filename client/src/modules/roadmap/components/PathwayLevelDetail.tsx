@@ -4,18 +4,21 @@ import { getCommunityAppUrl } from "@/lib/community/url";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
 import {
-    getCombinedFeeRange,
+
+    FUNNEL_AND_EXIT_VALUE,
     MacroLevel,
     mergeAgeRanges,
 } from "@/modules/sports/config/macroLevels";
 import {
     PathwayLevel,
+    ProgressionPlan,
+    pathwayApi,
 } from "@/modules/sports/services/pathway";
 import { motion } from "framer-motion";
 import {
     Activity,
     AlertTriangle,
-    BadgeCheck,
+
     BarChart3,
     BookOpen,
     BrainCircuit,
@@ -74,10 +77,13 @@ export function getParentalCommitment(rawLevel: number) {
 export function PathwayLevelDetail({
   macroLevel,
   sportName,
+  state,
+  nextMacroLevel,
 }: {
   macroLevel: MacroLevel;
   sportName?: string;
-  onSelectTab?: (tab: any) => void;
+  state?: string;
+  nextMacroLevel?: MacroLevel;
 }) {
   const sName = sportName && sportName !== "General" ? sportName : "";
   const communityUrl = getCommunityAppUrl();
@@ -88,11 +94,14 @@ export function PathwayLevelDetail({
   const [activeSubVariantId, setActiveSubVariantId] = useState<
     "national" | "international"
   >("national");
+  type ProgressionFetchState = "idle" | "loading" | "error" | { plan: ProgressionPlan };
+  const [progressionState, setProgressionState] = useState<ProgressionFetchState>("idle");
   const tabContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setInnerTab("expect");
     setActiveSubVariantId("national");
+    setProgressionState("idle");
   }, [macroLevel.id]);
 
   // Switching tabs should always start the parent at the top of the new
@@ -101,6 +110,18 @@ export function PathwayLevelDetail({
   useEffect(() => {
     tabContentRef.current?.scrollTo({ top: 0 });
   }, [innerTab, activeSubVariantId]);
+
+  // Lazily fetch the progression plan on first click of the Level Up Plan tab.
+  useEffect(() => {
+    if (innerTab !== "levelup" || !nextMacroLevel || !sName || !state) return;
+    if (progressionState !== "idle") return;
+    setProgressionState("loading");
+    pathwayApi
+      .getProgressionPlan(sName, state, macroLevel.representativeRawLevel)
+      .then((plan) => setProgressionState(plan ? { plan } : "error"))
+      .catch(() => setProgressionState("error"));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [innerTab, progressionState]);
 
   // Beginner/Intermediate show all their raw level(s) merged with dividers;
   // Competitive is a genuine fork — only the selected sub-variant renders.
@@ -163,42 +184,22 @@ export function PathwayLevelDetail({
           },
         ]
       : []),
+    ...(nextMacroLevel
+      ? [
+          {
+            id: "levelup",
+            label: "Level Up Plan",
+            icon: <Zap className="h-3 w-3" />,
+          },
+        ]
+      : []),
   ];
 
   // ── At-a-glance strip ──
   const leadLevel = displayLevels[displayLevels.length - 1];
-  const feeLabel = isMerged
-    ? getCombinedFeeRange(displayLevels.map((l) => l.level))
-    : COACHING_FEE_TIERS[representativeLevel]?.label || "Varies";
   const ageRangeLabel = mergeAgeRanges(displayLevels.map((l) => l.ageRange));
-  const trialWindow = displayLevels
-    .map((l) => l.trialInfo?.typicalMonths)
-    .find(Boolean);
-  let standoutSignal: { label: string; value: string } | null = null;
-  for (const lvl of [...displayLevels].reverse()) {
-    if (lvl.benchmarks?.metrics?.[0]) {
-      standoutSignal = {
-        label: lvl.benchmarks.metrics[0].metric,
-        value: lvl.benchmarks.metrics[0].target,
-      };
-      break;
-    }
-  }
-  if (!standoutSignal) {
-    for (const lvl of [...displayLevels].reverse()) {
-      const marker =
-        lvl.talentSignals?.physicalMarkers?.[0] ||
-        lvl.talentSignals?.cognitiveMarkers?.[0] ||
-        lvl.talentSignals?.behavioralMarkers?.[0];
-      if (marker) {
-        standoutSignal = { label: "Watch for", value: marker };
-        break;
-      }
-    }
-  }
-
   const guidanceHref = sName
-    ? `/guidance?sport=${encodeURIComponent(sName)}&level=${representativeLevel}&mode=level-plan&levelLabel=${encodeURIComponent(lLabel)}`
+    ? `/guidance?sport=${encodeURIComponent(sName)}&level=${representativeLevel}&mode=level-plan&levelLabel=${encodeURIComponent(lLabel)}${state ? `&state=${encodeURIComponent(state)}` : ""}`
     : "";
 
   return (
@@ -208,32 +209,8 @@ export function PathwayLevelDetail({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -10, scale: 0.98 }}
       transition={SPRING_STIFF}
-      className={`relative flex-1 min-h-0 flex flex-col overflow-hidden rounded-3xl border-2 bg-gradient-to-br ${colors.bg} ${colors.border} shadow-xl`}
+      className={`relative flex flex-col rounded-3xl border-2 bg-gradient-to-br ${colors.bg} ${colors.border} shadow-xl`}
     >
-      {/* ── Header (Hidden on mobile since Navigator shows it) ── */}
-      <div
-        className={`hidden lg:flex shrink-0 items-start gap-3 sm:gap-4 p-5 sm:p-6 border-b border-white/60`}
-      >
-        <div
-          className={`flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${colors.gradient} text-white shadow-lg`}
-        >
-          {macroLevel.icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-1.5 mb-1">
-            <span
-              className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${colors.badge}`}
-            >
-              {macroLevel.scopeTag}
-            </span>
-          </div>
-          <h3 className="text-base sm:text-lg lg:text-xl font-bold text-slate-900 break-words leading-snug">
-            {macroLevel.label}
-            {sName ? ` — ${sName}` : ""}
-          </h3>
-        </div>
-      </div>
-
       {/* ── National / International picker (Competitive only) ── */}
       {macroLevel.subVariants && (
         <div className="shrink-0 grid grid-cols-1 sm:grid-cols-2 gap-2 px-5 sm:px-6 pt-4 pb-4 border-b border-white/60">
@@ -278,40 +255,26 @@ export function PathwayLevelDetail({
             {ageRangeLabel}
           </div>
         )}
-        <div className="flex items-center gap-1.5 rounded-lg border border-white/70 bg-white/80 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700">
-          <Wallet className={`h-3.5 w-3.5 ${colors.text}`} /> {feeLabel}
-        </div>
-        {trialWindow && (
-          <div className="flex items-center gap-1.5 rounded-lg border border-white/70 bg-white/80 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700">
-            <Zap className={`h-3.5 w-3.5 ${colors.text}`} /> Trials:{" "}
-            {trialWindow}
-          </div>
-        )}
-        {standoutSignal && (
-          <div className="flex items-center gap-1.5 rounded-lg border border-white/70 bg-white/80 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700">
-            <BadgeCheck className={`h-3.5 w-3.5 ${colors.text}`} />{" "}
-            {standoutSignal.label}: {standoutSignal.value}
-          </div>
-        )}
       </div>
 
       {/* ── Inner tab navigation ── */}
       {innerTabs.length > 1 && (
-        <div className="shrink-0 overflow-x-auto px-5 sm:px-6 pt-3 hide-scrollbar">
+        <div className="shrink-0 px-5 sm:px-6 pt-3">
           <div className="flex gap-1 rounded-xl bg-white/70 p-1">
             {innerTabs.map((t) => (
               <button
                 key={t.id}
                 type="button"
+                title={t.label}
                 onClick={() => setInnerTab(t.id)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3.5 py-2 text-[11px] font-bold transition-all duration-200 ${
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[11px] font-bold transition-all duration-200 ${
                   innerTab === t.id
                     ? `bg-white ${colors.text} shadow-sm`
                     : `text-slate-600 hover:text-slate-900 hover:bg-white/60`
                 }`}
               >
                 {t.icon}
-                {t.label}
+                <span className="hidden lg:inline truncate">{t.label}</span>
               </button>
             ))}
           </div>
@@ -325,11 +288,30 @@ export function PathwayLevelDetail({
           can't get stuck. */}
       <div
         ref={tabContentRef}
-        className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 [scrollbar-gutter:stable]"
+        className="p-5 sm:p-6"
       >
         {/* ── What to Expect ── */}
         {innerTab === "expect" && (
           <div className="space-y-5">
+            {/* Straight talk — honest about the pyramid narrowing, and what
+                reaching or stopping at this tier is genuinely worth. General
+                truths about competitive pyramids, not sport-specific stats
+                we don't have real data for. */}
+            <div className={`rounded-2xl border bg-white/90 p-4 sm:p-5 ${colors.border} shadow-sm space-y-3`}>
+              <div className="flex items-start gap-2.5">
+                <BarChart3 className={`h-4 w-4 shrink-0 mt-0.5 ${colors.text}`} />
+                <p className="text-xs leading-relaxed text-slate-600">
+                  {FUNNEL_AND_EXIT_VALUE[macroLevel.id].funnelNote}
+                </p>
+              </div>
+              <div className="flex items-start gap-2.5 pt-3 border-t border-slate-100">
+                <Star className={`h-4 w-4 shrink-0 mt-0.5 ${colors.text}`} />
+                <p className="text-xs leading-relaxed text-slate-600">
+                  <span className="font-semibold text-slate-700">What this is worth: </span>
+                  {FUNNEL_AND_EXIT_VALUE[macroLevel.id].exitValueNote}
+                </p>
+              </div>
+            </div>
             {displayLevels.map((lvl, idx) => {
               const commitment =
                 (lvl as any).parentalCommitment ||
@@ -430,17 +412,6 @@ export function PathwayLevelDetail({
                             <span className="flex-1 min-w-0 text-sm leading-relaxed text-slate-700">
                               {step}
                             </span>
-                            {discUrl && (
-                              <Link
-                                href={discUrl}
-                                onClick={(e) => e.stopPropagation()}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={`shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity flex items-center gap-1 rounded-lg border ${colors.badge} px-2 py-0.5 text-[10px] font-bold whitespace-nowrap`}
-                              >
-                                <ExternalLink className="h-2.5 w-2.5" /> Go
-                              </Link>
-                            )}
                           </li>
                         );
                       })}
@@ -1070,6 +1041,190 @@ export function PathwayLevelDetail({
             })}
           </div>
         )}
+      {/* ── Level Up Plan ── */}
+      {innerTab === "levelup" && nextMacroLevel && (
+        <div className="space-y-4">
+          {progressionState === "loading" && (
+            <div className="animate-pulse space-y-4">
+              <div className="h-6 w-48 rounded-lg bg-slate-200" />
+              <div className="rounded-xl border border-slate-200 p-4 space-y-2">
+                <div className="h-4 w-full rounded bg-slate-200" />
+                <div className="h-4 w-3/4 rounded bg-slate-200" />
+              </div>
+              <div className="rounded-xl border border-slate-200 p-4 space-y-2">
+                {[1, 2, 3].map((n) => (
+                  <div key={n} className="h-4 w-full rounded bg-slate-200" />
+                ))}
+              </div>
+              <div className="rounded-xl border border-slate-200 p-4 space-y-3">
+                {[1, 2, 3].map((n) => (
+                  <div key={n} className="flex gap-3">
+                    <div className="h-7 w-7 rounded-full bg-slate-200 shrink-0" />
+                    <div className="flex-1 space-y-1">
+                      <div className="h-4 w-2/3 rounded bg-slate-200" />
+                      <div className="h-3 w-full rounded bg-slate-200" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                {[1, 2].map((n) => (
+                  <div key={n} className="h-7 w-32 rounded-full bg-slate-200" />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {progressionState === "error" && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-center space-y-2">
+              <AlertTriangle className="h-6 w-6 text-rose-400 mx-auto" />
+              <p className="text-sm font-semibold text-rose-700">Couldn't load the Level Up Plan</p>
+              <p className="text-xs text-rose-500">Please try again in a moment.</p>
+              <button
+                type="button"
+                onClick={() => setProgressionState("idle")}
+                className="mt-1 rounded-lg border border-rose-300 bg-white px-4 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+
+          {typeof progressionState === "object" && "plan" in progressionState && (() => {
+            const { plan } = progressionState;
+            return (
+              <div className="space-y-4">
+                {/* Header + timeline */}
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <h4 className="flex items-center gap-2 text-sm font-bold text-slate-800">
+                    <TrendingUp className="h-4 w-4 text-emerald-600 shrink-0" />
+                    Your Path to {nextMacroLevel.label}
+                  </h4>
+                  {plan.typicalTimeline && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-0.5 text-xs font-semibold text-emerald-700">
+                      <Clock className="h-3 w-3" />
+                      {plan.typicalTimeline}
+                    </span>
+                  )}
+                </div>
+
+                {/* The Gap */}
+                {plan.gap && (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-4">
+                    <h5 className="mb-1.5 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-rose-700">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      The Biggest Challenge
+                    </h5>
+                    <p className="text-sm leading-relaxed text-slate-700">{plan.gap}</p>
+                  </div>
+                )}
+
+                {/* Prerequisites */}
+                {plan.prerequisites?.length > 0 && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+                    <h5 className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-amber-700">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      What Your Child Must Be Able to Do First
+                    </h5>
+                    <ul className="space-y-1.5">
+                      {plan.prerequisites.map((req, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-amber-600 mt-0.5" />
+                          {req}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Milestones */}
+                {plan.milestones?.length > 0 && (
+                  <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-4">
+                    <h5 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-indigo-700">
+                      <Map className="h-3.5 w-3.5" />
+                      Your Step-by-Step Plan
+                    </h5>
+                    <div className="space-y-3">
+                      {plan.milestones.map((ms, i) => (
+                        <div key={i} className="flex gap-3">
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-xs font-bold text-white">
+                            {i + 1}
+                          </span>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-800">{ms.title}</p>
+                            <p className="text-xs text-slate-600 leading-relaxed">{ms.description}</p>
+                            {ms.timeframe && (
+                              <span className="mt-1 inline-flex items-center gap-1 text-xs text-indigo-600">
+                                <Clock className="h-3 w-3" />
+                                {ms.timeframe}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Target Competitions */}
+                {plan.targetCompetitions?.length > 0 && (
+                  <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-4">
+                    <h5 className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-sky-700">
+                      <Trophy className="h-3.5 w-3.5" />
+                      Stepping-Stone Competitions to Enter
+                    </h5>
+                    <div className="flex flex-wrap gap-2">
+                      {plan.targetCompetitions.map((comp, i) => (
+                        <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold text-sky-800">
+                          <Trophy className="h-3 w-3 text-sky-500" />
+                          {comp}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Coach Signals */}
+                {plan.coachSignals?.length > 0 && (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+                    <h5 className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-emerald-700">
+                      <UserCheck className="h-3.5 w-3.5" />
+                      What to Look for in Your Coach
+                    </h5>
+                    <ul className="space-y-1.5">
+                      {plan.coachSignals.map((signal, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
+                          <CheckCircle className="h-3.5 w-3.5 shrink-0 text-emerald-600 mt-0.5" />
+                          {signal}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Common Mistakes */}
+                {plan.commonMistakes?.length > 0 && (
+                  <div className="rounded-xl border border-rose-200 bg-white/80 p-4">
+                    <h5 className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-rose-600">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      Mistakes to Avoid
+                    </h5>
+                    <ul className="space-y-1.5">
+                      {plan.commonMistakes.map((mistake, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-rose-700">
+                          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-400 mt-0.5" />
+                          {mistake}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+              </div>
+            );
+          })()}
+        </div>
+      )}
       </div>
 
       {/* ── Footer CTAs ── */}
@@ -1077,6 +1232,8 @@ export function PathwayLevelDetail({
         <div className="flex flex-col sm:flex-row gap-3">
           <Link
             href={`${communityUrl}/discover?tab=COMMUNITIES${sName ? `&sport=${encodeURIComponent(sName)}&level=${encodeURIComponent(lLabel)}` : ""}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-sm transition-all hover:opacity-90 bg-gradient-to-r ${colors.gradient}`}
           >
             <Users className="h-4 w-4" /> Find Communities
@@ -1116,6 +1273,7 @@ export function PathwayLevelDetail({
               </>
             ))}
         </div>
+
       </div>
     </motion.div>
   );

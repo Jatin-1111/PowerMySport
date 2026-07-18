@@ -31,7 +31,7 @@ export const listPathwaysAdmin = async (
     const [docs, total] = await Promise.all([
       SportPathway.find(filter)
         .select(
-          "sportName sportSlug cacheKey category isVerified verifiedAt lookupCount lastRefreshedAt createdAt",
+          "sportName sportSlug cacheKey category isVerified verifiedAt lookupCount lastRefreshedAt contentRefreshedAt createdAt",
         )
         .sort({ sportName: 1 })
         .skip((page - 1) * limit)
@@ -40,9 +40,23 @@ export const listPathwaysAdmin = async (
       SportPathway.countDocuments(filter),
     ]);
 
+    // Same 6-month threshold as the parent-facing staleness check
+    // (PathwayService.isPathwayStale) — unverified data only, since a human
+    // has already vouched for verified content regardless of age.
+    const STALE_CUTOFF_MS = 180 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const withStaleness = docs.map((doc: any) => {
+      const referenceDate =
+        doc.contentRefreshedAt ?? doc.lastRefreshedAt ?? doc.createdAt;
+      const isStale =
+        !doc.isVerified &&
+        (!referenceDate || now - new Date(referenceDate).getTime() > STALE_CUTOFF_MS);
+      return { ...doc, isStale };
+    });
+
     res.status(200).json({
       success: true,
-      data: docs,
+      data: withStaleness,
       pagination: {
         total,
         page,

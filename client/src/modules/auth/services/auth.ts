@@ -1,5 +1,5 @@
 import axiosInstance from "@/lib/api/axios";
-import { ApiResponse, AuthResponse, User } from "@/types";
+import { ApiResponse, AuthResponse, Dependent, User } from "@/types";
 
 export const authApi = {
   register: async (data: {
@@ -40,6 +40,11 @@ export const authApi = {
     phone?: string;
     dob?: string | Date;
     userType?: string;
+    parentProfile?: {
+      bio?: string;
+      sportInterests?: string[];
+      involvementYears?: number;
+    };
     playerProfile?: {
       sportsFocus?: string[];
       yearsPlaying?: number;
@@ -120,38 +125,16 @@ export const authApi = {
     return response.data;
   },
 
-  addDependent: async (data: {
-    name: string;
-    dob: string | Date;
-    gender?: "MALE" | "FEMALE" | "OTHER";
-    relation?: string;
-    sportsFocus?: string[];
-    yearsPlaying?: number;
-    personalityTags?: string[];
-    primaryObjective?: "Recreational" | "Fitness" | "Compete";
-    weeklyTimeCommitment?: number;
-    budgetTier?: "Budget" | "Moderate" | "Premium";
-    location?: string;
-  }): Promise<ApiResponse<any>> => {
+  addDependent: async (
+    data: Omit<Dependent, "_id" | "dob"> & { dob: string | Date },
+  ): Promise<ApiResponse<any>> => {
     const response = await axiosInstance.post("/auth/dependents", data);
     return response.data;
   },
 
   updateDependent: async (
     dependentId: string,
-    data: {
-      name?: string;
-      dob?: string | Date;
-      gender?: "MALE" | "FEMALE" | "OTHER";
-      relation?: string;
-      sportsFocus?: string[];
-      yearsPlaying?: number;
-      personalityTags?: string[];
-      primaryObjective?: "Recreational" | "Fitness" | "Compete";
-      weeklyTimeCommitment?: number;
-      budgetTier?: "Budget" | "Moderate" | "Premium";
-      location?: string;
-    },
+    data: Partial<Omit<Dependent, "_id" | "dob">> & { dob?: string | Date },
   ): Promise<ApiResponse<any>> => {
     const response = await axiosInstance.put(
       `/auth/dependents/${dependentId}`,
@@ -164,6 +147,11 @@ export const authApi = {
     const response = await axiosInstance.delete(
       `/auth/dependents/${dependentId}`,
     );
+    return response.data;
+  },
+
+  getPlayers: async (): Promise<ApiResponse<any[]>> => {
+    const response = await axiosInstance.get("/auth/players");
     return response.data;
   },
 

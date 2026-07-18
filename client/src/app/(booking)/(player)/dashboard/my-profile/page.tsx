@@ -17,6 +17,31 @@ import { ProfileFormSelect } from "@/modules/player/components/ProfileFormSelect
 import { ProfileInfoField } from "@/modules/player/components/ProfileInfoField";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { formatDependentRelation } from "@/modules/player/constants/dependentRelations";
+import {
+  AGILITY_LABELS,
+  AMBITION_LABELS,
+  BUDGET_RANGE_LABELS,
+  BUILD_LABELS,
+  COMPETITIVE_RESPONSE_LABELS,
+  CONTACT_LABELS,
+  DECISION_LABELS,
+  ENERGY_LABELS,
+  ENV_LABELS,
+  EYESIGHT_LABELS,
+  FOCUS_LABELS,
+  GENDER_LABELS,
+  HEIGHT_LABELS,
+  MATCH_RANK_META,
+  PRESSURE_LABELS,
+  REPETITION_LABELS,
+  TEAM_INDIVIDUAL_LABELS,
+  VISUAL_TRACKING_LABELS,
+  WATER_COMFORT_LABELS,
+  WEEKLY_HOURS_LABELS,
+  wizardChip,
+} from "@/modules/player/constants/wizardLabels";
+import { getDependentAge } from "@/modules/player/utils/dependentAge";
+import { calculateDependentCompletion } from "@/modules/player/utils/dependentCompletion";
 import { calculateProfileCompletion } from "@/modules/player/utils/profileCompletion";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent, CardFooter } from "@/modules/shared/ui/Card";
@@ -54,24 +79,6 @@ const getErrorMessage = (error: unknown): string => {
   return "An error occurred";
 };
 
-const getDependentAge = (dob?: string | Date) => {
-  if (!dob) return null;
-
-  const birthDate = new Date(dob);
-  if (Number.isNaN(birthDate.getTime())) return null;
-
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  if (
-    monthDiff < 0 ||
-    (monthDiff === 0 && today.getDate() < birthDate.getDate())
-  ) {
-    age -= 1;
-  }
-  return age;
-};
-
 const getInitials = (name: string) =>
   name
     .split(" ")
@@ -80,12 +87,7 @@ const getInitials = (name: string) =>
     .map((part) => part[0]?.toUpperCase())
     .join("");
 
-const formatGender = (gender?: string) => {
-  if (gender === "MALE") return "Male";
-  if (gender === "FEMALE") return "Female";
-  if (gender === "OTHER") return "Other";
-  return null;
-};
+const formatGender = (gender?: string) => wizardChip(gender, GENDER_LABELS);
 
 function ProfilePageSkeleton() {
   return (
@@ -147,6 +149,9 @@ export default function ProfilePage() {
     weeklyTimeCommitment: 3,
     budgetTier: "Moderate" as "Budget" | "Moderate" | "Premium",
     location: "",
+    bio: "",
+    involvementYears: undefined as number | undefined,
+    sportInterests: [] as string[],
   });
 
   useEffect(() => {
@@ -252,19 +257,7 @@ export default function ProfilePage() {
     setShowDependentModal(true);
   };
 
-  const handleSaveDependent = async (dependentData: {
-    name: string;
-    dob: string | Date;
-    gender?: "MALE" | "FEMALE" | "OTHER";
-    relation?: string;
-    sports?: string[];
-    yearsPlaying?: number;
-    personalityTags?: string[];
-    primaryObjective?: "Recreational" | "Fitness" | "Compete";
-    weeklyTimeCommitment?: number;
-    budgetTier?: "Budget" | "Moderate" | "Premium";
-    location?: string;
-  }) => {
+  const handleSaveDependent = async (dependentData: Dependent) => {
     try {
       if (dependentModalMode === "add") {
         setSavingDependentId("new");
@@ -367,6 +360,9 @@ export default function ProfilePage() {
       weeklyTimeCommitment: user.playerProfile?.weeklyTimeCommitment || 3,
       budgetTier: user.playerProfile?.budgetTier || "Moderate",
       location: user.playerProfile?.location || "",
+      bio: user.parentProfile?.bio || "",
+      involvementYears: user.parentProfile?.involvementYears,
+      sportInterests: user.parentProfile?.sportInterests || [],
     });
   };
 
@@ -383,9 +379,8 @@ export default function ProfilePage() {
 
   const handleSaveSports = async () => {
     setIsSavingSports(true);
-
     try {
-      await authApi.updateProfile({
+      const updatePayload: Parameters<typeof authApi.updateProfile>[0] = {
         playerProfile: {
           sportsFocus: selectedSports,
           yearsPlaying: playerProfileForm.yearsPlaying,
@@ -395,12 +390,20 @@ export default function ProfilePage() {
           budgetTier: playerProfileForm.budgetTier,
           location: playerProfileForm.location || undefined,
         },
-      });
+      };
+      if (user?.userType === "Parent") {
+        updatePayload.parentProfile = {
+          bio: playerProfileForm.bio.trim() || undefined,
+          sportInterests: playerProfileForm.sportInterests,
+          involvementYears: playerProfileForm.involvementYears,
+        };
+      }
+      await authApi.updateProfile(updatePayload);
       await fetchProfile();
       setIsEditingSports(false);
-      toast.success("Player profile updated successfully!");
+      toast.success("Profile updated!");
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error) || "Failed to update sports");
+      toast.error(getErrorMessage(error) || "Failed to update profile");
     } finally {
       setIsSavingSports(false);
     }
@@ -451,6 +454,7 @@ export default function ProfilePage() {
     );
   }
 
+  const isParent = user.userType === "Parent";
   const sportsCount = user.playerProfile?.sportsFocus?.length ?? 0;
   const dependentsCount = user.dependents?.length ?? 0;
   const userAge = user.dob ? getDependentAge(user.dob) : null;
@@ -669,8 +673,12 @@ export default function ProfilePage() {
       >
         <ProfileSectionHeader
           icon={Trophy}
-          title="Player Profile"
-          description="Your sports and AI guidance preferences."
+          title={isParent ? "Parent Profile" : "Player Profile"}
+          description={
+            isParent
+              ? "Your background and preferences — used to personalise AI guidance."
+              : "Your sports and AI guidance preferences."
+          }
           isEditing={isEditingSports}
           onEdit={handleEditSportsClick}
           onCancel={handleCancelSportsEdit}
@@ -685,66 +693,131 @@ export default function ProfilePage() {
         <CardContent className="px-6 py-6">
           {isEditingSports ? (
             <div className="space-y-6">
-              <ProfileEditPanel description="Choose the sports you play or are interested in. You can select multiple.">
-                <ProfileEditField
-                  label="Your sports"
-                  hint={`${selectedSports.length} sport${selectedSports.length === 1 ? "" : "s"} selected`}
+              {isParent ? (
+                <ProfileEditPanel
+                  title="About You"
+                  description="Your sports background as a parent — helps the AI understand your perspective."
                 >
-                  <SportsMultiSelect
-                    value={selectedSports}
-                    onChange={setSelectedSports}
-                  />
-                </ProfileEditField>
+                  <ProfileEditField
+                    label="About You"
+                    htmlFor="parent-bio"
+                    hint={`${playerProfileForm.bio.length}/300 — your background as a sports parent`}
+                  >
+                    <textarea
+                      id="parent-bio"
+                      rows={3}
+                      maxLength={300}
+                      value={playerProfileForm.bio}
+                      onChange={(e) =>
+                        setPlayerProfileForm((f) => ({ ...f, bio: e.target.value }))
+                      }
+                      placeholder="e.g., Former club cricketer, now focused on my daughter's tennis journey."
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20 resize-none"
+                    />
+                  </ProfileEditField>
 
-                <ProfileEditField
-                  label="Experience (Years)"
-                  htmlFor="self-years-playing"
-                  hint="Leave blank if you haven't started playing yet"
-                >
-                  <Input
-                    id="self-years-playing"
-                    type="number"
-                    min="0"
-                    max="20"
-                    placeholder="e.g., 2"
-                    value={playerProfileForm.yearsPlaying ?? ""}
-                    onChange={(e) =>
-                      setPlayerProfileForm((f) => ({
-                        ...f,
-                        yearsPlaying:
-                          e.target.value === ""
-                            ? undefined
-                            : parseInt(e.target.value, 10),
-                      }))
-                    }
-                  />
-                </ProfileEditField>
+                  <ProfileEditField
+                    label="Sports You Follow or Have Played"
+                    hint="Helps the AI understand your perspective when asking about your child's sport"
+                  >
+                    <SportsMultiSelect
+                      value={playerProfileForm.sportInterests}
+                      onChange={(s) =>
+                        setPlayerProfileForm((f) => ({ ...f, sportInterests: s }))
+                      }
+                    />
+                  </ProfileEditField>
 
-                {selectedSports.length > 0 ? (
-                  <div className="mt-4 rounded-lg border border-orange-100 bg-white/80 p-3">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Selected
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedSports.map((sport) => (
-                        <Badge
-                          key={sport}
-                          className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
-                        >
-                          {sport}
-                        </Badge>
-                      ))}
+                  <ProfileEditField
+                    label="Years Involved in Sport"
+                    htmlFor="parent-involvement-years"
+                    hint="How long you've been involved or interested in sport"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Input
+                        id="parent-involvement-years"
+                        type="number"
+                        min="0"
+                        max="40"
+                        placeholder="e.g., 5"
+                        value={playerProfileForm.involvementYears ?? ""}
+                        onChange={(e) =>
+                          setPlayerProfileForm((f) => ({
+                            ...f,
+                            involvementYears:
+                              e.target.value === ""
+                                ? undefined
+                                : Math.min(40, parseInt(e.target.value, 10) || 0),
+                          }))
+                        }
+                        className="w-28"
+                      />
+                      <span className="text-sm text-slate-500">years</span>
                     </div>
-                  </div>
-                ) : (
-                  <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-white/60 px-4 py-6 text-center">
-                    <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-400" />
-                    <p className="text-sm text-slate-500">
-                      No sports selected yet. Search above to add some.
-                    </p>
-                  </div>
-                )}
-              </ProfileEditPanel>
+                  </ProfileEditField>
+                </ProfileEditPanel>
+              ) : (
+                <ProfileEditPanel description="Choose the sports you play or are interested in. You can select multiple.">
+                  <ProfileEditField
+                    label="Your sports"
+                    hint={`${selectedSports.length} sport${selectedSports.length === 1 ? "" : "s"} selected`}
+                  >
+                    <SportsMultiSelect
+                      value={selectedSports}
+                      onChange={setSelectedSports}
+                    />
+                  </ProfileEditField>
+
+                  <ProfileEditField
+                    label="Experience (Years)"
+                    htmlFor="self-years-playing"
+                    hint="Leave blank if you haven't started playing yet"
+                  >
+                    <Input
+                      id="self-years-playing"
+                      type="number"
+                      min="0"
+                      max="20"
+                      placeholder="e.g., 2"
+                      value={playerProfileForm.yearsPlaying ?? ""}
+                      onChange={(e) =>
+                        setPlayerProfileForm((f) => ({
+                          ...f,
+                          yearsPlaying:
+                            e.target.value === ""
+                              ? undefined
+                              : parseInt(e.target.value, 10),
+                        }))
+                      }
+                    />
+                  </ProfileEditField>
+
+                  {selectedSports.length > 0 ? (
+                    <div className="mt-4 rounded-lg border border-orange-100 bg-white/80 p-3">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Selected
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedSports.map((sport) => (
+                          <Badge
+                            key={sport}
+                            className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
+                          >
+                            {sport}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-white/60 px-4 py-6 text-center">
+                      <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-400" />
+                      <p className="text-sm text-slate-500">
+                        No sports selected yet. Search above to add some.
+                      </p>
+                    </div>
+                  )}
+                </ProfileEditPanel>
+              )}
 
               <ProfileEditPanel
                 title="AI Guidance Preferences"
@@ -874,49 +947,90 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="space-y-8">
-              <div>
-                <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  My Sports
-                </h4>
-                {user.playerProfile?.sportsFocus &&
-                user.playerProfile.sportsFocus.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {user.playerProfile.sportsFocus.map((sport: string) => (
-                      <Badge
-                        key={sport}
-                        className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
-                      >
-                        {sport}
-                      </Badge>
-                    ))}
+              {isParent ? (
+                <div>
+                  <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    About You
+                  </h4>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <ProfileInfoField label="Background">
+                      {user.parentProfile?.bio ? (
+                        <p className="text-sm text-slate-700 leading-relaxed">
+                          {user.parentProfile.bio}
+                        </p>
+                      ) : (
+                        <span className="text-slate-400 italic text-sm">Not provided</span>
+                      )}
+                    </ProfileInfoField>
+                    <ProfileInfoField label="Years Involved in Sport">
+                      {user.parentProfile?.involvementYears !== undefined
+                        ? `${user.parentProfile.involvementYears} year${user.parentProfile.involvementYears === 1 ? "" : "s"}`
+                        : <span className="text-slate-400 italic text-sm">Not provided</span>}
+                    </ProfileInfoField>
+                    <ProfileInfoField label="Sports Followed">
+                      {user.parentProfile?.sportInterests &&
+                      user.parentProfile.sportInterests.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {user.parentProfile.sportInterests.map((sport) => (
+                            <Badge
+                              key={sport}
+                              className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
+                            >
+                              {sport}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 italic text-sm">Not provided</span>
+                      )}
+                    </ProfileInfoField>
                   </div>
-                ) : (
-                  <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-8 text-center max-w-lg">
-                    <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-400" />
-                    <p className="text-sm font-medium text-slate-700">
-                      No sports added yet
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Add the sports you play to get better recommendations.
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-3"
-                      onClick={handleEditSportsClick}
-                    >
-                      Add Sports
-                    </Button>
-                  </div>
-                )}
-                <div className="mt-4">
-                  <ProfileInfoField label="Experience">
-                    {user.playerProfile?.yearsPlaying !== undefined
-                      ? `${user.playerProfile.yearsPlaying} year${user.playerProfile.yearsPlaying === 1 ? "" : "s"}`
-                      : "Not started yet"}
-                  </ProfileInfoField>
                 </div>
-              </div>
+              ) : (
+                <div>
+                  <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    My Sports
+                  </h4>
+                  {user.playerProfile?.sportsFocus &&
+                  user.playerProfile.sportsFocus.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {user.playerProfile.sportsFocus.map((sport: string) => (
+                        <Badge
+                          key={sport}
+                          className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
+                        >
+                          {sport}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-8 text-center max-w-lg">
+                      <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-400" />
+                      <p className="text-sm font-medium text-slate-700">
+                        No sports added yet
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Add the sports you play to get better recommendations.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3"
+                        onClick={handleEditSportsClick}
+                      >
+                        Add Sports
+                      </Button>
+                    </div>
+                  )}
+                  <div className="mt-4">
+                    <ProfileInfoField label="Experience">
+                      {user.playerProfile?.yearsPlaying !== undefined
+                        ? `${user.playerProfile.yearsPlaying} year${user.playerProfile.yearsPlaying === 1 ? "" : "s"}`
+                        : "Not started yet"}
+                    </ProfileInfoField>
+                  </div>
+                </div>
+              )}
 
               <div className="border-t border-slate-100 pt-6">
                 <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -992,7 +1106,42 @@ export default function ProfilePage() {
                   const isEligible = age !== null && age >= 18;
                   const genderLabel = formatGender(dependent.gender);
                   const dependentCompletion =
-                    calculateProfileCompletion(dependent);
+                    calculateDependentCompletion(dependent);
+
+                  const physicalChips = [
+                    dependent.heightCm && dependent.weightKg
+                      ? `${dependent.heightCm} cm · ${dependent.weightKg} kg`
+                      : null,
+                    wizardChip(dependent.build, BUILD_LABELS),
+                    wizardChip(dependent.heightCategory, HEIGHT_LABELS),
+                    wizardChip(dependent.energyType, ENERGY_LABELS),
+                    wizardChip(dependent.visualTracking, VISUAL_TRACKING_LABELS),
+                    wizardChip(dependent.eyesight, EYESIGHT_LABELS),
+                    wizardChip(dependent.agility, AGILITY_LABELS),
+                  ].filter(Boolean) as string[];
+
+                  const personalityChips = [
+                    dependent.teamIndividual !== undefined
+                      ? TEAM_INDIVIDUAL_LABELS[dependent.teamIndividual as number]
+                      : null,
+                    wizardChip(dependent.competitiveResponse, COMPETITIVE_RESPONSE_LABELS),
+                    wizardChip(dependent.focusStyle, FOCUS_LABELS),
+                    wizardChip(dependent.decisionStyle, DECISION_LABELS),
+                    wizardChip(dependent.pressureResponse, PRESSURE_LABELS),
+                    wizardChip(dependent.repetitionTolerance, REPETITION_LABELS),
+                  ].filter(Boolean) as string[];
+
+                  const comfortChips = [
+                    wizardChip(dependent.contactComfort, CONTACT_LABELS),
+                    wizardChip(dependent.environment, ENV_LABELS),
+                    wizardChip(dependent.waterComfort, WATER_COMFORT_LABELS),
+                  ].filter(Boolean) as string[];
+
+                  const practicalChips = [
+                    wizardChip(dependent.budgetRange, BUDGET_RANGE_LABELS),
+                    wizardChip(dependent.ambition, AMBITION_LABELS),
+                    wizardChip(dependent.weeklyHoursCategory, WEEKLY_HOURS_LABELS),
+                  ].filter(Boolean) as string[];
 
                   return (
                     <div
@@ -1056,28 +1205,151 @@ export default function ProfilePage() {
                               </p>
                             )}
 
-                            {dependent.sportsFocus &&
-                              dependent.sportsFocus.length > 0 && (
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                  {dependent.sportsFocus.map(
-                                    (sport: string) => (
-                                      <Badge
-                                        key={sport}
-                                        className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50"
-                                      >
-                                        {sport}
-                                      </Badge>
-                                    ),
-                                  )}
+                            {/* Sport focus / match results */}
+                            {dependent.sportsFocus && dependent.sportsFocus.length > 0 ? (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {dependent.sportsFocus.map((sport: string) => (
+                                  <Badge
+                                    key={sport}
+                                    className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50"
+                                  >
+                                    {sport}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (dependent.sportMatches?.length ?? 0) > 0 ? (
+                              <div className="mt-3 space-y-1.5">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                  Sport match results
+                                </p>
+                                {dependent.sportMatches!.slice(0, 3).map((m, i) => {
+                                  const meta = MATCH_RANK_META[i] ?? MATCH_RANK_META[2];
+                                  const RankIcon = meta.icon;
+                                  return (
+                                    <div
+                                      key={m.sport}
+                                      className={`flex items-center justify-between rounded-lg border ${meta.ring} bg-white px-3 py-1.5`}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <span
+                                          className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${meta.badge}`}
+                                        >
+                                          <RankIcon className="h-3 w-3" />
+                                        </span>
+                                        <span className="text-sm font-semibold text-slate-800">
+                                          {m.sport}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-slate-500">
+                                          {m.fitLabel}
+                                        </span>
+                                        <span className="text-[11px] tabular-nums text-slate-300">
+                                          {m.score}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+
+                            {/* Physical profile */}
+                            {physicalChips.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                  Physical profile
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {physicalChips.map((chip) => (
+                                    <span
+                                      key={chip}
+                                      className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700"
+                                    >
+                                      {chip}
+                                    </span>
+                                  ))}
                                 </div>
-                              )}
+                              </div>
+                            )}
+
+                            {/* Personality & play style */}
+                            {personalityChips.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                  Personality &amp; play style
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {personalityChips.map((chip) => (
+                                    <span
+                                      key={chip}
+                                      className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-[11px] font-medium text-indigo-700"
+                                    >
+                                      {chip}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Comfort & environment */}
+                            {comfortChips.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                  Comfort &amp; environment
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {comfortChips.map((chip) => (
+                                    <span
+                                      key={chip}
+                                      className="rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-[11px] font-medium text-teal-700"
+                                    >
+                                      {chip}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Practical */}
+                            {practicalChips.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                  Practical
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {practicalChips.map((chip) => (
+                                    <span
+                                      key={chip}
+                                      className="rounded-full border border-amber-100 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700"
+                                    >
+                                      {chip}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Medical conditions */}
+                            {(dependent.medicalConditions?.length ?? 0) > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {dependent.medicalConditions!.map((cond) => (
+                                  <Badge
+                                    key={cond}
+                                    className="border-amber-200 bg-amber-50 text-[11px] text-amber-700 hover:bg-amber-50"
+                                  >
+                                    {cond}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
 
                         <div className="flex flex-wrap gap-2 sm:justify-end">
                           <Button
                             onClick={() => handleEditDependent(dependent)}
-                            variant="secondary"
+                            variant="outline"
                             size="sm"
                             disabled={savingDependentId === dependent._id}
                             icon={<Edit2 size={14} />}
@@ -1086,10 +1358,10 @@ export default function ProfilePage() {
                           </Button>
                           <Button
                             onClick={() => setDependentToDelete(dependent)}
-                            variant="secondary"
+                            variant="ghost"
                             size="sm"
                             disabled={isDeletingDependentId === dependent._id}
-                            className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                            className="border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                             icon={<Trash2 size={14} />}
                           >
                             {isDeletingDependentId === dependent._id

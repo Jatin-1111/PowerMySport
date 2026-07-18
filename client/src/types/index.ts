@@ -69,7 +69,37 @@ export interface Dependent {
   primaryObjective?: "Recreational" | "Fitness" | "Compete";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
-  location?: string;
+  location?: string; // Indian state
+  heightCm?: number;
+  weightKg?: number;
+  medicalConditions?: string[];
+  // Wizard physical
+  build?: "lean" | "average" | "stocky";
+  heightCategory?: "short" | "average" | "tall";
+  energyType?: "explosive" | "endurance";
+  motorType?: "gross" | "fine";
+  visualTracking?: "strong" | "moderate" | "weak";
+  // Wizard personality
+  teamIndividual?: number;
+  competitiveResponse?: "fired-up" | "calm" | "discouraged";
+  focusStyle?: "bursts" | "sustained";
+  decisionStyle?: "react" | "strategic";
+  pressureResponse?: "thrives" | "manages" | "avoids";
+  repetitionTolerance?: "high" | "low";
+  // Wizard comfort
+  contactComfort?: "loves" | "neutral" | "avoids";
+  environment?: "outdoor" | "indoor" | "no-preference";
+  waterComfort?: "comfortable" | "neutral" | "uncomfortable";
+  // Wizard practical
+  budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
+  ambition?: "fun" | "competitive" | "national" | "professional";
+  eyesight?: "sharp" | "corrected" | "limited";
+  agility?: "high" | "moderate" | "low";
+  weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
+  experienceLevel?: "beginner" | "intermediate" | "competitive";
+  trainingType?: "self" | "club" | "academy" | "private";
+  sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
+  wizardCompletedAt?: string;
 }
 
 export interface UserShippingAddress {
@@ -98,6 +128,11 @@ export interface User {
   photoS3Key?: string; // S3 key for profile picture
   googleId?: string;
   playerProfile?: IPlayerProfile;
+  parentProfile?: {
+    bio?: string;
+    sportInterests?: string[];
+    involvementYears?: number;
+  };
   venueListerProfile?: VenueListerProfile;
   dependents?: Dependent[];
   shippingAddress?: UserShippingAddress;

@@ -98,6 +98,38 @@ export const MACRO_LEVEL_CONFIGS: MacroLevelConfig[] = [
   },
 ];
 
+// ─── Straight talk: funnel honesty + exit value ─────────────────────────────
+//
+// Deliberately NOT sport-specific statistics — we don't have citable
+// federation/Khelo India participation numbers per sport, and inventing them
+// would be worse than saying nothing. These are general, defensible truths
+// about how every competitive pyramid narrows, and what reaching or stopping
+// at each tier is honestly worth — true regardless of which sport a family
+// is looking at.
+export const FUNNEL_AND_EXIT_VALUE: Record<
+  MacroLevelId,
+  { funnelNote: string; exitValueNote: string }
+> = {
+  beginner: {
+    funnelNote:
+      "This is where almost every child who tries a sport starts — the widest part of the pyramid. Most stay here to build fitness and enjoyment, not to advance further, and that's a complete outcome, not a stopping-short.",
+    exitValueNote:
+      "Stopping here isn't quitting early — your child gets exercise, teamwork, and focus, and can always pick it back up recreationally later. Nothing invested at this stage is wasted.",
+  },
+  intermediate: {
+    funnelNote:
+      "Fewer children reach District or State level than started at City level — that's true in every sport, everywhere. It isn't a judgment on your child; it's how every competitive pyramid narrows.",
+    exitValueNote:
+      "Reaching this level is a genuine, standalone achievement — most kids who start a sport never get this far. It often supports school/state sports-quota consideration, and it builds discipline and time-management that carries over into academics, whether or not your child competes again.",
+  },
+  competitive: {
+    funnelNote:
+      "This is the narrowest part of the pyramid in every sport — a small fraction of those who start ever compete here. Reaching it takes real talent, years of consistent work, and often some good fortune with timing and injury-free health. Most dedicated athletes never reach this tier.",
+    exitValueNote:
+      "Even without a professional career, reaching National or International level supports sports-quota admission at top Indian universities and stands out on any resume — an achievement very few people, in any field, ever have.",
+  },
+};
+
 export interface MacroLevel extends MacroLevelConfig {
   rawLevels: PathwayLevel[];
   /** A single representative raw level number/label for consumers (chat context,

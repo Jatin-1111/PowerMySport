@@ -39,8 +39,9 @@ export default function CommunityPageModals({ page }: Props) {
     setShowAddChatModal,
     showBlockedUsersModal,
     setShowBlockedUsersModal,
-    blockedUserIds,
-    toggleBlockUserLocal,
+    blockedUsersList,
+    isLoadingBlockedUsers,
+    handleUnblockUserById,
     messageToDelete,
     setMessageToDelete,
     confirmDeleteMessage,
@@ -109,8 +110,9 @@ export default function CommunityPageModals({ page }: Props) {
       <BlockedUsersModal
         isOpen={showBlockedUsersModal}
         onClose={() => setShowBlockedUsersModal(false)}
-        blockedUserIds={blockedUserIds}
-        onUnblock={toggleBlockUserLocal}
+        blockedUsers={blockedUsersList}
+        isLoading={isLoadingBlockedUsers}
+        onUnblock={handleUnblockUserById}
       />
     </>
   );

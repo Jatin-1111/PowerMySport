@@ -61,6 +61,7 @@ const TYPE_TO_CATEGORY: Record<NotificationType, NotificationCategory> = {
   DISPUTE_FILED: "Admin",
   DISPUTE_RESOLVED: "Admin",
   MESSAGE_RECEIVED: "COMMUNITY",
+  PLAN_CHECKIN: "COMMUNITY",
 };
 
 // Notification type to preference key mapping
@@ -108,6 +109,7 @@ const TYPE_TO_PREFERENCE_KEY: Record<
   DISPUTE_FILED: "admin",
   DISPUTE_RESOLVED: "admin",
   MESSAGE_RECEIVED: "friendRequests", // Reuse for community
+  PLAN_CHECKIN: "friendRequests", // Reuse for community
 };
 
 let socketInstance: Server | null = null;

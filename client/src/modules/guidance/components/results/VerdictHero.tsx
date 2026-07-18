@@ -59,9 +59,11 @@ interface LevelContext {
 export function VerdictHero({
   assessment,
   levelContext,
+  alreadyAtLevel = false,
 }: {
   assessment: GoalAssessment;
   levelContext?: LevelContext;
+  alreadyAtLevel?: boolean;
 }) {
   const cfg = VERDICT_CONFIG[assessment.verdict] ?? VERDICT_CONFIG.Achievable;
   const Icon = cfg.icon;
@@ -97,7 +99,9 @@ export function VerdictHero({
         <div className="flex-1 min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
             {levelContext
-              ? `Should your child play ${levelContext.sport} at ${levelContext.levelLabel} level?`
+              ? alreadyAtLevel
+                ? `Progressing from ${levelContext.levelLabel} — what's the path forward?`
+                : `Should your child aim for ${levelContext.sport} at ${levelContext.levelLabel} level?`
               : "Your goal check"}
           </p>
           <div className="flex flex-wrap items-center gap-2 mb-1">

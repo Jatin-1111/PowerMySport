@@ -515,3 +515,66 @@ export const getCuratedTournaments = async (
     fail(res, error, 500);
   }
 };
+
+/**
+ * GET /api/pathways/progression?sport=&state=&level=
+ * Returns the progression plan for a raw level number (1–4), generating it
+ * lazily via Gemini if not yet stored. Results are cached in MongoDB so repeat
+ * requests are instant.
+ */
+export const getProgressionPlan = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { sport, state, level } = req.query;
+
+    if (!sport || typeof sport !== "string" || sport.trim().length < 2) {
+      res.status(400).json({
+        success: false,
+        message: "Please provide a sport name (at least 2 characters).",
+      });
+      return;
+    }
+
+    if (
+      !state ||
+      typeof state !== "string" ||
+      !INDIAN_STATES_AND_UTS.includes(state as any)
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "Please provide a valid Indian state or UT.",
+      });
+      return;
+    }
+
+    const levelNum = parseInt(String(level), 10);
+    if (isNaN(levelNum) || levelNum < 1 || levelNum > 4) {
+      res.status(400).json({
+        success: false,
+        message: "level must be a number between 1 and 4.",
+      });
+      return;
+    }
+
+    const plan = await pathwayService.getOrGenerateProgressionPlan(
+      sport.trim(),
+      state,
+      levelNum,
+    );
+
+    if (!plan) {
+      res.status(503).json({
+        success: false,
+        message: "Progression plan could not be generated right now. Please try again in a moment.",
+      });
+      return;
+    }
+
+    res.json({ success: true, data: plan });
+  } catch (error) {
+    console.error("Error generating progression plan:", error);
+    res.status(500).json({ success: false, message: "Failed to generate progression plan." });
+  }
+};

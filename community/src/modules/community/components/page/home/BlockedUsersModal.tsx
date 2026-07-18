@@ -1,15 +1,19 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, UserX } from "lucide-react";
+import { X, UserX, Loader2 } from "lucide-react";
+import { BlockedUser } from "@/modules/community/types";
+import { getAvatarCharacter } from "@/modules/community/utils/chatUtils";
 
 export function BlockedUsersModal({
   isOpen,
   onClose,
-  blockedUserIds,
+  blockedUsers,
+  isLoading,
   onUnblock,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  blockedUserIds: string[];
+  blockedUsers: BlockedUser[];
+  isLoading?: boolean;
   onUnblock: (userId: string) => void;
 }) {
   if (!isOpen) return null;
@@ -43,7 +47,11 @@ export function BlockedUsersModal({
 
           {/* Body */}
           <div className="flex-1 overflow-y-auto p-2">
-            {blockedUserIds.length === 0 ? (
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <Loader2 size={22} className="animate-spin text-power-orange" />
+              </div>
+            ) : blockedUsers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">
                 <div className="mb-3 rounded-full bg-slate-100 p-3 text-slate-400">
                   <UserX size={24} />
@@ -51,17 +59,30 @@ export function BlockedUsersModal({
                 <p className="text-sm font-medium text-slate-600">No blocked users</p>
               </div>
             ) : (
-              blockedUserIds.map((userId) => (
+              blockedUsers.map((user) => (
                 <div
-                  key={userId}
-                  className="flex items-center justify-between rounded-xl px-4 py-3 hover:bg-slate-50 transition"
+                  key={user.id}
+                  className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 hover:bg-slate-50 transition"
                 >
-                  <span className="text-sm font-medium text-slate-700">
-                    User {userId.slice(0, 5)}...
-                  </span>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-power-orange/10 text-sm font-bold text-power-orange">
+                      {user.photoUrl ? (
+                        <img
+                          src={user.photoUrl}
+                          alt={user.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        getAvatarCharacter(user.name)
+                      )}
+                    </div>
+                    <span className="truncate text-sm font-medium text-slate-700">
+                      {user.name}
+                    </span>
+                  </div>
                   <button
-                    onClick={() => onUnblock(userId)}
-                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 active:scale-95 transition"
+                    onClick={() => onUnblock(user.id)}
+                    className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 active:scale-95 transition"
                   >
                     Unblock
                   </button>

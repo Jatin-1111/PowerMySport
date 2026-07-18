@@ -33,11 +33,16 @@ export function RoadmapChatDrawer({
 }: RoadmapChatDrawerProps) {
   const {
     messages,
+    currentSessionId,
+    sessions,
+    isLoadingSessions,
     isInitializing,
     isStreaming,
     meta,
     error,
     initialize,
+    createNewSession,
+    switchToSession,
     sendMessage,
     clearError,
   } = useRoadmapChat({ sportSlug, level });
@@ -55,7 +60,7 @@ export function RoadmapChatDrawer({
     <ChatDrawer
       isOpen={isOpen}
       onClose={onClose}
-      title="Sports Coach"
+      title="PowerMySport AI"
       subtitle={levelLabel ? `${sportName} · ${levelLabel} level` : sportName}
       messages={messages}
       isInitializing={isInitializing}
@@ -65,6 +70,11 @@ export function RoadmapChatDrawer({
       sendMessage={sendMessage}
       clearError={clearError}
       quickReplies={QUICK_REPLIES}
+      sessions={sessions}
+      isLoadingSessions={isLoadingSessions}
+      currentSessionId={currentSessionId}
+      onNewChat={createNewSession}
+      onSelectSession={switchToSession}
     >
       <AIDisclaimer variant="chat" />
     </ChatDrawer>

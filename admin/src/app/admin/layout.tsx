@@ -31,6 +31,7 @@ import {
   UserCircle2,
   Users,
   Webhook,
+  Stethoscope,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -215,6 +216,11 @@ export default function AdminLayout({
             href: "/admin/sport-pathways",
             label: "Sport Pathways",
             icon: Map,
+          },
+          {
+            href: "/admin/screenings",
+            label: "Screenings",
+            icon: Stethoscope,
           },
         ],
       },

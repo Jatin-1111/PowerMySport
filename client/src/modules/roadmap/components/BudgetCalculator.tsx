@@ -54,6 +54,8 @@ export function BudgetCalculator({ pathway }: { pathway: SportPathway }) {
     coachingMid: number;
     travel: string;
     financial: string;
+    time: string;
+    role: string;
   };
 
   const rows: RowData[] = levelData.map((lv) => {
@@ -78,6 +80,8 @@ export function BudgetCalculator({ pathway }: { pathway: SportPathway }) {
       coachingMid: (fees.low + fees.high) / 2,
       travel: commitment.travel,
       financial: commitment.financial,
+      time: commitment.time,
+      role: commitment.role,
     };
   });
 
@@ -102,6 +106,8 @@ export function BudgetCalculator({ pathway }: { pathway: SportPathway }) {
       lines.push(`  Equipment : ${r.equipment}`);
       lines.push(`  Coaching  : ${r.coaching} (est. 10 active months)`);
       lines.push(`  Travel    : ${r.travel}`);
+      lines.push(`  Time      : ${r.time}`);
+      lines.push(`  Your role : ${r.role}`);
     });
     lines.push("");
     lines.push("─".repeat(50));
@@ -214,25 +220,38 @@ export function BudgetCalculator({ pathway }: { pathway: SportPathway }) {
           {rows.map((row, idx) => (
             <div
               key={row.level}
-              className={`grid grid-cols-4 gap-4 px-5 py-3 items-center ${idx < rows.length - 1 ? "border-b border-slate-100" : ""}`}
+              className={`px-5 py-3 ${idx < rows.length - 1 ? "border-b border-slate-100" : ""}`}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-[10px] font-extrabold text-slate-600">
-                  {row.level}
+              <div className="grid grid-cols-4 gap-4 items-center">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-[10px] font-extrabold text-slate-600">
+                    {row.level}
+                  </span>
+                  <span className="text-sm font-semibold text-slate-800 truncate">
+                    {row.label}
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-slate-800 tabular-nums">
+                  {row.equipment}
+                </p>
+                <p className="text-sm font-semibold text-slate-800">
+                  {row.coaching}
+                </p>
+                <p className="text-sm text-slate-500 leading-snug truncate">
+                  {row.travel}
+                </p>
+              </div>
+              {/* Family logistics — the cost of time, not just money */}
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 pl-8 text-xs text-slate-400">
+                <span>
+                  <span className="font-semibold text-slate-500">Time: </span>
+                  {row.time}
                 </span>
-                <span className="text-sm font-semibold text-slate-800 truncate">
-                  {row.label}
+                <span>
+                  <span className="font-semibold text-slate-500">Your role: </span>
+                  {row.role}
                 </span>
               </div>
-              <p className="text-sm font-semibold text-slate-800 tabular-nums">
-                {row.equipment}
-              </p>
-              <p className="text-sm font-semibold text-slate-800">
-                {row.coaching}
-              </p>
-              <p className="text-sm text-slate-500 leading-snug truncate">
-                {row.travel}
-              </p>
             </div>
           ))}
         </div>

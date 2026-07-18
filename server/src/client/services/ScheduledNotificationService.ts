@@ -6,7 +6,7 @@ import {
 import { NotificationService } from "./NotificationService";
 import { NotificationCategory } from "../models/Notification";
 import pushNotificationService from "./pushNotificationService";
-import { sendBookingReminderEmail } from "../../utils/email";
+import { sendBookingReminderEmail, sendPlanCheckInEmail } from "../../utils/email";
 import mongoose from "mongoose";
 
 interface BookingReminderData {
@@ -283,6 +283,21 @@ export class ScheduledNotificationService {
                   return Promise.reject(err);
                 }),
               );
+            } else if (reminder.type === "PLAN_CHECKIN") {
+              const data = (reminder.data || {}) as Record<string, any>;
+              sendPromises.push(
+                sendPlanCheckInEmail({
+                  email: user.email,
+                  name: user.name,
+                  sport: data.sport || "your sport",
+                  title: reminder.title,
+                  signals: Array.isArray(data.signals) ? data.signals : [],
+                  checkInId: data.checkInId || "",
+                }).catch((err) => {
+                  console.error("Failed to send plan check-in email:", err);
+                  return Promise.reject(err);
+                }),
+              );
             }
           }
 
@@ -296,7 +311,7 @@ export class ScheduledNotificationService {
 
           stats.sent++;
           console.log(
-            `Sent reminder ${reminder._id} for booking ${booking._id}`,
+            `Sent reminder ${reminder._id}${booking ? ` for booking ${booking._id}` : ""}`,
           );
         } catch (error) {
           console.error(`Error processing reminder ${reminder._id}:`, error);

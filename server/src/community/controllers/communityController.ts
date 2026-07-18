@@ -288,6 +288,24 @@ export const listConversations = async (
   }
 };
 
+export const getUnreadConversationCount = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const count = await CommunityService.getUnreadConversationCount(
+      getUserId(req),
+    );
+    res.status(200).json({
+      success: true,
+      message: "Unread conversation count fetched",
+      data: { count },
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to fetch unread conversation count");
+  }
+};
+
 export const getConversationMessages = async (
   req: Request,
   res: Response,
@@ -447,12 +465,14 @@ export const createGroup = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { name, description, sport, city, audience } = req.body as {
+    const { name, description, sport, city, audience, profilePicture, profilePictureKey } = req.body as {
       name: string;
       description?: string;
       sport?: string;
       city?: string;
       audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+      profilePicture?: string;
+      profilePictureKey?: string;
     };
 
     const payload: {
@@ -461,6 +481,8 @@ export const createGroup = async (
       sport?: string;
       city?: string;
       audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+      profilePicture?: string;
+      profilePictureKey?: string;
     } = { name };
     if (typeof description === "string") {
       payload.description = description;
@@ -477,6 +499,12 @@ export const createGroup = async (
       audience === "COACHES_ONLY"
     ) {
       payload.audience = audience;
+    }
+    if (typeof profilePicture === "string") {
+      payload.profilePicture = profilePicture;
+    }
+    if (typeof profilePictureKey === "string") {
+      payload.profilePictureKey = profilePictureKey;
     }
 
     const data = await CommunityService.createGroup(getUserId(req), payload);
@@ -497,12 +525,14 @@ export const updateGroup = async (
 ): Promise<void> => {
   try {
     const groupId = String(req.params.groupId || "");
-    const { name, description, sport, city, audience } = req.body as {
+    const { name, description, sport, city, audience, profilePicture, profilePictureKey } = req.body as {
       name?: string;
       description?: string;
       sport?: string;
       city?: string;
       audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+      profilePicture?: string;
+      profilePictureKey?: string;
     };
 
     const payload: {
@@ -511,12 +541,16 @@ export const updateGroup = async (
       sport?: string;
       city?: string;
       audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+      profilePicture?: string;
+      profilePictureKey?: string;
     } = {};
     if (typeof name === "string") payload.name = name;
     if (typeof description === "string") payload.description = description;
     if (typeof sport === "string") payload.sport = sport;
     if (typeof city === "string") payload.city = city;
     if (audience) payload.audience = audience;
+    if (typeof profilePicture === "string") payload.profilePicture = profilePicture;
+    if (typeof profilePictureKey === "string") payload.profilePictureKey = profilePictureKey;
 
     const data = await CommunityService.updateGroup(
       getUserId(req),
@@ -791,7 +825,14 @@ export const listCommunityPosts = async (
     const sortRaw =
       typeof req.query.sort === "string" ? req.query.sort.toUpperCase() : "NEW";
     const sort =
-      sortRaw === "TOP" || sortRaw === "UNANSWERED" ? sortRaw : "NEW";
+      sortRaw === "TOP" || sortRaw === "UNANSWERED" || sortRaw === "ANSWERED"
+        ? sortRaw
+        : "NEW";
+    const directionRaw =
+      typeof req.query.direction === "string"
+        ? req.query.direction.toUpperCase()
+        : "DESC";
+    const direction = directionRaw === "ASC" ? "ASC" : "DESC";
     const q = typeof req.query.q === "string" ? req.query.q : "";
     const tag = typeof req.query.tag === "string" ? req.query.tag : "";
     const sport = typeof req.query.sport === "string" ? req.query.sport : "";
@@ -805,6 +846,7 @@ export const listCommunityPosts = async (
 
     const data = await CommunityService.listPosts(getUserId(req), page, limit, {
       sort,
+      direction,
       q,
       tag,
       sport,

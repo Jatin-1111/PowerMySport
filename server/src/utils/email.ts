@@ -520,6 +520,69 @@ export const sendPasswordResetEmail = async (
   });
 };
 
+interface PlanCheckInEmailOptions {
+  email: string;
+  name: string;
+  sport: string;
+  title: string;
+  signals: string[];
+  checkInId: string;
+}
+
+export const sendPlanCheckInEmail = async (
+  options: PlanCheckInEmailOptions,
+): Promise<void> => {
+  const checkInUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/check-in/${options.checkInId}`;
+
+  const signalsHtml = options.signals
+    .map((s) => `<li style="margin-bottom: 6px;">${s}</li>`)
+    .join("");
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+    .button { display: inline-block; padding: 12px 30px; background: #ff6b35; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: bold; }
+    .signal-box { background: #fff; border: 1px solid #eee; padding: 15px 15px 15px 30px; border-radius: 8px; margin: 15px 0; }
+    .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>How's it going with ${options.sport}?</h1>
+  </div>
+  <div class="content">
+    <h2>Hi ${options.name},</h2>
+    <p>${options.title}</p>
+    <p>A quick check-in — what have you noticed?</p>
+    <div class="signal-box">
+      <ul>${signalsHtml}</ul>
+    </div>
+    <center>
+      <a href="${checkInUrl}" class="button">Tell us what happened</a>
+    </center>
+    <p>Takes under a minute — your answer shapes what we suggest next.</p>
+    <p>Best regards,<br><strong>The PowerMySport Team</strong></p>
+  </div>
+  <div class="footer">
+    <p>This email was sent to ${options.email}</p>
+    <p>© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
+  </div>
+</body>
+</html>
+  `;
+
+  await sendEmail({
+    to: options.email,
+    subject: `How's ${options.sport} going? — Quick check-in`,
+    html,
+  });
+};
+
 interface FriendRequestEmailOptions {
   recipientName: string;
   recipientEmail: string;

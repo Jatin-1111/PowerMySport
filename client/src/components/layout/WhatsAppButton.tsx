@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const WA_NUMBER = "918968582443";
 const WA_MESSAGE =
@@ -29,6 +29,15 @@ export function WhatsAppIcon({
 
 export function WhatsAppButton() {
   const [hovered, setHovered] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: Event) => setChatOpen((e as CustomEvent<{ isOpen: boolean }>).detail.isOpen);
+    window.addEventListener("chat-drawer-change", handler);
+    return () => window.removeEventListener("chat-drawer-change", handler);
+  }, []);
+
+  if (chatOpen) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3 select-none">

@@ -15,7 +15,39 @@ export interface PlayerDocument extends Document {
   primaryObjective?: "Recreational" | "Fitness" | "Compete";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
-  location?: string;
+  location?: string; // Indian state
+  heightCm?: number;
+  weightKg?: number;
+  medicalConditions?: string[];
+  // Wizard physical
+  build?: "lean" | "average" | "stocky";
+  heightCategory?: "short" | "average" | "tall";
+  energyType?: "explosive" | "endurance";
+  motorType?: "gross" | "fine";
+  visualTracking?: "strong" | "moderate" | "weak";
+  // Wizard personality
+  teamIndividual?: number; // 1=very individual, 5=very team
+  competitiveResponse?: "fired-up" | "calm" | "discouraged";
+  focusStyle?: "bursts" | "sustained";
+  decisionStyle?: "react" | "strategic";
+  pressureResponse?: "thrives" | "manages" | "avoids";
+  repetitionTolerance?: "high" | "low";
+  // Wizard comfort
+  contactComfort?: "loves" | "neutral" | "avoids";
+  environment?: "outdoor" | "indoor" | "no-preference";
+  waterComfort?: "comfortable" | "neutral" | "uncomfortable";
+  // Wizard practical (finer-grained than budgetTier)
+  budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
+  ambition?: "fun" | "competitive" | "national" | "professional";
+  eyesight?: "sharp" | "corrected" | "limited";
+  agility?: "high" | "moderate" | "low";
+  weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
+  experienceLevel?: "beginner" | "intermediate" | "competitive";
+  trainingType?: "self" | "club" | "academy" | "private";
+  wizardCity?: string; // city picked in wizard (location holds state)
+  // Wizard results
+  sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
+  wizardCompletedAt?: Date;
   paymentHistory?: Array<{
     bookingId: mongoose.Types.ObjectId;
     amount: number;
@@ -92,6 +124,37 @@ const playerSchema = new Schema<PlayerDocument>(
       type: String,
       trim: true,
     },
+    heightCm: { type: Number, min: 50, max: 250 },
+    weightKg: { type: Number, min: 10, max: 200 },
+    medicalConditions: { type: [String], default: [] },
+    // Wizard physical
+    build: { type: String, enum: ["lean", "average", "stocky"] },
+    heightCategory: { type: String, enum: ["short", "average", "tall"] },
+    energyType: { type: String, enum: ["explosive", "endurance"] },
+    motorType: { type: String, enum: ["gross", "fine"] },
+    visualTracking: { type: String, enum: ["strong", "moderate", "weak"] },
+    // Wizard personality
+    teamIndividual: { type: Number, min: 1, max: 5 },
+    competitiveResponse: { type: String, enum: ["fired-up", "calm", "discouraged"] },
+    focusStyle: { type: String, enum: ["bursts", "sustained"] },
+    decisionStyle: { type: String, enum: ["react", "strategic"] },
+    pressureResponse: { type: String, enum: ["thrives", "manages", "avoids"] },
+    repetitionTolerance: { type: String, enum: ["high", "low"] },
+    // Wizard comfort
+    contactComfort: { type: String, enum: ["loves", "neutral", "avoids"] },
+    environment: { type: String, enum: ["outdoor", "indoor", "no-preference"] },
+    waterComfort: { type: String, enum: ["comfortable", "neutral", "uncomfortable"] },
+    // Wizard practical
+    budgetRange: { type: String, enum: ["under-3k", "3k-7k", "7k-15k", "15k-plus"] },
+    ambition: { type: String, enum: ["fun", "competitive", "national", "professional"] },
+    eyesight: { type: String, enum: ["sharp", "corrected", "limited"] },
+    agility: { type: String, enum: ["high", "moderate", "low"] },
+    weeklyHoursCategory: { type: String, enum: ["1-3", "4-7", "8-12", "13-plus"] },
+    experienceLevel: { type: String, enum: ["beginner", "intermediate", "competitive"] },
+    trainingType: { type: String, enum: ["self", "club", "academy", "private"] },
+    wizardCity: { type: String, trim: true },
+    sportMatches: [{ sport: String, fitLabel: String, score: Number }],
+    wizardCompletedAt: { type: Date },
     paymentHistory: [
       {
         bookingId: {

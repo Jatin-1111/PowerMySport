@@ -20,6 +20,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.98,
     },
     {
+      url: `${siteUrl}/find-sport`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.97,
+    },
+    {
       url: `${siteUrl}/guidance`,
       lastModified: now,
       changeFrequency: "daily",

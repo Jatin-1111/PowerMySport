@@ -11,6 +11,7 @@ import {
   UserCircle2,
   X,
 } from "lucide-react";
+import { getAvatarCharacter, formatLastSeen } from "@/modules/community/utils/chatUtils";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 interface CommunityMemberProfileModalProps {
@@ -301,7 +302,7 @@ export function CommunityMemberProfileModal({
 
                   {profile.lastSeenVisible && profile.lastSeenAt && (
                     <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 sm:p-5">
-                      Last seen at {formatDateTime(profile.lastSeenAt)}
+                      {formatLastSeen(profile.lastSeenAt)}
                     </div>
                   )}
                 </div>

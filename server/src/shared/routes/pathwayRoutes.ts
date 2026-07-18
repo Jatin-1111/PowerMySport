@@ -13,6 +13,7 @@ import {
   deletePathwayExpertVerify,
   getCuratedTournamentBySlug,
   getCuratedTournaments,
+  getProgressionPlan,
 } from "../controller/pathwayController";
 import { authMiddleware } from "../../middleware/auth";
 
@@ -33,6 +34,10 @@ const pathwayRateLimiter = rateLimit({
 
 // GET /api/pathways/search?q=bad  (must come before / to avoid route conflict)
 router.get("/search", pathwayRateLimiter, searchPathways);
+
+// GET /api/pathways/progression?sport=&state=&level=
+// Returns (or lazily generates) the transition plan from one macro-level to the next.
+router.get("/progression", pathwayRateLimiter, getProgressionPlan);
 
 // GET /api/pathways/stories?sport=cricket&level=2
 router.get("/stories", pathwayRateLimiter, getPathwayStories);

@@ -15,10 +15,9 @@ import {
   Compass,
   HelpCircle,
   Map,
+  MessageCircle,
   Search,
-  ShieldCheck,
   Sparkles,
-  Target,
   Trophy,
   Users2,
 } from "lucide-react";
@@ -108,55 +107,31 @@ export default function HomePage() {
     },
   ];
 
-  // ── How the live product solves it (Explore: Roadmap + Guidance) ──
+  // ── Why Parents Choose Us: the 3-step journey ──
   const features = [
     {
-      label: "Which sport is right?",
-      title: "A Plan Made for Your Child",
+      label: "Not sure which sport?",
+      title: "Do the Profile Assessment",
       description:
-        "Tell us your child's age, interests, and free time. We build a personalised sports roadmap just for them—no two plans are the same.",
+        "Answer a few quick questions about your child's age, personality, and physical traits. If you don't already know which sport fits best, our assessment finds it for you.",
       icon: <Sparkles className="h-6 w-6" />,
-      stat: "Built in 2 minutes",
+      stat: "Takes about 5 minutes",
     },
     {
       label: "Where do we start?",
-      title: "A Clear Step-by-Step Path",
+      title: "Discover Pathways",
       description:
-        "See exactly what to focus on now and what comes next, from the very first session to competing—so you're never guessing the next move.",
+        "Get a clear, personalised roadmap for that sport—what to focus on now, the milestones that matter, and exactly what comes next.",
       icon: <Map className="h-6 w-6" />,
-      stat: "",
+      stat: "Built in 2 minutes",
     },
     {
-      label: "Too much conflicting advice",
-      title: "Guidance From Real Experts",
+      label: "Still have questions?",
+      title: "Consult an Expert",
       description:
-        "Stuck on a decision? Get answers from sports experts and our AI guide, built around your child's goals—not generic internet tips.",
-      icon: <BrainCircuit className="h-6 w-6" />,
-      stat: "",
-    },
-    {
-      label: "What does 'good' even look like?",
-      title: "Know What to Aim For",
-      description:
-        "Understand the levels, milestones, and tournaments that matter for your child's sport, so progress finally feels clear.",
-      icon: <Target className="h-6 w-6" />,
-      stat: "",
-    },
-    {
-      label: "Everything is scattered",
-      title: "It's All in One Place",
-      description:
-        "Your child's plan, guidance, and next steps live in one simple dashboard—no more juggling WhatsApp groups, notes, and phone calls.",
-      icon: <Users2 className="h-6 w-6" />,
-      stat: "One dashboard, all tools",
-    },
-    {
-      label: "Costs add up fast",
-      title: "Decide Before You Spend",
-      description:
-        "Get a clear picture of the time and money a sport really takes—so you commit with confidence, not on a hunch.",
-      icon: <ShieldCheck className="h-6 w-6" />,
-      stat: "Save weeks of research",
+        "Talk to a real sports expert, or reach out to our team directly for hands-on assistance—free, no hard sell.",
+      icon: <MessageCircle className="h-6 w-6" />,
+      stat: "Free, no commitment",
     },
   ];
 
@@ -191,12 +166,10 @@ export default function HomePage() {
           label: "Explore the Community",
           href: communityUrl,
         }}
-        gradient
       />
 
       {/* ── The Problem ── */}
       <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
-        <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-[120%] -translate-x-1/2 bg-gradient-to-b from-slate-100/50 to-transparent" />
         <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <motion.div
             variants={sectionVariants}
@@ -264,11 +237,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── How We Solve It (MVP value) ── */}
+      {/* ── Why Parents Choose Us ── */}
       <FeaturesShowcase
         title="From Guesswork to a Clear Plan"
         subtitle="Why Parents Choose Us"
-        description="We built PowerMySport to take the stress out of your child's sports journey. Here's how we make the hardest decisions simple."
+        description="Three simple steps take you from not knowing where to start, to a clear plan for your child's sports journey."
         features={features}
       />
 
@@ -366,7 +339,7 @@ export default function HomePage() {
               }}
               className="relative hidden w-full max-w-[612px] aspect-[3/2] mx-auto lg:block"
             >
-              <div className="absolute inset-4 rounded-3xl bg-gradient-to-br from-orange-400/15 via-transparent to-indigo-400/10 blur-2xl" />
+              <div className="absolute inset-4 rounded-3xl bg-orange-100/25 blur-2xl" />
               <svg
                 viewBox="0 0 200 200"
                 className="pointer-events-none absolute -left-6 -top-6 h-40 w-40 opacity-50"
@@ -394,7 +367,7 @@ export default function HomePage() {
                   sizes="(max-width: 1280px) 50vw, 600px"
                   className="object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-slate-900/10" />
               </div>
 
               {/* Floating badge */}
@@ -427,304 +400,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── How It Works ── */}
-      <section className="relative py-16 sm:py-20 lg:py-24">
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-0 h-72 w-full -translate-x-1/2 bg-gradient-to-b from-orange-50/40 to-transparent" />
-        </div>
-
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={sectionVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mb-12 text-center sm:mb-16"
-          >
-            <motion.div
-              variants={itemVariants}
-              className="mb-4 flex justify-center"
-            >
-              <SectionLabel label="Simple Process" color="orange" />
-            </motion.div>
-            <motion.h2
-              variants={itemVariants}
-              className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
-            >
-              Up and Running in 3 Steps
-            </motion.h2>
-            <motion.p
-              variants={itemVariants}
-              className="text-lg text-slate-600"
-            >
-              Go from &ldquo;where do I start?&rdquo; to a clear plan for your
-              child in minutes—completely free.
-            </motion.p>
-          </motion.div>
-
-          {/* Steps grid with SVG connecting line */}
-          <div className="relative">
-            {/* Dashed connector line (desktop only) */}
-            <div className="pointer-events-none absolute inset-0 hidden lg:flex items-center justify-center">
-              <svg
-                viewBox="0 0 800 40"
-                className="w-full max-w-2xl"
-                aria-hidden
-              >
-                <motion.line
-                  x1="80"
-                  y1="20"
-                  x2="720"
-                  y2="20"
-                  stroke="rgba(233,115,22,0.3)"
-                  strokeWidth="2"
-                  strokeDasharray="6 6"
-                  initial={{ pathLength: 0 }}
-                  whileInView={{ pathLength: 1 }}
-                  viewport={{ once: true, margin: "-80px" }}
-                  transition={{ duration: 1.2, ease: "easeInOut", delay: 0.3 }}
-                />
-              </svg>
-            </div>
-
-            <motion.div
-              variants={sectionVariants}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-80px" }}
-              className="grid grid-cols-1 gap-8 md:grid-cols-3"
-            >
-              {[
-                {
-                  step: 1,
-                  title: "Tell Us About Your Child",
-                  desc: "Share your child's age, sports interests, and how many hours a week they can commit. Takes 2 minutes.",
-                },
-                {
-                  step: 2,
-                  title: "Get an AI Sports Roadmap",
-                  desc: "We build a personalised roadmap—which sport suits your child, what to focus on first, and what to aim for.",
-                },
-                {
-                  step: 3,
-                  title: "Get Guidance on Every Step",
-                  desc: "Stuck on a decision? Lean on expert and AI guidance to move forward with confidence—no guesswork.",
-                },
-              ].map(({ step, title, desc }) => (
-                <motion.div
-                  key={step}
-                  variants={cardVariants}
-                  whileHover={{ y: -6, scale: 1.015 }}
-                  transition={{ type: "spring", stiffness: 280, damping: 20 }}
-                  className="group relative rounded-2xl border border-white/70 bg-white/80 p-8 text-center backdrop-blur-sm premium-shadow will-change-transform hover:border-white/90 hover:bg-white/90"
-                >
-                  <motion.div
-                    className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-power-orange text-2xl font-bold text-white shadow-[0_6px_24px_-4px_rgba(233,115,22,0.45)]"
-                    whileHover={{ scale: 1.12, rotate: 3 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 16 }}
-                  >
-                    {step}
-                  </motion.div>
-                  <h3 className="mb-3 text-lg font-bold text-slate-900">
-                    {title}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-slate-600">
-                    {desc}
-                  </p>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
       {/* ── Testimonials ── */}
       <TrustMarquee />
 
-      {/* ── Multi-Role Join Section ── */}
-      {!user && (
-        <section className="relative py-16 sm:py-20 lg:py-24">
-          <div className="pointer-events-none absolute -right-32 top-0 h-96 w-96 rounded-full bg-orange-100/25 blur-3xl" />
-          <div className="pointer-events-none absolute -left-32 bottom-0 h-96 w-96 rounded-full bg-indigo-100/20 blur-3xl" />
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <motion.div
-              variants={sectionVariants}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-80px" }}
-              className="mb-12 text-center"
-            >
-              <motion.div
-                variants={itemVariants}
-                className="mb-4 flex justify-center"
-              >
-                <SectionLabel label="Join the platform" color="slate" />
-              </motion.div>
-              <motion.h2
-                variants={itemVariants}
-                className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl"
-              >
-                Start Free Today
-              </motion.h2>
-              <motion.p
-                variants={itemVariants}
-                className="text-lg text-slate-600"
-              >
-                Parents can build a plan right now. Coaches and venues can
-                register early to get ready for our booking launch.
-              </motion.p>
-            </motion.div>
-
-            <motion.div
-              variants={sectionVariants}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-80px" }}
-              className="grid grid-cols-1 gap-6 md:grid-cols-3"
-            >
-              {/* Parent Card — Featured */}
-              <motion.div
-                variants={cardVariants}
-                whileHover={{ y: -6, scale: 1.015 }}
-                transition={{ type: "spring", stiffness: 280, damping: 20 }}
-                className="group relative flex flex-col rounded-2xl border-2 border-power-orange/60 bg-gradient-to-b from-orange-50/60 to-white/80 p-8 backdrop-blur-md shadow-[0_8px_40px_-8px_rgba(233,115,22,0.25)] will-change-transform scale-100 md:scale-105"
-              >
-                <div className="absolute right-0 top-0 rounded-bl-lg rounded-tr-xl bg-power-orange px-4 py-1 text-xs font-bold text-white">
-                  AVAILABLE NOW
-                </div>
-                <motion.div
-                  className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-power-orange text-white shadow-[0_6px_24px_-4px_rgba(233,115,22,0.55)]"
-                  whileHover={{ scale: 1.1, rotate: 4 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 16 }}
-                >
-                  <Users2 size={30} />
-                </motion.div>
-                <h3 className="mb-4 text-center text-xl font-bold text-slate-900">
-                  Parents & Guardians
-                </h3>
-                <ul className="mb-8 grow space-y-3 text-sm text-slate-600">
-                  {[
-                    "A personalised roadmap for your child's sport",
-                    "Expert + AI guidance, on call",
-                    "Know what to aim for at every age",
-                    "Free to start—no card needed",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2.5">
-                      <Check
-                        size={14}
-                        className="mt-0.5 shrink-0 text-power-orange"
-                      />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/roadmap"
-                  className="block w-full rounded-xl bg-power-orange px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-orange-600"
-                >
-                  Build a Sports Plan
-                </Link>
-              </motion.div>
-
-              {/* Venue Owner Card */}
-              <motion.div
-                variants={cardVariants}
-                whileHover={{ y: -6, scale: 1.015 }}
-                transition={{ type: "spring", stiffness: 280, damping: 20 }}
-                className="group flex flex-col rounded-2xl border border-white/60 bg-white/80 p-8 backdrop-blur-md premium-shadow will-change-transform"
-              >
-                <div className="mb-4 flex justify-center">
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    Coming in Phase 2
-                  </span>
-                </div>
-                <motion.div
-                  className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600 text-white shadow-[0_6px_28px_-4px_rgba(99,102,241,0.4)]"
-                  whileHover={{ scale: 1.1, rotate: 4 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 16 }}
-                >
-                  <Building2 size={30} />
-                </motion.div>
-                <h3 className="mb-4 text-center text-xl font-bold text-slate-900">
-                  Venue Owners
-                </h3>
-                <ul className="mb-8 grow space-y-3 text-sm text-slate-600">
-                  {[
-                    "Reach families actively planning their sport",
-                    "Be ready the day bookings go live",
-                    "Simple availability & listing tools",
-                    "Early-partner onboarding support",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2.5">
-                      <Check
-                        size={14}
-                        className="mt-0.5 shrink-0 text-indigo-600"
-                      />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/register?role=VENUE_LISTER"
-                  className="block w-full rounded-xl bg-slate-900 px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-slate-700"
-                >
-                  Register Early
-                </Link>
-              </motion.div>
-
-              {/* Coach Card */}
-              <motion.div
-                variants={cardVariants}
-                whileHover={{ y: -6, scale: 1.015 }}
-                transition={{ type: "spring", stiffness: 280, damping: 20 }}
-                className="group flex flex-col rounded-2xl border border-white/60 bg-white/80 p-8 backdrop-blur-md premium-shadow will-change-transform"
-              >
-                <div className="mb-4 flex justify-center">
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    Coming in Phase 2
-                  </span>
-                </div>
-                <motion.div
-                  className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-turf-green text-white shadow-[0_6px_24px_-4px_rgba(34,197,94,0.4)]"
-                  whileHover={{ scale: 1.1, rotate: 4 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 16 }}
-                >
-                  <Trophy size={30} />
-                </motion.div>
-                <h3 className="mb-4 text-center text-xl font-bold text-slate-900">
-                  Coaches & Trainers
-                </h3>
-                <ul className="mb-8 grow space-y-3 text-sm text-slate-600">
-                  {[
-                    "Build your coaching profile now",
-                    "Connect with serious families at launch",
-                    "Set your own rates & schedule",
-                    "Grow your coaching business",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2.5">
-                      <Check
-                        size={14}
-                        className="mt-0.5 shrink-0 text-turf-green"
-                      />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/register?role=COACH"
-                  className="block w-full rounded-xl bg-turf-green px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-emerald-700"
-                >
-                  Register Early
-                </Link>
-              </motion.div>
-            </motion.div>
-          </div>
-        </section>
-      )}
-
       {/* ── Final CTA ── */}
       <CTA
-        variant="gradient"
         title={
           user
             ? user.userType === "Parent"

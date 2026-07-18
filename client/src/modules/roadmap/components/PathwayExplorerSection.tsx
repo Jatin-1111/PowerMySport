@@ -4,28 +4,30 @@ import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
-import { SportMatchModal } from "@/modules/guidance/components/wizard/SportMatchModal";
+import RoadmapIntroModal from "./RoadmapIntroModal";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { PathwayConciergeModal } from "@/modules/sports/components/PathwayConciergeModal";
 import { RoadmapChatDrawer } from "@/modules/sports/components/RoadmapChatDrawer";
-import { TournamentModal } from "@/modules/sports/components/TournamentDetailModal";
-import { TournamentRecommendationPanel } from "@/modules/sports/components/TournamentRecommendationPanel";
 import {
     groupLevelsIntoMacro,
 } from "@/modules/sports/config/macroLevels";
 import {
+    federationApi,
     pathwayApi,
+    type Federation,
     PathwayLevel,
     SportPathway,
 } from "@/modules/sports/services/pathway";
+import { FederationCard } from "./FederationCard";
 import {
     AthleteStory,
-    pathwayProfileApi,
-} from "@/modules/sports/services/pathwayProfileApi";
+    roadmapProfileApi,
+} from "@/modules/sports/services/roadmapProfileApi";
 import { Sport, sportsApi } from "@/modules/sports/services/sports";
 import { AnimatePresence, motion } from "framer-motion";
 import Fuse from "fuse.js";
 import {
+    ArrowLeft,
     ArrowRight,
     BadgeCheck,
     Briefcase,
@@ -54,8 +56,8 @@ import {
     Wallet,
     X,
 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import {
     fadeUp,
@@ -83,13 +85,21 @@ import { BudgetCalculator } from './BudgetCalculator';
 import { ComparePanel } from './ComparePanel';
 import { PathwayLevelCard } from './PathwayLevelCard';
 import { PathwayLevelDetail } from './PathwayLevelDetail';
-import { ProgressTracker } from './ProgressTracker';
+import { ProgressionStepper } from './ProgressionStepper';
 import { SaveButton } from './SaveButton';
 import { SavedTab } from './SavedTab';
 import { StoriesTab } from './StoriesTab';
 import { AmbientBlob } from './SubComponents';
 
 // ─── Sport search section ──────────────────────────────────────────────────────
+
+// Maps 1:1 onto the 3 macro pathway tiers (MACRO_LEVEL_CONFIGS) — the same
+// enum already collected by the find-sport/guidance wizards.
+const EXPERIENCE_TO_MACRO_INDEX: Record<string, number> = {
+  beginner: 0,
+  intermediate: 1,
+  competitive: 2,
+};
 
 export function PathwayExplorerSection() {
   const [query, setQuery] = useState("");
@@ -106,6 +116,7 @@ export function PathwayExplorerSection() {
     pathway: SportPathway;
     source: "db" | "generated";
   } | null>(null);
+  const [isStale, setIsStale] = useState(false);
   const [entitiesStatus, setEntitiesStatus] = useState<
     "idle" | "loading" | "ready"
   >("idle");
@@ -134,7 +145,7 @@ export function PathwayExplorerSection() {
     item: any;
     type: "tournament" | "scholarship" | "university";
   } | null>(null);
-  const [detailTournament, setDetailTournament] = useState<any | null>(null);
+  const [federations, setFederations] = useState<Federation[]>([]);
 
   // P1: progress tracker state
   const [progress, setProgress] = useState<ProgressState>(DEFAULT_PROGRESS);
@@ -147,54 +158,110 @@ export function PathwayExplorerSection() {
   const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
   const [applications, setApplications] = useState<ApplicationRecord[]>([]);
 
+  // Which child the saved-items/progress/applications profile belongs to
+  const [dependents, setDependents] = useState<any[]>([]);
+  const [selectedDependentId, setSelectedDependentId] = useState<string | null>(null);
+  const ROADMAP_DEPENDENT_KEY = "pms_roadmap_dependent";
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { user } = useAuthStore();
   const [dbStories, setDbStories] = useState<AthleteStory[]>([]);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatLoginModalOpen, setChatLoginModalOpen] = useState(false);
-  const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
-  const [isMatchModalCollapsed, setIsMatchModalCollapsed] = useState(false);
-  const [previewSport, setPreviewSport] = useState<string | null>(null);
-  const [previewSportDependentId, setPreviewSportDependentId] = useState<
-    string | null
-  >(null);
-  const [isSavingSport, setIsSavingSport] = useState(false);
-  const [showReengagePrompt, setShowReengagePrompt] = useState(false);
-  const [hasRunMatchThisSession, setHasRunMatchThisSession] = useState(false);
-  const hasShownReengageRef = useRef(false);
+  const [introModalOpen, setIntroModalOpen] = useState(false);
+  const _cacheRestoredRef = useRef(false);
+  const INTRO_KEY = "pms_roadmap_intro_v2";
 
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [contextBanner, setContextBanner] = useState<{
     age: string;
     budget: string;
     state: string;
   } | null>(null);
+  const [hasWizardResults, setHasWizardResults] = useState(false);
+
+  // Restore cached pathway result before the browser paints — prevents any
+  // loading/idle flash when the user navigates back from a federation or
+  // tournament page. useLayoutEffect fires client-only, before first paint.
+  useLayoutEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sport = params.get("sport");
+    if (!sport) return;
+    try {
+      const raw = sessionStorage.getItem("pms_pathway_cache");
+      if (!raw) return;
+      const { key, data, ts } = JSON.parse(raw);
+      const state =
+        params.get("state") ||
+        localStorage.getItem("pms_pathway_state") ||
+        "";
+      if (
+        key === `${sport.toLowerCase()}|${state}` &&
+        Date.now() - ts < 5 * 60 * 1000
+      ) {
+        setResult(data);
+        setQuery(data.pathway.sportName);
+        setStatus("success");
+        setEntitiesStatus("ready");
+        _cacheRestoredRef.current = true;
+      }
+    } catch {}
+  }, []);
+
+  const loadProfileForDependent = async (depId: string | null) => {
+    const dbProfile = await roadmapProfileApi.getProfile(depId);
+    if (dbProfile) {
+      setProgress(dbProfile.progress || DEFAULT_PROGRESS);
+      setSavedItems(dbProfile.savedItems || []);
+      setApplications(dbProfile.applications || []);
+    } else {
+      setProgress(DEFAULT_PROGRESS);
+      setSavedItems([]);
+      setApplications([]);
+    }
+  };
+
+  const selectDependent = (depId: string | null) => {
+    setSelectedDependentId(depId);
+    if (depId) localStorage.setItem(ROADMAP_DEPENDENT_KEY, depId);
+    else localStorage.removeItem(ROADMAP_DEPENDENT_KEY);
+    loadProfileForDependent(depId);
+  };
 
   // Load from DB or fallback to localStorage
   useEffect(() => {
     const initProfile = async () => {
       setSelectedState(loadState());
       if (user) {
-        const dbProfile = await pathwayProfileApi.getProfile();
-        if (dbProfile) {
-          setProgress(dbProfile.progress || DEFAULT_PROGRESS);
-          setSavedItems(dbProfile.savedItems || []);
-          setApplications(dbProfile.applications || []);
-          return;
+        const res = await authApi.getPlayers();
+        const deps = (res.data || []).filter((p: any) => p.type === "DEPENDENT");
+        setDependents(deps);
+
+        let initialDepId: string | null = null;
+        if (deps.length === 1) {
+          initialDepId = deps[0]._id;
+        } else if (deps.length > 1) {
+          const stored = localStorage.getItem(ROADMAP_DEPENDENT_KEY);
+          initialDepId = stored && deps.some((d: any) => d._id === stored) ? stored : null;
         }
+        setSelectedDependentId(initialDepId);
+        await loadProfileForDependent(initialDepId);
+        return;
       }
       setProgress(loadProgress());
       setSavedItems(loadSaved());
       setApplications(loadApplications());
     };
     initProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
     const fetchStories = async () => {
       if (result) {
-        const fetchedStories = await pathwayProfileApi.getStories(
+        const fetchedStories = await roadmapProfileApi.getStories(
           result.pathway.sportSlug,
           undefined,
           selectedState || undefined,
@@ -206,30 +273,33 @@ export function PathwayExplorerSection() {
   }, [result, selectedState]);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (
-      isMatchModalCollapsed &&
-      activeIdx >= 1 &&
-      !hasShownReengageRef.current
-    ) {
-      timer = setTimeout(() => {
-        setShowReengagePrompt(true);
-        hasShownReengageRef.current = true;
-      }, 4000);
+    if (typeof window !== "undefined" && !localStorage.getItem(INTRO_KEY)) {
+      setIntroModalOpen(true);
     }
-    return () => clearTimeout(timer);
-  }, [isMatchModalCollapsed, activeIdx]);
+  }, []);
+
+  // Show "Back to assessment" link when wizard results exist in localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("pms_wizard_results");
+      if (!raw) return;
+      const { savedAt } = JSON.parse(raw);
+      if (Date.now() - new Date(savedAt).getTime() < 24 * 60 * 60 * 1000) {
+        setHasWizardResults(true);
+      }
+    } catch {}
+  }, []);
 
   const handleSavedChange = (items: SavedItem[]) => {
     setSavedItems(items);
     saveSaved(items);
-    if (user) pathwayProfileApi.updateProfile({ savedItems: items });
+    if (user) roadmapProfileApi.updateProfile({ savedItems: items }, selectedDependentId);
   };
 
   const handleApplicationsChange = (items: ApplicationRecord[]) => {
     setApplications(items);
     saveApplications(items);
-    if (user) pathwayProfileApi.updateProfile({ applications: items });
+    if (user) roadmapProfileApi.updateProfile({ applications: items }, selectedDependentId);
   };
 
   const handleUpdateApplicationStatus = (
@@ -245,7 +315,7 @@ export function PathwayExplorerSection() {
   const handleProgressChange = (p: ProgressState) => {
     setProgress(p);
     saveProgress(p);
-    if (user) pathwayProfileApi.updateProfile({ progress: p });
+    if (user) roadmapProfileApi.updateProfile({ progress: p }, selectedDependentId);
   };
 
   const handleStateChange = (s: string) => {
@@ -304,8 +374,10 @@ export function PathwayExplorerSection() {
     setQuery(name);
     setStatus("loading");
     setResult(null);
+    setIsStale(false);
     setErrorMsg("");
     setEntitiesStatus("idle");
+    setFederations([]);
     setActiveIdx(0);
     setActiveTab("journey");
     setExpandedCards(new Set());
@@ -336,8 +408,42 @@ export function PathwayExplorerSection() {
       }
 
       setResult(pr as any);
+      setIsStale(!!pr.isStale);
       setQuery(pr.pathway.sportName);
       setStatus("success");
+
+      // Position-first: if the selected child already plays this exact sport
+      // and told us their level, open there instead of always starting at
+      // Beginner — a returning parent shouldn't have to re-navigate to where
+      // their child already is.
+      const activeDependent = dependents.find((d) => d._id === selectedDependentId);
+      if (
+        activeDependent?.experienceLevel &&
+        (activeDependent.sportsFocus || []).some(
+          (s: string) => s.toLowerCase() === pr.pathway.sportName.toLowerCase(),
+        )
+      ) {
+        setActiveIdx(EXPERIENCE_TO_MACRO_INDEX[activeDependent.experienceLevel] ?? 0);
+      }
+
+      // Cache for instant back-navigation restore
+      try {
+        sessionStorage.setItem(
+          "pms_pathway_cache",
+          JSON.stringify({ key: `${name.toLowerCase()}|${state}`, data: pr, ts: Date.now() }),
+        );
+      } catch {}
+
+      // Update URL so "back" from detail pages restores the search
+      const returnUrl = `/roadmap?sport=${encodeURIComponent(pr.pathway.sportName)}${state ? `&state=${encodeURIComponent(state)}` : ""}`;
+      router.replace(returnUrl, { scroll: false });
+      localStorage.setItem("pms_roadmap_return_url", returnUrl);
+
+      // Fetch governing federation for this sport (fire-and-forget)
+      federationApi
+        .listBySport(pr.pathway.sportSlug ?? pr.pathway.sportName.toLowerCase())
+        .then((feds) => setFederations(feds))
+        .catch(() => {});
 
       // If entities (tournaments/scholarships/universities) weren't ready yet,
       // fetch them in the background and merge when done.
@@ -352,7 +458,7 @@ export function PathwayExplorerSection() {
             }
             setResult((prev: any) => {
               if (!prev) return prev;
-              return {
+              const updated = {
                 ...prev,
                 pathway: {
                   ...prev.pathway,
@@ -361,6 +467,14 @@ export function PathwayExplorerSection() {
                   universities: entities.universities,
                 },
               };
+              // Keep cache fresh with full entities
+              try {
+                sessionStorage.setItem(
+                  "pms_pathway_cache",
+                  JSON.stringify({ key: `${name.toLowerCase()}|${state}`, data: updated, ts: Date.now() }),
+                );
+              } catch {}
+              return updated;
             });
             setEntitiesStatus("ready");
           })
@@ -387,6 +501,8 @@ export function PathwayExplorerSection() {
     setNotSupportedSport("");
     setSuggestions([]);
     setShowSuggestions(false);
+    router.replace("/roadmap", { scroll: false });
+    localStorage.removeItem("pms_roadmap_return_url");
     inputRef.current?.focus();
     if (savedItems.length > 0) setActiveTab("saved");
     else if (applications.length > 0) setActiveTab("applications");
@@ -398,20 +514,35 @@ export function PathwayExplorerSection() {
     const sport = searchParams.get("sport");
     const level = searchParams.get("level");
     const state = searchParams.get("state");
-    const age = searchParams.get("age");
-    const budget = searchParams.get("budget");
+    // Support both legacy "age"/"budget" and wizard-generated "childAge"/"budgetTier"
+    const age = searchParams.get("childAge") || searchParams.get("age");
+    const budget = searchParams.get("budgetTier") || searchParams.get("budget");
 
     if (state) handleStateChange(state);
+
     if (sport) {
-      // Resolve the state synchronously (URL param, else whatever's already
-      // saved in localStorage) instead of trusting `selectedState`, which
-      // won't reflect the "load saved state" effect's update until after
-      // this mount-time effect has already run.
       const effectiveState = state || loadState();
-      handleSearch(sport, effectiveState).then(() => {
+
+      if (_cacheRestoredRef.current) {
+        // useLayoutEffect already restored state from cache — just wire up
+        // federations (fire-and-forget) and apply the level param.
+        const cached = JSON.parse(sessionStorage.getItem("pms_pathway_cache") || "{}");
+        federationApi
+          .listBySport(
+            cached.data?.pathway?.sportSlug ??
+              cached.data?.pathway?.sportName?.toLowerCase() ??
+              sport.toLowerCase(),
+          )
+          .then((feds) => setFederations(feds))
+          .catch(() => {});
         if (level) setActiveIdx(Math.max(0, parseInt(level, 10) - 1));
-      });
+      } else {
+        handleSearch(sport, effectiveState).then(() => {
+          if (level) setActiveIdx(Math.max(0, parseInt(level, 10) - 1));
+        });
+      }
     }
+
     if (age && budget) {
       setContextBanner({ age, budget, state: state || "" });
     }
@@ -482,6 +613,42 @@ export function PathwayExplorerSection() {
             your child needs at every level.
           </motion.p>
         </motion.div>
+
+        {/* Whose progress is this — visible only when there's an actual choice to make */}
+        {dependents.length > 1 && (
+          <div className="flex flex-wrap justify-center gap-2 mb-5">
+            <span className="self-center text-xs font-medium text-slate-400 mr-1">
+              Whose progress is this?
+            </span>
+            {dependents.map((dep) => (
+              <button
+                key={dep._id}
+                type="button"
+                onClick={() => selectDependent(dep._id)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                  selectedDependentId === dep._id
+                    ? "border-power-orange bg-orange-50 text-power-orange"
+                    : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
+                }`}
+              >
+                {dep.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Back-to-assessment pill — visible when wizard results are in localStorage */}
+        {hasWizardResults && (
+          <div className="flex justify-center mb-5">
+            <a
+              href="/find-sport"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-medium text-slate-500 shadow-sm hover:border-power-orange hover:text-power-orange transition-all"
+            >
+              <ArrowLeft className="h-3 w-3" />
+              Back to your assessment
+            </a>
+          </div>
+        )}
 
         {/* Search bar + P2 State selector */}
         <motion.div
@@ -763,13 +930,6 @@ export function PathwayExplorerSection() {
               Popular in India
             </p>
             <div className="flex flex-col items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsMatchModalOpen(true)}
-                className="text-xs font-bold text-power-orange hover:text-orange-600 transition underline underline-offset-2 mb-2 cursor-pointer"
-              >
-                Still confused? Get a recommendation &rarr;
-              </button>
               <div className="flex flex-wrap justify-center gap-2">
                 {[
                   "Cricket",
@@ -792,6 +952,13 @@ export function PathwayExplorerSection() {
                   </button>
                 ))}
               </div>
+              <a
+                href="/find-sport"
+                className="mt-2 flex items-center gap-2 rounded-full border border-power-orange/40 bg-orange-50 px-4 py-2 text-xs font-bold text-power-orange shadow-sm hover:bg-orange-100 hover:border-power-orange transition-colors"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Not sure which sport? Find the right fit
+              </a>
             </div>
             <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
@@ -975,58 +1142,6 @@ export function PathwayExplorerSection() {
               {/* Header logic */}
               {result ? (
                 <>
-                  {previewSport === result.pathway.sportName &&
-                    previewSportDependentId && (
-                      <div className="mb-4 flex items-center gap-3 rounded-2xl bg-emerald-50 border border-emerald-100 p-4 shadow-sm">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                          <Target className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">
-                            Is {previewSport} the one?
-                          </p>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            Save to profile to track progress.
-                          </p>
-                        </div>
-                        <button
-                          disabled={isSavingSport}
-                          onClick={async () => {
-                            const targetDep = user?.dependents?.find(
-                              (d) => d._id === previewSportDependentId,
-                            );
-                            if (!targetDep || !targetDep._id) return;
-                            setIsSavingSport(true);
-                            try {
-                              const current = targetDep.sportsFocus || [];
-                              if (!current.includes(previewSport!)) {
-                                await authApi.updateDependent(targetDep._id, {
-                                  sportsFocus: [...current, previewSport!],
-                                });
-                                toast.success(
-                                  `Saved to ${targetDep.name}'s profile`,
-                                );
-                                setPreviewSport(null);
-                                setPreviewSportDependentId(null);
-                              } else {
-                                toast.success(
-                                  `Already in ${targetDep.name}'s profile`,
-                                );
-                                setPreviewSport(null);
-                                setPreviewSportDependentId(null);
-                              }
-                            } catch (e) {
-                              toast.error("Failed to save sport");
-                            } finally {
-                              setIsSavingSport(false);
-                            }
-                          }}
-                          className="ml-auto rounded-full bg-emerald-600 px-5 py-2 text-sm font-bold text-white hover:bg-emerald-700 transition shadow-sm"
-                        >
-                          {isSavingSport ? "Saving..." : "Yes, save it"}
-                        </button>
-                      </div>
-                    )}
                   <div className="mb-8 rounded-2xl border border-slate-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-sm sm:p-6">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       {/* Left: name + meta + overview */}
@@ -1079,7 +1194,37 @@ export function PathwayExplorerSection() {
                               {result.pathway.category}
                             </span>
                           )}
+                          {(() => {
+                            const lastCheckedRaw =
+                              result.pathway.lastRefreshedAt ||
+                              result.pathway.updatedAt ||
+                              result.pathway.createdAt;
+                            if (!lastCheckedRaw) return null;
+                            const label = new Date(lastCheckedRaw).toLocaleDateString("en-IN", {
+                              month: "short",
+                              year: "numeric",
+                            });
+                            return (
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium border ${
+                                  isStale
+                                    ? "bg-amber-50 text-amber-700 border-amber-200"
+                                    : "bg-slate-50 text-slate-400 border-slate-200"
+                                }`}
+                              >
+                                Last checked {label}
+                              </span>
+                            );
+                          })()}
                         </div>
+                        {isStale && (
+                          <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                            <Info className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                            <p className="text-xs text-amber-800 leading-relaxed">
+                              This pathway hasn&apos;t been rechecked in over 6 months — costs, tournaments, and academy details may have changed. We&apos;re refreshing it; check back soon or verify specifics with a local academy.
+                            </p>
+                          </div>
+                        )}
                         <h2 className="font-title text-2xl font-bold text-slate-900 break-words sm:text-3xl">
                           {result.pathway.sportName}
                           <span className="ml-2 text-slate-400 font-normal text-xl sm:text-2xl">
@@ -1301,206 +1446,19 @@ export function PathwayExplorerSection() {
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
                   >
-                    {result &&
-                      entitiesStatus !== "loading" &&
-                      totalOpportunities > 0 && (
-                        <div className="mb-6 rounded-2xl border border-slate-200/70 bg-white/60 p-4 backdrop-blur-sm">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0 w-full sm:w-auto">
-                              Opportunities found
-                            </p>
-                            <div className="flex flex-wrap gap-2 flex-1">
-                              {(result.pathway.tournaments?.length ?? 0) >
-                                0 && (
-                                <div className="flex items-center gap-1.5 rounded-lg border border-orange-100 bg-orange-50 px-3 py-1.5">
-                                  <Trophy className="h-3.5 w-3.5 text-power-orange shrink-0" />
-                                  <span className="text-sm font-bold text-power-orange">
-                                    {result.pathway.tournaments!.length}
-                                  </span>
-                                  <span className="text-xs text-orange-400 font-medium">
-                                    Tournaments
-                                  </span>
-                                </div>
-                              )}
-                              {(result.pathway.scholarships?.length ?? 0) >
-                                0 && (
-                                <div className="flex items-center gap-1.5 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1.5">
-                                  <Wallet className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                                  <span className="text-sm font-bold text-emerald-600">
-                                    {result.pathway.scholarships!.length}
-                                  </span>
-                                  <span className="text-xs text-emerald-400 font-medium">
-                                    Scholarships
-                                  </span>
-                                </div>
-                              )}
-                              {(result.pathway.universities?.length ?? 0) >
-                                0 && (
-                                <div className="flex items-center gap-1.5 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-1.5">
-                                  <Landmark className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
-                                  <span className="text-sm font-bold text-indigo-600">
-                                    {result.pathway.universities!.length}
-                                  </span>
-                                  <span className="text-xs text-indigo-400 font-medium">
-                                    Universities
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => setActiveTab("opportunities")}
-                              className="shrink-0 flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-700"
-                            >
-                              View All <ArrowRight className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    <div className="grid grid-cols-1 gap-6 lg:gap-8 lg:grid-cols-[340px_1fr] xl:grid-cols-[380px_1fr]">
-                      {/* Left: level pills */}
-                      <div className="space-y-3">
-                        {/* P1: Progress Tracker */}
-                        <ProgressTracker
-                          progress={progress}
-                          onChange={handleProgressChange}
-                          levels={currentLevels}
+                    <div className="space-y-5">
+                      {/* Visual progression stepper */}
+                      <div className="rounded-3xl border border-slate-200/60 bg-white/70 shadow-sm backdrop-blur-sm overflow-hidden">
+                        <ProgressionStepper
+                          macroLevels={macroLevels}
+                          activeIdx={activeIdx}
+                          onSelect={setActiveIdx}
+                          currentLevel={progress.currentLevel}
                         />
-
-                        <div className="mb-6 hidden lg:block">
-                          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                            Level progression
-                          </p>
-                          <div className="relative">
-                            <div className="absolute left-4 right-4 top-4 h-0.5 bg-slate-200" />
-                            <div className="relative flex justify-between">
-                              {macroLevels.map((macro, i) => {
-                                const c = macro;
-                                const rawLevelNums = macro.rawLevels.map(
-                                  (l) => l.level,
-                                );
-                                const isActive = i === activeIdx;
-                                const isCurrent = rawLevelNums.includes(
-                                  progress.currentLevel,
-                                );
-                                const isCompleted =
-                                  progress.currentLevel > 0 &&
-                                  rawLevelNums.every(
-                                    (n) => n < progress.currentLevel,
-                                  );
-                                return (
-                                  <button
-                                    key={macro.id}
-                                    onClick={() => setActiveIdx(i)}
-                                    title={macro.label}
-                                    className="flex min-w-0 max-w-[120px] flex-1 flex-col items-center gap-1.5 group"
-                                  >
-                                    <div
-                                      className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-all duration-200 ${
-                                        isActive
-                                          ? `bg-gradient-to-br ${c.gradient} border-transparent text-white shadow-lg scale-110`
-                                          : isCurrent
-                                            ? `bg-white ${c.border} ${c.text} shadow-sm`
-                                            : isCompleted
-                                              ? `bg-gradient-to-br ${c.gradient} border-transparent text-white opacity-70`
-                                              : "bg-white border-slate-200 text-slate-400 group-hover:border-slate-300"
-                                      }`}
-                                    >
-                                      {isCompleted && !isActive ? (
-                                        <CheckCircle2 className="h-3.5 w-3.5" />
-                                      ) : (
-                                        i + 1
-                                      )}
-                                      {isCurrent && (
-                                        <span className="absolute -right-0.5 -top-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-amber-400 ring-2 ring-white">
-                                          <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                                        </span>
-                                      )}
-                                    </div>
-                                    <span
-                                      className={`line-clamp-2 text-center text-[10px] font-semibold leading-tight transition-colors ${
-                                        isActive
-                                          ? c.text
-                                          : "text-slate-400 group-hover:text-slate-600"
-                                      }`}
-                                    >
-                                      {macro.label}
-                                    </span>
-                                    <span className="text-center text-[9px] text-slate-400 leading-tight">
-                                      {macro.scopeTag}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-
-                        {macroLevels.map((macro, i) => (
-                          <div key={macro.id} className="flex flex-col gap-3">
-                            <PathwayLevelCard
-                              macroLevel={macro}
-                              isActive={i === activeIdx}
-                              isCurrentLevel={macro.rawLevels.some(
-                                (l) => l.level === progress.currentLevel,
-                              )}
-                              completedSteps={macro.rawLevels.reduce(
-                                (sum, l) =>
-                                  sum +
-                                  (
-                                    progress.completedSteps?.[l.level] || []
-                                  ).filter(Boolean).length,
-                                0,
-                              )}
-                              totalSteps={macro.rawLevels.reduce(
-                                (sum, l) => sum + l.steps.length,
-                                0,
-                              )}
-                              onClick={() => {
-                                if (
-                                  typeof window !== "undefined" &&
-                                  window.innerWidth < 1024
-                                ) {
-                                  setActiveIdx(activeIdx === i ? -1 : i);
-                                } else {
-                                  setActiveIdx(i);
-                                }
-                              }}
-                            />
-                            <AnimatePresence initial={false}>
-                              {i === activeIdx && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: "auto", opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{
-                                    height: {
-                                      type: "spring",
-                                      stiffness: 300,
-                                      damping: 30,
-                                    },
-                                    opacity: { duration: 0.2 },
-                                  }}
-                                  className="lg:hidden overflow-hidden origin-top"
-                                >
-                                  <div className="pt-1 pb-2">
-                                    <PathwayLevelDetail
-                                      macroLevel={macro}
-                                      sportName={
-                                        result
-                                          ? result.pathway.sportName
-                                          : "General"
-                                      }
-                                    />
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        ))}
                       </div>
 
-                      {/* Right: detail (Desktop Only) */}
-                      <div className="hidden lg:flex lg:flex-col lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:[scrollbar-gutter:stable]">
+                      {/* Level detail panel */}
+                      <div>
                         <AnimatePresence mode="wait">
                           {selectedMacroLevel && (
                             <PathwayLevelDetail
@@ -1509,10 +1467,13 @@ export function PathwayExplorerSection() {
                               sportName={
                                 result ? result.pathway.sportName : "General"
                               }
+                              state={selectedState || undefined}
+                              nextMacroLevel={macroLevels[activeIdx + 1]}
                             />
                           )}
                         </AnimatePresence>
                       </div>
+
                     </div>
                   </motion.div>
                 )}
@@ -1537,111 +1498,38 @@ export function PathwayExplorerSection() {
                       </div>
                     )}
 
-                    {/* Tournaments */}
+                    {/* Governing Federations */}
                     <div>
                       <div className="flex items-center gap-3 mb-5">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-power-orange">
-                          <Trophy className="h-4 w-4" />
+                          <Landmark className="h-4 w-4" />
                         </div>
                         <h3 className="font-title text-lg font-bold text-slate-900">
-                          Tournaments
+                          Governing Federation
                         </h3>
                         <div className="flex-1 h-px bg-slate-100" />
-                        {result.pathway.tournaments?.length > 0 && (
-                          <span className="rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-power-orange">
-                            {result.pathway.tournaments.length} found
-                          </span>
-                        )}
                       </div>
-                      {result.pathway.tournaments?.length > 0 ? (
-                        <>
-                          <TournamentRecommendationPanel
-                            tournaments={result.pathway.tournaments}
-                            currentLevel={progress.currentLevel}
-                            sportName={result.pathway.sportName}
-                            onViewTournament={(t) => setDetailTournament(t)}
-                          />
-                          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                            {result.pathway.tournaments.map(
-                              (t: any, i: number) => {
-                                const sid = `tournament:${t.name}:${result.pathway.sportName}`;
-                                const isSaved = savedItems.some(
-                                  (s) => s.id === sid,
-                                );
-                                return (
-                                  <div
-                                    key={i}
-                                    onClick={() => setDetailTournament(t)}
-                                    className="group relative cursor-pointer rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm transition-all duration-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.09)] hover:border-orange-200 hover:-translate-y-0.5"
-                                  >
-                                    {/* Thin orange top bar */}
-                                    <div className="h-[3px] w-full bg-gradient-to-r from-power-orange to-amber-400" />
-                                    <div
-                                      className="flex flex-col p-4"
-                                      style={{ minHeight: "130px" }}
-                                    >
-                                      {/* Level + save */}
-                                      <div className="mb-3 flex items-start justify-between gap-2">
-                                        <span className="inline-flex items-center rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest text-power-orange">
-                                          {t.level}
-                                        </span>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleSavedChange(
-                                              isSaved
-                                                ? savedItems.filter(
-                                                    (s) => s.id !== sid,
-                                                  )
-                                                : [
-                                                    ...savedItems,
-                                                    {
-                                                      id: sid,
-                                                      type: "tournament" as const,
-                                                      name: t.name,
-                                                      sport:
-                                                        result.pathway
-                                                          .sportName,
-                                                      data: t,
-                                                      savedAt:
-                                                        new Date().toISOString(),
-                                                    },
-                                                  ],
-                                            );
-                                          }}
-                                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full hover:bg-slate-100 transition"
-                                        >
-                                          <Heart
-                                            className={`h-3.5 w-3.5 transition-colors ${isSaved ? "fill-power-orange text-power-orange" : "text-slate-300"}`}
-                                          />
-                                        </button>
-                                      </div>
-                                      {/* Name */}
-                                      <p className="font-title font-bold text-slate-900 text-sm leading-snug line-clamp-2 flex-1">
-                                        {t.name}
-                                      </p>
-                                      {/* Footer */}
-                                      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
-                                        <div className="flex items-center gap-1.5 text-xs text-slate-400 min-w-0">
-                                          <Users className="h-3 w-3 shrink-0" />
-                                          <span className="truncate">
-                                            {t.ageGroup}
-                                          </span>
-                                        </div>
-                                        <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-power-orange group-hover:translate-x-0.5 transition-all shrink-0" />
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              },
-                            )}
-                          </div>
-                        </>
+
+                      {federations.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          {federations.map((fed) => (
+                            <FederationCard
+                              key={fed.slug}
+                              federation={fed}
+                            />
+                          ))}
+                        </div>
                       ) : (
-                        <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-slate-500 text-sm">
-                          No tournaments found for this sport.
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200 px-5 py-4">
+                          <p className="text-sm font-semibold text-slate-700 mb-1">
+                            {result.pathway.levels?.[0]?.governingBody ?? `${result.pathway.sportName} Federation`}
+                          </p>
+                          <p className="text-xs text-slate-500 leading-relaxed">
+                            Full federation profile coming soon — including verified eligibility criteria, registration steps, and tournament calendar.
+                          </p>
                         </div>
                       )}
+
                     </div>
 
                     {/* Scholarships */}
@@ -2165,7 +2053,7 @@ export function PathwayExplorerSection() {
                         </p>
                       </div>
                       <a
-                        href="/guidance"
+                        href={`/guidance?sport=${encodeURIComponent(result.pathway.sportName)}&level=${selectedMacroLevel?.representativeRawLevel ?? 1}&mode=level-plan&levelLabel=${encodeURIComponent(selectedMacroLevel?.representativeLabel ?? "")}${selectedState ? `&state=${encodeURIComponent(selectedState)}` : ""}`}
                         className="shrink-0 text-xs font-semibold text-power-orange hover:underline"
                       >
                         Personalise for your child →
@@ -2193,67 +2081,22 @@ export function PathwayExplorerSection() {
                   />
                 )}
               </AnimatePresence>
+
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Tournament modal — detail view + concierge flow in one panel */}
-        {detailTournament && (
-          <TournamentModal
-            isOpen={!!detailTournament}
-            tournament={detailTournament}
-            onClose={() => setDetailTournament(null)}
-            currentLevel={progress.currentLevel}
-            sportName={result?.pathway.sportName || ""}
-            type="tournament"
-            isSaved={savedItems.some(
-              (s) =>
-                s.id ===
-                `tournament:${detailTournament?.name || ""}:${result?.pathway.sportName || ""}`,
-            )}
-            onToggleSave={() => {
-              if (!detailTournament || !result) return;
-              const id = `tournament:${detailTournament.name}:${result.pathway.sportName}`;
-              const isSaved = savedItems.some((s) => s.id === id);
-              const updated = isSaved
-                ? savedItems.filter((s) => s.id !== id)
-                : [
-                    ...savedItems,
-                    {
-                      id,
-                      type: "tournament" as const,
-                      name: detailTournament.name,
-                      sport: result.pathway.sportName,
-                      data: detailTournament,
-                      savedAt: new Date().toISOString(),
-                    },
-                  ];
-              handleSavedChange(updated);
-            }}
-            onSubmitSuccess={(record) => {
-              handleApplicationsChange([...applications, record]);
-            }}
-          />
-        )}
 
-        <SportMatchModal
-          isOpen={isMatchModalOpen}
-          onClose={() => {
-            setIsMatchModalOpen(false);
-            if (hasRunMatchThisSession) {
-              setIsMatchModalCollapsed(true);
-            }
+        <RoadmapIntroModal
+          isOpen={introModalOpen}
+          onYes={() => {
+            localStorage.setItem(INTRO_KEY, "1");
+            setIntroModalOpen(false);
           }}
-          onRecommendationsReady={() => setHasRunMatchThisSession(true)}
-          dependents={(user?.dependents as any) || undefined}
-          onExplore={(sportName, dependentId) => {
-            setIsMatchModalOpen(false);
-            setPreviewSport(sportName);
-            if (dependentId) setPreviewSportDependentId(dependentId);
-            handleSearch(sportName);
-            // Part 4: collapse to draggable icon
-            setIsMatchModalCollapsed(true);
-            hasShownReengageRef.current = false;
+          onNo={() => {
+            localStorage.setItem(INTRO_KEY, "1");
+            setIntroModalOpen(false);
+            router.push("/find-sport");
           }}
         />
 
@@ -2279,7 +2122,7 @@ export function PathwayExplorerSection() {
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            className="fixed bottom-5 right-5 z-30 flex items-center gap-2 rounded-full bg-power-orange px-4 py-3 text-sm font-bold text-white shadow-[0_10px_30px_-8px_rgba(233,115,22,0.6)] transition hover:bg-orange-600 sm:bottom-6 sm:right-6"
+            className="fixed bottom-24 right-5 z-30 flex items-center gap-2 rounded-full bg-power-orange px-4 py-3 text-sm font-bold text-white shadow-[0_10px_30px_-8px_rgba(233,115,22,0.6)] transition hover:bg-orange-600 sm:bottom-24 sm:right-6"
           >
             <MessageSquareQuote className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">
@@ -2288,47 +2131,6 @@ export function PathwayExplorerSection() {
             <span className="sm:hidden">Ask AI Coach</span>
           </motion.button>
         )}
-
-        {/* Part 4 & 5: Draggable floating icon and re-engage prompt */}
-        <AnimatePresence>
-          {isMatchModalCollapsed && (
-            <motion.div
-              drag
-              dragConstraints={{
-                left: -100,
-                right: 100,
-                top: -500,
-                bottom: 500,
-              }}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
-              className="fixed bottom-24 right-5 z-40 sm:bottom-24 sm:right-6 flex flex-col items-end gap-3"
-            >
-              <AnimatePresence>
-                {showReengagePrompt && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 shadow-md border border-slate-100"
-                  >
-                    2 more sports to compare
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <button
-                onClick={() => {
-                  setShowReengagePrompt(false);
-                  setIsMatchModalCollapsed(false);
-                  setIsMatchModalOpen(true);
-                }}
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-power-orange text-white shadow-xl hover:bg-orange-600 transition premium-shadow"
-              >
-                <Sparkles className="h-6 w-6" />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Roadmap chat drawer — opens inline, no navigation away from this page */}
         {result && (

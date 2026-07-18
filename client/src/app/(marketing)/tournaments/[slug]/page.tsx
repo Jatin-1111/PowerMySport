@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { BackToRoadmapLink } from "@/components/BackToRoadmapLink";
 import { TournamentConciergeButton } from "./TournamentConciergeButton";
 import {
   AlertTriangle,
-  ArrowLeft,
   ArrowRight,
   Award,
   CalendarDays,
@@ -184,20 +184,36 @@ function parseQualificationSteps(path: string): string[] {
   return path.split(/\s*→\s*/).filter(Boolean);
 }
 
-function getDocumentsForLevel(level: string): string[] {
+function getDocumentsForLevel(level: string, sportSlug: string): string[] {
+  const s = sportSlug.toLowerCase();
+
+  // Sport-specific federation registration document (the primary prerequisite)
+  const federationDoc: Record<string, string> = {
+    cricket: "BCCI age-group registration proof (from your State Cricket Association)",
+    tennis: "AITA rating card or AITA player registration certificate",
+    badminton: "BAI (Badminton Association of India) membership card",
+    chess: "AICF (All India Chess Federation) player ID card",
+    football: "AIFF (All India Football Federation) player registration certificate",
+    basketball: "BFI (Basketball Federation of India) registration card",
+    hockey: "Hockey India player registration card",
+    "table-tennis": "TTFI (Table Tennis Federation of India) membership card",
+    swimming: "SFI (Swimming Federation of India) registration card",
+    volleyball: "VFI (Volleyball Federation of India) membership card",
+  };
+  const primaryDoc = federationDoc[s] ?? "National / State federation registration card";
+
   const base = [
-    "Proof of age — birth certificate or Aadhaar card",
+    "Birth certificate or Aadhaar card (proof of age)",
     "4 recent passport-size photographs",
     "Medical fitness certificate from a registered doctor",
-    "School or college No-Objection Certificate (NOC)",
   ];
   const stateAndAbove = [
-    "State association membership / registration card",
+    "School or college No-Objection Certificate (NOC)",
+    "State association membership proof",
     "Parent / guardian consent form (for players under 18)",
   ];
   const nationalAndAbove = [
     "State sports authority letter of recommendation",
-    "Identity proof (Aadhaar / school ID)",
   ];
   const international = [
     "Valid Indian passport",
@@ -206,11 +222,11 @@ function getDocumentsForLevel(level: string): string[] {
 
   const l = level.toLowerCase();
   if (l.includes("international"))
-    return [...base, ...stateAndAbove, ...nationalAndAbove, ...international];
+    return [primaryDoc, ...base, ...stateAndAbove, ...nationalAndAbove, ...international];
   if (l.includes("national"))
-    return [...base, ...stateAndAbove, ...nationalAndAbove];
-  if (l.includes("state")) return [...base, ...stateAndAbove];
-  return base;
+    return [primaryDoc, ...base, ...stateAndAbove, ...nationalAndAbove];
+  if (l.includes("state")) return [primaryDoc, ...base, ...stateAndAbove];
+  return [primaryDoc, ...base];
 }
 
 function getCareerImpact(
@@ -332,7 +348,7 @@ export default async function TournamentDetailPage({
   const qualSteps = t.qualificationPath
     ? parseQualificationSteps(t.qualificationPath)
     : [];
-  const documents = getDocumentsForLevel(t.level);
+  const documents = getDocumentsForLevel(t.level, t.sportSlug);
   const careerImpact = getCareerImpact(t.prestige, t.level, t.sportSlug);
   const faqs = getFAQs(t, fed);
   const officialUrl =
@@ -344,6 +360,8 @@ export default async function TournamentDetailPage({
     level: t.level,
     ageGroup: t.ageGroup,
     sportName: sportLabel,
+    sportSlug: t.sportSlug,
+    prerequisiteId: fed ? `${fed.acronym.toLowerCase()}_registration` : "state_registration",
     prerequisiteName: fed
       ? `${fed.acronym} Registration`
       : "State Association Registration",
@@ -367,13 +385,7 @@ export default async function TournamentDetailPage({
 
           {/* Breadcrumb */}
           <div className="pt-5 pb-4 border-b border-white/[0.07]">
-            <Link
-              href="/roadmap"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-white/35 hover:text-white/65 transition"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Back to Pathway Explorer
-            </Link>
+            <BackToRoadmapLink />
           </div>
 
           {/* Badges */}

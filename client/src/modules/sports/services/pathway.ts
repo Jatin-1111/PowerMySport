@@ -2,6 +2,23 @@ import axiosInstance from "@/lib/api/axios";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export interface ProgressionPlanMilestone {
+  title: string;
+  description: string;
+  timeframe: string;
+}
+
+export interface ProgressionPlan {
+  gap: string;
+  prerequisites: string[];
+  milestones: ProgressionPlanMilestone[];
+  targetCompetitions: string[];
+  coachSignals: string[];
+  commonMistakes: string[];
+  typicalTimeline: string;
+  generatedAt?: string;
+}
+
 export interface PathwayLevel {
   level: number;
   label: string;
@@ -55,6 +72,7 @@ export interface PathwayLevel {
   }>;
   academicIntegration?: string;
   proactiveDocuments?: string[];
+  progressionPlan?: ProgressionPlan;
 }
 
 export interface FederationInfo {
@@ -371,6 +389,141 @@ export const pathwayApi = {
       const resp = await axiosInstance.get<ApiResponse<Tournament>>(
         `/pathways/tournaments/${encodeURIComponent(slug)}`,
       );
+      return resp.data.data ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Fetch (or lazily generate) the progression plan for a raw pathway level.
+   * level must be 1–4 (level 5 is the top — no next level to progress to).
+   * Returns null on any error so the caller can show a graceful error state.
+   */
+  getProgressionPlan: async (
+    sportName: string,
+    state: string,
+    level: number,
+  ): Promise<ProgressionPlan | null> => {
+    try {
+      const params = new URLSearchParams({
+        sport: sportName,
+        state,
+        level: String(level),
+      });
+      const resp = await axiosInstance.get<ApiResponse<ProgressionPlan>>(
+        `/pathways/progression?${params.toString()}`,
+      );
+      return resp.data.data ?? null;
+    } catch {
+      return null;
+    }
+  },
+};
+
+// ─── Federation types ─────────────────────────────────────────────────────────
+
+export interface FederationEligibilityCategory {
+  name: string;
+  maxAge: number;
+  genders: string[];
+  minRanking?: string;
+  notes?: string;
+}
+
+export interface FederationEligibilityCriteria {
+  ageCutoffRule?: string;
+  categories: FederationEligibilityCategory[];
+  registrationRequired: boolean;
+  stateAssociationFirst: boolean;
+  notes?: string;
+}
+
+export interface FederationStateAssociation {
+  name: string;
+  state: string;
+  website?: string;
+}
+
+export interface Federation {
+  _id: string;
+  slug: string;
+  name: string;
+  acronym: string;
+  sportSlug: string;
+  type: "govt" | "national" | "hybrid";
+  about: string;
+  founded?: number;
+  headquarters?: string;
+  website?: string;
+  officialCalendarUrl?: string;
+  socialLinks?: {
+    twitter?: string;
+    instagram?: string;
+    facebook?: string;
+    youtube?: string;
+  };
+  affiliations?: string[];
+  stateAssociations?: FederationStateAssociation[];
+  keyFacts?: string[];
+  eligibilityCriteria?: FederationEligibilityCriteria;
+  registrationSteps?: string[];
+  requiredDocuments?: string[];
+  contact?: {
+    email?: string;
+    phone?: string;
+    address?: string;
+  };
+  dataVerifiedAt?: string;
+  sourceUrls?: string[];
+}
+
+export interface FederationTournamentsResponse {
+  tournaments: Tournament[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+export const federationApi = {
+  listBySport: async (sportSlug: string): Promise<Federation[]> => {
+    try {
+      const resp = await axiosInstance.get<ApiResponse<Federation[]>>(
+        `/federations?sport=${encodeURIComponent(sportSlug)}`,
+      );
+      return resp.data.data ?? [];
+    } catch {
+      return [];
+    }
+  },
+
+  getBySlug: async (slug: string): Promise<Federation | null> => {
+    try {
+      const resp = await axiosInstance.get<ApiResponse<Federation>>(
+        `/federations/${encodeURIComponent(slug)}`,
+      );
+      return resp.data.data ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  getTournaments: async (
+    slug: string,
+    params?: { level?: string; ageGroup?: string; page?: number; limit?: number },
+  ): Promise<FederationTournamentsResponse | null> => {
+    try {
+      const qs = new URLSearchParams();
+      if (params?.level) qs.set("level", params.level);
+      if (params?.ageGroup) qs.set("ageGroup", params.ageGroup);
+      if (params?.page) qs.set("page", String(params.page));
+      if (params?.limit) qs.set("limit", String(params.limit));
+      const resp = await axiosInstance.get<
+        ApiResponse<FederationTournamentsResponse>
+      >(`/federations/${encodeURIComponent(slug)}/tournaments?${qs.toString()}`);
       return resp.data.data ?? null;
     } catch {
       return null;

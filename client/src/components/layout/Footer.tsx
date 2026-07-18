@@ -24,7 +24,7 @@ const navColumns = [
       { label: "About Us", href: "/about" },
       { label: "How It Works", href: "/how-it-works" },
       { label: "Sports Roadmap", href: "/roadmap" },
-      { label: "Get Guidance", href: "/guidance" },
+      { label: "Get Expert Help", href: "/guidance" },
       { label: "Contact", href: "/contact" },
     ],
   },

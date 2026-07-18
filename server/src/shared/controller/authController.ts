@@ -165,7 +165,9 @@ export const getProfile = async (
         name: p.name,
         dob: p.dob || null,
         age: p.age,
-        sports: p.sportsFocus || [],
+        gender: p.gender,
+        relation: p.relation,
+        sportsFocus: p.sportsFocus || [],
         skillLevel: p.skillLevel,
         yearsPlaying: p.yearsPlaying,
         personalityTags: p.personalityTags,
@@ -173,12 +175,43 @@ export const getProfile = async (
         weeklyTimeCommitment: p.weeklyTimeCommitment,
         budgetTier: p.budgetTier,
         location: p.location,
+        heightCm: p.heightCm,
+        weightKg: p.weightKg,
+        medicalConditions: p.medicalConditions || [],
+        // Wizard physical
+        build: p.build,
+        heightCategory: p.heightCategory,
+        energyType: p.energyType,
+        motorType: p.motorType,
+        visualTracking: p.visualTracking,
+        eyesight: p.eyesight,
+        agility: p.agility,
+        // Wizard personality
+        teamIndividual: p.teamIndividual,
+        competitiveResponse: p.competitiveResponse,
+        focusStyle: p.focusStyle,
+        decisionStyle: p.decisionStyle,
+        pressureResponse: p.pressureResponse,
+        repetitionTolerance: p.repetitionTolerance,
+        // Wizard comfort
+        contactComfort: p.contactComfort,
+        environment: p.environment,
+        waterComfort: p.waterComfort,
+        // Wizard practical
+        budgetRange: p.budgetRange,
+        ambition: p.ambition,
+        weeklyHoursCategory: p.weeklyHoursCategory,
+        experienceLevel: p.experienceLevel,
+        trainingType: p.trainingType,
+        // Results
+        sportMatches: p.sportMatches || [],
+        wizardCompletedAt: p.wizardCompletedAt,
       }));
 
     const selfPlayer = allPlayers.find((p: any) => p.type === "SELF");
     const playerProfile = selfPlayer
       ? {
-          sports: selfPlayer.sportsFocus || [],
+          sportsFocus: selfPlayer.sportsFocus || [],
           yearsPlaying: selfPlayer.yearsPlaying,
           personalityTags: selfPlayer.personalityTags,
           primaryObjective: selfPlayer.primaryObjective,
@@ -187,6 +220,15 @@ export const getProfile = async (
           location: selfPlayer.location,
         }
       : undefined;
+
+    const parentProfile =
+      user.userType === "Parent"
+        ? {
+            bio: (user as any).bio ?? undefined,
+            sportInterests: (user as any).sportInterests ?? [],
+            involvementYears: (user as any).involvementYears ?? undefined,
+          }
+        : undefined;
 
     res.status(200).json({
       success: true,
@@ -202,6 +244,7 @@ export const getProfile = async (
         photoUrl: user.photoUrl,
         photoS3Key: user.photoS3Key,
         playerProfile,
+        parentProfile,
         dependents,
         shippingAddress: user.shippingAddress,
         hasPassword: !!user.password,
@@ -273,7 +316,7 @@ export const updateProfileHandler = async (
       return;
     }
 
-    const { name, email, phone, dob, playerProfile, shippingAddress } =
+    const { name, email, phone, dob, parentProfile, playerProfile, shippingAddress } =
       req.body;
 
     const updatedUser = await updateProfile(req.user.id, {
@@ -281,9 +324,19 @@ export const updateProfileHandler = async (
       email,
       phone,
       dob,
+      parentProfile,
       playerProfile,
       shippingAddress,
     });
+
+    const updatedParentProfile =
+      updatedUser.userType === "Parent"
+        ? {
+            bio: (updatedUser as any).bio ?? undefined,
+            sportInterests: (updatedUser as any).sportInterests ?? [],
+            involvementYears: (updatedUser as any).involvementYears ?? undefined,
+          }
+        : undefined;
 
     res.status(200).json({
       success: true,
@@ -299,6 +352,7 @@ export const updateProfileHandler = async (
         photoUrl: updatedUser.photoUrl,
         photoS3Key: updatedUser.photoS3Key,
         shippingAddress: updatedUser.shippingAddress,
+        parentProfile: updatedParentProfile,
       },
     });
   } catch (error) {
