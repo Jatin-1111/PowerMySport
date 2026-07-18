@@ -2,7 +2,10 @@ import prisma from "../../lib/prisma";
 import { Prisma } from "@prisma/client";
 import { NotificationService } from "./NotificationService";
 import pushNotificationService from "./pushNotificationService";
-import { sendBookingReminderEmail } from "../../utils/email";
+import {
+  sendBookingReminderEmail,
+  sendPlanCheckInEmail,
+} from "../../utils/email";
 
 // Was imported from the Mongoose model; kept as a local union now that
 // `interval` is a validated String column in Postgres.
@@ -312,6 +315,21 @@ export class ScheduledNotificationService {
                 }).catch((err) => {
                   console.error("Failed to send reminder email:", err);
                   // Return rejected promise to count as failure
+                  return Promise.reject(err);
+                }),
+              );
+            } else if (reminder.type === "PLAN_CHECKIN") {
+              const data = (reminder.data || {}) as Record<string, any>;
+              sendPromises.push(
+                sendPlanCheckInEmail({
+                  email: user.email,
+                  name: user.name,
+                  sport: data.sport || "your sport",
+                  title: reminder.title,
+                  signals: Array.isArray(data.signals) ? data.signals : [],
+                  checkInId: data.checkInId || "",
+                }).catch((err) => {
+                  console.error("Failed to send plan check-in email:", err);
                   return Promise.reject(err);
                 }),
               );

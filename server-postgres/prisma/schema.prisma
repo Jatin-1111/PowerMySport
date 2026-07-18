@@ -315,6 +315,35 @@ enum NotificationCategory {
 enum ScheduledNotificationType {
   BOOKING_REMINDER
   PATHWAY_DOCUMENT_REMINDER
+  PLAN_CHECKIN
+}
+
+enum FederationType {
+  govt
+  national
+  hybrid
+}
+
+enum PlanCheckInSource {
+  find_sport_trial
+  guidance_short_plan
+  guidance_journey
+}
+
+enum PlanCheckInStatus {
+  active
+  due
+  progressing
+  not_progressing
+  ambiguous
+  abandoned
+}
+
+enum ScreeningStatus {
+  requested
+  scheduled
+  completed
+  cancelled
 }
 
 enum ScheduledNotificationStatus {
@@ -655,6 +684,8 @@ model User {
   reminderPreferences     Json?
   // single shipping address (shop) — kept inline as owned 1:1
   shippingAddress Json?
+  // parentProfile subdoc {bio, sportInterests[], involvementYears} (GitHub pull)
+  parentProfile   Json?
 
   addresses         Address[]
   pushSubscriptions PushSubscription[]
@@ -744,6 +775,36 @@ model Player {
   psCurrentGpa         Float?
   psTargetDivision     String?
   psGraduationYear     Int?
+
+  // --- Sport-selection wizard fields (added by GitHub pull) ---
+  heightCm            Int?
+  weightKg            Int?
+  medicalConditions   String[]          @default([])
+  // wizard enums have hyphen/digit values (e.g. "3k-7k") -> stored as String
+  build               String?
+  heightCategory      String?
+  energyType          String?
+  motorType           String?
+  visualTracking      String?
+  teamIndividual      Int? // 1=very individual, 5=very team
+  competitiveResponse String?
+  focusStyle          String?
+  decisionStyle       String?
+  pressureResponse    String?
+  repetitionTolerance String?
+  contactComfort      String?
+  environment         String?
+  waterComfort        String?
+  budgetRange         String?
+  ambition            String?
+  eyesight            String?
+  agility             String?
+  weeklyHoursCategory String?
+  experienceLevel     String?
+  trainingType        String?
+  wizardCity          String?
+  sportMatches        Json              @default("[]") // [{sport,fitLabel,score}]
+  wizardCompletedAt   DateTime?
 
   paymentHistory PlayerPaymentHistory[]
 
@@ -1735,6 +1796,7 @@ model RoadmapChatSession {
   id                String               @id @default(cuid())
   userId            String
   sportSlug         String
+  title             String? // (GitHub pull)
   totalMessageCount Int                  @default(0)
 
   messages RoadmapChatMessage[]
@@ -1742,7 +1804,10 @@ model RoadmapChatSession {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([userId, sportSlug])
+  // NOTE: unique([userId, sportSlug]) removed by GitHub pull — multiple
+  // sessions per (user, sport) are now allowed. Kept as plain indexes.
+  @@index([userId, sportSlug])
+  @@index([userId, updatedAt(sort: Desc)])
   @@map("roadmap_chat_sessions")
 }
 
@@ -2826,23 +2891,32 @@ model PathwayExpertVerification {
 }
 
 model UserPathwayProfile {
-  id           String @id @default(cuid())
-  userId       String @unique
-  progress     Json   @default("{}")
-  savedItems   Json   @default("[]")
-  applications Json   @default("[]")
-  reminders    Json   @default("[]")
+  id           String  @id @default(cuid())
+  userId       String
+  // Which dependent this bucket belongs to; null = "no specific child".
+  // (GitHub pull) unique moved from userId -> [userId, dependentId].
+  dependentId  String?
+  progress     Json    @default("{}")
+  savedItems   Json    @default("[]")
+  applications Json    @default("[]")
+  reminders    Json    @default("[]")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // NOTE: Postgres treats NULLs as distinct, so this unique does NOT enforce a
+  // single "no-dependent" profile per user like the Mongo index did. If that
+  // guarantee is required, add a partial/expression unique via raw SQL:
+  //   CREATE UNIQUE INDEX user_pathway_profile_user_null_dep
+  //     ON user_pathway_profiles (user_id) WHERE dependent_id IS NULL;
+  @@unique([userId, dependentId])
   @@map("user_pathway_profiles")
 }
 
 // SportPathway / SportBasePath / SportStatePath store AI-generated pathway
-// *content documents* (deeply nested, read/written as a whole). Their nested
-// level/tournament/etc. arrays are kept as structured Json rather than ~15
-// child tables — see SCHEMA_CHANGES.md "Pathway content" for the rationale.
+// content documents (deeply nested, read/written as a whole). Their nested
+// level/tournament/etc arrays are kept as structured Json rather than ~15
+// child tables (see SCHEMA_CHANGES.md, Pathway content, for the rationale).
 model SportPathway {
   id                          String    @id @default(cuid())
   sportSlug                   String
@@ -2850,6 +2924,8 @@ model SportPathway {
   cacheKey                    String?
   category                    String    @default("Other")
   overview                    String    @default("")
+  // progressionPlan {gap,prerequisites[],milestones[],...} (GitHub pull)
+  progressionPlan             Json?
   levels                      Json      @default("[]")
   tournaments                 Json      @default("[]")
   scholarships                Json      @default("[]")
@@ -2898,13 +2974,11 @@ model SportStatePath {
   sportSlug         String
   stateSlug         String
   stateName         String
-  // stateAssociation (embedded obj) flattened
   saName            String?
   saAcronym         String?
   saWebsite         String?
   saContact         String?
   topAcademies      Json     @default("[]")
-  // feeRange (embedded obj) flattened
   feeMonthly        String?
   feeEquipment      String?
   feeTournaments    String?
@@ -2917,4 +2991,83 @@ model SportStatePath {
 
   @@unique([sportSlug, stateSlug])
   @@map("sport_state_paths")
+}
+
+// ============================================================================
+// NEW FEATURES (added via GitHub pull) - Federation, PlanCheckIn, Screening
+// ============================================================================
+
+// Federation is reference/content data (consumed as a whole document), so the
+// nested structures are kept as Json - consistent with pathway content models.
+model Federation {
+  id                  String         @id @default(cuid())
+  slug                String         @unique
+  name                String
+  acronym             String
+  sportSlug           String
+  type                FederationType
+  about               String
+  founded             Int?
+  headquarters        String?
+  website             String?
+  officialCalendarUrl String?
+  socialLinks         Json?
+  affiliations        String[]       @default([])
+  stateAssociations   Json           @default("[]")
+  keyFacts            String[]       @default([])
+  eligibilityCriteria Json?
+  registrationSteps   String[]       @default([])
+  requiredDocuments   String[]       @default([])
+  contact             Json?
+  dataVerifiedAt      DateTime?
+  sourceUrls          String[]       @default([])
+  isActive            Boolean        @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sportSlug])
+  @@map("federations")
+}
+
+model PlanCheckIn {
+  id           String            @id @default(cuid())
+  userId       String
+  dependentId  String?
+  source       PlanCheckInSource
+  sourceId     String?
+  sport        String
+  title        String
+  signals      String[]          @default([])
+  checkInDueAt DateTime
+  status       PlanCheckInStatus @default(active)
+  outcomeNote  String?
+  respondedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([checkInDueAt])
+  @@index([status])
+  @@index([userId, status, createdAt(sort: Desc)])
+  @@map("plan_check_ins")
+}
+
+model ScreeningRequest {
+  id            String          @id @default(cuid())
+  parentId      String?
+  dependentName String
+  sport         String?
+  phone         String
+  preferredTime String?
+  city          String?
+  status        ScreeningStatus @default(requested)
+  adminNotes    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([parentId])
+  @@map("screening_requests")
 }
