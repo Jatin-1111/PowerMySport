@@ -30,7 +30,7 @@ export function StateSelector({
         />
       </div>
 
-      <div className="flex flex-wrap gap-2 max-h-52 overflow-y-auto pr-1">
+      <div className="flex flex-wrap gap-2 max-h-[calc(100vh-360px)] overflow-y-auto pr-1">
         {filtered.map((s) => {
           const selected = value === s;
           return (

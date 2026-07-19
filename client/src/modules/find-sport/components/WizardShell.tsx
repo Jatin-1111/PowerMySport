@@ -201,6 +201,17 @@ function QuestionScreen({
   const name = answers.childName || "your child";
   const cap = name.charAt(0).toUpperCase() + name.slice(1);
 
+  // Pronoun helpers — resolve to he/she when gender is known, singular "they"
+  // otherwise (unanswered or "prefer not to say").
+  const isPlural = answers.gender !== "boy" && answers.gender !== "girl";
+  const pn = answers.gender === "boy" ? "he" : answers.gender === "girl" ? "she" : "they";
+  const pnObj = answers.gender === "boy" ? "him" : answers.gender === "girl" ? "her" : "them";
+  const pnContraction = isPlural ? "they're" : `${pn}'s`;
+  const cap1 = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  // 3rd-person singular conjugation for "he"/"she"; base form for "they". Pass
+  // an explicit singular form for irregulars (catch -> catches, miss -> misses).
+  const v = (base: string, singular?: string) => (isPlural ? base : singular ?? `${base}s`);
+
   // Auto-advance helper for binary questions
   const autoAdvance = (key: keyof WizardAnswers, val: WizardAnswers[keyof WizardAnswers]) => {
     onAnswer(key, val);
@@ -432,9 +443,9 @@ function QuestionScreen({
         return (
           <ThreeOptionCards
             options={[
-              { value: "strong", label: `When something moves fast toward ${name}, they track and react naturally` },
-              { value: "moderate", label: "Sometimes catches it, sometimes misses — depends on the day" },
-              { value: "weak", label: "Usually misses or reacts late to fast-moving objects" },
+              { value: "strong", label: `${cap1(v("track"))} and ${v("react")} naturally` },
+              { value: "moderate", label: `Sometimes ${v("catch", "catches")} it, sometimes ${v("miss", "misses")} — depends on the day` },
+              { value: "weak", label: `Usually ${v("miss", "misses")} or ${v("react")} late to fast-moving objects` },
             ]}
             value={answers.visualTracking}
             onChange={(v) => { onAnswer("visualTracking", v as WizardAnswers["visualTracking"]); setTimeout(onNext, 200); }}
@@ -457,9 +468,9 @@ function QuestionScreen({
         return (
           <ThreeOptionCards
             options={[
-              { value: "fired-up", label: `When ${name} loses, they get fired up and want to play again immediately` },
-              { value: "calm", label: "They accept it calmly and move on without much fuss" },
-              { value: "discouraged", label: "They get quite upset and need time before wanting to try again" },
+              { value: "fired-up", label: `${cap1(v("get"))} fired up and ${v("want")} to play again immediately` },
+              { value: "calm", label: `${cap1(v("accept"))} it calmly and ${v("move")} on without much fuss` },
+              { value: "discouraged", label: `${cap1(v("get"))} quite upset and ${v("need")} time before wanting to try again` },
             ]}
             value={answers.competitiveResponse}
             onChange={(v) => { onAnswer("competitiveResponse", v as WizardAnswers["competitiveResponse"]); setTimeout(onNext, 200); }}
@@ -478,7 +489,7 @@ function QuestionScreen({
               {
                 value: "sustained",
                 title: "Can stay with it for hours",
-                sub: `Once ${name} is absorbed in something they like, they lose track of time`,
+                sub: `Once ${name} is absorbed in something ${pn} ${v("like")}, ${pn} ${v("lose")} track of time`,
               },
             ]}
             value={answers.focusStyle}
@@ -510,7 +521,7 @@ function QuestionScreen({
         return (
           <ThreeOptionCards
             options={[
-              { value: "thrives", label: `${cap} performs even better when all eyes are on them — thrives under the spotlight` },
+              { value: "thrives", label: `${cap} performs even better when all eyes are on ${pnObj} — thrives under the spotlight` },
               { value: "manages", label: "Gets nervous but manages through it — performs reasonably well under pressure" },
               { value: "avoids", label: `${cap} strongly prefers not to be the centre of attention` },
             ]}
@@ -526,7 +537,7 @@ function QuestionScreen({
               {
                 value: "high",
                 title: "Happy to repeat the same drill for months",
-                sub: `${cap} doesn't get bored — repetition is how they get better`,
+                sub: `${cap} doesn't get bored — repetition is how ${pn} ${v("get")} better`,
               },
               {
                 value: "low",
@@ -676,12 +687,12 @@ function QuestionScreen({
     height: `How tall is ${name}?`,
     weight: `How much does ${name} weigh?`,
     energyType: `In a game of tag or running around with friends, what does ${name} usually do?`,
-    motorType: `Think of ${name} building something or playing catch — they're better at:`,
-    visualTracking: `When something moves fast toward ${name} — a ball, a shuttle — they:`,
+    motorType: `Think of ${name} building something or playing catch — ${pnContraction} better at:`,
+    visualTracking: `When something moves fast toward ${name} — a ball, a shuttle — ${pn}:`,
     teamIndividual: `At a birthday party with a group game, does ${name} want a partner or team, or go it alone?`,
-    competitiveResponse: `When ${name} loses a game or competition:`,
-    focusStyle: `Think of ${name} doing homework or a puzzle — they tend to:`,
-    decisionStyle: `When ${name} plays a new game for the first time, they usually:`,
+    competitiveResponse: `When ${name} loses a game or competition, ${pn}:`,
+    focusStyle: `Think of ${name} doing homework or a puzzle — ${pn} ${v("tend")} to:`,
+    decisionStyle: `When ${name} plays a new game for the first time, ${pn} usually:`,
     pressureResponse: `When all attention is on ${name} — school event, family gathering:`,
     repetitionTolerance: `To get really good at something, is ${name} willing to:`,
     eyesight: `How is ${name}'s eyesight?`,
@@ -1023,8 +1034,12 @@ export function WizardShell() {
     <div className="min-h-screen bg-white flex">
 
       {/* ── Left sidebar (desktop only, hidden on full-screen steps) ── */}
+      {/* Outer wrapper carries the dark background and stretches to match the
+          right panel's height (which can exceed one viewport, e.g. long
+          multi-select lists); the inner aside stays pinned via sticky. */}
       {!isFullScreen && (
-        <aside className="hidden lg:flex flex-col w-[320px] xl:w-[360px] bg-slate-900 shrink-0 sticky top-0 h-screen overflow-hidden">
+        <div className="hidden lg:block w-[320px] xl:w-[360px] bg-slate-900 shrink-0">
+        <aside className="flex flex-col sticky top-16 h-[calc(100vh-4rem)] overflow-hidden">
           {/* Brand */}
           <div className="px-8 pt-8 pb-6 border-b border-slate-800">
             <p className="text-[11px] font-bold uppercase tracking-widest text-power-orange mb-0.5">
@@ -1103,6 +1118,7 @@ export function WizardShell() {
             </div>
           </div>
         </aside>
+        </div>
       )}
 
       {/* ── Right panel ── */}

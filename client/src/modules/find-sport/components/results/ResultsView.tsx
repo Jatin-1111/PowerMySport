@@ -179,6 +179,9 @@ export function ResultsView({
   const topResults = results.slice(0, 3);
   const portfolio = buildPortfolio(topResults);
   const isUnderTen = answers.age !== null && answers.age <= 10;
+  const isPlural = answers.gender !== "boy" && answers.gender !== "girl";
+  const pn = answers.gender === "boy" ? "he" : answers.gender === "girl" ? "she" : "they";
+  const growVerb = isPlural ? "grow" : "grows";
 
   return (
     <div className="pb-12 animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -316,7 +319,7 @@ export function ResultsView({
                 Save {name}&apos;s profile
               </p>
               <p className="text-sm text-slate-400 leading-relaxed mb-6 flex-1">
-                Keep this assessment, get personalised roadmaps, and track {name}&apos;s progress as they grow.
+                Keep this assessment, get personalised roadmaps, and track {name}&apos;s progress as {pn} {growVerb}.
               </p>
               <a
                 href="/register"
@@ -334,7 +337,7 @@ export function ResultsView({
               </div>
               <p className="font-semibold text-[15px] text-white mb-1.5">Profile saved</p>
               <p className="text-sm text-slate-400 leading-relaxed">
-                {name}&apos;s sport profile is saved. Retake anytime as they grow.
+                {name}&apos;s sport profile is saved. Retake anytime as {pn} {growVerb}.
               </p>
             </div>
           )}
