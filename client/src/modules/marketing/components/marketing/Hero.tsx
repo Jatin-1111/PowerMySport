@@ -363,12 +363,66 @@ function PageHero({
   description,
   primaryCTA,
   secondaryCTA,
+  imageSrc,
+  imageAlt,
 }: HeroProps) {
+  const hasImage = Boolean(imageSrc);
+
   return (
-    <section className="relative overflow-hidden py-20 sm:py-24">
-      <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-sky-200/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 left-8 h-64 w-64 rounded-full bg-amber-200/20 blur-3xl" />
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section
+      className={
+        hasImage
+          ? "relative flex min-h-[72vh] items-center overflow-hidden bg-slate-950 py-28 sm:min-h-[82vh] sm:py-32 lg:min-h-[92vh]"
+          : "relative overflow-hidden py-20 sm:py-24"
+      }
+    >
+      {hasImage ? (
+        <>
+          {/* ── Full-bleed background image ── */}
+          <motion.div
+            className="absolute inset-0 will-change-transform"
+            initial={{ scale: 1.12 }}
+            animate={{ scale: 1.05 }}
+            transition={{ duration: 7, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Image
+              src={imageSrc!}
+              alt={imageAlt || title}
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-center"
+            />
+          </motion.div>
+
+          {/* ── Scrims — centered text needs even coverage ── */}
+          <div className="absolute inset-0 bg-slate-950/60" />
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/30 to-slate-950/85" />
+          <div className="absolute inset-0 bg-[radial-gradient(90%_90%_at_50%_40%,transparent_35%,rgba(2,6,23,0.65)_100%)]" />
+
+          {/* ── Film-grain texture ── */}
+          <div
+            aria-hidden
+            className="absolute inset-0 opacity-[0.05] mix-blend-overlay"
+            style={{ backgroundImage: NOISE_TEXTURE }}
+          />
+
+          {/* ── Aurora glow ── */}
+          <motion.div
+            aria-hidden
+            className="pointer-events-none absolute -bottom-24 left-1/2 h-72 w-[36rem] -translate-x-1/2 rounded-full bg-power-orange/20 blur-[120px]"
+            animate={{ opacity: [0.35, 0.6, 0.35] }}
+            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </>
+      ) : (
+        <>
+          <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-sky-200/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 left-8 h-64 w-64 rounded-full bg-amber-200/20 blur-3xl" />
+        </>
+      )}
+
+      <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -376,24 +430,39 @@ function PageHero({
           viewport={{ once: true, margin: "-80px" }}
           className="text-center"
         >
-          {subtitle && (
-            <motion.div
-              variants={itemVariants}
-              className="mb-5 flex justify-center"
-            >
-              <SectionLabel label={subtitle} color="slate" />
-            </motion.div>
-          )}
+          {subtitle &&
+            (hasImage ? (
+              <motion.div
+                variants={itemVariants}
+                className="mb-6 flex justify-center"
+              >
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-orange-200 backdrop-blur-md">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {subtitle}
+                </span>
+              </motion.div>
+            ) : (
+              <motion.div
+                variants={itemVariants}
+                className="mb-5 flex justify-center"
+              >
+                <SectionLabel label={subtitle} color="slate" />
+              </motion.div>
+            ))}
           <motion.h1
             variants={itemVariants}
-            className="font-title mb-5 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl lg:text-5xl xl:text-6xl"
+            className={cnTitle(hasImage)}
           >
             {title}
           </motion.h1>
           {description && (
             <motion.p
               variants={itemVariants}
-              className="mx-auto max-w-2xl text-lg leading-relaxed text-slate-600 sm:text-xl"
+              className={
+                hasImage
+                  ? "mx-auto max-w-2xl text-lg leading-relaxed text-slate-200/95 sm:text-xl"
+                  : "mx-auto max-w-2xl text-lg leading-relaxed text-slate-600 sm:text-xl"
+              }
             >
               {description}
             </motion.p>
@@ -415,7 +484,11 @@ function PageHero({
                   <Button
                     variant="outline"
                     size="lg"
-                    className="rounded-xl bg-white"
+                    className={
+                      hasImage
+                        ? "rounded-xl border-white/25 bg-white/10 text-white backdrop-blur-md hover:border-white/50 hover:bg-white/20 hover:text-white"
+                        : "rounded-xl bg-white"
+                    }
                   >
                     {secondaryCTA.label}
                   </Button>
@@ -427,6 +500,12 @@ function PageHero({
       </div>
     </section>
   );
+}
+
+function cnTitle(hasImage: boolean): string {
+  return hasImage
+    ? "font-title mb-5 text-3xl font-bold leading-tight text-white sm:text-4xl lg:text-5xl xl:text-6xl"
+    : "font-title mb-5 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl lg:text-5xl xl:text-6xl";
 }
 
 // ─── SPLIT VARIANT ────────────────────────────────────────────────────────────
