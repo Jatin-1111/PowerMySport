@@ -3,7 +3,13 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   async redirects() {
-    return [];
+    return [
+      {
+        source: "/find-sport",
+        destination: "/assessment",
+        permanent: true,
+      },
+    ];
   },
   async rewrites() {
     return [

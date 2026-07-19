@@ -62,7 +62,7 @@ function RegisterContent() {
   useEffect(() => {
     if (user) {
       if (user.userType === "Parent") {
-        router.push("/find-sport");
+        router.push("/assessment");
       } else if (user.role === "Player") {
         router.push("/dashboard/my-bookings");
       } else if (user.role === "VenueLister") {
@@ -135,7 +135,7 @@ function RegisterContent() {
         if (redirectTo) {
           router.push(redirectTo);
         } else if (formData.userType === "Parent") {
-          router.push("/find-sport");
+          router.push("/assessment");
         } else if (response.data.user.role === "Coach") {
           router.push("/coach/verification");
         } else if (response.data.user.role === "VenueLister") {
@@ -195,7 +195,7 @@ function RegisterContent() {
           localStorage.setItem("coachServiceMode", formData.serviceMode);
         }
         if (formData.userType === "Parent") {
-          router.push("/find-sport");
+          router.push("/assessment");
         } else if (response.data.user.role === "Coach") {
           router.push("/coach/verification");
         } else if (response.data.user.role === "VenueLister") {

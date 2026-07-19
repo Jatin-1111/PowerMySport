@@ -44,6 +44,14 @@ export interface PlayerDocument extends Document {
   weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
   experienceLevel?: "beginner" | "intermediate" | "competitive";
   trainingType?: "self" | "club" | "academy" | "private";
+  // Build-the-profile: current standing / track record
+  currentStandingTier?: number; // 1–5, archetype-aware ladder (see client sportArchetypes.ts)
+  bestResultTier?: number; // 1–5, archetype-aware ladder
+  achievementsNote?: string;
+  // Build-the-profile: training setup
+  academyName?: string;
+  sessionsPerWeek?: number;
+  trainingMonths?: number;
   wizardCity?: string; // city picked in wizard (location holds state)
   // Wizard results
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
@@ -152,6 +160,14 @@ const playerSchema = new Schema<PlayerDocument>(
     weeklyHoursCategory: { type: String, enum: ["1-3", "4-7", "8-12", "13-plus"] },
     experienceLevel: { type: String, enum: ["beginner", "intermediate", "competitive"] },
     trainingType: { type: String, enum: ["self", "club", "academy", "private"] },
+    // Build-the-profile: current standing / track record
+    currentStandingTier: { type: Number, min: 1, max: 5 },
+    bestResultTier: { type: Number, min: 1, max: 5 },
+    achievementsNote: { type: String, trim: true },
+    // Build-the-profile: training setup
+    academyName: { type: String, trim: true },
+    sessionsPerWeek: { type: Number, min: 1, max: 14 },
+    trainingMonths: { type: Number, min: 0, max: 240 },
     wizardCity: { type: String, trim: true },
     sportMatches: [{ sport: String, fitLabel: String, score: Number }],
     wizardCompletedAt: { type: Date },

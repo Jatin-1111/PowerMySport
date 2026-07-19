@@ -1,3 +1,5 @@
+import { getAmbitionOptions, getBestResultLadder, getCurrentStandingLadder } from "../data/sportArchetypes";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface KnownSportForm {
@@ -6,15 +8,23 @@ export interface KnownSportForm {
   dateOfBirth: string; // ISO "YYYY-MM-DD" or ""
   gender: string | null;
   state: string | null;
-  experienceLevel: string | null; // "beginner" | "intermediate" | "competitive"
   trainingType: string | null; // "self" | "club" | "academy" | "private"
-  energyType: string | null;
-  motorType: string | null; // "gross" | "fine"
   heightCm: number | null;
   weightKg: number | null;
   ambition: string | null;
   weeklyHours: string | null;
   budgetRange: string | null;
+  // Current standing / track record
+  yearsPlaying: number | null;
+  currentStandingTier: number | null; // 1–5, archetype-aware ladder
+  bestResultTier: number | null; // 1–5, archetype-aware ladder
+  achievementsNote: string;
+  // Training setup (academyName/sessionsPerWeek/trainingMonths only asked when trainingType !== "self")
+  academyName: string;
+  sessionsPerWeek: number | null;
+  trainingMonths: number | null;
+  // Physical
+  injuryNotes: string;
 }
 
 export const EMPTY_FORM: KnownSportForm = {
@@ -23,15 +33,20 @@ export const EMPTY_FORM: KnownSportForm = {
   dateOfBirth: "",
   gender: null,
   state: null,
-  experienceLevel: null,
   trainingType: null,
-  energyType: null,
-  motorType: null,
   heightCm: null,
   weightKg: null,
   ambition: null,
   weeklyHours: null,
   budgetRange: null,
+  yearsPlaying: null,
+  currentStandingTier: null,
+  bestResultTier: null,
+  achievementsNote: "",
+  academyName: "",
+  sessionsPerWeek: null,
+  trainingMonths: null,
+  injuryNotes: "",
 };
 
 // ─── Date of birth helpers ────────────────────────────────────────────────────
@@ -55,25 +70,6 @@ export const TRAINING_TYPE_DISPLAY: Record<string, string> = {
   club: "Club / School",
   academy: "Academy",
   private: "Private coaching",
-};
-
-/** Aligned with the app's 3 macro-level roadmap tiers */
-export const EXPERIENCE_DISPLAY: Record<string, string> = {
-  beginner: "Beginner",
-  intermediate: "Intermediate",
-  competitive: "Competitive",
-};
-
-export const ENERGY_DISPLAY: Record<string, string> = {
-  explosive: "High energy",
-  endurance: "Calm & focused",
-};
-
-export const AMBITION_DISPLAY: Record<string, string> = {
-  fun: "Just for fun",
-  competitive: "Local competitions",
-  national: "State / national level",
-  professional: "Professional pathway",
 };
 
 export const HOURS_DISPLAY: Record<string, string> = {
@@ -103,20 +99,44 @@ export function isAnswered(id: keyof KnownSportForm, form: KnownSportForm): bool
 
 export function buildProfileChips(form: KnownSportForm): string[] {
   const age = getAgeFromDob(form.dateOfBirth);
+  const standingLadder = form.sport ? getCurrentStandingLadder(form.sport) : [];
+  const standingLabel =
+    form.currentStandingTier != null
+      ? standingLadder.find((t) => t.value === form.currentStandingTier)?.label ?? null
+      : null;
 
   return [
     form.gender === "MALE" ? "Boy" : form.gender === "FEMALE" ? "Girl" : null,
     age !== null ? `Age ${age}` : null,
     form.state ?? null,
-    EXPERIENCE_DISPLAY[form.experienceLevel ?? ""] ?? null,
+    standingLabel,
+    form.yearsPlaying !== null ? `${form.yearsPlaying} yr${form.yearsPlaying === 1 ? "" : "s"} playing` : null,
     TRAINING_TYPE_DISPLAY[form.trainingType ?? ""] ?? null,
-    ENERGY_DISPLAY[form.energyType ?? ""] ?? null,
+    form.academyName.trim() || null,
+    form.sessionsPerWeek !== null ? `${form.sessionsPerWeek}x/week` : null,
   ].filter((v): v is string => v !== null && v.length > 0);
 }
 
+export function buildAchievementChips(form: KnownSportForm): string[] {
+  const ladder = form.sport ? getBestResultLadder(form.sport) : [];
+  const bestResultLabel =
+    form.bestResultTier != null
+      ? ladder.find((t) => t.value === form.bestResultTier)?.label ?? null
+      : null;
+
+  return [bestResultLabel, form.achievementsNote.trim() || null].filter(
+    (v): v is string => v !== null && v.length > 0,
+  );
+}
+
 export function buildGoalChips(form: KnownSportForm): string[] {
+  const ambitionOptions = form.sport ? getAmbitionOptions(form.sport) : [];
+  const ambitionLabel = form.ambition
+    ? ambitionOptions.find((o) => o.value === form.ambition)?.label ?? null
+    : null;
+
   return [
-    AMBITION_DISPLAY[form.ambition ?? ""] ?? null,
+    ambitionLabel,
     HOURS_DISPLAY[form.weeklyHours ?? ""] ?? null,
     BUDGET_DISPLAY[form.budgetRange ?? ""] ?? null,
   ].filter((v): v is string => v !== null);

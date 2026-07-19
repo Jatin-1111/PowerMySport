@@ -538,6 +538,14 @@ export interface AddDependentPayload {
   weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
   experienceLevel?: "beginner" | "intermediate" | "competitive";
   trainingType?: "self" | "club" | "academy" | "private";
+  // Build-the-profile: current standing / track record
+  currentStandingTier?: number;
+  bestResultTier?: number;
+  achievementsNote?: string;
+  // Build-the-profile: training setup
+  academyName?: string;
+  sessionsPerWeek?: number;
+  trainingMonths?: number;
   wizardCity?: string;
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
   wizardCompletedAt?: string | Date;
@@ -618,6 +626,14 @@ export const addDependent = async (
     weeklyHoursCategory: payload.weeklyHoursCategory,
     experienceLevel: payload.experienceLevel,
     trainingType: payload.trainingType,
+    // Build-the-profile: current standing / track record
+    currentStandingTier: payload.currentStandingTier,
+    bestResultTier: payload.bestResultTier,
+    achievementsNote: payload.achievementsNote,
+    // Build-the-profile: training setup
+    academyName: payload.academyName,
+    sessionsPerWeek: payload.sessionsPerWeek,
+    trainingMonths: payload.trainingMonths,
     // Wizard results
     sportMatches: payload.sportMatches,
     wizardCompletedAt: payload.wizardCompletedAt ? new Date(payload.wizardCompletedAt) : undefined,
@@ -694,6 +710,14 @@ export const updateDependent = async (
   if (payload.weeklyHoursCategory !== undefined) (dependent as any).weeklyHoursCategory = payload.weeklyHoursCategory;
   if (payload.experienceLevel !== undefined) (dependent as any).experienceLevel = payload.experienceLevel;
   if (payload.trainingType !== undefined) (dependent as any).trainingType = payload.trainingType;
+  // Build-the-profile: current standing / track record
+  if (payload.currentStandingTier !== undefined) (dependent as any).currentStandingTier = payload.currentStandingTier;
+  if (payload.bestResultTier !== undefined) (dependent as any).bestResultTier = payload.bestResultTier;
+  if (payload.achievementsNote !== undefined) (dependent as any).achievementsNote = payload.achievementsNote;
+  // Build-the-profile: training setup
+  if (payload.academyName !== undefined) (dependent as any).academyName = payload.academyName;
+  if (payload.sessionsPerWeek !== undefined) (dependent as any).sessionsPerWeek = payload.sessionsPerWeek;
+  if (payload.trainingMonths !== undefined) (dependent as any).trainingMonths = payload.trainingMonths;
   if (payload.wizardCity !== undefined) (dependent as any).wizardCity = payload.wizardCity;
   if (payload.sportMatches !== undefined) (dependent as any).sportMatches = payload.sportMatches;
   if (payload.wizardCompletedAt !== undefined) {

@@ -48,7 +48,7 @@ const servicesItems = [
 
 const exploreItems = [
   {
-    href: "/find-sport",
+    href: "/assessment",
     label: "Find Your Sport",
     description: "Sport recommendation for your child",
     icon: Star,
@@ -159,29 +159,20 @@ export const Navigation: React.FC<NavProps> = ({
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="shrink-0 relative z-50 h-full">
-            <Link href="/" className="inline-flex items-center h-full">
+            <Link href="/" className="inline-flex h-full flex-col items-start justify-center">
               <span className="font-title text-2xl font-extrabold tracking-tight leading-none">
                 <span className="text-slate-900">Power</span>
                 <span className="text-power-orange">My</span>
                 <span className="text-slate-900">Sport</span>
+              </span>
+              <span className="mt-0.5 hidden text-[9px] font-medium uppercase leading-none tracking-wider text-slate-400 sm:inline-block">
+                Clarity for Every Sporting Journey
               </span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            {/* Home */}
-            <Link
-              href="/"
-              className={cn(
-                "shop-nav-link relative font-medium",
-                isActive("/") &&
-                  "bg-transparent text-power-orange after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-power-orange/70",
-              )}
-            >
-              Home
-            </Link>
-
             {/* Explore Dropdown (Roadmap + Guidance) */}
             <div className="relative" ref={exploreDropdownRef}>
               <button
@@ -573,20 +564,6 @@ export const Navigation: React.FC<NavProps> = ({
             className="md:hidden border-t border-slate-200 overflow-hidden bg-white/95"
           >
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {/* Home */}
-              <Link
-                href="/"
-                className={cn(
-                  "block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-50 transition-colors",
-                  isActive("/")
-                    ? "text-power-orange bg-orange-50"
-                    : "text-slate-700",
-                )}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Home
-              </Link>
-
               {/* Mobile Explore Accordion (Roadmap + Guidance) */}
               <div>
                 <button

@@ -1,5 +1,4 @@
 "use client";
-import { getCommunityAppUrl } from "@/lib/community/url";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { FeaturesShowcase } from "@/modules/marketing/components/marketing/FeaturesShowcase";
@@ -56,7 +55,6 @@ const cardVariants: Variants = {
 
 export default function HomePage() {
   const { user } = useAuthStore();
-  const communityUrl = getCommunityAppUrl();
 
   const organizationSchema = {
     "@context": "https://schema.org",
@@ -151,20 +149,17 @@ export default function HomePage() {
       {/* ── Hero ── */}
       <Hero
         variant="home"
-        title="The Trusted Guide for Every Sports Parent."
-        subtitle="Built for sports parents"
-        description="AI-powered pathways, expert guidance, trusted community and personalised support — everything you need to confidently navigate your child's sporting journey."
+        title="Discover the Right Sport for your child"
+        titleHighlight="Right Sport"
+        description="AI-powered guidance, trusted experts and a community that helps parents make better sports decisions."
         primaryCTA={
           user?.role === "VenueLister"
             ? { label: "Manage Venues", href: "/venue-lister/inventory" }
-            : {
-                label: user ? "Sports Pathways" : "Build a Sports Plan",
-                href: "/roadmap",
-              }
+            : { label: "Start Assessment", href: "/assessment" }
         }
         secondaryCTA={{
-          label: "Explore the Community",
-          href: communityUrl,
+          label: "Sports Pathways",
+          href: "/roadmap",
         }}
       />
 
