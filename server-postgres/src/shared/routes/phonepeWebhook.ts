@@ -17,8 +17,7 @@
  */
 import express from "express";
 import crypto from "crypto";
-import PaymentWebhookEvent from "../models/PaymentWebhookEvent";
-import OutboxMessage from "../models/OutboxMessage";
+import prisma from "../../lib/prisma";
 
 const router = express.Router();
 
@@ -74,21 +73,27 @@ router.post("/webhook", async (req, res) => {
     JSON.stringify(payload).slice(0, 200);
 
   try {
-    const existing = await PaymentWebhookEvent.findOne({ eventId }).lean();
+    const existing = await prisma.paymentWebhookEvent.findUnique({
+      where: { eventId },
+    });
     if (!existing) {
-      await PaymentWebhookEvent.create({
-        eventId,
-        eventType: payload?.event || payload?.type || null,
-        payload,
-        status: "PENDING",
+      await prisma.paymentWebhookEvent.create({
+        data: {
+          eventId,
+          eventType: payload?.event || payload?.type || null,
+          payload,
+          status: "PENDING",
+        },
       });
 
       // enqueue processing via outbox
-      await OutboxMessage.create({
-        type: "process_payment_webhook",
-        payload: { eventId },
-        status: "PENDING",
-        attempts: 0,
+      await prisma.outboxMessage.create({
+        data: {
+          type: "process_payment_webhook",
+          payload: { eventId },
+          status: "PENDING",
+          attempts: 0,
+        },
       });
     } else {
       console.info("duplicate webhook received, eventId=", eventId);

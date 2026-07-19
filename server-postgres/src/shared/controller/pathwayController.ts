@@ -1,18 +1,14 @@
 import { Request, Response } from "express";
+import prisma from "../../lib/prisma";
 import { pathwayService } from "../services/PathwayService";
-import { AthleteStory } from "../models/AthleteStory";
 import { realDataScraperService } from "../services/RealDataScraperService";
 import { INDIAN_STATES_AND_UTS } from "../utils/states";
-import { PathwayExpertVerification } from "../models/PathwayExpertVerification";
-import { Expert } from "../../client/models/ExpertProfile";
 import {
   listPathwaysForExpertVerification,
   verifyPathwayAsExpert,
   removePathwayExpertVerification,
 } from "../services/PathwayExpertVerificationService";
-import { AnalyticsEvent } from "../../admin/models/AnalyticsEvent";
 import { isSupportedSport, SUPPORTED_SPORTS } from "../constants/supportedSports";
-import { Tournament } from "../models/Tournament";
 
 const fail = (res: Response, error: unknown, code = 400) =>
   res.status(code).json({
@@ -54,12 +50,16 @@ export const getPathway = async (
 
     if (!isSupportedSport(sport.trim())) {
       // Fire-and-forget — don't await so the response is immediate.
-      AnalyticsEvent.create({
-        eventName: "unsupported_sport_search",
-        metadata: { sport: sport.trim(), source: "roadmap" },
-        source: "WEB",
-        ...(req.user ? { userId: req.user.id } : {}),
-      }).catch(() => {});
+      prisma.analyticsEvent
+        .create({
+          data: {
+            eventName: "unsupported_sport_search",
+            metadata: { sport: sport.trim(), source: "roadmap" },
+            source: "WEB",
+            ...(req.user ? { userId: req.user.id } : {}),
+          },
+        })
+        .catch(() => {});
 
       res.status(200).json({
         success: true,
@@ -88,18 +88,24 @@ export const getPathway = async (
     // it's attached here at read time rather than stored on the pathway doc.
     let data: unknown = result.pathway;
     if (result.pathway) {
-      const rawVerifications = await PathwayExpertVerification.find({
-        sportSlug: result.pathway.sportSlug,
-      })
-        .select("expertId expertName expertPhotoUrl verifiedAt note -_id")
-        .sort({ verifiedAt: -1 })
-        .lean();
+      const rawVerifications = await prisma.pathwayExpertVerification.findMany({
+        where: { sportSlug: result.pathway.sportSlug },
+        select: {
+          expertId: true,
+          expertName: true,
+          expertPhotoUrl: true,
+          verifiedAt: true,
+          note: true,
+        },
+        orderBy: { verifiedAt: "desc" },
+      });
 
       const expertVerifications = await Promise.all(
         rawVerifications.map(async (v) => {
-          const profile = await Expert.findOne({ userId: v.expertId })
-            .select("achievements bio sports")
-            .lean();
+          const profile = await prisma.expert.findUnique({
+            where: { userId: v.expertId },
+            select: { achievements: true, bio: true, sports: true },
+          });
           return {
             ...v,
             expertCredential:
@@ -118,9 +124,7 @@ export const getPathway = async (
       }
 
       data = {
-        ...(typeof (result.pathway as any).toObject === "function"
-          ? (result.pathway as any).toObject()
-          : result.pathway),
+        ...(result.pathway as any),
         expertVerifications,
         trustTier,
       };
@@ -199,32 +203,36 @@ export const getPathwayStories = async (
     }
 
     const sportSlug = sport.toLowerCase();
-    const query: any = { sportSlug };
+    const where: any = { sportSlug };
 
     if (level && !isNaN(Number(level))) {
-      query.level = Number(level);
+      where.level = Number(level);
     }
 
     // When a state is provided, filter stories to that state.
     // Also include stories with no location (national-level athletes).
     if (state && typeof state === "string" && state.trim()) {
-      const stateRegex = new RegExp(`^${state.trim()}$`, "i");
-      query.$or = [
-        { location: stateRegex },
-        { location: { $exists: false } },
+      // TODO(prisma): the Mongo `$exists:false` branch is dropped because
+      // AthleteStory.location is a non-nullable String in the Prisma schema
+      // (always present). Empty-string stories are still matched below.
+      where.OR = [
+        { location: { equals: state.trim(), mode: "insensitive" } },
         { location: "" },
       ];
     }
 
-    const stories = await AthleteStory.find(query).sort({ level: 1 }).lean();
+    const stories = await prisma.athleteStory.findMany({
+      where,
+      orderBy: { level: "asc" },
+    });
 
     // If nothing found, fire a background scrape so the next request gets results.
     // Use the Sport collection to get the display name for the scraper prompt.
     if (stories.length === 0) {
-      const { Sport } = await import("../models/Sport");
-      const knownSport = await Sport.findOne({ slug: sportSlug })
-        .select("name")
-        .lean();
+      const knownSport = await prisma.sport.findUnique({
+        where: { slug: sportSlug },
+        select: { name: true },
+      });
       const sportName = (knownSport as any)?.name || sport;
 
       realDataScraperService
@@ -473,10 +481,12 @@ export const getCuratedTournamentBySlug = async (
     }
 
     const slugStr = (Array.isArray(slug) ? slug[0] : slug) ?? "";
-    const tournament = await Tournament.findOne({
-      slug: slugStr.toLowerCase().trim(),
-      isCurated: true,
-    }).lean();
+    const tournament = await prisma.tournament.findFirst({
+      where: {
+        slug: slugStr.toLowerCase().trim(),
+        isCurated: true,
+      },
+    });
 
     if (!tournament) {
       res
@@ -501,14 +511,15 @@ export const getCuratedTournaments = async (
 ): Promise<void> => {
   try {
     const { sport } = req.query;
-    const query: Record<string, unknown> = { isCurated: true };
+    const where: any = { isCurated: true };
     if (sport && typeof sport === "string") {
-      query.sportSlug = sport.trim().toLowerCase().replace(/\s+/g, "-");
+      where.sportSlug = sport.trim().toLowerCase().replace(/\s+/g, "-");
     }
 
-    const tournaments = await Tournament.find(query)
-      .sort({ sportSlug: 1, prestige: 1 })
-      .lean();
+    const tournaments = await prisma.tournament.findMany({
+      where,
+      orderBy: [{ sportSlug: "asc" }, { prestige: "asc" }],
+    });
 
     res.json({ success: true, data: tournaments });
   } catch (error) {
