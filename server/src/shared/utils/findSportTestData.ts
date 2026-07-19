@@ -1,4 +1,9 @@
-import type { SportProfile } from "../types";
+// ─── Find-Sport Scoring — Testing Only ─────────────────────────────────────
+// Server-side twin of client/src/modules/find-sport/data/sportProfiles.ts's
+// SPORT_PROFILES + PRIOR_SPORTS_OPTIONS (the CITIES export isn't needed for
+// scoring, so it's skipped). See findSportTestScorer.ts for context.
+
+import type { SportProfile } from "./findSportTestTypes";
 
 export const SPORT_PROFILES: SportProfile[] = [
   {
@@ -1034,33 +1039,4 @@ export const PRIOR_SPORTS_OPTIONS = [
   "Skateboarding", "Sport Climbing", "Triathlon", "Snooker/Billiards",
   "Carrom", "Baseball", "Softball", "Ultimate Frisbee", "Ten-pin Bowling",
   "Yoga", "Surfing", "Marathon/Distance Running", "Padel",
-];
-
-export const CITIES: { name: string; tier: 1 | 2 | 3; state: string | null }[] = [
-  // Tier 1
-  { name: "Delhi / NCR", tier: 1, state: "Delhi" },
-  { name: "Mumbai", tier: 1, state: "Maharashtra" },
-  { name: "Bengaluru", tier: 1, state: "Karnataka" },
-  { name: "Chennai", tier: 1, state: "Tamil Nadu" },
-  { name: "Hyderabad", tier: 1, state: "Telangana" },
-  { name: "Pune", tier: 1, state: "Maharashtra" },
-  { name: "Kolkata", tier: 1, state: "West Bengal" },
-  { name: "Ahmedabad", tier: 1, state: "Gujarat" },
-  // Tier 2
-  { name: "Jaipur", tier: 2, state: "Rajasthan" },
-  { name: "Chandigarh", tier: 2, state: "Punjab" },
-  { name: "Lucknow", tier: 2, state: "Uttar Pradesh" },
-  { name: "Kochi", tier: 2, state: "Kerala" },
-  { name: "Nagpur", tier: 2, state: "Maharashtra" },
-  { name: "Indore", tier: 2, state: "Madhya Pradesh" },
-  { name: "Coimbatore", tier: 2, state: "Tamil Nadu" },
-  { name: "Visakhapatnam", tier: 2, state: "Andhra Pradesh" },
-  { name: "Bhopal", tier: 2, state: "Madhya Pradesh" },
-  { name: "Vadodara", tier: 2, state: "Gujarat" },
-  { name: "Surat", tier: 2, state: "Gujarat" },
-  { name: "Patna", tier: 2, state: "Bihar" },
-  { name: "Amritsar", tier: 2, state: "Punjab" },
-  { name: "Mysuru", tier: 2, state: "Karnataka" },
-  // Tier 3
-  { name: "Other city / town", tier: 3, state: null },
 ];

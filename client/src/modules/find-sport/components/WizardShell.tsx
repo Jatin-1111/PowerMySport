@@ -52,6 +52,10 @@ const STEPS: Step[] = [
   { kind: "question", questionKey: "gender" },
   { kind: "question", questionKey: "state" },
   { kind: "question", questionKey: "priorSports" },
+  { kind: "question", questionKey: "sportsInFamily" },
+  { kind: "question", questionKey: "peerSports" },
+  { kind: "question", questionKey: "informalSports" },
+  { kind: "question", questionKey: "informalReaction" },
   { kind: "transition", text: "Good. Let's understand {name} physically.", sub: "7 quick questions." },
   { kind: "question", questionKey: "height" },
   { kind: "question", questionKey: "weight" },
@@ -73,13 +77,14 @@ const STEPS: Step[] = [
   { kind: "question", questionKey: "waterComfort" },
   { kind: "question", questionKey: "budget" },
   { kind: "question", questionKey: "ambition" },
+  { kind: "question", questionKey: "futureFlexibility" },
   { kind: "question", questionKey: "weeklyHours" },
   { kind: "processing" },
   { kind: "results" },
 ];
 
 const QUESTION_STEPS = STEPS.filter((s) => s.kind === "question");
-const TOTAL_QUESTIONS = QUESTION_STEPS.length; // 20
+const TOTAL_QUESTIONS = QUESTION_STEPS.length;
 
 // ─── Left sidebar metadata ────────────────────────────────────────────────────
 
@@ -119,6 +124,8 @@ function getProfileChips(answers: WizardAnswers): { label: string; value: string
   if (answers.gender && answers.gender !== "prefer-not")
     chips.push({ label: "Gender", value: answers.gender === "boy" ? "Boy" : "Girl" });
   if (answers.state) chips.push({ label: "State", value: answers.state });
+  if (answers.sportsInFamily.length > 0) chips.push({ label: "Family", value: "Sport runs in family" });
+  if (answers.informalReaction === "kept-asking") chips.push({ label: "Exposure", value: "Already loves it" });
   if (answers.energyType)
     chips.push({ label: "Energy", value: answers.energyType === "explosive" ? "Explosive" : "Endurance" });
   if (answers.eyesight)
@@ -202,6 +209,7 @@ function QuestionScreen({
 
   const section: Record<string, string> = {
     age: "Child", gender: "Child", state: "Child", priorSports: "Child",
+    sportsInFamily: "Child", peerSports: "Child", informalSports: "Child", informalReaction: "Child",
     height: "Physical", weight: "Physical", energyType: "Physical",
     motorType: "Physical", visualTracking: "Physical",
     eyesight: "Physical", agility: "Physical",
@@ -209,7 +217,7 @@ function QuestionScreen({
     focusStyle: "Personality", decisionStyle: "Personality",
     pressureResponse: "Personality", repetitionTolerance: "Personality",
     contactComfort: "Comfort", environment: "Comfort", waterComfort: "Comfort",
-    budget: "Practical", ambition: "Practical", weeklyHours: "Practical",
+    budget: "Practical", ambition: "Practical", futureFlexibility: "Practical", weeklyHours: "Practical",
   };
 
   const renderInput = () => {
@@ -250,6 +258,56 @@ function QuestionScreen({
             selected={answers.priorSports}
             onChange={(v) => onAnswer("priorSports", v)}
             noneLabel="None yet"
+          />
+        );
+
+      case "sportsInFamily":
+        return (
+          <MultiSelectPills
+            options={PRIOR_SPORTS_OPTIONS}
+            selected={answers.sportsInFamily}
+            onChange={(v) => onAnswer("sportsInFamily", v)}
+            noneLabel="None of these"
+          />
+        );
+
+      case "peerSports":
+        return (
+          <MultiSelectPills
+            options={PRIOR_SPORTS_OPTIONS}
+            selected={answers.peerSports}
+            onChange={(v) => onAnswer("peerSports", v)}
+            noneLabel="None of these"
+          />
+        );
+
+      case "informalSports":
+        return (
+          <MultiSelectPills
+            options={PRIOR_SPORTS_OPTIONS}
+            selected={answers.informalSports}
+            onChange={(v) => onAnswer("informalSports", v)}
+            noneLabel="None of these"
+          />
+        );
+
+      case "informalReaction":
+        return (
+          <BinaryCards
+            options={[
+              {
+                value: "kept-asking",
+                title: "Kept asking to play again",
+                sub: `${cap} wanted to go back and do it more`,
+              },
+              {
+                value: "lost-interest",
+                title: "Lost interest quickly",
+                sub: "Tried it, but didn't ask to continue",
+              },
+            ]}
+            value={answers.informalReaction}
+            onChange={(v) => autoAdvance("informalReaction", v as WizardAnswers["informalReaction"])}
           />
         );
 
@@ -574,6 +632,19 @@ function QuestionScreen({
           />
         );
 
+      case "futureFlexibility":
+        return (
+          <ThreeOptionCards
+            options={[
+              { value: "all-in", label: "Yes — we'd go all in" },
+              { value: "maybe", label: "Maybe, depends how far" },
+              { value: "stay-local", label: "No — want to stay local and keep costs steady" },
+            ]}
+            value={answers.futureFlexibility}
+            onChange={(v) => { onAnswer("futureFlexibility", v as WizardAnswers["futureFlexibility"]); setTimeout(onNext, 200); }}
+          />
+        );
+
       case "weeklyHours":
         return (
           <FourContextCards
@@ -598,6 +669,10 @@ function QuestionScreen({
     gender: `Is ${name} a boy or a girl?`,
     state: "Which state are you based in?",
     priorSports: `Has ${name} tried any sport formally before?`,
+    sportsInFamily: `Has anyone in ${name}'s immediate family played any of these sports seriously (school/college level or higher)?`,
+    peerSports: `Do any of ${name}'s close friends play these sports seriously?`,
+    informalSports: `Has ${name} played any of these sports casually — not lessons, just for fun (park, backyard, with friends)?`,
+    informalReaction: `Did ${name} ask to keep playing, or lose interest quickly?`,
     height: `How tall is ${name}?`,
     weight: `How much does ${name} weigh?`,
     energyType: `In a game of tag or running around with friends, what does ${name} usually do?`,
@@ -616,6 +691,7 @@ function QuestionScreen({
     waterComfort: `How comfortable is ${name} in water?`,
     budget: "What can your family realistically invest in training each month?",
     ambition: "What is your honest goal for this sport journey?",
+    futureFlexibility: `If ${name} shows real talent and wants to go further, would your family be open to relocating or significantly increasing investment?`,
     weeklyHours: `How many hours per week can ${name} dedicate to sport training?`,
   };
 
@@ -624,10 +700,16 @@ function QuestionScreen({
     questionKey === "height" ||
     questionKey === "weight" ||
     questionKey === "priorSports" ||
+    questionKey === "sportsInFamily" ||
+    questionKey === "peerSports" ||
+    questionKey === "informalSports" ||
     questionKey === "teamIndividual";
 
   const canAdvance = () => {
     if (questionKey === "priorSports") return true;
+    if (questionKey === "sportsInFamily") return true;
+    if (questionKey === "peerSports") return true;
+    if (questionKey === "informalSports") return true;
     if (questionKey === "state") return !!answers.state;
     if (questionKey === "height") return true; // default pre-filled from age
     if (questionKey === "weight") return true; // default pre-filled from age
@@ -806,13 +888,14 @@ export function WizardShell() {
     if (currentStep.kind === "question") {
       const sectionMap: Record<string, string> = {
         age: "Child", gender: "Child", state: "Child", priorSports: "Child",
+        sportsInFamily: "Child", peerSports: "Child", informalSports: "Child", informalReaction: "Child",
         height: "Physical", weight: "Physical", energyType: "Physical",
         motorType: "Physical", visualTracking: "Physical", eyesight: "Physical", agility: "Physical",
         teamIndividual: "Personality", competitiveResponse: "Personality",
         focusStyle: "Personality", decisionStyle: "Personality",
         pressureResponse: "Personality", repetitionTolerance: "Personality",
         contactComfort: "Comfort", environment: "Comfort", waterComfort: "Comfort",
-        budget: "Practical", ambition: "Practical", weeklyHours: "Practical",
+        budget: "Practical", ambition: "Practical", futureFlexibility: "Practical", weeklyHours: "Practical",
       };
       return sectionMap[currentStep.questionKey] ?? "";
     }
@@ -916,6 +999,19 @@ export function WizardShell() {
   // Focus name input when on name screen
   useEffect(() => {
     if (currentStep.kind === "name") nameRef.current?.focus();
+  }, [stepIndex]);
+
+  // informalReaction is only meaningful if informalSports had at least one
+  // selection — auto-skip it otherwise, same idiom as the transition auto-advance.
+  useEffect(() => {
+    if (
+      currentStep.kind === "question" &&
+      currentStep.questionKey === "informalReaction" &&
+      answers.informalSports.length === 0
+    ) {
+      goNext();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepIndex]);
 
   const transitionText = (text: string) =>
@@ -1063,8 +1159,8 @@ export function WizardShell() {
                     Find the right sport for your child.
                   </h1>
                   <p className="text-slate-500 leading-relaxed">
-                    We&apos;ll ask you 23 questions — the same things a good sports consultant would
-                    want to know. Takes about 5 minutes.
+                    We&apos;ll ask you {TOTAL_QUESTIONS} questions — the same things a good sports consultant would
+                    want to know. Takes about 10 minutes.
                   </p>
                 </div>
 
@@ -1124,7 +1220,7 @@ export function WizardShell() {
                     : "Start the assessment"}
                 </button>
                 <p className="text-xs text-slate-400 text-center">
-                  Free · No account required · Results in 5 minutes
+                  Free · No account required · Results in about 10 minutes
                 </p>
               </div>
             )}

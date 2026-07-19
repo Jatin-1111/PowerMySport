@@ -65,7 +65,7 @@ function ModePicker({ onSelect }: { onSelect: (mode: Mode) => void }) {
                 Answer a few quick questions about your child&apos;s personality, physical traits, and goals — we&apos;ll recommend the best sport match.
               </p>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-400">~5 minutes</span>
+                <span className="text-xs font-medium text-slate-400">~10 minutes</span>
                 <span className="text-sm font-bold text-power-orange group-hover:translate-x-1 transition-transform duration-200 inline-flex">
                   Find the sport →
                 </span>

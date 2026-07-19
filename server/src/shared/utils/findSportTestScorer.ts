@@ -1,5 +1,12 @@
-import type { FitLabel, SportProfile, SportResult, WizardAnswers } from "../types";
-import { SPORT_PROFILES } from "../data/sportProfiles";
+// ─── Find-Sport Scoring — Testing Only ─────────────────────────────────────
+// Server-side twin of client/src/modules/find-sport/utils/scorer.ts, ported
+// verbatim (only the import paths changed) so the scoring engine can be
+// exercised over real HTTP for QA. NOT used by the live wizard — WizardShell
+// keeps running its own client-side copy. If the client scorer changes,
+// this file needs the same change applied manually to stay in sync.
+
+import type { FitLabel, SportProfile, SportResult, WizardAnswers } from "./findSportTestTypes";
+import { SPORT_PROFILES } from "./findSportTestData";
 
 // ─── Answer → Dimension value maps (1–5 scale) ───────────────────────────────
 

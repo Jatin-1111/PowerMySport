@@ -44,6 +44,12 @@ export interface PlayerDocument extends Document {
   weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
   experienceLevel?: "beginner" | "intermediate" | "competitive";
   trainingType?: "self" | "club" | "academy" | "private";
+  // Discovery wizard: family/peer/informal-exposure signals
+  sportsInFamily?: string[];
+  peerSports?: string[];
+  informalSports?: string[];
+  informalReaction?: "kept-asking" | "lost-interest";
+  futureFlexibility?: "all-in" | "maybe" | "stay-local";
   // Build-the-profile: current standing / track record
   currentStandingTier?: number; // 1–5, archetype-aware ladder (see client sportArchetypes.ts)
   bestResultTier?: number; // 1–5, archetype-aware ladder
@@ -160,6 +166,12 @@ const playerSchema = new Schema<PlayerDocument>(
     weeklyHoursCategory: { type: String, enum: ["1-3", "4-7", "8-12", "13-plus"] },
     experienceLevel: { type: String, enum: ["beginner", "intermediate", "competitive"] },
     trainingType: { type: String, enum: ["self", "club", "academy", "private"] },
+    // Discovery wizard: family/peer/informal-exposure signals
+    sportsInFamily: { type: [String], default: [] },
+    peerSports: { type: [String], default: [] },
+    informalSports: { type: [String], default: [] },
+    informalReaction: { type: String, enum: ["kept-asking", "lost-interest"] },
+    futureFlexibility: { type: String, enum: ["all-in", "maybe", "stay-local"] },
     // Build-the-profile: current standing / track record
     currentStandingTier: { type: Number, min: 1, max: 5 },
     bestResultTier: { type: Number, min: 1, max: 5 },

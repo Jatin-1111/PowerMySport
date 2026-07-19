@@ -165,7 +165,7 @@ export const Navigation: React.FC<NavProps> = ({
                 <span className="text-power-orange">My</span>
                 <span className="text-slate-900">Sport</span>
               </span>
-              <span className="mt-0.5 hidden text-[9px] font-medium uppercase leading-none tracking-wider text-slate-400 sm:inline-block">
+              <span className="mt-1.5 hidden text-[9px] font-medium uppercase leading-none tracking-wider text-slate-400 sm:inline-block">
                 Clarity for Every Sporting Journey
               </span>
             </Link>
