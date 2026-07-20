@@ -4,7 +4,7 @@ import React from "react";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { motion } from "framer-motion";
-import { ArrowLeft, CheckCircle, Zap, Users, Brain, Heart, Target, User } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle, Clock, Zap, Users, Brain, Heart, Target, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { PRIOR_SPORTS_OPTIONS } from "../data/sportProfiles";
 import type { WizardAnswers } from "../types";
@@ -1166,79 +1166,194 @@ export function WizardShell() {
             className={`animate-in fade-in duration-200 ${direction >= 0 ? "slide-in-from-right-8" : "slide-in-from-left-8"}`}
           >
             {currentStep.kind === "welcome" && (
-              <div className="space-y-8 py-8">
-                <div>
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
-                    Sport recommendation
-                  </p>
-                  <h1 className="font-title text-3xl font-bold text-slate-900 leading-tight mb-3">
-                    Find the right sport for your child.
-                  </h1>
-                  <p className="text-slate-500 leading-relaxed">
-                    We&apos;ll ask you {TOTAL_QUESTIONS} questions — the same things a good sports consultant would
-                    want to know. Takes about 10 minutes.
-                  </p>
-                </div>
-
-                {/* Child picker for logged-in parents with existing profiles */}
-                {players.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
-                      Who is this for?
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {players.map((p) => (
-                        <button
-                          key={p._id}
-                          type="button"
-                          onClick={() => selectDependent(p)}
-                          className={`px-4 py-2 rounded-full border-2 text-sm font-medium transition-all duration-150 ${
-                            selectedDependentId === p._id
-                              ? "border-power-orange bg-power-orange/5 text-power-orange"
-                              : "border-slate-200 text-slate-600 hover:border-slate-300"
-                          }`}
-                        >
-                          {p.name.split(" ")[0]}
-                          {selectedDependentId === p._id && p.wizardCompletedAt && (
-                            <span className="ml-1.5 text-[10px] opacity-60">· retake</span>
-                          )}
-                        </button>
-                      ))}
-                      {players.length > 0 && selectedDependentId && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedDependentId(null);
-                            setAnswers({ ...EMPTY_ANSWERS });
-                            setNameInput("");
-                          }}
-                          className="px-4 py-2 rounded-full border-2 border-slate-200 text-sm font-medium text-slate-500 hover:border-slate-300 transition-all duration-150"
-                        >
-                          Someone new
-                        </button>
-                      )}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.35 }}
+                className="py-4"
+              >
+                <div className="relative flex flex-col overflow-hidden rounded-[28px] border border-slate-200/70 bg-white shadow-[0_28px_70px_-28px_rgba(15,23,42,0.22)] lg:flex-row">
+                  {/* ── Left panel — branded showcase ── */}
+                  <div className="flex flex-col gap-7 bg-slate-900 p-7 xl:p-9 lg:w-[52%] lg:shrink-0 xl:w-[55%]">
+                    {/* Brand eyebrow */}
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-power-orange/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-power-orange">
+                        <span className="h-1.5 w-1.5 rounded-full bg-power-orange animate-pulse" />
+                        Sport Assessment
+                      </span>
                     </div>
-                    {selectedDependentId && selectedPlayer?.wizardCompletedAt && (
-                      <p className="text-xs text-slate-400 mt-2">
-                        Answers pre-filled from previous assessment — update anything that&apos;s changed.
-                      </p>
-                    )}
-                  </div>
-                )}
 
-                <button
-                  type="button"
-                  onClick={goNext}
-                  className="w-full bg-power-orange text-white rounded-xl py-4 text-base font-semibold hover:bg-power-orange/90 transition-colors"
-                >
-                  {selectedDependentId
-                    ? `Start assessment for ${selectedPlayer?.name.split(" ")[0]}`
-                    : "Start the assessment"}
-                </button>
-                <p className="text-xs text-slate-400 text-center">
-                  Free · No account required · Results in about 10 minutes
-                </p>
-              </div>
+                    {/* Headline */}
+                    <div>
+                      <h1 className="font-title text-2xl xl:text-3xl font-bold text-white leading-tight mb-3">
+                        Find the right sport<br />for your child.
+                      </h1>
+                      <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
+                        We analyse {TOTAL_QUESTIONS} data points — the same things a top sports consultant would want to know.
+                      </p>
+                    </div>
+
+                    {/* Trust stats */}
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { value: TOTAL_QUESTIONS.toString(), label: "Questions" },
+                        { value: "5", label: "Categories" },
+                        { value: "~10", label: "Minutes" },
+                      ].map((stat) => (
+                        <div key={stat.label} className="rounded-2xl border border-white/5 bg-white/[0.04] p-4 text-center">
+                          <p className="font-title text-2xl font-bold text-white mb-0.5">{stat.value}</p>
+                          <p className="text-[11px] text-slate-500 font-medium">{stat.label}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Category list */}
+                    <div className="flex flex-col gap-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1">
+                        What we evaluate
+                      </p>
+                      <motion.div
+                        initial="hidden"
+                        animate="show"
+                        variants={{
+                          hidden: { opacity: 0 },
+                          show: { opacity: 1, transition: { staggerChildren: 0.07, delayChildren: 0.1 } },
+                        }}
+                        className="grid grid-cols-2 gap-2"
+                      >
+                        {SECTION_ORDER.map((key, idx) => {
+                          const sec = SECTION_META[key];
+                          const gradients = [
+                            "from-orange-500 to-amber-400",
+                            "from-blue-500 to-cyan-400",
+                            "from-violet-500 to-purple-400",
+                            "from-rose-500 to-pink-400",
+                            "from-emerald-500 to-teal-400",
+                          ];
+                          const isLast = idx === SECTION_ORDER.length - 1;
+                          return (
+                            <motion.div
+                              key={key}
+                              variants={{
+                                hidden: { opacity: 0, y: 10 },
+                                show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+                              }}
+                              className={`flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.04] p-3 transition-colors duration-200 hover:bg-white/[0.07] cursor-default${isLast ? " col-span-2" : ""}`}
+                            >
+                              <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${gradients[idx]} flex items-center justify-center text-white shrink-0 shadow-sm`}>
+                                {React.cloneElement(sec.icon as React.ReactElement<{ className?: string }>, { className: "w-4 h-4" })}
+                              </div>
+                              <p className="text-[12px] font-semibold text-white leading-tight truncate">{sec.title}</p>
+                            </motion.div>
+                          );
+                        })}
+                      </motion.div>
+                    </div>
+                  </div>
+
+                  {/* ── Right panel — CTA ── */}
+                  <div className="relative flex flex-1 flex-col justify-center gap-7 overflow-hidden p-7 xl:p-9">
+                    {/* Ambient glow — echoes the left panel's dark treatment without repeating it */}
+                    <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-power-orange/[0.06] blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-24 -left-12 h-56 w-56 rounded-full bg-sky-400/[0.06] blur-3xl" />
+
+                    <div className="relative">
+                      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+                        Personalised recommendation
+                      </p>
+                      <h2 className="font-title text-2xl font-bold text-slate-900 leading-snug mb-3">
+                        Ready to find the perfect match?
+                      </h2>
+                      <p className="text-sm text-slate-500 leading-relaxed">
+                        Answer honestly — there are no right or wrong answers. The more accurate you are, the better the match.
+                      </p>
+                    </div>
+
+                    {/* How it works mini steps */}
+                    <div className="relative flex flex-col gap-3">
+                      {[
+                        { step: "1", text: "Tell us about your child" },
+                        { step: "2", text: "We score across 5 dimensions" },
+                        { step: "3", text: "Get your personalised sport report" },
+                      ].map((item) => (
+                        <div key={item.step} className="flex items-center gap-3">
+                          <span className="w-7 h-7 rounded-full bg-power-orange/10 text-power-orange text-[12px] font-bold flex items-center justify-center shrink-0">
+                            {item.step}
+                          </span>
+                          <p className="text-[13px] text-slate-600 font-medium">{item.text}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Child picker */}
+                    {players.length > 0 && (
+                      <div className="relative">
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2.5">
+                          Who is this for?
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {players.map((p) => (
+                            <button
+                              key={p._id}
+                              type="button"
+                              onClick={() => selectDependent(p)}
+                              className={`px-4 py-2 rounded-full border-2 text-sm font-semibold transition-all duration-200 ${
+                                selectedDependentId === p._id
+                                  ? "border-power-orange bg-power-orange text-white shadow-sm"
+                                  : "border-slate-200 text-slate-600 hover:border-slate-300 bg-white"
+                              }`}
+                            >
+                              {p.name.split(" ")[0]}
+                              {selectedDependentId === p._id && p.wizardCompletedAt && (
+                                <span className="ml-1.5 text-[10px] opacity-75">· retake</span>
+                              )}
+                            </button>
+                          ))}
+                          {players.length > 0 && selectedDependentId && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedDependentId(null);
+                                setAnswers({ ...EMPTY_ANSWERS });
+                                setNameInput("");
+                              }}
+                              className="px-4 py-2 rounded-full border-2 border-slate-200 text-sm font-medium text-slate-500 hover:border-slate-300 bg-white transition-all duration-200"
+                            >
+                              Someone new
+                            </button>
+                          )}
+                        </div>
+                        {selectedDependentId && selectedPlayer?.wizardCompletedAt && (
+                          <p className="text-xs text-slate-400 mt-2">
+                            Answers pre-filled from previous assessment — update anything that&apos;s changed.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* CTA */}
+                    <div className="relative flex flex-col gap-3">
+                      <button
+                        type="button"
+                        onClick={goNext}
+                        className="group relative w-full overflow-hidden rounded-2xl bg-power-orange px-8 py-4 text-[15px] font-bold text-white shadow-[0_4px_24px_-4px_rgba(234,88,12,0.5)] hover:shadow-[0_8px_32px_-4px_rgba(234,88,12,0.6)] hover:bg-orange-600 active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2"
+                      >
+                        <span>
+                          {selectedDependentId
+                            ? `Start for ${selectedPlayer?.name.split(" ")[0]}`
+                            : "Start the assessment"}
+                        </span>
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
+                      </button>
+                      <div className="flex items-center justify-center gap-4 text-[11px] text-slate-400">
+                        <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-emerald-500" /> Free</span>
+                        <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-emerald-500" /> No account needed</span>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> ~10 min</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
             )}
 
             {currentStep.kind === "name" && (
