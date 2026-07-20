@@ -1,5 +1,6 @@
 "use client";
 
+import api from "@/lib/api/axios";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { SlotPicker } from "@/modules/expert/components/SlotPicker";
 import {
@@ -25,13 +26,21 @@ import {
     MessageSquareText,
     Quote,
     ShieldCheck,
+    Sparkles,
     Star,
     Timer,
+    Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+
+interface DependentOption {
+  _id: string;
+  name: string;
+  type: "SELF" | "DEPENDENT";
+}
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
@@ -97,6 +106,23 @@ export default function ExpertDetailPage() {
   const [mode, setMode] = useState<ExpertSessionMode>("ONLINE");
   const [note, setNote] = useState("");
   const [slot, setSlot] = useState<string | null>(null);
+  const [dependents, setDependents] = useState<DependentOption[]>([]);
+  const [selectedDependentId, setSelectedDependentId] = useState<string | null>(null);
+
+  // Fetch the parent's children so they can optionally attach one to this
+  // booking — auto-select when there's exactly one, same rule as the wizard.
+  useEffect(() => {
+    if (!user) return;
+    api
+      .get<{ success: boolean; data: DependentOption[] }>("/auth/players")
+      .then((res) => {
+        if (!res.data.success || !Array.isArray(res.data.data)) return;
+        const deps = res.data.data.filter((p) => p.type === "DEPENDENT");
+        setDependents(deps);
+        if (deps.length === 1) setSelectedDependentId(deps[0]._id);
+      })
+      .catch(() => {});
+  }, [user]);
 
   const load = useCallback(async () => {
     try {
@@ -139,6 +165,7 @@ export default function ExpertDetailPage() {
         scheduledAt: slot,
         mode: expert?.sessionMode === "BOTH" ? mode : undefined,
         clientNote: note.trim() || undefined,
+        playerId: selectedDependentId || undefined,
       });
       if (res.success && res.data?.redirectUrl) {
         // Hand off to PhonePe hosted checkout.
@@ -391,16 +418,50 @@ export default function ExpertDetailPage() {
                   </div>
                 )}
 
+                {dependents.length > 0 && (
+                  <div className="mt-4">
+                    <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <Users className="h-3.5 w-3.5" /> Who is this session for?
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {dependents.map((dep) => (
+                        <button
+                          key={dep._id}
+                          type="button"
+                          onClick={() =>
+                            setSelectedDependentId((prev) =>
+                              prev === dep._id ? null : dep._id,
+                            )
+                          }
+                          className={`rounded-full border-2 px-3.5 py-1.5 text-sm font-medium transition-all duration-150 ${
+                            selectedDependentId === dep._id
+                              ? "border-power-orange bg-power-orange/5 text-power-orange"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                          }`}
+                        >
+                          {dep.name}
+                        </button>
+                      ))}
+                    </div>
+                    {selectedDependentId && (
+                      <p className="mt-2 flex items-start gap-1.5 text-xs text-slate-400">
+                        <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-power-orange" />
+                        We&apos;ll share {dependents.find((d) => d._id === selectedDependentId)?.name}&apos;s sport profile with the expert so they&apos;re ready for your call.
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <div className="mt-4">
                   <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    <MessageSquareText className="h-3.5 w-3.5" /> Note to expert
-                    (optional)
+                    <MessageSquareText className="h-3.5 w-3.5" /> What would you
+                    like to discuss? (optional)
                   </label>
                   <textarea
                     rows={3}
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    placeholder="What would you like to work on?"
+                    placeholder="e.g. Is football sustainable with his school schedule? Should we push for state trials?"
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm transition-all focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20"
                   />
                 </div>

@@ -24,6 +24,8 @@ export type ExpertPayoutStatus = "PENDING" | "PAID";
 export interface ExpertSessionDocument extends Document {
   expertId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
+  /** The child (Player, type DEPENDENT) this session is about, if the parent picked one when booking. */
+  playerId?: mongoose.Types.ObjectId;
   amount: number;
   status: ExpertSessionStatus;
   paymentStatus: "PENDING" | "COMPLETED" | "FAILED";
@@ -84,6 +86,11 @@ const expertSessionSchema = new Schema<ExpertSessionDocument>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true,
+    },
+    playerId: {
+      type: Schema.Types.ObjectId,
+      ref: "Player",
       index: true,
     },
     amount: { type: Number, required: true, min: 0 },

@@ -205,6 +205,7 @@ export const initiateSession = async (
       scheduledAt: String(req.body.scheduledAt),
       clientNote: req.body?.clientNote,
       mode: req.body?.mode,
+      playerId: req.body?.playerId,
     });
     res.status(201).json({ success: true, message: "Payment initiated", data });
   } catch (e) {

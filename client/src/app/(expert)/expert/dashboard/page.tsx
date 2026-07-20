@@ -5,15 +5,31 @@ import {
     expertApi,
     type Expert,
     type ExpertSession,
+    type ExpertSessionPlayer,
 } from "@/modules/expert/services/expert";
 import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
 import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
-import { AlertCircle, CalendarClock, Check, Clock, Star, Users, Wallet } from "lucide-react";
+import { AlertCircle, CalendarClock, Check, Clock, Star, Target, Users, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
+
+const GENDER_LABEL: Record<string, string> = {
+  MALE: "Boy",
+  FEMALE: "Girl",
+  OTHER: "Other",
+};
+
+/** A few of the most useful wizard signals for a quick pre-session read — not the full profile. */
+const playerTraitChips = (player: ExpertSessionPlayer): string[] =>
+  [
+    player.ambition && { fun: "Health & fun", competitive: "Competitive", national: "National", professional: "Pro career" }[player.ambition],
+    player.competitiveResponse && { "fired-up": "Fires up on a loss", calm: "Calm on a loss", discouraged: "Needs time after a loss" }[player.competitiveResponse],
+    player.pressureResponse && { thrives: "Thrives under pressure", manages: "Manages pressure", avoids: "Avoids the spotlight" }[player.pressureResponse],
+    player.energyType && { explosive: "Explosive energy", endurance: "Endurance-built" }[player.energyType],
+  ].filter((v): v is string => Boolean(v));
 
 const STATUS_STYLES: Record<string, string> = {
   PENDING_PAYMENT: "bg-amber-50 text-amber-700",
@@ -271,6 +287,37 @@ function SessionRow({
               ? ` · ${session.mode === "ONLINE" ? "Online" : "In-person"}`
               : ""}
           </p>
+          {session.player && (
+            <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2">
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-800">
+                <Users className="h-3.5 w-3.5 text-power-orange" />
+                {session.player.name}
+                {session.player.age ? ` · ${session.player.age} yrs` : ""}
+                {session.player.gender
+                  ? ` · ${GENDER_LABEL[session.player.gender] || session.player.gender}`
+                  : ""}
+              </p>
+              {session.player.topSportMatch && (
+                <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-600">
+                  <Target className="h-3 w-3 text-power-orange" />
+                  Best fit: {session.player.topSportMatch.sport} (
+                  {session.player.topSportMatch.fitLabel})
+                </p>
+              )}
+              {playerTraitChips(session.player).length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {playerTraitChips(session.player).map((chip) => (
+                    <span
+                      key={chip}
+                      className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200"
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {session.clientNote && (
             <p className="mt-1 text-sm italic text-slate-500">
               “{session.clientNote}”

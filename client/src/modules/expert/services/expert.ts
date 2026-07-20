@@ -52,6 +52,26 @@ export type ExpertSessionStatus =
 
 export type ExpertRefundStatus = "NONE" | "REQUIRED" | "MANUAL_DONE";
 
+/** Compact briefing an expert sees for the child a session was booked about. */
+export interface ExpertSessionPlayer {
+  name: string;
+  age?: number;
+  gender?: "MALE" | "FEMALE" | "OTHER";
+  sportsFocus?: string[];
+  topSportMatch?: { sport: string; fitLabel: string; score: number };
+  energyType?: string;
+  motorType?: string;
+  teamIndividual?: number;
+  competitiveResponse?: string;
+  focusStyle?: string;
+  pressureResponse?: string;
+  contactComfort?: string;
+  environment?: string;
+  ambition?: string;
+  budgetRange?: string;
+  wizardCompletedAt?: string;
+}
+
 export interface ExpertSession {
   id: string;
   _id?: string;
@@ -82,6 +102,8 @@ export interface ExpertSession {
   reviewedAt?: string;
   expert?: Expert;
   clientName?: string;
+  /** Present when the parent picked one of their children when booking. */
+  player?: ExpertSessionPlayer;
   createdAt: string;
 }
 
@@ -148,6 +170,7 @@ export const expertApi = {
       scheduledAt: string;
       clientNote?: string;
       mode?: ExpertSessionMode;
+      playerId?: string;
     },
   ): Promise<ApiResponse<{ sessionId: string; redirectUrl: string }>> => {
     const res = await axiosInstance.post(
