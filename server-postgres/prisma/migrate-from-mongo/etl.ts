@@ -45,6 +45,36 @@ const geo = (loc: any): { lng: number | null; lat: number | null } => {
     : { lng: null, lat: null };
 };
 
+/**
+ * Normalize Coach.serviceMode. Legacy Mongo rows carry values ("OFFLINE"/
+ * "ONLINE") that predate the current enum (OWN_VENUE | FREELANCE | HYBRID).
+ * Valid values pass through; anything else defaults to FREELANCE (coach
+ * delivers a service without a platform-listed own venue) and is logged so the
+ * remapping is auditable. Adjust the default here if your data means otherwise.
+ */
+const svcMode = (v: any): "OWN_VENUE" | "FREELANCE" | "HYBRID" => {
+  const s = typeof v === "string" ? v.toUpperCase() : "";
+  if (s === "OWN_VENUE" || s === "FREELANCE" || s === "HYBRID") return s;
+  console.warn(`  ⚠️ legacy coach.serviceMode=${JSON.stringify(v)} → FREELANCE`);
+  return "FREELANCE";
+};
+
+/**
+ * Normalize booking payment-leg userType. Mongo data stores uppercase values
+ * ("COACH"/"PLAYER"/"VENUE_LISTER"); the Prisma PaymentUserType enum is
+ * mixed-case (VenueLister | Coach | Player). Map case-insensitively.
+ */
+const payUserType = (v: any): "VenueLister" | "Coach" | "Player" => {
+  const s = typeof v === "string" ? v.toUpperCase().replace(/[_\s]/g, "") : "";
+  if (s === "COACH") return "Coach";
+  if (s === "VENUELISTER") return "VenueLister";
+  if (s === "PLAYER") return "Player";
+  console.warn(
+    `  ⚠️ unknown booking payment userType=${JSON.stringify(v)} → Player`,
+  );
+  return "Player";
+};
+
 /** Read a whole collection as an array (fine for one-off migration sizes). */
 async function all(db: Db, coll: string): Promise<any[]> {
   return db.collection(coll).find({}).toArray();
@@ -175,7 +205,7 @@ async function migrateCoaches(db: Db) {
         certifications: d.certifications ?? [],
         sports: d.sports ?? [],
         hourlyRate: num(d.hourlyRate, 0)!,
-        serviceMode: d.serviceMode,
+        serviceMode: svcMode(d.serviceMode),
         serviceRadiusKm: num(d.serviceRadiusKm),
         travelBufferTime: num(d.travelBufferTime),
         rating: num(d.rating, 0)!,
@@ -235,23 +265,27 @@ async function migrateCoaches(db: Db) {
             updatedAt: date(p.updatedAt) ?? new Date(),
           })),
         },
-        ownVenue: d.ownVenueDetails
+        // Conditionally include the optional 1:1 relation. `exactOptionalPropertyTypes`
+        // forbids passing an explicit `undefined`, so spread the key in only when present.
+        ...(d.ownVenueDetails
           ? {
-              create: {
-                name: d.ownVenueDetails.name ?? null,
-                address: d.ownVenueDetails.address ?? null,
-                lng: geo(d.ownVenueDetails.location).lng,
-                lat: geo(d.ownVenueDetails.location).lat,
-                sports: d.ownVenueDetails.sports ?? [],
-                amenities: d.ownVenueDetails.amenities ?? [],
-                pricePerHour: num(d.ownVenueDetails.pricePerHour),
-                description: d.ownVenueDetails.description ?? null,
-                images: d.ownVenueDetails.images ?? [],
-                imageS3Keys: d.ownVenueDetails.imageS3Keys ?? [],
-                openingHours: d.ownVenueDetails.openingHours ?? null,
+              ownVenue: {
+                create: {
+                  name: d.ownVenueDetails.name ?? null,
+                  address: d.ownVenueDetails.address ?? null,
+                  lng: geo(d.ownVenueDetails.location).lng,
+                  lat: geo(d.ownVenueDetails.location).lat,
+                  sports: d.ownVenueDetails.sports ?? [],
+                  amenities: d.ownVenueDetails.amenities ?? [],
+                  pricePerHour: num(d.ownVenueDetails.pricePerHour),
+                  description: d.ownVenueDetails.description ?? null,
+                  images: d.ownVenueDetails.images ?? [],
+                  imageS3Keys: d.ownVenueDetails.imageS3Keys ?? [],
+                  openingHours: d.ownVenueDetails.openingHours ?? null,
+                },
               },
             }
-          : undefined,
+          : {}),
       },
     });
   }
@@ -390,7 +424,7 @@ async function migrateBookings(db: Db) {
         payments: {
           create: (d.payments ?? []).map((p: any) => ({
             userId: String(p.userId),
-            userType: p.userType,
+            userType: payUserType(p.userType),
             amount: num(p.amount, 0)!,
             status: p.status ?? "PENDING",
             paidAt: date(p.paidAt),
@@ -503,7 +537,22 @@ async function main() {
   console.log(`🚚 ETL start (source=${db.databaseName}) truncate=${truncate}`);
 
   if (truncate) {
-    console.log("⚠️  Truncating target tables not yet enabled — use `prisma migrate reset` for a clean target.");
+    console.log("🧹 Truncating all target tables (CASCADE)…");
+    // Wipe every table in the public schema except Prisma's migration ledger,
+    // so a re-run loads into a clean target without duplicate-PK crashes.
+    await prisma.$executeRawUnsafe(`
+      DO $$
+      DECLARE r RECORD;
+      BEGIN
+        FOR r IN (
+          SELECT tablename FROM pg_tables
+          WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'
+        ) LOOP
+          EXECUTE 'TRUNCATE TABLE public.' || quote_ident(r.tablename) || ' CASCADE';
+        END LOOP;
+      END $$;
+    `);
+    console.log("✅ Target truncated.");
   }
 
   for (const step of RUN_ORDER) {
