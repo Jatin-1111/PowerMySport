@@ -30,8 +30,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================================================
@@ -867,7 +868,8 @@ model Coach {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([sports])
+  // NOTE: `sports` is String[]; Postgres btree can't index array columns.
+  // Add a GIN index via raw SQL if needed: CREATE INDEX coaches_sports_gin ON coaches USING GIN (sports);
   @@index([serviceMode])
   @@index([isVerified])
   @@index([verificationStatus])
@@ -1019,7 +1021,8 @@ model Venue {
   @@index([ownerId, createdAt(sort: Desc)])
   @@index([ownerEmail, approvalStatus])
   @@index([approvalStatus, createdAt(sort: Desc)])
-  @@index([sports, approvalStatus])
+  // NOTE: `sports` is String[]; btree can't index arrays. GIN if needed:
+  // CREATE INDEX venues_sports_gin ON venues USING GIN (sports);
   @@map("venues")
 }
 
@@ -1913,7 +1916,8 @@ model CommunityPost {
   @@index([createdAt(sort: Desc)])
   @@index([voteScore(sort: Desc), createdAt(sort: Desc)])
   @@index([status, isDeleted, createdAt(sort: Desc)])
-  @@index([tags, createdAt(sort: Desc)])
+  // NOTE: `tags` is String[]; btree can't index arrays. GIN if needed:
+  // CREATE INDEX community_posts_tags_gin ON community_posts USING GIN (tags);
   @@map("community_posts")
 }
 
@@ -2314,7 +2318,9 @@ model Academy {
 
   @@index([ownerId])
   @@index([isApproved, kycVerified])
-  @@index([isApproved, isActive, sports])
+  @@index([isApproved, isActive])
+  // NOTE: `sports` is String[]; btree can't index arrays. GIN if needed:
+  // CREATE INDEX academies_sports_gin ON academies USING GIN (sports);
   @@map("academies")
 }
 

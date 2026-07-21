@@ -1,6 +1,5 @@
-import mongoose from "mongoose";
 import dotenv from "dotenv";
-import { Sport } from "../shared/models/Sport";
+import prisma from "../lib/prisma";
 
 dotenv.config();
 
@@ -33,9 +32,12 @@ function resolveSportFilter(): string | undefined {
 }
 
 /**
- * Connects to MongoDB, fetches every known sport from the canonical Sport
- * collection, and runs `handler` for each one sequentially (sequential, not
+ * Fetches every known sport from the canonical `sports` table (Postgres via
+ * Prisma) and runs `handler` for each one sequentially (sequential, not
  * parallel, to stay within Gemini rate limits during a full scraper pass).
+ *
+ * Prisma connects lazily and the shared client is managed by the app, so unlike
+ * the old Mongoose runner this no longer opens/closes its own connection.
  */
 export async function runForEverySport(
   label: string,
@@ -44,26 +46,12 @@ export async function runForEverySport(
   console.log(`🚀 Starting ${label}...`);
   const sportFilter = resolveSportFilter()?.trim().toLowerCase();
 
-  const dbUri =
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    "mongodb://localhost:27017/powermysport";
-
-  const weConnected = mongoose.connection.readyState === 0;
-  if (weConnected) {
-    await mongoose.connect(dbUri);
-    console.log("✅ Connected to MongoDB");
-  }
-
-  const sports = await Sport.find({}).select("slug name").lean();
+  const sports = await prisma.sport.findMany({
+    select: { slug: true, name: true },
+  });
 
   if (!sports || sports.length === 0) {
-    console.warn(
-      "⚠️ No sports found in the Sport collection. Nothing to scrape.",
-    );
-    if (weConnected && mongoose.connection.readyState !== 0) {
-      await mongoose.disconnect();
-    }
+    console.warn("⚠️ No sports found in the sports table. Nothing to scrape.");
     return;
   }
 
@@ -79,15 +67,12 @@ export async function runForEverySport(
     console.warn(
       `⚠️ No sport matched "${sportFilter}". Use a sport slug or exact sport name.`,
     );
-    if (weConnected && mongoose.connection.readyState !== 0) {
-      await mongoose.disconnect();
-    }
     return;
   }
 
   let totalFound = 0;
 
-  for (const sport of filteredSports as Array<{ slug: string; name: string }>) {
+  for (const sport of filteredSports) {
     console.log(`\n🔍 ${label}: ${sport.name} (${sport.slug})`);
     try {
       const count = await handler({ slug: sport.slug, name: sport.name });
@@ -101,8 +86,4 @@ export async function runForEverySport(
   console.log(
     `\n🏁 ${label} complete. ${totalFound} total result(s) across ${filteredSports.length} sport(s).`,
   );
-
-  if (weConnected && mongoose.connection.readyState !== 0) {
-    await mongoose.disconnect();
-  }
 }
