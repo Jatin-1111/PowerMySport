@@ -3,6 +3,7 @@
  * Run periodically via cron or job scheduler
  */
 
+import prisma from "../lib/prisma";
 import {
   cleanupExpiredBookings,
   cleanupStaleBookingLocks,
@@ -18,47 +19,47 @@ import { pathwayService } from "../shared/services/PathwayService";
  */
 export const releaseCompletedBookingPayments = async (): Promise<void> => {
   try {
-    const { Booking } = await import("../client/models/Booking");
-    const { BookingPaymentTransaction } =
-      await import("../client/models/BookingPayment");
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const completedBookings = await Booking.find({
-      status: "COMPLETED",
-      updatedAt: { $lte: twentyFourHoursAgo },
-      "payments.status": "PENDING",
-      // Only release payouts for bookings where the player actually paid
-      paymentConfirmedAt: { $ne: null },
+    const completedBookings = await prisma.booking.findMany({
+      where: {
+        status: "COMPLETED",
+        updatedAt: { lte: twentyFourHoursAgo },
+        // at least one payout leg still pending
+        payments: { some: { status: "PENDING" } },
+        // Only release payouts for bookings where the player actually paid
+        paymentConfirmedAt: { not: null },
+      },
+      select: { id: true },
     });
 
     let releasedCount = 0;
 
     for (const booking of completedBookings) {
       // Cross-reference: verify a real payment transaction was completed
-      const confirmedTx = await BookingPaymentTransaction.findOne({
-        bookingId: booking._id,
-        status: "COMPLETED",
+      const confirmedTx = await prisma.bookingPaymentTransaction.findFirst({
+        where: { bookingId: booking.id, status: "COMPLETED" },
       });
       if (!confirmedTx) {
         console.warn(
-          `⚠️ Skipping payout release for booking ${booking._id}: no confirmed payment transaction found`,
+          `⚠️ Skipping payout release for booking ${booking.id}: no confirmed payment transaction found`,
         );
         continue;
       }
 
-      // Only release payee entries (VENUE_LISTER / COACH).
-      // The PLAYER entry is already marked PAID by updatePaymentStatus().
-      booking.payments = booking.payments.map((payment: any) => {
-        if (payment.status === "PENDING" && payment.userType !== "Player") {
-          payment.status = "PAID";
-          payment.paidAt = now;
-        }
-        return payment;
+      // Only release payee entries (VenueLister / Coach).
+      // The Player entry is already marked PAID by updatePaymentStatus().
+      const { count } = await prisma.bookingPaymentLeg.updateMany({
+        where: {
+          bookingId: booking.id,
+          status: "PENDING",
+          userType: { not: "Player" },
+        },
+        data: { status: "PAID", paidAt: now },
       });
 
-      await booking.save();
-      releasedCount++;
+      if (count > 0) releasedCount++;
     }
 
     if (releasedCount > 0) {
@@ -79,36 +80,35 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
  */
 export const retryPendingBookingRefunds = async (): Promise<void> => {
   try {
-    const { Booking } = await import("../client/models/Booking");
-    const { BookingPaymentTransaction } = await import(
-      "../client/models/BookingPayment"
-    );
     const { initiatePhonePeRefund } = await import(
       "../shared/services/PhonePeService"
     );
     const { randomBytes } = await import("crypto");
 
     // Find cancelled bookings with a pending refund that was never successfully initiated.
-    const pendingBookings = await Booking.find({
-      status: "CANCELLED",
-      refundStatus: "PENDING",
-      refundAmount: { $gt: 0 },
-    }).limit(50);
+    const pendingBookings = await prisma.booking.findMany({
+      where: {
+        status: "CANCELLED",
+        refundStatus: "PENDING",
+        refundAmount: { gt: 0 },
+      },
+      take: 50,
+    });
 
     let retried = 0;
     let succeeded = 0;
 
     for (const booking of pendingBookings) {
-      // Only retry when the payment has settled — COMPLETED transaction required.
-      const transaction = await BookingPaymentTransaction.findOne({
-        bookingId: booking._id,
-        status: "COMPLETED",
-        $or: [
-          { refundState: { $exists: false } },
-          { refundState: null },
-          { refundState: "FAILED" },
-        ],
-      }).sort({ createdAt: -1 });
+      // Only retry when the payment has settled — COMPLETED transaction required
+      // and the refund was never initiated (null refundState) or previously failed.
+      const transaction = await prisma.bookingPaymentTransaction.findFirst({
+        where: {
+          bookingId: booking.id,
+          status: "COMPLETED",
+          OR: [{ refundState: null }, { refundState: "FAILED" }],
+        },
+        orderBy: { createdAt: "desc" },
+      });
 
       if (!transaction) continue; // payment not settled yet — try next run
 
@@ -125,22 +125,28 @@ export const retryPendingBookingRefunds = async (): Promise<void> => {
         });
 
         const refundState = response.state || "INITIATED";
-        transaction.refundMerchantId = refundMerchantId;
-        if (response.refundId) transaction.refundId = response.refundId;
-        transaction.refundState = refundState;
-        transaction.refundAmount = amountPaise;
-        transaction.refundResponse = response.raw;
-        await transaction.save();
+        await prisma.bookingPaymentTransaction.update({
+          where: { id: transaction.id },
+          data: {
+            refundMerchantId,
+            ...(response.refundId ? { refundId: response.refundId } : {}),
+            refundState,
+            refundAmount: amountPaise,
+            refundResponse: response.raw as any,
+          },
+        });
 
         if (refundState === "COMPLETED") {
-          booking.refundStatus = "PROCESSED";
-          await booking.save();
+          await prisma.booking.update({
+            where: { id: booking.id },
+            data: { refundStatus: "PROCESSED" },
+          });
           succeeded++;
         }
         // If INITIATED — pollPendingRefunds will confirm and flip to PROCESSED.
       } catch (err) {
         console.error(
-          `❌ Refund retry failed for booking ${booking._id}:`,
+          `❌ Refund retry failed for booking ${booking.id}:`,
           err,
         );
         // Leave refundStatus as PENDING — try again next run.

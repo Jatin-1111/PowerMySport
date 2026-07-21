@@ -86,9 +86,13 @@ export const sendVerificationCode = async (
     // Check rate limit
     const canProceed = await checkRateLimit(email);
     if (!canProceed) {
-      const limit = await RateLimit.findOne({
-        key: email.toLowerCase(),
-        type: "EMAIL_VERIFICATION",
+      const limit = await prisma.rateLimit.findUnique({
+        where: {
+          unique_rate_limit: {
+            key: email.toLowerCase(),
+            type: RateLimitType.EMAIL_VERIFICATION,
+          },
+        },
       });
       const minutesLeft = limit
         ? Math.ceil((limit.resetAt.getTime() - Date.now()) / (60 * 1000))
@@ -103,21 +107,29 @@ export const sendVerificationCode = async (
     const code = generateOTP();
     const expiresAt = new Date(Date.now() + CODE_EXPIRY_MINUTES * 60 * 1000);
 
-    // Store/update verification code in database
-    await EmailVerification.findOneAndUpdate(
-      { email: email.toLowerCase(), verified: false },
-      {
-        code,
-        email: email.toLowerCase(),
-        expiresAt,
-        attempts: 0,
-        verified: false,
-      },
-      {
-        upsert: true,
-        new: true,
-      },
-    );
+    // Store/update verification code in database.
+    // Mongo used findOneAndUpdate(..., { upsert: true }) keyed on
+    // (email, verified:false); there is no unique index on that pair, so we
+    // emulate the single-document upsert with findFirst → update|create.
+    const existingCode = await prisma.emailVerification.findFirst({
+      where: { email: email.toLowerCase(), verified: false },
+    });
+    if (existingCode) {
+      await prisma.emailVerification.update({
+        where: { id: existingCode.id },
+        data: { code, expiresAt, attempts: 0, verified: false },
+      });
+    } else {
+      await prisma.emailVerification.create({
+        data: {
+          email: email.toLowerCase(),
+          code,
+          expiresAt,
+          attempts: 0,
+          verified: false,
+        },
+      });
+    }
 
     // Increment rate limit
     await incrementRateLimit(email);
@@ -246,9 +258,9 @@ export const verifyCode = async (
   email: string,
   submittedCode: string,
 ): Promise<{ success: boolean; message: string }> => {
-  const stored = await EmailVerification.findOne({
-    email: email.toLowerCase(),
-    verified: false,
+  const stored = await prisma.emailVerification.findFirst({
+    where: { email: email.toLowerCase(), verified: false },
+    orderBy: { createdAt: "desc" },
   });
 
   if (!stored) {
@@ -260,7 +272,7 @@ export const verifyCode = async (
 
   // Check expiry
   if (new Date() > stored.expiresAt) {
-    await EmailVerification.deleteOne({ _id: stored._id });
+    await prisma.emailVerification.delete({ where: { id: stored.id } });
     return {
       success: false,
       message: "Verification code has expired. Please request a new code.",
@@ -269,7 +281,7 @@ export const verifyCode = async (
 
   // Check attempts
   if (stored.attempts >= MAX_ATTEMPTS) {
-    await EmailVerification.deleteOne({ _id: stored._id });
+    await prisma.emailVerification.delete({ where: { id: stored.id } });
     return {
       success: false,
       message: "Too many failed attempts. Please request a new code.",
@@ -278,17 +290,21 @@ export const verifyCode = async (
 
   // Verify code
   if (stored.code !== submittedCode) {
-    stored.attempts++;
-    await stored.save();
+    const updated = await prisma.emailVerification.update({
+      where: { id: stored.id },
+      data: { attempts: { increment: 1 } },
+    });
     return {
       success: false,
-      message: `Invalid code. ${MAX_ATTEMPTS - stored.attempts} attempts remaining.`,
+      message: `Invalid code. ${MAX_ATTEMPTS - updated.attempts} attempts remaining.`,
     };
   }
 
   // Success - mark as verified
-  stored.verified = true;
-  await stored.save();
+  await prisma.emailVerification.update({
+    where: { id: stored.id },
+    data: { verified: true },
+  });
 
   return {
     success: true,
@@ -305,12 +321,12 @@ export const cleanupExpiredCodes = async (): Promise<void> => {
   const now = new Date();
 
   // Delete expired verification codes
-  await EmailVerification.deleteMany({
-    expiresAt: { $lt: now },
+  await prisma.emailVerification.deleteMany({
+    where: { expiresAt: { lt: now } },
   });
 
   // Delete expired rate limits
-  await RateLimit.deleteMany({
-    resetAt: { $lt: now },
+  await prisma.rateLimit.deleteMany({
+    where: { resetAt: { lt: now } },
   });
 };
