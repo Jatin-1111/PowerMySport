@@ -2,6 +2,57 @@ import type { Venue, VenueApprovalStatus } from "@prisma/client";
 import prisma from "../../lib/prisma";
 import { IGeoLocation } from "../../types/index";
 import { buildSafeSearchRegexSource } from "../../utils/regex";
+import { s3Service } from "../../shared/services/S3Service";
+
+// Regenerate presigned image URLs from stored S3 keys on read. Migrated venue
+// image URLs are expired presigned URLs; the Mongo model refreshed them via
+// .refreshImageUrls()/.refreshAllUrls() instance methods that Prisma lacks.
+const IMAGE_URL_TTL_SECONDS = 604800; // 7 days
+
+const presignImageKey = async (key: string): Promise<string | null> => {
+  try {
+    return await s3Service.generateDownloadUrl(
+      key,
+      "images",
+      IMAGE_URL_TTL_SECONDS,
+    );
+  } catch {
+    return null;
+  }
+};
+
+const presignKeys = async (keys: string[]): Promise<string[]> => {
+  const urls = await Promise.all(keys.map(presignImageKey));
+  return urls.filter((u): u is string => u !== null);
+};
+
+const resignVenueImages = async <T>(venue: T): Promise<T> => {
+  const v = venue as any;
+  if (!v) return venue;
+  if (v.coverPhotoKey) {
+    const url = await presignImageKey(v.coverPhotoKey);
+    if (url) v.coverPhotoUrl = url;
+  }
+  if (Array.isArray(v.generalImageKeys) && v.generalImageKeys.length > 0) {
+    v.generalImages = await presignKeys(v.generalImageKeys);
+  }
+  if (Array.isArray(v.imageKeys) && v.imageKeys.length > 0) {
+    v.images = await presignKeys(v.imageKeys);
+  }
+  if (Array.isArray(v.sportImages)) {
+    for (const si of v.sportImages) {
+      if (Array.isArray(si.imageKeys) && si.imageKeys.length > 0) {
+        si.images = await presignKeys(si.imageKeys);
+      }
+    }
+  }
+  return venue;
+};
+
+const resignVenues = async <T>(venues: T[]): Promise<T[]> => {
+  await Promise.all(venues.map((v) => resignVenueImages(v)));
+  return venues;
+};
 
 // Children hydrated alongside a venue (previously embedded sub-documents).
 const venueInclude = {
@@ -195,10 +246,7 @@ export const getVenueById = async (id: string): Promise<Venue | null> => {
     where: { id },
     include: venueInclude,
   });
-  // TODO(prisma): the Mongo document exposed .refreshImageUrls()/.populate("ownerId");
-  // model instance methods no longer exist. Re-issue S3 presigned image URLs and
-  // resolve the owner User via a standalone helper if the caller needs them.
-  return venue;
+  return resignVenueImages(venue);
 };
 
 export const getVenuesByOwner = async (
@@ -224,8 +272,7 @@ export const getVenuesByOwner = async (
     }),
   ]);
 
-  // TODO(prisma): refreshAllUrls() was a Mongoose model method (S3 presign);
-  // reimplement as a standalone helper if fresh image/doc URLs are required.
+  await resignVenues(venues);
 
   return { venues, total, page, totalPages: Math.ceil(total / limit) };
 };
@@ -274,7 +321,7 @@ export const findVenuesNearby = async (
       }),
     ]);
 
-    // TODO(prisma): refreshAllUrls() model method removed — see getVenuesByOwner.
+    await resignVenues(venues);
 
     return {
       venues,
@@ -334,7 +381,7 @@ export const getAllVenues = async (
     }),
   ]);
 
-  // TODO(prisma): refreshAllUrls()/populate("ownerId") model helpers removed.
+  await resignVenues(venues);
 
   return {
     venues,

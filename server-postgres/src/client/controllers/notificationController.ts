@@ -38,7 +38,9 @@ export const getNotifications = async (
 
     res.json({
       success: true,
-      data: result.notifications,
+      // Expose `_id` alongside `id` — the frontend keys notifications on `_id`
+      // (same compatibility aliasing the expert/reminder serializers use).
+      data: result.notifications.map((n) => ({ ...n, _id: n.id })),
       pagination: {
         page,
         limit,

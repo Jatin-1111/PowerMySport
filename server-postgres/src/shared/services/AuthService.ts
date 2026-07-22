@@ -229,7 +229,26 @@ export const loginUser = async (
 export const getUserById = async (
   id: string,
 ): Promise<UserWithRelations | null> => {
-  return prisma.user.findUnique({ where: { id }, include: USER_INCLUDE });
+  const user = await prisma.user.findUnique({
+    where: { id },
+    include: USER_INCLUDE,
+  });
+  // Regenerate a fresh presigned URL from the stored S3 key on read. Migrated
+  // photoUrl values are expired presigned URLs; the old Mongoose model did this
+  // via a `refreshPhotoUrl()` instance method that has no Prisma equivalent.
+  if (user?.photoS3Key) {
+    try {
+      const s3Service = new S3Service();
+      user.photoUrl = await s3Service.generateDownloadUrl(
+        user.photoS3Key,
+        "images",
+        604800,
+      );
+    } catch {
+      // Presign failed — keep the stored photoUrl rather than blocking the read.
+    }
+  }
+  return user;
 };
 
 export const requestPasswordReset = async (email: string): Promise<string> => {
