@@ -74,6 +74,11 @@ export function buildDependentPayload(
     gender: genderMap,
     location: answers.state ?? undefined,
     sportsFocus: answers.priorSports.length ? answers.priorSports : undefined,
+    sportsInFamily: answers.sportsInFamily.length ? answers.sportsInFamily : undefined,
+    peerSports: answers.peerSports.length ? answers.peerSports : undefined,
+    informalSports: answers.informalSports.length ? answers.informalSports : undefined,
+    informalReaction: answers.informalReaction ?? undefined,
+    futureFlexibility: answers.futureFlexibility ?? undefined,
     heightCm: answers.height ?? undefined,
     weightKg: answers.weight ?? undefined,
     heightCategory: answers.height ? deriveHeightCategoryFromCm(answers.height, answers.age) : undefined,
@@ -114,6 +119,11 @@ export interface WizardSourceProfile {
   gender?: "MALE" | "FEMALE" | "OTHER";
   location?: string;
   sportsFocus?: string[];
+  sportsInFamily?: string[];
+  peerSports?: string[];
+  informalSports?: string[];
+  informalReaction?: "kept-asking" | "lost-interest";
+  futureFlexibility?: "all-in" | "maybe" | "stay-local";
   heightCm?: number;
   weightKg?: number;
   energyType?: "explosive" | "endurance";
@@ -147,6 +157,10 @@ export function prefillFromPlayer(player: WizardSourceProfile): Partial<WizardAn
   if (player.location) out.state = player.location;
 
   if (player.sportsFocus?.length) out.priorSports = player.sportsFocus;
+  if (player.sportsInFamily?.length) out.sportsInFamily = player.sportsInFamily;
+  if (player.peerSports?.length) out.peerSports = player.peerSports;
+  if (player.informalSports?.length) out.informalSports = player.informalSports;
+  if (player.informalReaction) out.informalReaction = player.informalReaction;
 
   // Wizard physical — prefer exact numeric values for round-tripping
   if (player.heightCm) out.height = player.heightCm;
@@ -177,6 +191,7 @@ export function prefillFromPlayer(player: WizardSourceProfile): Partial<WizardAn
     out.budget = map[player.budgetTier] ?? null;
   }
   if (player.ambition) out.ambition = player.ambition;
+  if (player.futureFlexibility) out.futureFlexibility = player.futureFlexibility;
   if (player.eyesight) out.eyesight = player.eyesight;
   if (player.agility) out.agility = player.agility;
   if (player.weeklyHoursCategory) {
@@ -214,6 +229,10 @@ export function dependentToWizardAnswers(
     gender: genderMap,
     state: dep.location ?? null,
     priorSports: dep.sportsFocus ?? [],
+    sportsInFamily: dep.sportsInFamily ?? [],
+    peerSports: dep.peerSports ?? [],
+    informalSports: dep.informalSports ?? [],
+    informalReaction: dep.informalReaction ?? null,
     height: dep.heightCm ?? null,
     weight: dep.weightKg ?? null,
     energyType: dep.energyType ?? null,
@@ -232,6 +251,7 @@ export function dependentToWizardAnswers(
     waterComfort: dep.waterComfort ?? null,
     budget: dep.budgetRange ?? null,
     ambition: dep.ambition ?? null,
+    futureFlexibility: dep.futureFlexibility ?? null,
     weeklyHours: dep.weeklyHoursCategory ?? null,
   };
 }

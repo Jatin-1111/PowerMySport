@@ -40,16 +40,17 @@ function ModePicker({ onSelect }: { onSelect: (mode: Mode) => void }) {
         </motion.div>
 
         {/* Choice cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:items-stretch">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.4, ease: "easeOut" }}
+            className="h-full"
           >
             <button
               type="button"
               onClick={() => onSelect("discover")}
-              className="group w-full text-left rounded-3xl border-2 border-slate-200 bg-white p-7 shadow-sm hover:border-power-orange hover:shadow-md transition-all duration-200 active:scale-[0.99]"
+              className="group flex h-full w-full flex-col text-left rounded-3xl border-2 border-slate-200 bg-white p-7 shadow-sm hover:border-power-orange hover:shadow-md transition-all duration-200 active:scale-[0.99]"
             >
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-power-orange transition-transform duration-300 group-hover:scale-110">
                 <HelpCircle className="h-6 w-6" />
@@ -60,11 +61,11 @@ function ModePicker({ onSelect }: { onSelect: (mode: Mode) => void }) {
               <h2 className="font-title text-xl font-bold text-slate-900 mb-2">
                 Help me find a sport
               </h2>
-              <p className="text-sm text-slate-500 leading-relaxed mb-5">
+              <p className="flex-1 text-sm text-slate-500 leading-relaxed mb-5">
                 Answer a few quick questions about your child&apos;s personality, physical traits, and goals — we&apos;ll recommend the best sport match.
               </p>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-400">~5 minutes</span>
+                <span className="text-xs font-medium text-slate-400">~10 minutes</span>
                 <span className="text-sm font-bold text-power-orange group-hover:translate-x-1 transition-transform duration-200 inline-flex">
                   Find the sport →
                 </span>
@@ -76,11 +77,12 @@ function ModePicker({ onSelect }: { onSelect: (mode: Mode) => void }) {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.4, ease: "easeOut" }}
+            className="h-full"
           >
             <button
               type="button"
               onClick={() => onSelect("known")}
-              className="group w-full text-left rounded-3xl border-2 border-slate-200 bg-white p-7 shadow-sm hover:border-emerald-400 hover:shadow-md transition-all duration-200 active:scale-[0.99]"
+              className="group flex h-full w-full flex-col text-left rounded-3xl border-2 border-slate-200 bg-white p-7 shadow-sm hover:border-emerald-400 hover:shadow-md transition-all duration-200 active:scale-[0.99]"
             >
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 transition-transform duration-300 group-hover:scale-110">
                 <CheckCircle2 className="h-6 w-6" />
@@ -91,11 +93,11 @@ function ModePicker({ onSelect }: { onSelect: (mode: Mode) => void }) {
               <h2 className="font-title text-xl font-bold text-slate-900 mb-2">
                 Build the profile
               </h2>
-              <p className="text-sm text-slate-500 leading-relaxed mb-5">
+              <p className="flex-1 text-sm text-slate-500 leading-relaxed mb-5">
                 Tell us your child&apos;s sport and we&apos;ll build their profile — so we can personalise the roadmap and guidance for exactly where they are.
               </p>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-400">~3 minutes</span>
+                <span className="text-xs font-medium text-slate-400">~5 min · more questions</span>
                 <span className="text-sm font-bold text-emerald-600 group-hover:translate-x-1 transition-transform duration-200 inline-flex">
                   Build profile →
                 </span>
@@ -117,7 +119,7 @@ function ModePicker({ onSelect }: { onSelect: (mode: Mode) => void }) {
   );
 }
 
-export default function FindSportPage() {
+export default function AssessmentPage() {
   const [mode, setMode] = useState<Mode>("pick");
 
   if (mode === "discover") return <WizardShell />;

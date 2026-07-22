@@ -1,5 +1,4 @@
 "use client";
-import { getCommunityAppUrl } from "@/lib/community/url";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { FeaturesShowcase } from "@/modules/marketing/components/marketing/FeaturesShowcase";
@@ -18,7 +17,6 @@ import {
   MessageCircle,
   Search,
   Sparkles,
-  Trophy,
   Users2,
 } from "lucide-react";
 
@@ -56,7 +54,6 @@ const cardVariants: Variants = {
 
 export default function HomePage() {
   const { user } = useAuthStore();
-  const communityUrl = getCommunityAppUrl();
 
   const organizationSchema = {
     "@context": "https://schema.org",
@@ -151,20 +148,17 @@ export default function HomePage() {
       {/* ── Hero ── */}
       <Hero
         variant="home"
-        title="The Trusted Guide for Every Sports Parent."
-        subtitle="Built for sports parents"
-        description="AI-powered pathways, expert guidance, trusted community and personalised support — everything you need to confidently navigate your child's sporting journey."
+        title="Discover the Right Sport for your child"
+        titleHighlight="Right Sport"
+        description="AI-powered guidance, trusted experts and a community that helps parents make better sports decisions."
         primaryCTA={
           user?.role === "VenueLister"
             ? { label: "Manage Venues", href: "/venue-lister/inventory" }
-            : {
-                label: user ? "Sports Pathways" : "Build a Sports Plan",
-                href: "/roadmap",
-              }
+            : { label: "Start Assessment", href: "/assessment" }
         }
         secondaryCTA={{
-          label: "Explore the Community",
-          href: communityUrl,
+          label: "Sports Pathways",
+          href: "/roadmap",
         }}
       />
 
@@ -211,9 +205,9 @@ export default function HomePage() {
               <motion.div
                 key={p.text}
                 variants={cardVariants}
-                className="flex items-start gap-3 rounded-2xl border border-slate-200/70 bg-white/70 p-5 backdrop-blur-sm"
+                className="group flex items-start gap-3 rounded-2xl border border-slate-200/60 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70"
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors duration-300 group-hover:bg-power-orange/10 group-hover:text-power-orange">
                   {p.icon}
                 </span>
                 <p className="text-sm font-medium leading-snug text-slate-700">
@@ -283,14 +277,14 @@ export default function HomePage() {
                     icon: <Map size={22} />,
                     title: "Sports Roadmap",
                     desc: "A step-by-step plan for your child's sport—what to learn, when, and what to aim for.",
-                    color: "bg-orange-100 text-power-orange",
+                    color: "bg-orange-50 text-power-orange ring-1 ring-orange-200/60",
                     cta: { label: "Build a Sports Plan", href: "/roadmap" },
                   },
                   {
                     icon: <BrainCircuit size={22} />,
                     title: "Expert Guidance",
                     desc: "Answers to your toughest questions from sports experts and our AI guide—on call, whenever you need.",
-                    color: "bg-indigo-100 text-indigo-600",
+                    color: "bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200/60",
                     cta: { label: "Chat on WhatsApp", href: "https://wa.me/918968582443?text=Hi%21%20I%20found%20PowerMySport%20and%20would%20like%20to%20know%20more%20about%20sports%20guidance%20for%20my%20child." },
                   },
                 ].map((item) => (
@@ -299,7 +293,7 @@ export default function HomePage() {
                     variants={cardVariants}
                     whileHover={{ y: -4 }}
                     transition={{ type: "spring", stiffness: 280, damping: 20 }}
-                    className="flex flex-col gap-4 rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm premium-shadow will-change-transform sm:flex-row sm:items-center"
+                    className="flex flex-col gap-4 rounded-2xl border border-slate-200/60 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-shadow duration-300 will-change-transform hover:shadow-xl hover:shadow-slate-200/60 sm:flex-row sm:items-center"
                   >
                     <div
                       className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${item.color}`}
@@ -326,10 +320,10 @@ export default function HomePage() {
               </motion.div>
             </motion.div>
 
-            {/* Right: clipped image */}
+            {/* Right: layered image composition */}
             <motion.div
-              initial={{ opacity: 0, x: 40, scale: 0.96 }}
-              whileInView={{ opacity: 1, x: 0, scale: 1 }}
+              initial={{ opacity: 0, x: 40 }}
+              whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{
                 type: "spring",
@@ -337,64 +331,61 @@ export default function HomePage() {
                 damping: 26,
                 delay: 0.15,
               }}
-              className="relative hidden w-full max-w-[612px] aspect-[3/2] mx-auto lg:block"
+              className="relative hidden w-full max-w-[612px] mx-auto lg:block"
             >
-              <div className="absolute inset-4 rounded-3xl bg-orange-100/25 blur-2xl" />
-              <svg
-                viewBox="0 0 200 200"
-                className="pointer-events-none absolute -left-6 -top-6 h-40 w-40 opacity-50"
-                aria-hidden
-              >
-                <polygon
-                  points="8,0 200,0 200,192 192,200 0,200 0,8"
-                  fill="none"
-                  stroke="rgba(233,115,22,0.2)"
-                  strokeWidth="1.5"
-                />
-              </svg>
-
+              {/* Offset backdrop panel */}
               <div
-                className="relative h-full w-full overflow-hidden rounded-[2.5rem]"
+                aria-hidden
+                className="absolute -inset-x-6 -bottom-6 top-10 rounded-[2.5rem] bg-gradient-to-br from-orange-100/50 via-orange-50/30 to-indigo-50/40"
+              />
+              {/* Dotted accent */}
+              <div
+                aria-hidden
+                className="absolute -right-7 -top-7 h-28 w-28 opacity-50"
                 style={{
-                  clipPath:
-                    "polygon(8% 0, 100% 0, 100% 92%, 92% 100%, 0 100%, 0 8%)",
+                  backgroundImage:
+                    "radial-gradient(circle, rgba(233,115,22,0.35) 1.5px, transparent 1.5px)",
+                  backgroundSize: "14px 14px",
                 }}
-              >
+              />
+
+              <div className="group relative aspect-[3/2] overflow-hidden rounded-[2rem] shadow-2xl shadow-slate-900/10 ring-1 ring-slate-900/5">
                 <Image
                   src="https://media.istockphoto.com/id/1496936307/photo/young-boy-watching-british-indian-mother-working-at-home.jpg?s=612x612&w=0&k=20&c=KOg86wvMpgJe42K-2i3UKdcuOD7egEWcxHO1n3WHtl8="
                   alt="Parent planning their child's sports journey"
                   fill
                   sizes="(max-width: 1280px) 50vw, 600px"
-                  className="object-cover"
+                  className="object-cover transition-transform duration-700 will-change-transform group-hover:scale-[1.04]"
                 />
-                <div className="absolute inset-0 bg-slate-900/10" />
-              </div>
+                {/* Legibility gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/10 to-transparent" />
+                {/* Inset hairline frame */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-3 rounded-[1.5rem] ring-1 ring-white/20"
+                />
 
-              {/* Floating badge */}
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{
-                  delay: 0.6,
-                  type: "spring",
-                  stiffness: 260,
-                  damping: 20,
-                }}
-                className="absolute -right-4 bottom-8 flex items-center gap-3 rounded-2xl border border-white/70 bg-white/90 px-4 py-3 shadow-xl backdrop-blur-md"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-power-orange">
-                  <Compass size={18} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">
+                {/* Glass caption — single, integrated overlay */}
+                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-power-orange text-white shadow-lg shadow-orange-950/40">
+                      <Map size={17} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-white">
+                        One plan, every step
+                      </p>
+                      <p className="text-[11px] text-white/60">
+                        Roadmap · Guidance · Experts
+                      </p>
+                    </div>
+                  </div>
+                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-300/25 bg-emerald-400/15 px-3 py-1.5 text-[11px] font-semibold text-emerald-200">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                     Free to start
-                  </p>
-                  <p className="text-[10px] text-slate-500">
-                    No card. No commitment.
-                  </p>
+                  </span>
                 </div>
-              </motion.div>
+              </div>
             </motion.div>
           </div>
         </div>

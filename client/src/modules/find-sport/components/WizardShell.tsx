@@ -4,7 +4,7 @@ import React from "react";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { motion } from "framer-motion";
-import { ArrowLeft, CheckCircle, Zap, Users, Brain, Heart, Target, User } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle, Clock, Zap, Users, Brain, Heart, Target, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { PRIOR_SPORTS_OPTIONS } from "../data/sportProfiles";
 import type { WizardAnswers } from "../types";
@@ -52,6 +52,10 @@ const STEPS: Step[] = [
   { kind: "question", questionKey: "gender" },
   { kind: "question", questionKey: "state" },
   { kind: "question", questionKey: "priorSports" },
+  { kind: "question", questionKey: "sportsInFamily" },
+  { kind: "question", questionKey: "peerSports" },
+  { kind: "question", questionKey: "informalSports" },
+  { kind: "question", questionKey: "informalReaction" },
   { kind: "transition", text: "Good. Let's understand {name} physically.", sub: "7 quick questions." },
   { kind: "question", questionKey: "height" },
   { kind: "question", questionKey: "weight" },
@@ -73,13 +77,14 @@ const STEPS: Step[] = [
   { kind: "question", questionKey: "waterComfort" },
   { kind: "question", questionKey: "budget" },
   { kind: "question", questionKey: "ambition" },
+  { kind: "question", questionKey: "futureFlexibility" },
   { kind: "question", questionKey: "weeklyHours" },
   { kind: "processing" },
   { kind: "results" },
 ];
 
 const QUESTION_STEPS = STEPS.filter((s) => s.kind === "question");
-const TOTAL_QUESTIONS = QUESTION_STEPS.length; // 20
+const TOTAL_QUESTIONS = QUESTION_STEPS.length;
 
 // ─── Left sidebar metadata ────────────────────────────────────────────────────
 
@@ -119,6 +124,8 @@ function getProfileChips(answers: WizardAnswers): { label: string; value: string
   if (answers.gender && answers.gender !== "prefer-not")
     chips.push({ label: "Gender", value: answers.gender === "boy" ? "Boy" : "Girl" });
   if (answers.state) chips.push({ label: "State", value: answers.state });
+  if (answers.sportsInFamily.length > 0) chips.push({ label: "Family", value: "Sport runs in family" });
+  if (answers.informalReaction === "kept-asking") chips.push({ label: "Exposure", value: "Already loves it" });
   if (answers.energyType)
     chips.push({ label: "Energy", value: answers.energyType === "explosive" ? "Explosive" : "Endurance" });
   if (answers.eyesight)
@@ -194,6 +201,17 @@ function QuestionScreen({
   const name = answers.childName || "your child";
   const cap = name.charAt(0).toUpperCase() + name.slice(1);
 
+  // Pronoun helpers — resolve to he/she when gender is known, singular "they"
+  // otherwise (unanswered or "prefer not to say").
+  const isPlural = answers.gender !== "boy" && answers.gender !== "girl";
+  const pn = answers.gender === "boy" ? "he" : answers.gender === "girl" ? "she" : "they";
+  const pnObj = answers.gender === "boy" ? "him" : answers.gender === "girl" ? "her" : "them";
+  const pnContraction = isPlural ? "they're" : `${pn}'s`;
+  const cap1 = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  // 3rd-person singular conjugation for "he"/"she"; base form for "they". Pass
+  // an explicit singular form for irregulars (catch -> catches, miss -> misses).
+  const v = (base: string, singular?: string) => (isPlural ? base : singular ?? `${base}s`);
+
   // Auto-advance helper for binary questions
   const autoAdvance = (key: keyof WizardAnswers, val: WizardAnswers[keyof WizardAnswers]) => {
     onAnswer(key, val);
@@ -202,6 +220,7 @@ function QuestionScreen({
 
   const section: Record<string, string> = {
     age: "Child", gender: "Child", state: "Child", priorSports: "Child",
+    sportsInFamily: "Child", peerSports: "Child", informalSports: "Child", informalReaction: "Child",
     height: "Physical", weight: "Physical", energyType: "Physical",
     motorType: "Physical", visualTracking: "Physical",
     eyesight: "Physical", agility: "Physical",
@@ -209,7 +228,7 @@ function QuestionScreen({
     focusStyle: "Personality", decisionStyle: "Personality",
     pressureResponse: "Personality", repetitionTolerance: "Personality",
     contactComfort: "Comfort", environment: "Comfort", waterComfort: "Comfort",
-    budget: "Practical", ambition: "Practical", weeklyHours: "Practical",
+    budget: "Practical", ambition: "Practical", futureFlexibility: "Practical", weeklyHours: "Practical",
   };
 
   const renderInput = () => {
@@ -250,6 +269,56 @@ function QuestionScreen({
             selected={answers.priorSports}
             onChange={(v) => onAnswer("priorSports", v)}
             noneLabel="None yet"
+          />
+        );
+
+      case "sportsInFamily":
+        return (
+          <MultiSelectPills
+            options={PRIOR_SPORTS_OPTIONS}
+            selected={answers.sportsInFamily}
+            onChange={(v) => onAnswer("sportsInFamily", v)}
+            noneLabel="None of these"
+          />
+        );
+
+      case "peerSports":
+        return (
+          <MultiSelectPills
+            options={PRIOR_SPORTS_OPTIONS}
+            selected={answers.peerSports}
+            onChange={(v) => onAnswer("peerSports", v)}
+            noneLabel="None of these"
+          />
+        );
+
+      case "informalSports":
+        return (
+          <MultiSelectPills
+            options={PRIOR_SPORTS_OPTIONS}
+            selected={answers.informalSports}
+            onChange={(v) => onAnswer("informalSports", v)}
+            noneLabel="None of these"
+          />
+        );
+
+      case "informalReaction":
+        return (
+          <BinaryCards
+            options={[
+              {
+                value: "kept-asking",
+                title: "Kept asking to play again",
+                sub: `${cap} wanted to go back and do it more`,
+              },
+              {
+                value: "lost-interest",
+                title: "Lost interest quickly",
+                sub: "Tried it, but didn't ask to continue",
+              },
+            ]}
+            value={answers.informalReaction}
+            onChange={(v) => autoAdvance("informalReaction", v as WizardAnswers["informalReaction"])}
           />
         );
 
@@ -374,9 +443,9 @@ function QuestionScreen({
         return (
           <ThreeOptionCards
             options={[
-              { value: "strong", label: `When something moves fast toward ${name}, they track and react naturally` },
-              { value: "moderate", label: "Sometimes catches it, sometimes misses — depends on the day" },
-              { value: "weak", label: "Usually misses or reacts late to fast-moving objects" },
+              { value: "strong", label: `${cap1(v("track"))} and ${v("react")} naturally` },
+              { value: "moderate", label: `Sometimes ${v("catch", "catches")} it, sometimes ${v("miss", "misses")} — depends on the day` },
+              { value: "weak", label: `Usually ${v("miss", "misses")} or ${v("react")} late to fast-moving objects` },
             ]}
             value={answers.visualTracking}
             onChange={(v) => { onAnswer("visualTracking", v as WizardAnswers["visualTracking"]); setTimeout(onNext, 200); }}
@@ -399,9 +468,9 @@ function QuestionScreen({
         return (
           <ThreeOptionCards
             options={[
-              { value: "fired-up", label: `When ${name} loses, they get fired up and want to play again immediately` },
-              { value: "calm", label: "They accept it calmly and move on without much fuss" },
-              { value: "discouraged", label: "They get quite upset and need time before wanting to try again" },
+              { value: "fired-up", label: `${cap1(v("get"))} fired up and ${v("want")} to play again immediately` },
+              { value: "calm", label: `${cap1(v("accept"))} it calmly and ${v("move")} on without much fuss` },
+              { value: "discouraged", label: `${cap1(v("get"))} quite upset and ${v("need")} time before wanting to try again` },
             ]}
             value={answers.competitiveResponse}
             onChange={(v) => { onAnswer("competitiveResponse", v as WizardAnswers["competitiveResponse"]); setTimeout(onNext, 200); }}
@@ -420,7 +489,7 @@ function QuestionScreen({
               {
                 value: "sustained",
                 title: "Can stay with it for hours",
-                sub: `Once ${name} is absorbed in something they like, they lose track of time`,
+                sub: `Once ${name} is absorbed in something ${pn} ${v("like")}, ${pn} ${v("lose")} track of time`,
               },
             ]}
             value={answers.focusStyle}
@@ -452,7 +521,7 @@ function QuestionScreen({
         return (
           <ThreeOptionCards
             options={[
-              { value: "thrives", label: `${cap} performs even better when all eyes are on them — thrives under the spotlight` },
+              { value: "thrives", label: `${cap} performs even better when all eyes are on ${pnObj} — thrives under the spotlight` },
               { value: "manages", label: "Gets nervous but manages through it — performs reasonably well under pressure" },
               { value: "avoids", label: `${cap} strongly prefers not to be the centre of attention` },
             ]}
@@ -468,7 +537,7 @@ function QuestionScreen({
               {
                 value: "high",
                 title: "Happy to repeat the same drill for months",
-                sub: `${cap} doesn't get bored — repetition is how they get better`,
+                sub: `${cap} doesn't get bored — repetition is how ${pn} ${v("get")} better`,
               },
               {
                 value: "low",
@@ -574,6 +643,19 @@ function QuestionScreen({
           />
         );
 
+      case "futureFlexibility":
+        return (
+          <ThreeOptionCards
+            options={[
+              { value: "all-in", label: "Yes — we'd go all in" },
+              { value: "maybe", label: "Maybe, depends how far" },
+              { value: "stay-local", label: "No — want to stay local and keep costs steady" },
+            ]}
+            value={answers.futureFlexibility}
+            onChange={(v) => { onAnswer("futureFlexibility", v as WizardAnswers["futureFlexibility"]); setTimeout(onNext, 200); }}
+          />
+        );
+
       case "weeklyHours":
         return (
           <FourContextCards
@@ -598,15 +680,19 @@ function QuestionScreen({
     gender: `Is ${name} a boy or a girl?`,
     state: "Which state are you based in?",
     priorSports: `Has ${name} tried any sport formally before?`,
+    sportsInFamily: `Has anyone in ${name}'s immediate family played any of these sports seriously (school/college level or higher)?`,
+    peerSports: `Do any of ${name}'s close friends play these sports seriously?`,
+    informalSports: `Has ${name} played any of these sports casually — not lessons, just for fun (park, backyard, with friends)?`,
+    informalReaction: `Did ${name} ask to keep playing, or lose interest quickly?`,
     height: `How tall is ${name}?`,
     weight: `How much does ${name} weigh?`,
     energyType: `In a game of tag or running around with friends, what does ${name} usually do?`,
-    motorType: `Think of ${name} building something or playing catch — they're better at:`,
-    visualTracking: `When something moves fast toward ${name} — a ball, a shuttle — they:`,
+    motorType: `Think of ${name} building something or playing catch — ${pnContraction} better at:`,
+    visualTracking: `When something moves fast toward ${name} — a ball, a shuttle — ${pn}:`,
     teamIndividual: `At a birthday party with a group game, does ${name} want a partner or team, or go it alone?`,
-    competitiveResponse: `When ${name} loses a game or competition:`,
-    focusStyle: `Think of ${name} doing homework or a puzzle — they tend to:`,
-    decisionStyle: `When ${name} plays a new game for the first time, they usually:`,
+    competitiveResponse: `When ${name} loses a game or competition, ${pn}:`,
+    focusStyle: `Think of ${name} doing homework or a puzzle — ${pn} ${v("tend")} to:`,
+    decisionStyle: `When ${name} plays a new game for the first time, ${pn} usually:`,
     pressureResponse: `When all attention is on ${name} — school event, family gathering:`,
     repetitionTolerance: `To get really good at something, is ${name} willing to:`,
     eyesight: `How is ${name}'s eyesight?`,
@@ -616,6 +702,7 @@ function QuestionScreen({
     waterComfort: `How comfortable is ${name} in water?`,
     budget: "What can your family realistically invest in training each month?",
     ambition: "What is your honest goal for this sport journey?",
+    futureFlexibility: `If ${name} shows real talent and wants to go further, would your family be open to relocating or significantly increasing investment?`,
     weeklyHours: `How many hours per week can ${name} dedicate to sport training?`,
   };
 
@@ -624,10 +711,16 @@ function QuestionScreen({
     questionKey === "height" ||
     questionKey === "weight" ||
     questionKey === "priorSports" ||
+    questionKey === "sportsInFamily" ||
+    questionKey === "peerSports" ||
+    questionKey === "informalSports" ||
     questionKey === "teamIndividual";
 
   const canAdvance = () => {
     if (questionKey === "priorSports") return true;
+    if (questionKey === "sportsInFamily") return true;
+    if (questionKey === "peerSports") return true;
+    if (questionKey === "informalSports") return true;
     if (questionKey === "state") return !!answers.state;
     if (questionKey === "height") return true; // default pre-filled from age
     if (questionKey === "weight") return true; // default pre-filled from age
@@ -806,13 +899,14 @@ export function WizardShell() {
     if (currentStep.kind === "question") {
       const sectionMap: Record<string, string> = {
         age: "Child", gender: "Child", state: "Child", priorSports: "Child",
+        sportsInFamily: "Child", peerSports: "Child", informalSports: "Child", informalReaction: "Child",
         height: "Physical", weight: "Physical", energyType: "Physical",
         motorType: "Physical", visualTracking: "Physical", eyesight: "Physical", agility: "Physical",
         teamIndividual: "Personality", competitiveResponse: "Personality",
         focusStyle: "Personality", decisionStyle: "Personality",
         pressureResponse: "Personality", repetitionTolerance: "Personality",
         contactComfort: "Comfort", environment: "Comfort", waterComfort: "Comfort",
-        budget: "Practical", ambition: "Practical", weeklyHours: "Practical",
+        budget: "Practical", ambition: "Practical", futureFlexibility: "Practical", weeklyHours: "Practical",
       };
       return sectionMap[currentStep.questionKey] ?? "";
     }
@@ -918,6 +1012,19 @@ export function WizardShell() {
     if (currentStep.kind === "name") nameRef.current?.focus();
   }, [stepIndex]);
 
+  // informalReaction is only meaningful if informalSports had at least one
+  // selection — auto-skip it otherwise, same idiom as the transition auto-advance.
+  useEffect(() => {
+    if (
+      currentStep.kind === "question" &&
+      currentStep.questionKey === "informalReaction" &&
+      answers.informalSports.length === 0
+    ) {
+      goNext();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepIndex]);
+
   const transitionText = (text: string) =>
     text.replace("{name}", answers.childName || "your child");
 
@@ -927,8 +1034,12 @@ export function WizardShell() {
     <div className="min-h-screen bg-white flex">
 
       {/* ── Left sidebar (desktop only, hidden on full-screen steps) ── */}
+      {/* Outer wrapper carries the dark background and stretches to match the
+          right panel's height (which can exceed one viewport, e.g. long
+          multi-select lists); the inner aside stays pinned via sticky. */}
       {!isFullScreen && (
-        <aside className="hidden lg:flex flex-col w-[320px] xl:w-[360px] bg-slate-900 shrink-0 sticky top-0 h-screen overflow-hidden">
+        <div className="hidden lg:block w-[320px] xl:w-[360px] bg-slate-900 shrink-0">
+        <aside className="flex flex-col sticky top-16 h-[calc(100vh-4rem)] overflow-hidden">
           {/* Brand */}
           <div className="px-8 pt-8 pb-6 border-b border-slate-800">
             <p className="text-[11px] font-bold uppercase tracking-widest text-power-orange mb-0.5">
@@ -1007,6 +1118,7 @@ export function WizardShell() {
             </div>
           </div>
         </aside>
+        </div>
       )}
 
       {/* ── Right panel ── */}
@@ -1054,79 +1166,194 @@ export function WizardShell() {
             className={`animate-in fade-in duration-200 ${direction >= 0 ? "slide-in-from-right-8" : "slide-in-from-left-8"}`}
           >
             {currentStep.kind === "welcome" && (
-              <div className="space-y-8 py-8">
-                <div>
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
-                    Sport recommendation
-                  </p>
-                  <h1 className="font-title text-3xl font-bold text-slate-900 leading-tight mb-3">
-                    Find the right sport for your child.
-                  </h1>
-                  <p className="text-slate-500 leading-relaxed">
-                    We&apos;ll ask you 23 questions — the same things a good sports consultant would
-                    want to know. Takes about 5 minutes.
-                  </p>
-                </div>
-
-                {/* Child picker for logged-in parents with existing profiles */}
-                {players.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
-                      Who is this for?
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {players.map((p) => (
-                        <button
-                          key={p._id}
-                          type="button"
-                          onClick={() => selectDependent(p)}
-                          className={`px-4 py-2 rounded-full border-2 text-sm font-medium transition-all duration-150 ${
-                            selectedDependentId === p._id
-                              ? "border-power-orange bg-power-orange/5 text-power-orange"
-                              : "border-slate-200 text-slate-600 hover:border-slate-300"
-                          }`}
-                        >
-                          {p.name.split(" ")[0]}
-                          {selectedDependentId === p._id && p.wizardCompletedAt && (
-                            <span className="ml-1.5 text-[10px] opacity-60">· retake</span>
-                          )}
-                        </button>
-                      ))}
-                      {players.length > 0 && selectedDependentId && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedDependentId(null);
-                            setAnswers({ ...EMPTY_ANSWERS });
-                            setNameInput("");
-                          }}
-                          className="px-4 py-2 rounded-full border-2 border-slate-200 text-sm font-medium text-slate-500 hover:border-slate-300 transition-all duration-150"
-                        >
-                          Someone new
-                        </button>
-                      )}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.35 }}
+                className="py-4"
+              >
+                <div className="relative flex flex-col overflow-hidden rounded-[28px] border border-slate-200/70 bg-white shadow-[0_28px_70px_-28px_rgba(15,23,42,0.22)] lg:flex-row">
+                  {/* ── Left panel — branded showcase ── */}
+                  <div className="flex flex-col gap-7 bg-slate-900 p-7 xl:p-9 lg:w-[52%] lg:shrink-0 xl:w-[55%]">
+                    {/* Brand eyebrow */}
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-power-orange/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-power-orange">
+                        <span className="h-1.5 w-1.5 rounded-full bg-power-orange animate-pulse" />
+                        Sport Assessment
+                      </span>
                     </div>
-                    {selectedDependentId && selectedPlayer?.wizardCompletedAt && (
-                      <p className="text-xs text-slate-400 mt-2">
-                        Answers pre-filled from previous assessment — update anything that&apos;s changed.
-                      </p>
-                    )}
-                  </div>
-                )}
 
-                <button
-                  type="button"
-                  onClick={goNext}
-                  className="w-full bg-power-orange text-white rounded-xl py-4 text-base font-semibold hover:bg-power-orange/90 transition-colors"
-                >
-                  {selectedDependentId
-                    ? `Start assessment for ${selectedPlayer?.name.split(" ")[0]}`
-                    : "Start the assessment"}
-                </button>
-                <p className="text-xs text-slate-400 text-center">
-                  Free · No account required · Results in 5 minutes
-                </p>
-              </div>
+                    {/* Headline */}
+                    <div>
+                      <h1 className="font-title text-2xl xl:text-3xl font-bold text-white leading-tight mb-3">
+                        Find the right sport<br />for your child.
+                      </h1>
+                      <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
+                        We analyse {TOTAL_QUESTIONS} data points — the same things a top sports consultant would want to know.
+                      </p>
+                    </div>
+
+                    {/* Trust stats */}
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { value: TOTAL_QUESTIONS.toString(), label: "Questions" },
+                        { value: "5", label: "Categories" },
+                        { value: "~10", label: "Minutes" },
+                      ].map((stat) => (
+                        <div key={stat.label} className="rounded-2xl border border-white/5 bg-white/[0.04] p-4 text-center">
+                          <p className="font-title text-2xl font-bold text-white mb-0.5">{stat.value}</p>
+                          <p className="text-[11px] text-slate-500 font-medium">{stat.label}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Category list */}
+                    <div className="flex flex-col gap-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1">
+                        What we evaluate
+                      </p>
+                      <motion.div
+                        initial="hidden"
+                        animate="show"
+                        variants={{
+                          hidden: { opacity: 0 },
+                          show: { opacity: 1, transition: { staggerChildren: 0.07, delayChildren: 0.1 } },
+                        }}
+                        className="grid grid-cols-2 gap-2"
+                      >
+                        {SECTION_ORDER.map((key, idx) => {
+                          const sec = SECTION_META[key];
+                          const gradients = [
+                            "from-orange-500 to-amber-400",
+                            "from-blue-500 to-cyan-400",
+                            "from-violet-500 to-purple-400",
+                            "from-rose-500 to-pink-400",
+                            "from-emerald-500 to-teal-400",
+                          ];
+                          const isLast = idx === SECTION_ORDER.length - 1;
+                          return (
+                            <motion.div
+                              key={key}
+                              variants={{
+                                hidden: { opacity: 0, y: 10 },
+                                show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+                              }}
+                              className={`flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.04] p-3 transition-colors duration-200 hover:bg-white/[0.07] cursor-default${isLast ? " col-span-2" : ""}`}
+                            >
+                              <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${gradients[idx]} flex items-center justify-center text-white shrink-0 shadow-sm`}>
+                                {React.cloneElement(sec.icon as React.ReactElement<{ className?: string }>, { className: "w-4 h-4" })}
+                              </div>
+                              <p className="text-[12px] font-semibold text-white leading-tight truncate">{sec.title}</p>
+                            </motion.div>
+                          );
+                        })}
+                      </motion.div>
+                    </div>
+                  </div>
+
+                  {/* ── Right panel — CTA ── */}
+                  <div className="relative flex flex-1 flex-col justify-center gap-7 overflow-hidden p-7 xl:p-9">
+                    {/* Ambient glow — echoes the left panel's dark treatment without repeating it */}
+                    <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-power-orange/[0.06] blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-24 -left-12 h-56 w-56 rounded-full bg-sky-400/[0.06] blur-3xl" />
+
+                    <div className="relative">
+                      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+                        Personalised recommendation
+                      </p>
+                      <h2 className="font-title text-2xl font-bold text-slate-900 leading-snug mb-3">
+                        Ready to find the perfect match?
+                      </h2>
+                      <p className="text-sm text-slate-500 leading-relaxed">
+                        Answer honestly — there are no right or wrong answers. The more accurate you are, the better the match.
+                      </p>
+                    </div>
+
+                    {/* How it works mini steps */}
+                    <div className="relative flex flex-col gap-3">
+                      {[
+                        { step: "1", text: "Tell us about your child" },
+                        { step: "2", text: "We score across 5 dimensions" },
+                        { step: "3", text: "Get your personalised sport report" },
+                      ].map((item) => (
+                        <div key={item.step} className="flex items-center gap-3">
+                          <span className="w-7 h-7 rounded-full bg-power-orange/10 text-power-orange text-[12px] font-bold flex items-center justify-center shrink-0">
+                            {item.step}
+                          </span>
+                          <p className="text-[13px] text-slate-600 font-medium">{item.text}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Child picker */}
+                    {players.length > 0 && (
+                      <div className="relative">
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2.5">
+                          Who is this for?
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {players.map((p) => (
+                            <button
+                              key={p._id}
+                              type="button"
+                              onClick={() => selectDependent(p)}
+                              className={`px-4 py-2 rounded-full border-2 text-sm font-semibold transition-all duration-200 ${
+                                selectedDependentId === p._id
+                                  ? "border-power-orange bg-power-orange text-white shadow-sm"
+                                  : "border-slate-200 text-slate-600 hover:border-slate-300 bg-white"
+                              }`}
+                            >
+                              {p.name.split(" ")[0]}
+                              {selectedDependentId === p._id && p.wizardCompletedAt && (
+                                <span className="ml-1.5 text-[10px] opacity-75">· retake</span>
+                              )}
+                            </button>
+                          ))}
+                          {players.length > 0 && selectedDependentId && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedDependentId(null);
+                                setAnswers({ ...EMPTY_ANSWERS });
+                                setNameInput("");
+                              }}
+                              className="px-4 py-2 rounded-full border-2 border-slate-200 text-sm font-medium text-slate-500 hover:border-slate-300 bg-white transition-all duration-200"
+                            >
+                              Someone new
+                            </button>
+                          )}
+                        </div>
+                        {selectedDependentId && selectedPlayer?.wizardCompletedAt && (
+                          <p className="text-xs text-slate-400 mt-2">
+                            Answers pre-filled from previous assessment — update anything that&apos;s changed.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* CTA */}
+                    <div className="relative flex flex-col gap-3">
+                      <button
+                        type="button"
+                        onClick={goNext}
+                        className="group relative w-full overflow-hidden rounded-2xl bg-power-orange px-8 py-4 text-[15px] font-bold text-white shadow-[0_4px_24px_-4px_rgba(234,88,12,0.5)] hover:shadow-[0_8px_32px_-4px_rgba(234,88,12,0.6)] hover:bg-orange-600 active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2"
+                      >
+                        <span>
+                          {selectedDependentId
+                            ? `Start for ${selectedPlayer?.name.split(" ")[0]}`
+                            : "Start the assessment"}
+                        </span>
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
+                      </button>
+                      <div className="flex items-center justify-center gap-4 text-[11px] text-slate-400">
+                        <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-emerald-500" /> Free</span>
+                        <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-emerald-500" /> No account needed</span>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> ~10 min</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
             )}
 
             {currentStep.kind === "name" && (

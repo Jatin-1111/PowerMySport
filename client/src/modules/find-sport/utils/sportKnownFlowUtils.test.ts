@@ -3,16 +3,20 @@ import {
   isAnswered,
   getAgeFromDob,
   buildProfileChips,
+  buildAchievementChips,
   buildGoalChips,
-  EXPERIENCE_DISPLAY,
   TRAINING_TYPE_DISPLAY,
-  ENERGY_DISPLAY,
-  AMBITION_DISPLAY,
   HOURS_DISPLAY,
   BUDGET_DISPLAY,
   EMPTY_FORM,
   type KnownSportForm,
 } from "./sportKnownFlowUtils";
+import {
+  getCurrentStandingLadder,
+  getBestResultLadder,
+  getAmbitionOptions,
+  deriveExperienceLevel,
+} from "../data/sportArchetypes";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -32,31 +36,9 @@ function dobYearsAgo(years: number): string {
 // ─── Label map coverage ────────────────────────────────────────────────────────
 
 describe("label maps — all UI option values are covered", () => {
-  it("EXPERIENCE_DISPLAY covers beginner / intermediate / competitive", () => {
-    ["beginner", "intermediate", "competitive"].forEach((k) => {
-      expect(EXPERIENCE_DISPLAY[k], `missing: ${k}`).toBeTruthy();
-    });
-  });
-
-  it("EXPERIENCE_DISPLAY does NOT contain 'recreational' (old value)", () => {
-    expect(EXPERIENCE_DISPLAY["recreational"]).toBeUndefined();
-  });
-
   it("TRAINING_TYPE_DISPLAY covers all 4 options", () => {
     ["self", "club", "academy", "private"].forEach((k) => {
       expect(TRAINING_TYPE_DISPLAY[k], `missing: ${k}`).toBeTruthy();
-    });
-  });
-
-  it("ENERGY_DISPLAY covers all 2 options", () => {
-    ["explosive", "endurance"].forEach((k) => {
-      expect(ENERGY_DISPLAY[k], `missing: ${k}`).toBeTruthy();
-    });
-  });
-
-  it("AMBITION_DISPLAY covers all 4 options", () => {
-    ["fun", "competitive", "national", "professional"].forEach((k) => {
-      expect(AMBITION_DISPLAY[k], `missing: ${k}`).toBeTruthy();
     });
   });
 
@@ -149,14 +131,19 @@ describe("isAnswered", () => {
   it("null field → false", () => {
     expect(isAnswered("gender", form({ gender: null }))).toBe(false);
     expect(isAnswered("state", form({ state: null }))).toBe(false);
-    expect(isAnswered("experienceLevel", form({ experienceLevel: null }))).toBe(false);
+    expect(isAnswered("currentStandingTier", form({ currentStandingTier: null }))).toBe(false);
     expect(isAnswered("weeklyHours", form({ weeklyHours: null }))).toBe(false);
   });
 
   it("non-null string → true", () => {
     expect(isAnswered("gender", form({ gender: "MALE" }))).toBe(true);
     expect(isAnswered("state", form({ state: "Delhi" }))).toBe(true);
-    expect(isAnswered("experienceLevel", form({ experienceLevel: "intermediate" }))).toBe(true);
+    expect(isAnswered("trainingType", form({ trainingType: "academy" }))).toBe(true);
+  });
+
+  it("numeric tier field → true (even tier 1, the lowest)", () => {
+    expect(isAnswered("currentStandingTier", form({ currentStandingTier: 1 }))).toBe(true);
+    expect(isAnswered("bestResultTier", form({ bestResultTier: 1 }))).toBe(true);
   });
 
   it("EMPTY_FORM required fields (sport, state) are false", () => {
@@ -168,24 +155,28 @@ describe("isAnswered", () => {
 // ─── buildProfileChips ────────────────────────────────────────────────────────
 
 describe("buildProfileChips", () => {
-  it("full form produces all 6 chips", () => {
+  it("full form produces every expected chip", () => {
     const chips = buildProfileChips(
       form({
+        sport: "Cricket",
         gender: "MALE",
         dateOfBirth: dobYearsAgo(10),
         state: "Maharashtra",
-        experienceLevel: "intermediate",
+        currentStandingTier: 3,
+        yearsPlaying: 3,
         trainingType: "academy",
-        energyType: "explosive",
+        academyName: "Sunrise Academy",
+        sessionsPerWeek: 4,
       })
     );
     expect(chips).toContain("Boy");
     expect(chips).toContain("Age 10");
     expect(chips).toContain("Maharashtra");
-    expect(chips).toContain("Intermediate");
+    expect(chips).toContain("Competes at state level"); // federation tier 3, Cricket
+    expect(chips).toContain("3 yrs playing");
     expect(chips).toContain("Academy");
-    expect(chips).toContain("High energy");
-    expect(chips).toHaveLength(6);
+    expect(chips).toContain("Sunrise Academy");
+    expect(chips).toContain("4x/week");
   });
 
   it("null trainingType omits training chip", () => {
@@ -233,33 +224,70 @@ describe("buildProfileChips", () => {
 
   it("null state omitted", () => {
     const chips = buildProfileChips(form({ state: null }));
-    const knownChips = ["Boy", "Girl", "Beginner", "Intermediate", "Competitive", "High energy", "Calm & focused"];
-    const unknownChips = chips.filter((c) => !c.startsWith("Age") && !knownChips.includes(c));
-    expect(unknownChips).toHaveLength(0);
+    expect(chips).toHaveLength(0);
   });
 
   it("state value passes through as-is", () => {
     expect(buildProfileChips(form({ state: "Tamil Nadu" }))).toContain("Tamil Nadu");
   });
 
-  it("all 3 experience levels map correctly", () => {
-    expect(buildProfileChips(form({ experienceLevel: "beginner" }))).toContain("Beginner");
-    expect(buildProfileChips(form({ experienceLevel: "intermediate" }))).toContain("Intermediate");
-    expect(buildProfileChips(form({ experienceLevel: "competitive" }))).toContain("Competitive");
+  it("currentStandingTier resolves to the right ladder per sport archetype", () => {
+    // Tennis = ranking archetype
+    expect(
+      buildProfileChips(form({ sport: "Tennis", currentStandingTier: 1 })),
+    ).toContain("Just starting — no ranking tournaments yet");
+    // Chess = rating archetype
+    expect(
+      buildProfileChips(form({ sport: "Chess", currentStandingTier: 2 })),
+    ).toContain("State-rated");
   });
 
-  it("null experienceLevel omitted", () => {
-    const chips = buildProfileChips(form({ experienceLevel: null }));
-    expect(chips.some((c) => ["Beginner", "Intermediate", "Competitive"].includes(c))).toBe(false);
+  it("null currentStandingTier omits the standing chip", () => {
+    const chips = buildProfileChips(form({ sport: "Cricket", currentStandingTier: null }));
+    expect(chips.some((c) => c.startsWith("Competes at") || c === "International exposure")).toBe(false);
   });
 
-  it("all 2 energy types map correctly", () => {
-    expect(buildProfileChips(form({ energyType: "explosive" }))).toContain("High energy");
-    expect(buildProfileChips(form({ energyType: "endurance" }))).toContain("Calm & focused");
+  it("yearsPlaying singular vs plural", () => {
+    expect(buildProfileChips(form({ yearsPlaying: 1 }))).toContain("1 yr playing");
+    expect(buildProfileChips(form({ yearsPlaying: 5 }))).toContain("5 yrs playing");
+  });
+
+  it("yearsPlaying zero still shows a chip (0 is a valid answer)", () => {
+    expect(buildProfileChips(form({ yearsPlaying: 0 }))).toContain("0 yrs playing");
+  });
+
+  it("empty academyName omits chip", () => {
+    const chips = buildProfileChips(form({ academyName: "" }));
+    expect(chips).toHaveLength(0);
   });
 
   it("completely empty form → empty array", () => {
     expect(buildProfileChips(EMPTY_FORM)).toHaveLength(0);
+  });
+});
+
+// ─── buildAchievementChips ─────────────────────────────────────────────────────
+
+describe("buildAchievementChips", () => {
+  it("bestResultTier resolves to the right ladder label per sport", () => {
+    expect(
+      buildAchievementChips(form({ sport: "Cricket", bestResultTier: 4 })),
+    ).toContain("National-level selection or medal");
+  });
+
+  it("achievementsNote passes through when present", () => {
+    expect(
+      buildAchievementChips(form({ achievementsNote: "Won U-14 state championship" })),
+    ).toContain("Won U-14 state championship");
+  });
+
+  it("empty achievementsNote omitted", () => {
+    const chips = buildAchievementChips(form({ achievementsNote: "" }));
+    expect(chips.some((c) => c === "")).toBe(false);
+  });
+
+  it("no sport, no bestResultTier → empty array", () => {
+    expect(buildAchievementChips(EMPTY_FORM)).toHaveLength(0);
   });
 });
 
@@ -268,19 +296,29 @@ describe("buildProfileChips", () => {
 describe("buildGoalChips", () => {
   it("full form produces all 3 chips", () => {
     const chips = buildGoalChips(
-      form({ ambition: "national", weeklyHours: "8-12", budgetRange: "7k-15k" })
+      form({ sport: "Cricket", ambition: "national", weeklyHours: "8-12", budgetRange: "7k-15k" })
     );
-    expect(chips).toContain("State / national level");
+    expect(chips).toContain("Trying for district/state trials");
     expect(chips).toContain("8–12 hrs/week");
     expect(chips).toContain("₹7k–15k/mo");
     expect(chips).toHaveLength(3);
   });
 
-  it("all 4 ambition values map correctly", () => {
-    expect(buildGoalChips(form({ ambition: "fun" }))).toContain("Just for fun");
-    expect(buildGoalChips(form({ ambition: "competitive" }))).toContain("Local competitions");
-    expect(buildGoalChips(form({ ambition: "national" }))).toContain("State / national level");
-    expect(buildGoalChips(form({ ambition: "professional" }))).toContain("Professional pathway");
+  it("federation sports (Cricket) get district/state trial wording", () => {
+    expect(buildGoalChips(form({ sport: "Cricket", ambition: "fun" }))).toContain("Fitness & enjoyment only");
+    expect(buildGoalChips(form({ sport: "Cricket", ambition: "competitive" }))).toContain("Improving for school team");
+    expect(buildGoalChips(form({ sport: "Cricket", ambition: "national" }))).toContain("Trying for district/state trials");
+    expect(buildGoalChips(form({ sport: "Cricket", ambition: "professional" }))).toContain("Aiming for academy/national camp selection");
+  });
+
+  it("ranking sports (Tennis) get ranking-tournament wording instead of district/state trials", () => {
+    expect(buildGoalChips(form({ sport: "Tennis", ambition: "national" }))).toContain("Earning an All-India (national) ranking");
+    expect(buildGoalChips(form({ sport: "Tennis", ambition: "professional" }))).toContain("Aiming for the international junior circuit");
+  });
+
+  it("empty sport omits the ambition chip (consistent with other chip builders)", () => {
+    const chips = buildGoalChips(form({ ambition: "national" }));
+    expect(chips.some((c) => c.toLowerCase().includes("trial"))).toBe(false);
   });
 
   it("all 4 weeklyHours values map correctly", () => {
@@ -306,7 +344,11 @@ describe("buildGoalChips", () => {
 
 describe("edge cases", () => {
   it("no nulls leak into chip arrays", () => {
-    [...buildProfileChips(EMPTY_FORM), ...buildGoalChips(EMPTY_FORM)].forEach((c) => {
+    [
+      ...buildProfileChips(EMPTY_FORM),
+      ...buildAchievementChips(EMPTY_FORM),
+      ...buildGoalChips(EMPTY_FORM),
+    ].forEach((c) => {
       expect(c).not.toBeNull();
       expect(typeof c).toBe("string");
     });
@@ -315,5 +357,144 @@ describe("edge cases", () => {
   it("unknown gender value produces no chip", () => {
     const chips = buildProfileChips(form({ gender: "OTHER" }));
     expect(chips.some((c) => c === "Boy" || c === "Girl")).toBe(false);
+  });
+});
+
+// ─── Archetype system (sportArchetypes.ts) ─────────────────────────────────────
+
+describe("getCurrentStandingLadder / getBestResultLadder — archetype resolution", () => {
+  it("federation sports (e.g. Cricket) get the district/state/national ladder", () => {
+    const ladder = getCurrentStandingLadder("Cricket");
+    expect(ladder.map((t) => t.label)).toEqual([
+      "Just starting — school-level only",
+      "Competes at district level",
+      "Competes at state level",
+      "Competes at national level",
+      "International exposure",
+    ]);
+  });
+
+  it("federation ladder uses a sport-neutral verb (works for individual sports like Wrestling/Gymnastics, not just team sports)", () => {
+    ["Wrestling", "Gymnastics", "Cricket"].forEach((sport) => {
+      const ladder = getCurrentStandingLadder(sport);
+      expect(ladder.some((t) => t.label.toLowerCase().startsWith("plays at"))).toBe(false);
+    });
+  });
+
+  it("ranking sports (Tennis, Badminton) get the ranking-tournament ladder", () => {
+    expect(getCurrentStandingLadder("Tennis")[2].label).toBe("Has an All-India (national) ranking");
+    expect(getCurrentStandingLadder("Badminton")[2].label).toBe("Has an All-India (national) ranking");
+  });
+
+  it("Chess's rating ladder correctly distinguishes AICF (national) from FIDE (international) — not the same body", () => {
+    const ladder = getCurrentStandingLadder("Chess");
+    expect(ladder[1].label).toBe("State-rated");
+    expect(ladder[2].label).toContain("AICF");
+    expect(ladder[2].label).not.toContain("FIDE");
+    expect(ladder[3].label).toContain("FIDE");
+  });
+
+  it("Athletics/Swimming (time-based standard) swap in 'time'", () => {
+    expect(getCurrentStandingLadder("Athletics")[0].label).toBe("Just starting — no time recorded yet");
+    expect(getCurrentStandingLadder("Swimming")[1].label).toBe("Has a district/club-level time");
+  });
+
+  it("Shooting (score-based standard) swaps in 'score'", () => {
+    expect(getCurrentStandingLadder("Shooting")[0].label).toBe("Just starting — no score recorded yet");
+  });
+
+  it("standard archetype doesn't falsely imply a formal qualifying cutoff at district/club level (only state-and-above genuinely gate on a standard)", () => {
+    ["Athletics", "Swimming", "Shooting"].forEach((sport) => {
+      const ladder = getCurrentStandingLadder(sport);
+      expect(ladder[1].label.toLowerCase()).not.toContain("qualifying");
+      expect(ladder[2].label.toLowerCase()).toContain("qualifying"); // state tier genuinely does
+    });
+  });
+
+  it("case-insensitive sport lookup", () => {
+    expect(getCurrentStandingLadder("cricket")).toEqual(getCurrentStandingLadder("Cricket"));
+    expect(getCurrentStandingLadder("TENNIS")).toEqual(getCurrentStandingLadder("Tennis"));
+  });
+
+  it("unknown sport falls back to the federation ladder", () => {
+    expect(getCurrentStandingLadder("Underwater Hockey")).toEqual(getCurrentStandingLadder("Cricket"));
+  });
+
+  it("best-result ladder is phrased as an achievement, not a current state", () => {
+    expect(getBestResultLadder("Cricket")[0].label).toBe("None yet");
+    expect(getBestResultLadder("Cricket")[3].label).toBe("National-level selection or medal");
+  });
+
+  it("every ladder has exactly 5 tiers valued 1–5 in order", () => {
+    ["Cricket", "Tennis", "Chess", "Athletics", "Shooting"].forEach((sport) => {
+      const ladder = getCurrentStandingLadder(sport);
+      expect(ladder.map((t) => t.value)).toEqual([1, 2, 3, 4, 5]);
+    });
+  });
+});
+
+describe("getAmbitionOptions — sport-anchored goal wording", () => {
+  it("keeps the same 4 underlying values regardless of archetype (scorer.ts depends on this)", () => {
+    ["Cricket", "Tennis", "Chess", "Athletics"].forEach((sport) => {
+      expect(getAmbitionOptions(sport).map((o) => o.value)).toEqual([
+        "fun",
+        "competitive",
+        "national",
+        "professional",
+      ]);
+    });
+  });
+
+  it("federation sports use district/state trial language", () => {
+    const options = getAmbitionOptions("Cricket");
+    expect(options.find((o) => o.value === "national")?.label).toBe("Trying for district/state trials");
+    expect(options.find((o) => o.value === "professional")?.label).toBe(
+      "Aiming for academy/national camp selection",
+    );
+  });
+
+  it("ranking sports (Tennis) never mention district/state trials", () => {
+    const options = getAmbitionOptions("Tennis");
+    options.forEach((o) => {
+      expect(o.label.toLowerCase()).not.toContain("district");
+      expect(o.label.toLowerCase()).not.toContain("trial");
+    });
+    expect(options.find((o) => o.value === "national")?.label).toBe(
+      "Earning an All-India (national) ranking",
+    );
+  });
+
+  it("rating sports (Chess) reference AICF (national) vs FIDE (international) correctly", () => {
+    const options = getAmbitionOptions("Chess");
+    expect(options.find((o) => o.value === "national")?.label).toBe("Aiming for a national (AICF) rating");
+    expect(options.find((o) => o.value === "professional")?.label).toContain("FIDE");
+  });
+
+  it("standard sports (Athletics) reference qualifying standards", () => {
+    const options = getAmbitionOptions("Athletics");
+    expect(options.find((o) => o.value === "professional")?.label).toBe(
+      "Aiming for the international/Olympic qualifying standard",
+    );
+  });
+});
+
+describe("deriveExperienceLevel — backward-compat collapse", () => {
+  it("null/undefined → undefined", () => {
+    expect(deriveExperienceLevel(null)).toBeUndefined();
+    expect(deriveExperienceLevel(undefined)).toBeUndefined();
+  });
+
+  it("tiers 1–2 collapse to beginner", () => {
+    expect(deriveExperienceLevel(1)).toBe("beginner");
+    expect(deriveExperienceLevel(2)).toBe("beginner");
+  });
+
+  it("tier 3 collapses to intermediate", () => {
+    expect(deriveExperienceLevel(3)).toBe("intermediate");
+  });
+
+  it("tiers 4–5 collapse to competitive", () => {
+    expect(deriveExperienceLevel(4)).toBe("competitive");
+    expect(deriveExperienceLevel(5)).toBe("competitive");
   });
 });

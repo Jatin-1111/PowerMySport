@@ -23,7 +23,7 @@ export function MultiSelectPills({
   const noneSelected = selected.length === 0;
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 max-h-[calc(100vh-300px)] overflow-y-auto pr-1">
       <button
         type="button"
         onClick={() => toggle("__none__")}

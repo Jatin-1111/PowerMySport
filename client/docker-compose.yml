@@ -1,0 +1,31 @@
+# Dev-only. Runs `next dev` inside a lightweight Linux container instead of
+# natively on the host, to avoid Turbopack/nodemon-style RAM overhead.
+# Production still deploys via Vercel — this file is never used there.
+services:
+  client:
+    build:
+      context: ..
+      dockerfile: client/Dockerfile.dev
+    container_name: pms-client
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount the whole monorepo (Next's turbopack.root needs sibling workspaces)...
+      - ..:/app
+      # ...but shadow node_modules with container-local volumes: the host's
+      # node_modules were installed for Windows and contain native binaries
+      # (@next/swc-win32-*, lightningcss-win32-*) that won't run on Linux.
+      - /app/node_modules
+      - /app/client/node_modules
+      - /app/admin/node_modules
+      - /app/community/node_modules
+      - /app/client/.next
+    extra_hosts:
+      # Lets the entrypoint's socat forwarders reach the API/community
+      # servers running natively on the host.
+      - "host.docker.internal:host-gateway"
+    mem_limit: 2048m

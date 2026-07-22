@@ -1,8 +1,13 @@
-// ─── Pathway Module Types ─────────────────────────────────────────────────────
+// ─── Find-Sport Scoring — Testing Only ─────────────────────────────────────
+//
+// Server-side twin of client/src/modules/find-sport/types.ts's scoring-relevant
+// types, so the scoring engine (findSportTestScorer.ts) can be exercised over
+// real HTTP for QA. The live wizard is unaffected — it keeps running its own
+// client-side copy. NOT used by any production route. Only the scoring-relevant
+// subset is ported; WizardStep/EMPTY_ANSWERS are UI-only concerns, not needed here.
 
 export type WizardAnswers = {
   childName: string;
-  // Section A — The Child
   age: number | null;
   gender: "boy" | "girl" | "prefer-not" | null;
   state: string | null;
@@ -11,7 +16,6 @@ export type WizardAnswers = {
   peerSports: string[];
   informalSports: string[];
   informalReaction: "kept-asking" | "lost-interest" | null;
-  // Section B — Physical
   height: number | null; // cm
   weight: number | null; // kg
   energyType: "explosive" | "endurance" | null;
@@ -19,54 +23,19 @@ export type WizardAnswers = {
   visualTracking: "strong" | "moderate" | "weak" | null;
   eyesight: "sharp" | "corrected" | "limited" | null;
   agility: "high" | "moderate" | "low" | null;
-  // Section C — Personality
   teamIndividual: number | null; // 1=very individual, 5=very team
   competitiveResponse: "fired-up" | "calm" | "discouraged" | null;
   focusStyle: "bursts" | "sustained" | null;
   decisionStyle: "react" | "strategic" | null;
   pressureResponse: "thrives" | "manages" | "avoids" | null;
   repetitionTolerance: "high" | "low" | null;
-  // Section D — Comfort
   contactComfort: "loves" | "neutral" | "avoids" | null;
   environment: "outdoor" | "indoor" | "no-preference" | null;
   waterComfort: "comfortable" | "neutral" | "uncomfortable" | null;
-  // Section E — Practical
   budget: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus" | null;
   ambition: "fun" | "competitive" | "national" | "professional" | null;
   futureFlexibility: "all-in" | "maybe" | "stay-local" | null;
   weeklyHours: "1-3" | "4-7" | "8-12" | "13-plus" | null;
-};
-
-export const EMPTY_ANSWERS: WizardAnswers = {
-  childName: "",
-  age: null,
-  gender: null,
-  state: null,
-  priorSports: [],
-  sportsInFamily: [],
-  peerSports: [],
-  informalSports: [],
-  informalReaction: null,
-  height: null,
-  weight: null,
-  energyType: null,
-  motorType: null,
-  visualTracking: null,
-  eyesight: null,
-  agility: null,
-  teamIndividual: null,
-  competitiveResponse: null,
-  focusStyle: null,
-  decisionStyle: null,
-  pressureResponse: null,
-  repetitionTolerance: null,
-  contactComfort: null,
-  environment: null,
-  waterComfort: null,
-  budget: null,
-  ambition: null,
-  futureFlexibility: null,
-  weeklyHours: null,
 };
 
 export type SportProfile = {
@@ -115,11 +84,3 @@ export type SportResult = {
   reasons: string[];          // 2–3 specific sentences referencing the child
   isWildcard: boolean;
 };
-
-export type WizardStep =
-  | { kind: "welcome" }
-  | { kind: "name" }
-  | { kind: "question"; key: keyof Omit<WizardAnswers, "childName" | "priorSports"> | "priorSports" }
-  | { kind: "transition"; text: string; sub: string }
-  | { kind: "processing" }
-  | { kind: "results" };

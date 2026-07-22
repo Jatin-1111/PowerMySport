@@ -14,13 +14,14 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { getAmbitionOptions, getBestResultLadder, getCurrentStandingLadder, deriveExperienceLevel } from "../data/sportArchetypes";
 import { BinaryCards } from "./inputs/BinaryCards";
 import { FourContextCards } from "./inputs/FourContextCards";
 import { SportSearchInput } from "./inputs/SportSearchInput";
 import { StateSelector } from "./inputs/StateSelector";
-import { ThreeOptionCards } from "./inputs/ThreeOptionCards";
 import {
   EMPTY_FORM,
+  buildAchievementChips,
   buildGoalChips,
   buildProfileChips,
   isAnswered,
@@ -38,6 +39,8 @@ interface QuestionStep {
   required: boolean;
   heading: (form: KnownSportForm) => string;
   sub: string;
+  /** When true for the current form, this step is skipped entirely during navigation. */
+  skip?: (form: KnownSportForm) => boolean;
 }
 
 interface TransitionStep {
@@ -48,7 +51,10 @@ interface TransitionStep {
 
 type WizardStep = QuestionStep | TransitionStep;
 
+const trainsWithSomeoneElse = (f: KnownSportForm) => f.trainingType === "self";
+
 const STEPS: WizardStep[] = [
+  // ─── Identity ───────────────────────────────────────────────────────────
   {
     kind: "question",
     id: "sport",
@@ -86,16 +92,25 @@ const STEPS: WizardStep[] = [
   },
   {
     kind: "transition",
-    text: "Good. Now let's understand how they play.",
-    sub: "3 quick questions about their experience, training and energy.",
+    text: "Good. Now let's understand where they stand.",
+    sub: "A few questions about their current level, experience, and training.",
+  },
+  // ─── Current standing ───────────────────────────────────────────────────
+  {
+    kind: "question",
+    id: "currentStandingTier",
+    required: true,
+    heading: (f) => `What's ${f.childName || "your child"}'s current level in ${f.sport || "the sport"}?`,
+    sub: "This sets the starting point for the roadmap — pick the closest match.",
   },
   {
     kind: "question",
-    id: "experienceLevel",
-    required: true,
-    heading: (f) => `What's their current level in ${f.sport || "the sport"}?`,
-    sub: "Sets the starting point and pace for the personalised roadmap.",
+    id: "yearsPlaying",
+    required: false,
+    heading: (f) => `How many years has ${f.childName || "your child"} been playing ${f.sport || "this sport"}?`,
+    sub: "Optional — helps us gauge their trajectory so far.",
   },
+  // ─── Training setup ─────────────────────────────────────────────────────
   {
     kind: "question",
     id: "trainingType",
@@ -105,18 +120,49 @@ const STEPS: WizardStep[] = [
   },
   {
     kind: "question",
-    id: "energyType",
+    id: "academyName",
     required: false,
-    heading: (f) => `In a game of tag or running around with friends, what does ${f.childName || "your child"} usually do?`,
-    sub: "Optional — helps us match training intensity and coaching style.",
+    heading: (f) => `Which academy or coach does ${f.childName || "your child"} train with?`,
+    sub: "Optional — just the name, so we know this is a real, ongoing program.",
+    skip: trainsWithSomeoneElse,
   },
   {
     kind: "question",
-    id: "motorType",
+    id: "sessionsPerWeek",
     required: false,
-    heading: (f) => `Think of ${f.childName || "your child"} building something or playing catch — they're better at:`,
-    sub: "Optional — helps match sports that reward their natural physical style.",
+    heading: () => "How many sessions do they train per week?",
+    sub: "Optional — helps us gauge training rhythm and intensity.",
+    skip: trainsWithSomeoneElse,
   },
+  {
+    kind: "question",
+    id: "trainingMonths",
+    required: false,
+    heading: (f) => `How long has ${f.childName || "your child"} been with this academy/coach?`,
+    sub: "Optional — in months. Helps us tell a new arrangement from an established one.",
+    skip: trainsWithSomeoneElse,
+  },
+  {
+    kind: "transition",
+    text: "Let's capture what they've achieved so far.",
+    sub: "A couple of quick questions about their track record.",
+  },
+  // ─── Best result / track record ─────────────────────────────────────────
+  {
+    kind: "question",
+    id: "bestResultTier",
+    required: true,
+    heading: (f) => `What's the best result ${f.childName || "your child"} has achieved so far?`,
+    sub: "Pick the highest tier that applies — even if that was a while ago.",
+  },
+  {
+    kind: "question",
+    id: "achievementsNote",
+    required: false,
+    heading: () => "Anything else you'd like to share?",
+    sub: "Optional — tournament names, medals, selections, whatever you're proud of.",
+  },
+  // ─── Physical basics ─────────────────────────────────────────────────────
   {
     kind: "question",
     id: "heightCm",
@@ -125,17 +171,26 @@ const STEPS: WizardStep[] = [
     sub: "Optional — used to refine sport matches based on body type.",
   },
   {
+    kind: "question",
+    id: "injuryNotes",
+    required: false,
+    heading: () => "Any injuries or physical limitations we should know about?",
+    sub: "Optional — helps us build a training plan that's actually safe for them.",
+  },
+  {
     kind: "transition",
     text: "Almost done. Let's set the right goals.",
-    sub: "2 more questions — then the profile is ready.",
+    sub: "A few more questions — then the profile is ready.",
   },
+  // ─── Goals ──────────────────────────────────────────────────────────────
   {
     kind: "question",
     id: "ambition",
     required: true,
-    heading: () => "What's the ambition?",
+    heading: () => "What's the goal right now?",
     sub: "Sets the tone for milestones, pace, and the investment needed.",
   },
+  // ─── Logistics ──────────────────────────────────────────────────────────
   {
     kind: "question",
     id: "weeklyHours",
@@ -152,13 +207,29 @@ const STEPS: WizardStep[] = [
   },
 ];
 
-// Precompute question number (1-based) at each step index
-const STEP_Q_NUMS: (number | null)[] = STEPS.map((s, i) =>
-  s.kind !== "question"
-    ? null
-    : STEPS.slice(0, i + 1).filter((x) => x.kind === "question").length,
-);
-const TOTAL_QUESTIONS = STEPS.filter((s) => s.kind === "question").length;
+// ─── Skip-aware step navigation ──────────────────────────────────────────────
+
+function shouldSkipStep(step: WizardStep, form: KnownSportForm): boolean {
+  return step.kind === "question" && step.skip?.(form) === true;
+}
+
+function stepIndexInDirection(steps: WizardStep[], from: number, dir: 1 | -1, form: KnownSportForm): number {
+  let i = from + dir;
+  while (i >= 0 && i < steps.length && shouldSkipStep(steps[i], form)) {
+    i += dir;
+  }
+  return Math.max(0, Math.min(steps.length - 1, i));
+}
+
+function countEffectiveQuestions(steps: WizardStep[], form: KnownSportForm): number {
+  return steps.filter((s) => s.kind === "question" && !s.skip?.(form)).length;
+}
+
+function questionNumberAt(steps: WizardStep[], index: number, form: KnownSportForm): number | null {
+  const step = steps[index];
+  if (step.kind !== "question" || step.skip?.(form)) return null;
+  return steps.slice(0, index + 1).filter((s) => s.kind === "question" && !s.skip?.(form)).length;
+}
 
 // ─── Slide variants ───────────────────────────────────────────────────────────
 
@@ -169,6 +240,9 @@ const slide = {
 };
 
 // ─── Question input ───────────────────────────────────────────────────────────
+
+const textInputClass =
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-base text-slate-900 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20";
 
 function QuestionInput({
   id,
@@ -197,7 +271,7 @@ function QuestionInput({
           value={form.childName}
           onChange={(e) => set("childName", e.target.value)}
           placeholder="e.g. Arjun"
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-base text-slate-900 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+          className={textInputClass}
         />
       );
 
@@ -210,7 +284,7 @@ function QuestionInput({
           onChange={(e) => set("dateOfBirth", e.target.value)}
           max={new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().slice(0, 10)}
           min={new Date(new Date().setFullYear(new Date().getFullYear() - 30)).toISOString().slice(0, 10)}
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-base text-slate-900 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+          className={textInputClass}
         />
       );
 
@@ -229,16 +303,28 @@ function QuestionInput({
     case "state":
       return <StateSelector value={form.state} onChange={(v) => set("state", v)} />;
 
-    case "experienceLevel":
+    case "currentStandingTier": {
+      const ladder = getCurrentStandingLadder(form.sport || "");
       return (
-        <ThreeOptionCards
-          options={[
-            { value: "beginner", label: "Beginner — city / neighbourhood level, just getting started" },
-            { value: "intermediate", label: "Intermediate — school, club or district level, training regularly" },
-            { value: "competitive", label: "Competitive — state or national level, serious competition" },
-          ]}
-          value={form.experienceLevel}
-          onChange={(v) => set("experienceLevel", v)}
+        <FourContextCards
+          options={ladder.map((t) => ({ value: String(t.value), label: t.label, context: "" }))}
+          value={form.currentStandingTier !== null ? String(form.currentStandingTier) : null}
+          onChange={(v) => set("currentStandingTier", Number(v))}
+        />
+      );
+    }
+
+    case "yearsPlaying":
+      return (
+        <input
+          type="number"
+          min="0"
+          max="20"
+          autoFocus // eslint-disable-line jsx-a11y/no-autofocus
+          placeholder="e.g., 3"
+          value={form.yearsPlaying ?? ""}
+          onChange={(e) => set("yearsPlaying", e.target.value === "" ? null : parseFloat(e.target.value))}
+          className={textInputClass}
         />
       );
 
@@ -256,43 +342,66 @@ function QuestionInput({
         />
       );
 
-    case "energyType":
+    case "academyName":
       return (
-        <BinaryCards
-          options={[
-            {
-              value: "explosive",
-              title: "Sprints hard, then needs a breather",
-              sub: "Goes flat out for a bit, gives everything — then sits out to recover",
-            },
-            {
-              value: "endurance",
-              title: "Keeps going the whole time",
-              sub: "Doesn't tire quickly — still going strong after everyone else has stopped",
-            },
-          ]}
-          value={form.energyType}
-          onChange={(v) => set("energyType", v)}
+        <input
+          type="text"
+          autoFocus // eslint-disable-line jsx-a11y/no-autofocus
+          value={form.academyName}
+          onChange={(e) => set("academyName", e.target.value)}
+          placeholder="e.g. Sunrise Sports Academy"
+          className={textInputClass}
         />
       );
 
-    case "motorType":
+    case "sessionsPerWeek":
       return (
-        <BinaryCards
-          options={[
-            {
-              value: "gross",
-              title: "Loves running, jumping, throwing things",
-              sub: "Whole-body movement — power and coordination, not precision",
-            },
-            {
-              value: "fine",
-              title: "Better at careful, steady-handed tasks",
-              sub: "Stacking blocks, threading things, careful aim — precision over power",
-            },
-          ]}
-          value={form.motorType}
-          onChange={(v) => set("motorType", v)}
+        <input
+          type="number"
+          min="1"
+          max="14"
+          autoFocus // eslint-disable-line jsx-a11y/no-autofocus
+          placeholder="e.g., 4"
+          value={form.sessionsPerWeek ?? ""}
+          onChange={(e) => set("sessionsPerWeek", e.target.value === "" ? null : parseFloat(e.target.value))}
+          className={textInputClass}
+        />
+      );
+
+    case "trainingMonths":
+      return (
+        <input
+          type="number"
+          min="0"
+          max="240"
+          autoFocus // eslint-disable-line jsx-a11y/no-autofocus
+          placeholder="e.g., 18"
+          value={form.trainingMonths ?? ""}
+          onChange={(e) => set("trainingMonths", e.target.value === "" ? null : parseFloat(e.target.value))}
+          className={textInputClass}
+        />
+      );
+
+    case "bestResultTier": {
+      const ladder = getBestResultLadder(form.sport || "");
+      return (
+        <FourContextCards
+          options={ladder.map((t) => ({ value: String(t.value), label: t.label, context: "" }))}
+          value={form.bestResultTier !== null ? String(form.bestResultTier) : null}
+          onChange={(v) => set("bestResultTier", Number(v))}
+        />
+      );
+    }
+
+    case "achievementsNote":
+      return (
+        <textarea
+          rows={3}
+          autoFocus // eslint-disable-line jsx-a11y/no-autofocus
+          value={form.achievementsNote}
+          onChange={(e) => set("achievementsNote", e.target.value)}
+          placeholder="e.g. Won the U-14 state championship in 2025"
+          className={`${textInputClass} resize-none`}
         />
       );
 
@@ -341,15 +450,22 @@ function QuestionInput({
         </div>
       );
 
+    case "injuryNotes":
+      return (
+        <textarea
+          rows={3}
+          autoFocus // eslint-disable-line jsx-a11y/no-autofocus
+          value={form.injuryNotes}
+          onChange={(e) => set("injuryNotes", e.target.value)}
+          placeholder="e.g. Recovering from a mild ankle sprain, nothing ongoing"
+          className={`${textInputClass} resize-none`}
+        />
+      );
+
     case "ambition":
       return (
         <FourContextCards
-          options={[
-            { value: "fun", label: "Just for fun", context: "Staying active and enjoying the sport" },
-            { value: "competitive", label: "Local competitions", context: "School or club-level tournaments" },
-            { value: "national", label: "State / national level", context: "Serious training for high-level competition" },
-            { value: "professional", label: "Professional pathway", context: "Full-time sport career as the end goal" },
-          ]}
+          options={getAmbitionOptions(form.sport || "")}
           value={form.ambition}
           onChange={(v) => set("ambition", v)}
         />
@@ -403,6 +519,7 @@ function Chip({ label }: { label: string }) {
 function ResultsView({ form, onReset }: { form: KnownSportForm; onReset: () => void }) {
   const sportEmoji = "🏅";
   const profileChips = buildProfileChips(form);
+  const achievementChips = buildAchievementChips(form);
   const goalChips = buildGoalChips(form);
 
   return (
@@ -447,6 +564,18 @@ function ResultsView({ form, onReset }: { form: KnownSportForm; onReset: () => v
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {profileChips.map((c) => (
+                  <Chip key={c} label={c} />
+                ))}
+              </div>
+            </div>
+          )}
+          {achievementChips.length > 0 && (
+            <div className="mb-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                Track record
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {achievementChips.map((c) => (
                   <Chip key={c} label={c} />
                 ))}
               </div>
@@ -552,15 +681,23 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
       dateOfBirth: prev.dateOfBirth || (matchedDep.dob ? new Date(matchedDep.dob).toISOString().slice(0, 10) : ""),
       gender: prev.gender ?? matchedDep.gender ?? null,
       state: prev.state ?? matchedDep.location ?? null,
-      experienceLevel: prev.experienceLevel ?? matchedDep.experienceLevel ?? null,
       trainingType: prev.trainingType ?? matchedDep.trainingType ?? null,
-      energyType: prev.energyType ?? matchedDep.energyType ?? null,
-      motorType: prev.motorType ?? matchedDep.motorType ?? null,
       heightCm: prev.heightCm ?? matchedDep.heightCm ?? null,
       weightKg: prev.weightKg ?? matchedDep.weightKg ?? null,
       ambition: prev.ambition ?? matchedDep.ambition ?? null,
       weeklyHours: prev.weeklyHours ?? matchedDep.weeklyHoursCategory ?? null,
       budgetRange: prev.budgetRange ?? matchedDep.budgetRange ?? null,
+      yearsPlaying: prev.yearsPlaying ?? matchedDep.yearsPlaying ?? null,
+      currentStandingTier: prev.currentStandingTier ?? matchedDep.currentStandingTier ?? null,
+      bestResultTier: prev.bestResultTier ?? matchedDep.bestResultTier ?? null,
+      achievementsNote: prev.achievementsNote || matchedDep.achievementsNote || "",
+      academyName: prev.academyName || matchedDep.academyName || "",
+      sessionsPerWeek: prev.sessionsPerWeek ?? matchedDep.sessionsPerWeek ?? null,
+      trainingMonths: prev.trainingMonths ?? matchedDep.trainingMonths ?? null,
+      injuryNotes:
+        prev.injuryNotes ||
+        (Array.isArray(matchedDep.medicalConditions) ? matchedDep.medicalConditions[0] : "") ||
+        "",
     }));
   }, [matchedDep]);
 
@@ -568,7 +705,8 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
     setForm((p) => ({ ...p, [k]: v }));
 
   const current = STEPS[idx];
-  const qNum = STEP_Q_NUMS[idx];
+  const qNum = questionNumberAt(STEPS, idx, form);
+  const totalQuestions = countEffectiveQuestions(STEPS, form);
 
   const canAdvance =
     current.kind === "transition" ||
@@ -577,24 +715,32 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
 
   const goNext = () => {
     setDir(1);
-    if (idx < STEPS.length - 1) {
-      setIdx((i) => i + 1);
-    } else {
+    if (idx >= STEPS.length - 1) {
       if (token) {
         const wizardFields = {
           ...(form.sport ? { sportsFocus: [form.sport] } : {}),
           ...(form.gender ? { gender: form.gender } : {}),
           ...(form.state ? { location: form.state } : {}),
-          ...(form.experienceLevel ? { experienceLevel: form.experienceLevel } : {}),
           ...(form.trainingType ? { trainingType: form.trainingType } : {}),
-          ...(form.energyType ? { energyType: form.energyType } : {}),
-          ...(form.motorType ? { motorType: form.motorType } : {}),
           ...(form.heightCm ? { heightCm: form.heightCm } : {}),
           ...(form.weightKg ? { weightKg: form.weightKg } : {}),
           ...(form.ambition ? { ambition: form.ambition } : {}),
           ...(form.weeklyHours ? { weeklyHoursCategory: form.weeklyHours } : {}),
           ...(form.budgetRange ? { budgetRange: form.budgetRange } : {}),
           ...(form.dateOfBirth ? { dob: form.dateOfBirth } : {}),
+          ...(form.yearsPlaying !== null ? { yearsPlaying: form.yearsPlaying } : {}),
+          ...(form.currentStandingTier !== null
+            ? {
+                currentStandingTier: form.currentStandingTier,
+                experienceLevel: deriveExperienceLevel(form.currentStandingTier),
+              }
+            : {}),
+          ...(form.bestResultTier !== null ? { bestResultTier: form.bestResultTier } : {}),
+          ...(form.achievementsNote.trim() ? { achievementsNote: form.achievementsNote.trim() } : {}),
+          ...(form.academyName.trim() ? { academyName: form.academyName.trim() } : {}),
+          ...(form.sessionsPerWeek !== null ? { sessionsPerWeek: form.sessionsPerWeek } : {}),
+          ...(form.trainingMonths !== null ? { trainingMonths: form.trainingMonths } : {}),
+          ...(form.injuryNotes.trim() ? { medicalConditions: [form.injuryNotes.trim()] } : {}),
         };
 
         if (matchedDep?._id) {
@@ -609,12 +755,14 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
         }
       }
       setDone(true);
+      return;
     }
+    setIdx(stepIndexInDirection(STEPS, idx, 1, form));
   };
 
   const goPrev = () => {
     setDir(-1);
-    if (idx > 0) setIdx((i) => i - 1);
+    if (idx > 0) setIdx(stepIndexInDirection(STEPS, idx, -1, form));
     else onBack();
   };
 
@@ -689,7 +837,7 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
                 {idx === 0 ? "Back to options" : "Back"}
               </button>
               <span className="text-xs font-medium text-slate-400">
-                {qNum} / {TOTAL_QUESTIONS}
+                {qNum} / {totalQuestions}
               </span>
             </div>
 
@@ -697,7 +845,7 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
             <div className="mb-6 h-1 rounded-full bg-slate-100 overflow-hidden">
               <div
                 className="h-full rounded-full bg-power-orange transition-all duration-500"
-                style={{ width: `${((qNum ?? 0) / TOTAL_QUESTIONS) * 100}%` }}
+                style={{ width: `${((qNum ?? 0) / totalQuestions) * 100}%` }}
               />
             </div>
 

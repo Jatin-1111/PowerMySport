@@ -297,6 +297,28 @@ export default function ExpertSessionPage() {
             </div>
           )}
 
+          {/* What was shared with the expert */}
+          {(session.player || session.clientNote) && (
+            <div className="mt-4 rounded-xl bg-slate-50 p-4">
+              <p className="text-sm font-semibold text-slate-900">
+                Shared with your expert
+              </p>
+              {session.player && (
+                <p className="mt-1 text-sm text-slate-700">
+                  {session.player.name}&apos;s sport profile
+                  {session.player.topSportMatch
+                    ? ` — best fit: ${session.player.topSportMatch.sport}`
+                    : ""}
+                </p>
+              )}
+              {session.clientNote && (
+                <p className="mt-1 text-sm italic text-slate-600">
+                  “{session.clientNote}”
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Reschedule + cancel */}
           {canManage && (
             <div className="mt-6 border-t border-slate-100 pt-6">

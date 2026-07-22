@@ -1,12 +1,12 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
-import { Button } from "@/modules/shared/ui/Button";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { motion } from "framer-motion";
-import { Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useState } from "react";
@@ -116,30 +116,37 @@ function LoginContent() {
     }
   };
 
-  const inputBase =
-    "h-11 w-full rounded-xl border px-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-white dark:bg-slate-900 transition-colors focus:outline-none focus:ring-2";
-  const inputOk =
-    "border-slate-200 dark:border-slate-700 focus:border-power-orange focus:ring-power-orange/15";
-  const inputErr =
-    "border-red-400 dark:border-red-500 focus:border-red-400 focus:ring-red-400/15";
+  const inputClass = (field: string) =>
+    cn(
+      "h-12 w-full rounded-xl border pl-11 pr-4 text-sm text-slate-900 dark:text-white",
+      "placeholder:text-slate-400 dark:placeholder:text-slate-500",
+      "bg-slate-50/50 dark:bg-slate-900 transition-all duration-200",
+      "focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-4",
+      errors[field]
+        ? "border-red-400 dark:border-red-500 focus:border-red-400 focus:ring-red-400/10"
+        : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 focus:border-power-orange dark:focus:border-power-orange focus:ring-power-orange/10",
+    );
+
+  const iconClass =
+    "pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400 dark:text-slate-500";
 
   return (
     <GoogleOAuthProvider
       clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}
     >
-      <div className="space-y-8">
+      <div className="space-y-7">
         {/* Heading */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: "easeOut" }}
         >
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
-            Sign in
-          </p>
-          <h1 className="mt-1.5 font-title text-[1.75rem] font-black leading-tight text-slate-900 dark:text-white">
+          <h1 className="font-title text-3xl font-black leading-tight tracking-tight text-slate-900 dark:text-white">
             Welcome back
           </h1>
+          <p className="mt-2 text-[15px] text-slate-500 dark:text-slate-400">
+            Sign in to continue your sporting journey.
+          </p>
         </motion.div>
 
         {/* Form */}
@@ -155,14 +162,18 @@ function LoginContent() {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               Email
             </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="you@example.com"
-              className={`${inputBase} ${errors.email ? inputErr : inputOk}`}
-            />
+            <div className="relative">
+              <Mail className={iconClass} />
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+                autoComplete="email"
+                className={inputClass("email")}
+              />
+            </div>
             {errors.email && (
               <p className="text-xs text-red-500">{errors.email}</p>
             )}
@@ -176,25 +187,27 @@ function LoginContent() {
               </label>
               <Link
                 href="/forgot-password"
-                className="text-xs font-medium text-power-orange transition-colors hover:text-orange-600"
+                className="text-xs font-semibold text-power-orange transition-colors hover:text-orange-600"
               >
                 Forgot password?
               </Link>
             </div>
             <div className="relative">
+              <Lock className={iconClass} />
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className={`${inputBase} pr-11 ${errors.password ? inputErr : inputOk}`}
+                autoComplete="current-password"
+                className={cn(inputClass("password"), "pr-11")}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label="Toggle password visibility"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -204,14 +217,23 @@ function LoginContent() {
             )}
           </div>
 
-          <Button
+          <button
             type="submit"
             disabled={isSubmitting}
-            variant="primary"
-            className="w-full"
+            className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-power-orange text-[15px] font-semibold text-white shadow-lg shadow-orange-500/25 transition-all duration-200 hover:bg-orange-600 hover:shadow-orange-500/30 focus:outline-none focus:ring-4 focus:ring-power-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? "Signing in…" : "Sign in"}
-          </Button>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Signing in…
+              </>
+            ) : (
+              <>
+                Sign in
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+              </>
+            )}
+          </button>
         </motion.form>
 
         {/* Divider */}
@@ -220,8 +242,8 @@ function LoginContent() {
             <div className="w-full border-t border-slate-100 dark:border-slate-800" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-white px-3 text-xs text-slate-400 dark:bg-slate-950 dark:text-slate-500">
-              or continue with
+            <span className="bg-white px-3 text-xs font-medium uppercase tracking-wider text-slate-400 dark:bg-slate-950 dark:text-slate-500">
+              or
             </span>
           </div>
         </div>
@@ -231,6 +253,7 @@ function LoginContent() {
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
             onError={() => toast.error("Google login failed")}
+            text="continue_with"
           />
         </div>
 

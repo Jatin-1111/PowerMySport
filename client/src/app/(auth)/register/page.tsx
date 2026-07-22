@@ -4,10 +4,23 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
-import { Button } from "@/modules/shared/ui/Button";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { motion } from "framer-motion";
-import { Award, Check, Eye, EyeOff, Target, Users2, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  Award,
+  Check,
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  Mail,
+  Phone,
+  Target,
+  User,
+  Users2,
+  Zap,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useState } from "react";
@@ -62,7 +75,7 @@ function RegisterContent() {
   useEffect(() => {
     if (user) {
       if (user.userType === "Parent") {
-        router.push("/find-sport");
+        router.push("/assessment");
       } else if (user.role === "Player") {
         router.push("/dashboard/my-bookings");
       } else if (user.role === "VenueLister") {
@@ -135,7 +148,7 @@ function RegisterContent() {
         if (redirectTo) {
           router.push(redirectTo);
         } else if (formData.userType === "Parent") {
-          router.push("/find-sport");
+          router.push("/assessment");
         } else if (response.data.user.role === "Coach") {
           router.push("/coach/verification");
         } else if (response.data.user.role === "VenueLister") {
@@ -195,7 +208,7 @@ function RegisterContent() {
           localStorage.setItem("coachServiceMode", formData.serviceMode);
         }
         if (formData.userType === "Parent") {
-          router.push("/find-sport");
+          router.push("/assessment");
         } else if (response.data.user.role === "Coach") {
           router.push("/coach/verification");
         } else if (response.data.user.role === "VenueLister") {
@@ -218,13 +231,17 @@ function RegisterContent() {
 
   const inputClass = (field: string) =>
     cn(
-      "h-11 w-full rounded-xl border px-4 text-sm text-slate-900 dark:text-white",
+      "h-12 w-full rounded-xl border pl-11 pr-4 text-sm text-slate-900 dark:text-white",
       "placeholder:text-slate-400 dark:placeholder:text-slate-500",
-      "bg-white dark:bg-slate-900 transition-colors focus:outline-none focus:ring-2",
+      "bg-slate-50/50 dark:bg-slate-900 transition-all duration-200",
+      "focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-4",
       errors[field]
-        ? "border-red-400 dark:border-red-500 focus:border-red-400 focus:ring-red-400/15"
-        : "border-slate-200 dark:border-slate-700 focus:border-power-orange focus:ring-power-orange/15",
+        ? "border-red-400 dark:border-red-500 focus:border-red-400 focus:ring-red-400/10"
+        : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 focus:border-power-orange dark:focus:border-power-orange focus:ring-power-orange/10",
     );
+
+  const iconClass =
+    "pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400 dark:text-slate-500";
 
   return (
     <GoogleOAuthProvider
@@ -237,12 +254,12 @@ function RegisterContent() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: "easeOut" }}
         >
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
-            Create account
-          </p>
-          <h1 className="mt-1.5 font-title text-[1.75rem] font-black leading-tight text-slate-900 dark:text-white">
-            Join the platform
+          <h1 className="font-title text-3xl font-black leading-tight tracking-tight text-slate-900 dark:text-white">
+            Create your account
           </h1>
+          <p className="mt-2 text-[15px] text-slate-500 dark:text-slate-400">
+            Join thousands of families building their sporting journey.
+          </p>
         </motion.div>
 
         <motion.form
@@ -259,14 +276,18 @@ function RegisterContent() {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Full name
               </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Arjun Singh"
-                className={inputClass("name")}
-              />
+              <div className="relative">
+                <User className={iconClass} />
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Arjun Singh"
+                  autoComplete="name"
+                  className={inputClass("name")}
+                />
+              </div>
               {errors.name && (
                 <p className="text-xs text-red-500">{errors.name}</p>
               )}
@@ -277,56 +298,66 @@ function RegisterContent() {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Email
               </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="you@example.com"
-                className={inputClass("email")}
-              />
+              <div className="relative">
+                <Mail className={iconClass} />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  className={inputClass("email")}
+                />
+              </div>
               {errors.email && (
                 <p className="text-xs text-red-500">{errors.email}</p>
               )}
             </div>
 
             {/* Phone — left col */}
-            <div className="space-y-1.5">
+            <div className="col-span-2 space-y-1.5 sm:col-span-1">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Phone
               </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="9876543210"
-                className={inputClass("phone")}
-              />
+              <div className="relative">
+                <Phone className={iconClass} />
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="9876543210"
+                  autoComplete="tel"
+                  className={inputClass("phone")}
+                />
+              </div>
               {errors.phone && (
                 <p className="text-xs text-red-500">{errors.phone}</p>
               )}
             </div>
 
             {/* Password — right col */}
-            <div className="space-y-1.5">
+            <div className="col-span-2 space-y-1.5 sm:col-span-1">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Password
               </label>
               <div className="relative">
+                <Lock className={iconClass} />
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Min. 8 chars"
+                  autoComplete="new-password"
                   className={cn(inputClass("password"), "pr-10")}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label="Toggle password visibility"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -342,7 +373,7 @@ function RegisterContent() {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               I am a…
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               {ROLE_OPTIONS.map((role) => {
                 const selected = formData.userType === role.value;
                 return (
@@ -356,20 +387,22 @@ function RegisterContent() {
                       }))
                     }
                     className={cn(
-                      "relative flex flex-col items-start gap-1.5 rounded-xl border-2 p-3.5 text-left transition-all",
+                      "relative flex flex-col items-start gap-2 rounded-xl border p-3.5 text-left transition-all duration-200",
                       selected
-                        ? "border-power-orange bg-orange-50 dark:bg-orange-950/20"
-                        : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600",
+                        ? "border-power-orange bg-orange-50/70 ring-1 ring-power-orange dark:bg-orange-950/20"
+                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700",
                     )}
                   >
-                    <role.Icon
-                      size={18}
+                    <span
                       className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
                         selected
-                          ? "text-power-orange"
-                          : "text-slate-400 dark:text-slate-500",
+                          ? "bg-power-orange/10 text-power-orange"
+                          : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500",
                       )}
-                    />
+                    >
+                      <role.Icon size={16} />
+                    </span>
                     <div>
                       <p
                         className={cn(
@@ -391,8 +424,8 @@ function RegisterContent() {
                       )}
                     </div>
                     {selected && (
-                      <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-power-orange">
-                        <Check className="h-2.5 w-2.5 text-white" />
+                      <span className="absolute right-2.5 top-2.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-power-orange">
+                        <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
                       </span>
                     )}
                   </button>
@@ -425,7 +458,7 @@ function RegisterContent() {
                 name="serviceMode"
                 value={formData.serviceMode}
                 onChange={handleChange}
-                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition-colors focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/15 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm text-slate-900 transition-all duration-200 focus:border-power-orange focus:bg-white focus:outline-none focus:ring-4 focus:ring-power-orange/10 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
               >
                 <option value="OWN_VENUE">
                   Own Venue — coach at your location
@@ -447,7 +480,7 @@ function RegisterContent() {
           )}
 
           {/* Terms */}
-          <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+          <div className="space-y-3 rounded-xl border border-slate-200/70 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-900/50">
             <label className="flex cursor-pointer items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
               <input
                 type="checkbox"
@@ -497,14 +530,23 @@ function RegisterContent() {
             )}
           </div>
 
-          <Button
+          <button
             type="submit"
             disabled={isSubmitting}
-            variant="primary"
-            className="w-full"
+            className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-power-orange text-[15px] font-semibold text-white shadow-lg shadow-orange-500/25 transition-all duration-200 hover:bg-orange-600 hover:shadow-orange-500/30 focus:outline-none focus:ring-4 focus:ring-power-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? "Creating account…" : "Create account"}
-          </Button>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Creating account…
+              </>
+            ) : (
+              <>
+                Create account
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+              </>
+            )}
+          </button>
         </motion.form>
 
         {/* Divider */}
@@ -513,8 +555,8 @@ function RegisterContent() {
             <div className="w-full border-t border-slate-100 dark:border-slate-800" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-white px-3 text-xs text-slate-400 dark:bg-slate-950 dark:text-slate-500">
-              or continue with
+            <span className="bg-white px-3 text-xs font-medium uppercase tracking-wider text-slate-400 dark:bg-slate-950 dark:text-slate-500">
+              or
             </span>
           </div>
         </div>
@@ -524,6 +566,7 @@ function RegisterContent() {
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
             onError={() => toast.error("Google registration failed")}
+            text="signup_with"
           />
         </div>
 

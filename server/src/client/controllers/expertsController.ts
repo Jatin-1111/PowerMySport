@@ -15,6 +15,7 @@ import {
   respondToExpertSession,
   setSessionMeetingLink,
   getExpertSessionForUser,
+  getExpertSessionPlayerDetail,
   listUserExpertSessions,
   listExpertOwnSessions,
   getMyExpertProfile,
@@ -205,6 +206,7 @@ export const initiateSession = async (
       scheduledAt: String(req.body.scheduledAt),
       clientNote: req.body?.clientNote,
       mode: req.body?.mode,
+      playerId: req.body?.playerId,
     });
     res.status(201).json({ success: true, message: "Payment initiated", data });
   } catch (e) {
@@ -242,6 +244,23 @@ export const getSession = async (
       isAdmin: req.user?.role === "Admin",
     });
     res.json({ success: true, message: "Session retrieved", data });
+  } catch (e) {
+    fail(res, e, 404);
+  }
+};
+
+export const getSessionPlayerDetail = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+    const data = await getExpertSessionPlayerDetail({
+      sessionId: req.params.sessionId as string,
+      expertUserId: userId,
+    });
+    res.json({ success: true, message: "Player detail retrieved", data });
   } catch (e) {
     fail(res, e, 404);
   }

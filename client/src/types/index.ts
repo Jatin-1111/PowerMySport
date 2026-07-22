@@ -98,6 +98,11 @@ export interface Dependent {
   weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
   experienceLevel?: "beginner" | "intermediate" | "competitive";
   trainingType?: "self" | "club" | "academy" | "private";
+  sportsInFamily?: string[];
+  peerSports?: string[];
+  informalSports?: string[];
+  informalReaction?: "kept-asking" | "lost-interest";
+  futureFlexibility?: "all-in" | "maybe" | "stay-local";
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
   wizardCompletedAt?: string;
 }

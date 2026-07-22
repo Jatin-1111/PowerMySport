@@ -189,11 +189,12 @@ export function SettingsPageTemplate({
     }
   };
 
-  if (!user) return null;
-
   // Runs after the auth store has had a chance to hydrate from localStorage —
   // redirecting inline during render would fire before hydration completes
-  // and bounce a logged-in user to /login on every load.
+  // and bounce a logged-in user to /login on every load. Kept above the
+  // early return below so every hook in this component always runs in the
+  // same order, even right after account deletion when `user` flips to
+  // null mid-session (logout() -> router.push("/")).
   useEffect(() => {
     if (!user) {
       router.replace("/login");

@@ -2,6 +2,8 @@ import crypto from "crypto";
 import mongoose from "mongoose";
 import { User } from "../models/User";
 import { Expert } from "../models/ExpertProfile";
+import { Player, PlayerDocument } from "../models/Player";
+import { GuidanceSubmission } from "../models/GuidanceSubmission";
 import {
   ExpertSession,
   ExpertSessionDocument,
@@ -77,6 +79,121 @@ const serializeExpertFull = (expert: any) => ({
   rejectionReason: expert.rejectionReason,
 });
 
+/**
+ * Condenses a Player (child) doc into the briefing an expert needs before a
+ * session — the wizard-built profile signals, not the full raw document.
+ */
+const summarizePlayerForExpert = (player: PlayerDocument | any) => ({
+  name: player.name,
+  age: player.age,
+  gender: player.gender,
+  sportsFocus: player.sportsFocus,
+  topSportMatch: player.sportMatches?.[0],
+  energyType: player.energyType,
+  motorType: player.motorType,
+  teamIndividual: player.teamIndividual,
+  competitiveResponse: player.competitiveResponse,
+  focusStyle: player.focusStyle,
+  pressureResponse: player.pressureResponse,
+  contactComfort: player.contactComfort,
+  environment: player.environment,
+  ambition: player.ambition,
+  budgetRange: player.budgetRange,
+  wizardCompletedAt: player.wizardCompletedAt,
+});
+
+/**
+ * Full child profile + AI roadmap narrative for the expert's dedicated
+ * booking-detail page — everything summarizePlayerForExpert leaves out,
+ * minus financial/academic-pathway fields that aren't relevant to a
+ * sport-session expert (paymentHistory, pathwayState, costBreakdown).
+ */
+const serializeFullPlayerForExpert = (player: PlayerDocument | any) => ({
+  name: player.name,
+  age: player.age,
+  dob: player.dob,
+  gender: player.gender,
+  relation: player.relation,
+  sportsFocus: player.sportsFocus || [],
+  skillLevel: player.skillLevel,
+  yearsPlaying: player.yearsPlaying,
+  personalityTags: player.personalityTags || [],
+  primaryObjective: player.primaryObjective,
+  weeklyTimeCommitment: player.weeklyTimeCommitment,
+  budgetTier: player.budgetTier,
+  location: player.location,
+  heightCm: player.heightCm,
+  weightKg: player.weightKg,
+  medicalConditions: player.medicalConditions || [],
+  build: player.build,
+  heightCategory: player.heightCategory,
+  energyType: player.energyType,
+  motorType: player.motorType,
+  visualTracking: player.visualTracking,
+  teamIndividual: player.teamIndividual,
+  competitiveResponse: player.competitiveResponse,
+  focusStyle: player.focusStyle,
+  decisionStyle: player.decisionStyle,
+  pressureResponse: player.pressureResponse,
+  repetitionTolerance: player.repetitionTolerance,
+  contactComfort: player.contactComfort,
+  environment: player.environment,
+  waterComfort: player.waterComfort,
+  budgetRange: player.budgetRange,
+  ambition: player.ambition,
+  eyesight: player.eyesight,
+  agility: player.agility,
+  weeklyHoursCategory: player.weeklyHoursCategory,
+  experienceLevel: player.experienceLevel,
+  trainingType: player.trainingType,
+  sportsInFamily: player.sportsInFamily || [],
+  peerSports: player.peerSports || [],
+  informalSports: player.informalSports || [],
+  informalReaction: player.informalReaction,
+  futureFlexibility: player.futureFlexibility,
+  currentStandingTier: player.currentStandingTier,
+  bestResultTier: player.bestResultTier,
+  achievementsNote: player.achievementsNote,
+  academyName: player.academyName,
+  sessionsPerWeek: player.sessionsPerWeek,
+  trainingMonths: player.trainingMonths,
+  wizardCity: player.wizardCity,
+  sportMatches: player.sportMatches || [],
+  wizardCompletedAt: player.wizardCompletedAt,
+});
+
+/** AI-guidance roadmap narrative for a child, trimmed to what's useful pre-session. */
+const serializeGuidanceForExpert = (guidance: any) => ({
+  profileAnalysis: guidance.response?.profileAnalysis,
+  idealCoachingStyle: guidance.response?.idealCoachingStyle,
+  weeklyBlueprint: guidance.response?.weeklyBlueprint,
+  recommendedSports: guidance.response?.recommendedSports || [],
+  mentalSkillsRoadmap: guidance.response?.mentalSkillsRoadmap,
+  talentIdentifiers: guidance.response?.talentIdentifiers || [],
+  multiSportAdvisory: guidance.response?.multiSportAdvisory,
+  goalAssessment: guidance.response?.goalAssessment,
+  burnoutRisk: guidance.response?.burnoutRisk,
+  createdAt: guidance.createdAt,
+});
+
+/** Batch-fetches the players referenced by a set of sessions, keyed by playerId string. */
+const fetchPlayerSummariesByIds = async (
+  sessions: Array<{ playerId?: mongoose.Types.ObjectId | string }>,
+): Promise<Map<string, ReturnType<typeof summarizePlayerForExpert>>> => {
+  const playerIds = [
+    ...new Set(
+      sessions
+        .map((s) => s.playerId?.toString())
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  if (playerIds.length === 0) return new Map();
+  const players = await Player.find({ _id: { $in: playerIds } }).lean();
+  return new Map(
+    players.map((p) => [(p._id as mongoose.Types.ObjectId).toString(), summarizePlayerForExpert(p)]),
+  );
+};
+
 const serializeSession = (
   session: any,
   extra: {
@@ -84,6 +201,7 @@ const serializeSession = (
     clientName?: string;
     expertTimezone?: string;
     expertInPersonAddress?: string;
+    player?: any;
   } = {},
 ) => ({
   id: session._id?.toString(),
@@ -125,6 +243,7 @@ const serializeSession = (
   createdAt: session.createdAt,
   ...(extra.expert ? { expert: extra.expert } : {}),
   ...(extra.clientName ? { clientName: extra.clientName } : {}),
+  ...(extra.player ? { player: extra.player } : {}),
 });
 
 // ── Notification helpers (best-effort; never throw) ──────────────────────────
@@ -481,6 +600,7 @@ export const initiateExpertSession = async (params: {
   clientNote?: string;
   mode?: "ONLINE" | "IN_PERSON";
   userPhone?: string;
+  playerId?: string;
 }) => {
   const expert = await Expert.findById(params.expertId);
   if (!expert || !expert.isActive) throw new Error("Expert not found");
@@ -490,6 +610,18 @@ export const initiateExpertSession = async (params: {
 
   const scheduledAt = new Date(params.scheduledAt);
   await assertSlotBookable(expert, scheduledAt);
+
+  // Only attach the player if it's actually one of this parent's own children —
+  // silently drop it otherwise rather than failing the whole booking.
+  let playerId: mongoose.Types.ObjectId | undefined;
+  if (params.playerId) {
+    const player = await Player.findOne({
+      _id: params.playerId,
+      userId: toObjectId(params.userId),
+      type: "DEPENDENT",
+    }).select("_id");
+    if (player) playerId = player._id as mongoose.Types.ObjectId;
+  }
 
   const merchantOrderId = `EXP_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
   const resolvedMode =
@@ -502,6 +634,7 @@ export const initiateExpertSession = async (params: {
   const session = await ExpertSession.create({
     expertId: expert._id,
     userId: toObjectId(params.userId),
+    ...(playerId ? { playerId } : {}),
     amount: expert.sessionFee,
     status: "PENDING_PAYMENT",
     paymentStatus: "PENDING",
@@ -562,11 +695,15 @@ const applyExpertPaymentSuccess = async (
     // Expert alert.
     const expertUserId = await expertUserIdOf(session.expertId);
     if (expertUserId) {
+      const hasContext = Boolean(session.playerId || session.clientNote);
       notify(
         expertUserId,
         "BOOKING_CONFIRMED",
         "New session booked",
-        `A client booked a paid session with you for ${when}.`,
+        `A client booked a paid session with you for ${when}.` +
+          (hasContext
+            ? " Check your dashboard for their child's profile and note before the call."
+            : ""),
         { sessionId: session._id.toString() },
         true,
       );
@@ -1033,10 +1170,50 @@ export const getExpertSessionForUser = async (params: {
   if (!isClient && !isExpert && !params.isAdmin) {
     throw new Error("You are not authorized to view this session");
   }
+  const playerSummaries = await fetchPlayerSummariesByIds([session]);
   return serializeSession(session, {
     expert: expert ? serializeExpert(expert) : undefined,
     expertInPersonAddress: expert?.inPersonAddress,
+    player: (session as any).playerId
+      ? playerSummaries.get((session as any).playerId.toString())
+      : undefined,
   });
+};
+
+/** Full child profile + roadmap narrative for the expert's booking-detail page. Expert-only. */
+export const getExpertSessionPlayerDetail = async (params: {
+  sessionId: string;
+  expertUserId: string;
+}) => {
+  const session = await ExpertSession.findById(params.sessionId).lean();
+  if (!session) throw new Error("Session not found");
+
+  const expert = await Expert.findOne({
+    userId: toObjectId(params.expertUserId),
+  })
+    .select("_id")
+    .lean();
+  if (!expert || expert._id.toString() !== session.expertId.toString()) {
+    throw new Error("You are not authorized to view this session");
+  }
+
+  if (!session.playerId) {
+    throw new Error("No player profile is linked to this session");
+  }
+
+  const player = await Player.findById(session.playerId).lean();
+  if (!player) throw new Error("Player profile not found");
+
+  const guidance = await GuidanceSubmission.findOne({
+    "request.dependent_id": session.playerId,
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return {
+    player: serializeFullPlayerForExpert(player),
+    guidance: guidance ? serializeGuidanceForExpert(guidance) : undefined,
+  };
 };
 
 export const listUserExpertSessions = async (userId: string) => {
@@ -1048,11 +1225,13 @@ export const listUserExpertSessions = async (userId: string) => {
     .populate("userId", "name email")
     .lean();
   const byId = new Map(experts.map((e) => [e._id.toString(), e]));
+  const playerSummaries = await fetchPlayerSummariesByIds(sessions);
   return sessions.map((s) => {
     const e = byId.get(s.expertId.toString());
     return serializeSession(s, {
       expert: e ? serializeExpert(e) : undefined,
       expertInPersonAddress: e?.inPersonAddress,
+      player: s.playerId ? playerSummaries.get(s.playerId.toString()) : undefined,
     });
   });
 };
@@ -1063,15 +1242,23 @@ export const listExpertOwnSessions = async (expertUserId: string) => {
   }).select("_id timezone");
   if (!expert) return [];
   const tz = (expert as any).timezone || "Asia/Kolkata";
-  const sessions = await ExpertSession.find({ expertId: expert._id })
+  const sessions = await ExpertSession.find({
+    expertId: expert._id,
+    // Hide holds the client never actually paid for — these were never a
+    // real booking from the expert's point of view, just noise. Sessions a
+    // person (client/expert/admin) cancelled are always kept.
+    $nor: [{ status: "CANCELLED", cancelledBy: "SYSTEM" }],
+  })
     .populate("userId", "name")
     .sort({ createdAt: -1 })
     .lean();
+  const playerSummaries = await fetchPlayerSummariesByIds(sessions);
   return sessions.map((s) => {
     const u = s.userId as unknown as { name?: string } | null;
     return serializeSession(s, {
       clientName: u?.name || "Client",
       expertTimezone: tz,
+      player: s.playerId ? playerSummaries.get(s.playerId.toString()) : undefined,
     });
   });
 };
@@ -1098,12 +1285,14 @@ export const getExpertSessionsForAdmin = async (expertId: string) => {
   const payoutReleased = completedPaid
     .filter((s) => s.payoutStatus === "PAID")
     .reduce((sum, s) => sum + (s.amount || 0), 0);
+  const playerSummaries = await fetchPlayerSummariesByIds(sessions);
   return {
     sessions: sessions.map((s) => {
       const u = s.userId as unknown as { name?: string; email?: string } | null;
       return serializeSession(s, {
         clientName: u?.name || "Client",
         expertTimezone: tz,
+        player: s.playerId ? playerSummaries.get(s.playerId.toString()) : undefined,
       });
     }),
     summary: {
@@ -1199,11 +1388,30 @@ export const expireUnpaidExpertHolds = async (): Promise<number> => {
   const stale = await ExpertSession.find({
     status: "PENDING_PAYMENT",
     holdExpiresAt: { $lte: now },
-  }).select("_id");
+  });
   let count = 0;
-  for (const s of stale) {
+  for (const session of stale) {
+    // The client-side reconcile call (and previously the webhook, see
+    // phonepeWebhook.ts history) can miss a captured payment — never write
+    // a hold off as expired without confirming with PhonePe first, so a
+    // captured-but-unconfirmed payment doesn't get silently cancelled.
+    try {
+      const status = await getPhonePeOrderStatus(session.merchantOrderId);
+      const state = (status.state || "").toUpperCase();
+      if (["COMPLETED", "SUCCESS", "PAYMENT_SUCCESS"].includes(state)) {
+        await applyExpertPaymentSuccess(session);
+        continue;
+      }
+    } catch (err) {
+      console.error(
+        `[expireUnpaidExpertHolds] failed to check PhonePe status for session ${session._id}, skipping this run`,
+        err,
+      );
+      continue;
+    }
+
     const updated = await ExpertSession.findOneAndUpdate(
-      { _id: s._id, status: "PENDING_PAYMENT" },
+      { _id: session._id, status: "PENDING_PAYMENT" },
       {
         $set: {
           status: "CANCELLED",

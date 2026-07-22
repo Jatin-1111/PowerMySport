@@ -43,8 +43,9 @@ COPY --from=builder /app/dist ./dist
 EXPOSE 8080
 
 # Health check — Docker + EB load balancer checks /api/health
+# Uses $PORT so local runs (PORT=5000) and EB (PORT=8080) both resolve correctly
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD wget -qO- http://localhost:8080/api/health || exit 1
+  CMD wget -qO- http://localhost:${PORT:-8080}/api/health || exit 1
 
 # Start the server
 CMD ["node", "dist/server.js"]
