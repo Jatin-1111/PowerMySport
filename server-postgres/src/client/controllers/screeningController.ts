@@ -57,7 +57,7 @@ export async function updateScreeningStatus(req: Request, res: Response): Promis
 
   try {
     const updated = await prisma.screeningRequest.update({
-      where: { id },
+      where: { id: String(id) },
       data: {
         status: status as ScreeningStatus,
         ...(adminNotes !== undefined ? { adminNotes } : {}),

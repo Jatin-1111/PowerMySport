@@ -47,10 +47,8 @@ export const getRoadmapChat = async (
       return;
     }
 
-    let session = await prisma.roadmapChatSession.findUnique({
-      where: {
-        userId_sportSlug: { userId: req.user.id, sportSlug },
-      },
+    let session = await prisma.roadmapChatSession.findFirst({
+      where: { userId: req.user.id, sportSlug },
       include: { messages: { orderBy: { createdAt: "asc" } } },
     });
 
@@ -145,10 +143,8 @@ export const sendRoadmapChatMessage = async (
       return;
     }
 
-    let session = await prisma.roadmapChatSession.findUnique({
-      where: {
-        userId_sportSlug: { userId: req.user.id, sportSlug },
-      },
+    let session = await prisma.roadmapChatSession.findFirst({
+      where: { userId: req.user.id, sportSlug },
       include: { messages: { orderBy: { createdAt: "asc" } } },
     });
 

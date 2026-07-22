@@ -66,13 +66,24 @@ export const updateRoadmapProfile = async (
     if (applications !== undefined) updateData.applications = applications;
     if (reminders !== undefined) updateData.reminders = reminders;
 
-    const profile = await prisma.userPathwayProfile.upsert({
-      where: {
-        userId_dependentId: { userId: req.user.id, dependentId },
-      },
-      create: { userId: req.user.id, dependentId, ...updateData },
-      update: updateData,
+    // findFirst (not the compound unique) so the `dependentId: null` bucket
+    // resolves via SQL `IS NULL` — the compound unique cannot be used as a
+    // lookup key when dependentId is null (Postgres treats NULLs as distinct),
+    // so an upsert on it would break. Mirrors getRoadmapProfile above.
+    let profile = await prisma.userPathwayProfile.findFirst({
+      where: { userId: req.user.id, dependentId },
     });
+
+    if (profile) {
+      profile = await prisma.userPathwayProfile.update({
+        where: { id: profile.id },
+        data: updateData,
+      });
+    } else {
+      profile = await prisma.userPathwayProfile.create({
+        data: { userId: req.user.id, dependentId, ...updateData },
+      });
+    }
 
     res.status(200).json({
       success: true,

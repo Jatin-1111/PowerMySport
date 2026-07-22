@@ -23,12 +23,15 @@ const getPrimaryPayoutMethod = <T extends { isDefault: boolean }>(
   );
 };
 
+// Fields are genuinely optional per payout type (BANK_TRANSFER vs UPI) and the
+// callers pass values typed `string | undefined` from the request body, so the
+// properties allow explicit `undefined` (required under exactOptionalPropertyTypes).
 type PayoutFieldInput = {
-  accountHolderName?: string;
-  accountNumber?: string;
-  ifscCode?: string;
-  bankName?: string;
-  upiId?: string;
+  accountHolderName?: string | undefined;
+  accountNumber?: string | undefined;
+  ifscCode?: string | undefined;
+  bankName?: string | undefined;
+  upiId?: string | undefined;
 };
 
 /**
@@ -331,7 +334,7 @@ export const deleteCoachPayoutMethod = async (
         return;
       }
 
-      await prisma.coachPayoutMethod.delete({ where: { id: methodId } });
+      await prisma.coachPayoutMethod.delete({ where: { id: String(methodId) } });
 
       // If the deleted method was default and there are remaining methods, set first as default
       const remaining = await prisma.coachPayoutMethod.findMany({
@@ -413,7 +416,7 @@ export const setCoachDefaultPayoutMethod = async (
       data: { isDefault: false },
     });
     await prisma.coachPayoutMethod.update({
-      where: { id: methodId },
+      where: { id: String(methodId) },
       data: { isDefault: true },
     });
 
@@ -671,7 +674,9 @@ export const deleteVenuePayoutMethod = async (
           (method) => method.id === methodId,
         );
         if (target) {
-          await prisma.venuePayoutMethod.delete({ where: { id: methodId } });
+          await prisma.venuePayoutMethod.delete({
+            where: { id: String(methodId) },
+          });
         }
 
         // If the deleted method was default and there are remaining methods, set first as default
@@ -769,7 +774,7 @@ export const setVenueDefaultPayoutMethod = async (
           data: { isDefault: false },
         });
         await prisma.venuePayoutMethod.update({
-          where: { id: methodId },
+          where: { id: String(methodId) },
           data: { isDefault: true },
         });
         updated = true;
@@ -1071,7 +1076,9 @@ export const deleteExpertPayoutMethod = async (
         return;
       }
 
-      await prisma.expertPayoutMethod.delete({ where: { id: methodId } });
+      await prisma.expertPayoutMethod.delete({
+        where: { id: String(methodId) },
+      });
 
       // If the deleted method was default and there are remaining methods, set first as default
       const remaining = await prisma.expertPayoutMethod.findMany({
@@ -1153,7 +1160,7 @@ export const setExpertDefaultPayoutMethod = async (
       data: { isDefault: false },
     });
     await prisma.expertPayoutMethod.update({
-      where: { id: methodId },
+      where: { id: String(methodId) },
       data: { isDefault: true },
     });
 

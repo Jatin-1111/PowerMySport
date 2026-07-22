@@ -11,7 +11,9 @@ export const getPathwayProfile = async (
       return;
     }
 
-    let profile = await prisma.userPathwayProfile.findUnique({
+    // findFirst (not findUnique): the model's only unique key is the compound
+    // userId_dependentId, so userId alone is not a valid unique lookup.
+    let profile = await prisma.userPathwayProfile.findFirst({
       where: { userId: req.user.id },
     });
 
@@ -50,11 +52,23 @@ export const updatePathwayProfile = async (
     if (applications !== undefined) updateData.applications = applications;
     if (reminders !== undefined) updateData.reminders = reminders;
 
-    const profile = await prisma.userPathwayProfile.upsert({
+    // findFirst → update/create (not upsert): the only unique key is the
+    // compound userId_dependentId, so userId alone can't drive an upsert.
+    // Mirrors roadmapProfileController.updateRoadmapProfile.
+    let profile = await prisma.userPathwayProfile.findFirst({
       where: { userId: req.user.id },
-      create: { userId: req.user.id, ...updateData },
-      update: updateData,
     });
+
+    if (profile) {
+      profile = await prisma.userPathwayProfile.update({
+        where: { id: profile.id },
+        data: updateData,
+      });
+    } else {
+      profile = await prisma.userPathwayProfile.create({
+        data: { userId: req.user.id, ...updateData },
+      });
+    }
 
     res.status(200).json({
       success: true,

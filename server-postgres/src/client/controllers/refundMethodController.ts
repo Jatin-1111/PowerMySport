@@ -206,7 +206,7 @@ export const updateRefundMethod = async (
     }
 
     const existing = await prisma.refundMethod.findFirst({
-      where: { id: methodId, userId },
+      where: { id: String(methodId), userId },
     });
     if (!existing) {
       res
@@ -222,7 +222,7 @@ export const updateRefundMethod = async (
     updated.isDefault = existing.isDefault ?? false;
 
     await prisma.refundMethod.update({
-      where: { id: methodId },
+      where: { id: String(methodId) },
       data: {
         type: updated.type,
         accountHolderName: updated.accountHolderName ?? null,
@@ -265,7 +265,9 @@ export const deleteRefundMethod = async (
     }
 
     await prisma.$transaction(async (tx) => {
-      await tx.refundMethod.deleteMany({ where: { id: methodId, userId } });
+      await tx.refundMethod.deleteMany({
+        where: { id: String(methodId), userId },
+      });
 
       // normalizeMethods(): if any remain but none is default, promote the first.
       const remaining = await tx.refundMethod.findMany({
@@ -314,11 +316,11 @@ export const setDefaultRefundMethod = async (
     // Setting a new default → unset every other method, then set the target.
     await prisma.$transaction([
       prisma.refundMethod.updateMany({
-        where: { userId, id: { not: methodId } },
+        where: { userId, id: { not: String(methodId) } },
         data: { isDefault: false },
       }),
       prisma.refundMethod.updateMany({
-        where: { userId, id: methodId },
+        where: { userId, id: String(methodId) },
         data: { isDefault: true },
       }),
     ]);

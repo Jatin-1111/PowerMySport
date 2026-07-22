@@ -63,7 +63,7 @@ export const updateConciergeRequestStatus = async (
     }
 
     const existing = await prisma.conciergeRequest.findUnique({
-      where: { id },
+      where: { id: String(id) },
     });
 
     if (!existing) {
@@ -72,7 +72,7 @@ export const updateConciergeRequestStatus = async (
     }
 
     const updatedRequest = await prisma.conciergeRequest.update({
-      where: { id },
+      where: { id: String(id) },
       data: updatePayload,
       include: { documents: true },
     });
@@ -110,7 +110,7 @@ export const getConciergeDocumentDownloadUrl = async (
 
     // Verify the request exists and contains this document key
     const request = await prisma.conciergeRequest.findUnique({
-      where: { id },
+      where: { id: String(id) },
       include: { documents: true },
     });
     if (!request) {

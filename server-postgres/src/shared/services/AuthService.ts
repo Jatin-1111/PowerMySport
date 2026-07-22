@@ -644,18 +644,18 @@ export const addDependent = async (
       userId: user.id,
       type: "DEPENDENT",
       name: payload.name,
-      age,
-      dob: parsedDob,
-      gender: payload.gender,
-      relation: payload.relation,
+      age: age ?? null,
+      dob: parsedDob ?? null,
+      gender: payload.gender ?? null,
+      relation: payload.relation ?? null,
       sportsFocus: payload.sportsFocus || payload.sports || [],
       skillLevel: payload.skillLevel || "",
-      yearsPlaying: payload.yearsPlaying,
-      personalityTags: payload.personalityTags,
-      primaryObjective: payload.primaryObjective,
-      weeklyTimeCommitment: payload.weeklyTimeCommitment,
-      budgetTier: payload.budgetTier,
-      location: payload.location,
+      yearsPlaying: payload.yearsPlaying ?? null,
+      personalityTags: payload.personalityTags ?? [],
+      primaryObjective: payload.primaryObjective ?? null,
+      weeklyTimeCommitment: payload.weeklyTimeCommitment ?? null,
+      budgetTier: payload.budgetTier ?? null,
+      location: payload.location ?? null,
     },
   });
 
@@ -845,7 +845,7 @@ export const updateProfile = async (
       psCurrentGpa?: number;
       psTargetDivision?: string;
       psGraduationYear?: number;
-    } = { sportsFocus: pp.sports };
+    } = { sportsFocus: pp.sports ?? [] };
 
     if (pp.yearsPlaying !== undefined) pfFields.yearsPlaying = pp.yearsPlaying;
     if (pp.personalityTags) pfFields.personalityTags = pp.personalityTags;

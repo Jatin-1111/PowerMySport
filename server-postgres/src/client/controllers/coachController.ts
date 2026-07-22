@@ -624,7 +624,9 @@ export const getCoachAvailability = async (
       coach.availability ||
       [];
 
-    const daySlots = sourceSlots.filter((slot) => slot.dayOfWeek === dayOfWeek);
+    const daySlots = sourceSlots.filter(
+      (slot: any) => slot.dayOfWeek === dayOfWeek,
+    );
 
     const toMinutes = (time: string) => {
       const [hh = "0", mm = "0"] = time.split(":");
@@ -640,7 +642,7 @@ export const getCoachAvailability = async (
     };
 
     const candidateSlots: string[] = [];
-    daySlots.forEach((slot) => {
+    daySlots.forEach((slot: any) => {
       const startMinutes = toMinutes(slot.startTime);
       const endMinutes = toMinutes(slot.endTime);
       for (

@@ -15,7 +15,13 @@ type CoachDocument = any;
 // Sub-file shape preserved for the verification-submission signature.
 interface CoachDocumentFile {
   id?: string;
-  type: "CERTIFICATION" | "ID_PROOF" | "BACKGROUND_CHECK" | "INSURANCE" | "OTHER";
+  type:
+    | "CERTIFICATION"
+    | "ID_PROOF"
+    | "ADDRESS_PROOF"
+    | "BACKGROUND_CHECK"
+    | "INSURANCE"
+    | "OTHER";
   url: string;
   s3Key?: string;
   fileName: string;
@@ -884,8 +890,10 @@ export const updateCoach = async (
 
     if (key === "ownVenueDetails" && value) {
       const columns = mapOwnVenueColumns(value as any, {
-        images: coach.ownVenue?.images,
-        imageS3Keys: coach.ownVenue?.imageS3Keys,
+        ...(coach.ownVenue?.images ? { images: coach.ownVenue.images } : {}),
+        ...(coach.ownVenue?.imageS3Keys
+          ? { imageS3Keys: coach.ownVenue.imageS3Keys }
+          : {}),
       });
       childOps.push((tx) =>
         tx.coachOwnVenue.upsert({

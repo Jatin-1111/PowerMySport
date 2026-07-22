@@ -67,7 +67,8 @@ export class ReminderMonitoringService {
     );
     const failureRate =
       total > 0
-        ? (statusCounts.failed / (statusCounts.sent + statusCounts.failed)) *
+        ? ((statusCounts.failed ?? 0) /
+            ((statusCounts.sent ?? 0) + (statusCounts.failed ?? 0))) *
           100
         : 0;
 
@@ -80,10 +81,10 @@ export class ReminderMonitoringService {
 
     return {
       total,
-      pending: statusCounts.pending,
-      sent: statusCounts.sent,
-      failed: statusCounts.failed,
-      cancelled: statusCounts.cancelled,
+      pending: statusCounts.pending ?? 0,
+      sent: statusCounts.sent ?? 0,
+      failed: statusCounts.failed ?? 0,
+      cancelled: statusCounts.cancelled ?? 0,
       failureRate: Math.round(failureRate * 100) / 100,
       lastProcessed: lastProcessed?.updatedAt || null,
     };

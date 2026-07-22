@@ -2095,7 +2095,7 @@ export const cancelBooking = async (
       updatedBooking.id,
     ).catch((err: Error) =>
       console.error(
-        `Failed to cancel booking reminders for ${updatedBooking.id}:`,
+        `Failed to cancel booking reminders for ${updatedBooking?.id}:`,
         err,
       ),
     );

@@ -87,7 +87,7 @@ export const createReview = async (
       targetType: payload.targetType,
       targetId,
       rating: payload.rating,
-      review: payload.review,
+      review: payload.review ?? null,
       isVerified: true, // From completed booking
     },
   });
@@ -415,7 +415,7 @@ export const moderateReview = async (
     moderationStatus?: "APPROVED" | "REMOVED";
     isHidden?: boolean;
   } = {
-    moderationNotes,
+    ...(moderationNotes !== undefined ? { moderationNotes } : {}),
   };
 
   if (action === "APPROVE") {

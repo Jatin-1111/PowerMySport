@@ -1108,12 +1108,12 @@ export const BlogService = {
         ...socialLinksFromProfile(profile),
         ...payload.socialLinks,
       });
-      data.slYoutube = merged.youtube;
-      data.slInstagram = merged.instagram;
-      data.slFacebook = merged.facebook;
-      data.slTwitter = merged.twitter;
-      data.slGithub = merged.github;
-      data.slWebsite = merged.website;
+      data.slYoutube = merged.youtube ?? "";
+      data.slInstagram = merged.instagram ?? "";
+      data.slFacebook = merged.facebook ?? "";
+      data.slTwitter = merged.twitter ?? "";
+      data.slGithub = merged.github ?? "";
+      data.slWebsite = merged.website ?? "";
     }
 
     try {

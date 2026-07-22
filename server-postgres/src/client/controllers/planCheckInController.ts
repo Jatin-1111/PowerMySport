@@ -86,7 +86,9 @@ export const getPlanCheckIn = async (
       return;
     }
 
-    const checkIn = await prisma.planCheckIn.findUnique({ where: { id } });
+    const checkIn = await prisma.planCheckIn.findUnique({
+      where: { id: String(id) },
+    });
     if (!checkIn) {
       res.status(404).json({ success: false, message: "Check-in not found" });
       return;
@@ -171,7 +173,9 @@ export const respondToPlanCheckIn = async (
       return;
     }
 
-    const existing = await prisma.planCheckIn.findUnique({ where: { id } });
+    const existing = await prisma.planCheckIn.findUnique({
+      where: { id: String(id) },
+    });
     if (!existing) {
       res.status(404).json({ success: false, message: "Check-in not found" });
       return;
@@ -182,7 +186,7 @@ export const respondToPlanCheckIn = async (
     }
 
     const checkIn = await prisma.planCheckIn.update({
-      where: { id },
+      where: { id: String(id) },
       data: {
         status,
         respondedAt: new Date(),

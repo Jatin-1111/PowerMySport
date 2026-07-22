@@ -182,7 +182,7 @@ export const deleteGuidance = async (
 
     const deleted = await prisma.guidanceSubmission.deleteMany({
       where: {
-        id,
+        id: String(id),
         userId: req.user.id,
       },
     });
@@ -277,7 +277,7 @@ export const downloadGuidanceReportPdf = async (
     }
 
     const submission = await prisma.guidanceSubmission.findUnique({
-      where: { id },
+      where: { id: String(id) },
     });
     if (!submission) {
       res.status(404).json({ success: false, message: "Roadmap not found" });

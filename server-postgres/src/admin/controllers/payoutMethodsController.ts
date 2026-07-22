@@ -231,7 +231,7 @@ export const updateCoachPayoutMethod = async (
     }
 
     const existing = await prisma.coachPayoutMethod.findFirst({
-      where: { id: methodId, coachId: coach.id },
+      where: { id: String(methodId), coachId: coach.id },
     });
     if (!existing) {
       res
@@ -252,7 +252,7 @@ export const updateCoachPayoutMethod = async (
     // isDefault is intentionally not in the update payload -> it is preserved.
     const data = buildMethodData(req.body as Record<string, unknown>);
     await prisma.coachPayoutMethod.update({
-      where: { id: methodId },
+      where: { id: String(methodId) },
       data,
     });
     await ensureCoachDefault(coach.id);
@@ -290,7 +290,7 @@ export const deleteCoachPayoutMethod = async (
     }
 
     await prisma.coachPayoutMethod.deleteMany({
-      where: { id: methodId, coachId: coach.id },
+      where: { id: String(methodId), coachId: coach.id },
     });
     await ensureCoachDefault(coach.id);
 
@@ -332,7 +332,7 @@ export const setDefaultCoachPayoutMethod = async (
         data: { isDefault: false },
       }),
       prisma.coachPayoutMethod.updateMany({
-        where: { coachId: coach.id, id: methodId },
+        where: { coachId: coach.id, id: String(methodId) },
         data: { isDefault: true },
       }),
     ]);
@@ -445,7 +445,7 @@ export const updateVenuePayoutMethod = async (
 
     for (const venue of venues) {
       const existing = await prisma.venuePayoutMethod.findFirst({
-        where: { id: methodId, venueId: venue.id },
+        where: { id: String(methodId), venueId: venue.id },
       });
       if (!existing) {
         continue;
@@ -462,7 +462,7 @@ export const updateVenuePayoutMethod = async (
 
       const data = buildMethodData(req.body as Record<string, unknown>);
       await prisma.venuePayoutMethod.update({
-        where: { id: methodId },
+        where: { id: String(methodId) },
         data,
       });
       await ensureVenueDefault(venue.id);
@@ -503,7 +503,7 @@ export const deleteVenuePayoutMethod = async (
 
     for (const venue of venues) {
       await prisma.venuePayoutMethod.deleteMany({
-        where: { id: methodId, venueId: venue.id },
+        where: { id: String(methodId), venueId: venue.id },
       });
       await ensureVenueDefault(venue.id);
     }
@@ -548,7 +548,7 @@ export const setDefaultVenuePayoutMethod = async (
           data: { isDefault: false },
         }),
         prisma.venuePayoutMethod.updateMany({
-          where: { venueId: venue.id, id: methodId },
+          where: { venueId: venue.id, id: String(methodId) },
           data: { isDefault: true },
         }),
       ]);

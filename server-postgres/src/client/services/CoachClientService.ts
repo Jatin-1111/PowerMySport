@@ -193,7 +193,7 @@ export const getClientDetails = async (
     clientId: clientUserId,
     name: user.name ?? "Unknown",
     email: user.email ?? "",
-    photoUrl: user.photoUrl ?? undefined,
+    ...(user.photoUrl ? { photoUrl: user.photoUrl } : {}),
     sports,
     totalSessions,
     completedSessions,

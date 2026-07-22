@@ -196,7 +196,7 @@ export class WebhookController {
         type: "PAYMENT_CONFIRMED",
         title: "Payment Confirmed",
         message: `Your payment for order ${order.orderNumber} has been confirmed.`,
-        data: { orderId: order._id.toString(), orderNumber: order.orderNumber },
+        data: { orderId: order.id, orderNumber: order.orderNumber },
       });
 
       // Emit socket event to user
@@ -253,7 +253,7 @@ export class WebhookController {
         type: "PAYMENT_FAILED",
         title: "Payment Failed",
         message: `Payment failed for order ${order.orderNumber}. ${payment.error_description || "Please try again."}`,
-        data: { orderId: order._id.toString(), orderNumber: order.orderNumber },
+        data: { orderId: order.id, orderNumber: order.orderNumber },
       });
 
       // Emit socket event
@@ -534,7 +534,7 @@ export class WebhookRecoveryService {
           await orderService.confirmPayment(
             entry.reference,
             order.paymentGatewayPaymentId,
-            order.paymentGatewayOrderId,
+            order.paymentGatewayOrderId ?? "",
           );
           console.log(
             `[WebhookRecovery] Successfully recovered payment.captured for order ${entry.reference}`,
@@ -610,7 +610,7 @@ export class WebhookRecoveryService {
       await orderService.confirmPayment(
         orderId,
         order.paymentGatewayPaymentId,
-        order.paymentGatewayOrderId,
+        order.paymentGatewayOrderId ?? "",
       );
       console.log(
         `[WebhookRecovery] Fixed payment status for order ${orderId}`,

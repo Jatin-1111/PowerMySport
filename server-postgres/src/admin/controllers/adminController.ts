@@ -1107,7 +1107,6 @@ export const listUsersForSafety = async (
       success: true,
       message: "User safety list retrieved",
       data: users.map((user) => ({
-        id: user.id.toString(),
         ...user,
         isActive: user.isActive !== false,
       })),
@@ -1246,7 +1245,6 @@ export const updateUserSafetyStatus = async (
       success: true,
       message: `User ${action.toLowerCase()} successful`,
       data: {
-        id: user.id.toString(),
         ...user,
       },
     });
@@ -3007,8 +3005,8 @@ export const createCoachAdminHandler = async (
             openingHours: ownVenueDetails.openingHours || "",
             images: ownVenueDetails.images || [],
             imageS3Keys: ownVenueDetails.imageS3Keys || [],
-            lng: Array.isArray(ownVenueCoords) ? ownVenueCoords[0] : undefined,
-            lat: Array.isArray(ownVenueCoords) ? ownVenueCoords[1] : undefined,
+            lng: (Array.isArray(ownVenueCoords) ? ownVenueCoords[0] : undefined) ?? null,
+            lat: (Array.isArray(ownVenueCoords) ? ownVenueCoords[1] : undefined) ?? null,
             sports,
             amenities: [],
             pricePerHour: hourlyRate,

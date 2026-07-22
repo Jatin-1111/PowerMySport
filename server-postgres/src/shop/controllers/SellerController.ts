@@ -189,7 +189,7 @@ export class SellerController {
       }
 
       const product = await prisma.product.findUnique({
-        where: { id: productId },
+        where: { id: String(productId) },
         include: { variants: true },
       });
       if (!product) {
@@ -283,7 +283,7 @@ export class SellerController {
       }
 
       const product = await prisma.product.findUnique({
-        where: { id: productId },
+        where: { id: String(productId) },
       });
       if (!product) {
         res
@@ -384,7 +384,7 @@ export class SellerController {
       }
 
       const order = await prisma.order.findUnique({
-        where: { id: orderId },
+        where: { id: String(orderId) },
         include: { items: true },
       });
       if (!order) {
@@ -437,7 +437,12 @@ export class SellerController {
         newStatus = OrderStatus.DELIVERED;
       } else if (
         allStatuses.some((s) =>
-          [FulfillmentStatus.SHIPPED, FulfillmentStatus.DELIVERED].includes(s),
+          (
+            [
+              FulfillmentStatus.SHIPPED,
+              FulfillmentStatus.DELIVERED,
+            ] as FulfillmentStatus[]
+          ).includes(s),
         )
       ) {
         newFulfillmentStatus = FulfillmentStatus.SHIPPED;

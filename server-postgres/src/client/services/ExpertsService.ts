@@ -233,7 +233,7 @@ export const createExpertByAdmin = async (payload: CreateExpertPayload) => {
         bio: payload.bio?.trim() || "",
         sports: payload.sports || [],
         expertise: payload.expertise || [],
-        achievements: payload.achievements?.trim(),
+        achievements: payload.achievements?.trim() ?? null,
         sessionFee: payload.sessionFee,
         sessionMode: payload.sessionMode || "ONLINE",
         ...(payload.sessionDurationMinutes
@@ -254,10 +254,10 @@ export const createExpertByAdmin = async (payload: CreateExpertPayload) => {
         ...(Array.isArray(payload.blackoutDates)
           ? { blackoutDates: payload.blackoutDates }
           : {}),
-        city: payload.city?.trim(),
+        city: payload.city?.trim() ?? null,
         languages: payload.languages || [],
-        photoUrl: payload.photoUrl,
-        photoKey: payload.photoKey,
+        photoUrl: payload.photoUrl ?? null,
+        photoKey: payload.photoKey ?? null,
         isActive: true,
         verificationStatus: "APPROVED",
         ...(payload.createdBy ? { createdBy: payload.createdBy } : {}),
@@ -627,7 +627,7 @@ export const initiateExpertSession = async (params: {
       durationMinutes: expert.sessionDurationMinutes || 60,
       holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60_000),
       mode: resolvedMode,
-      clientNote: params.clientNote?.trim(),
+      clientNote: params.clientNote?.trim() ?? null,
     },
   });
 
@@ -1004,7 +1004,7 @@ export const cancelExpertSession = async (params: {
     status: "CANCELLED",
     cancelledAt,
     cancelledBy: by,
-    cancelReason: params.reason?.trim(),
+    cancelReason: params.reason?.trim() ?? null,
   };
   // Paid sessions require a manual refund (handled by admin/finance). We record
   // how much notice was given so admin can apply their own late-cancellation
@@ -1095,7 +1095,7 @@ export const reviewExpertSession = async (params: {
     data: {
       reviewed: true,
       rating: params.rating,
-      review: params.review?.trim(),
+      review: params.review?.trim() ?? null,
       reviewAnonymous: Boolean(params.anonymous),
       reviewedAt: new Date(),
     },
@@ -1230,8 +1230,10 @@ export const getExpertSessionForUser = async (params: {
     throw new Error("You are not authorized to view this session");
   }
   return serializeSession(session, {
-    expert: expert ? serializeExpert(expert) : undefined,
-    expertInPersonAddress: expertRow?.inPersonAddress ?? undefined,
+    ...(expert ? { expert: serializeExpert(expert) } : {}),
+    ...(expertRow?.inPersonAddress
+      ? { expertInPersonAddress: expertRow.inPersonAddress }
+      : {}),
   });
 };
 
@@ -1250,8 +1252,10 @@ export const listUserExpertSessions = async (userId: string) => {
   return sessions.map((s) => {
     const e = byId.get(s.expertId);
     return serializeSession(s, {
-      expert: e ? serializeExpert(e) : undefined,
-      expertInPersonAddress: e?.inPersonAddress ?? undefined,
+      ...(e ? { expert: serializeExpert(e) } : {}),
+      ...(e?.inPersonAddress
+        ? { expertInPersonAddress: e.inPersonAddress }
+        : {}),
     });
   });
 };

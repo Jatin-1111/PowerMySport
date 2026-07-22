@@ -146,7 +146,7 @@ async function initiateCardRefund(
       where: { id: transaction.id },
       data: {
         refundMerchantId,
-        refundId: refundResult.refundId,
+        refundId: refundResult.refundId ?? null,
         refundState: refundResult.state || "INITIATED",
         refundAmount: amount,
         refundResponse: refundResult.raw as Prisma.InputJsonValue,
@@ -379,7 +379,9 @@ export async function checkRefundStatus(
       state: "COMPLETED",
       amount: transaction.refundAmount || 0,
       method: "STORE_CREDIT",
-      completedAt: refundResponse.completedAt,
+      ...(refundResponse?.completedAt
+        ? { completedAt: refundResponse.completedAt }
+        : {}),
     };
 
     if (transaction.refundId) {
@@ -396,7 +398,9 @@ export async function checkRefundStatus(
       state: transaction.refundState || "INITIATED",
       amount: transaction.refundAmount || 0,
       method: "BANK_TRANSFER",
-      failureReason: refundResponse?.failureReason,
+      ...(refundResponse?.failureReason
+        ? { failureReason: refundResponse.failureReason }
+        : {}),
     };
 
     if (transaction.refundId) {

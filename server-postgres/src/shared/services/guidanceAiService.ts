@@ -80,7 +80,16 @@ export const guidanceResponseSchema = z.object({
 });
 
 export type GuidanceRequest = z.infer<typeof guidanceRequestSchema>;
-export type GuidanceResponse = z.infer<typeof guidanceResponseSchema>;
+export type GuidanceResponse = z.infer<typeof guidanceResponseSchema> & {
+  // Optional short week-by-week plan the guidance AI may return. Not part of the
+  // Zod schema (so runtime validation is unchanged); consumed by
+  // PlanCheckInService.scheduleFromGuidance to schedule a success check-in.
+  shortTermPlan?: {
+    weeks: unknown[];
+    durationWeeks?: number;
+    successCheck?: string;
+  };
+};
 
 export const getYouthSportsGuidanceSystemPrompt = (
   hasSport: boolean,

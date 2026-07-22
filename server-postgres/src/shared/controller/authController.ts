@@ -49,7 +49,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     });
 
     const token = generateToken({
-      id: user._id.toString(),
+      id: user.id,
       email: user.email,
       role: user.role,
       userType: user.userType,
@@ -63,7 +63,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       data: {
         token,
         user: {
-          id: user._id,
+          id: user.id,
           name: user.name,
           email: user.email,
           role: user.role,
@@ -84,7 +84,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const user = await loginUser(req.body);
 
     const token = generateToken({
-      id: user._id.toString(),
+      id: user.id,
       email: user.email,
       role: user.role,
       userType: user.userType,
@@ -98,7 +98,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       data: {
         token,
         user: {
-          id: user._id,
+          id: user.id,
           name: user.name,
           email: user.email,
           role: user.role,
@@ -152,12 +152,10 @@ export const getProfile = async (
       return;
     }
 
-    // Refresh profile photo URL if S3 key exists
-    if (user.photoS3Key) {
-      await user.refreshPhotoUrl();
-    }
+    // TODO(prisma): photo URL refresh — Mongoose instance method removed; add a
+    // Prisma-era S3 presign refresh helper if URL expiry becomes an issue.
 
-    const allPlayers = await getPlayersByUserId(user._id.toString());
+    const allPlayers = await getPlayersByUserId(user.id);
     const dependents = allPlayers
       .filter((p: any) => p.type === "DEPENDENT")
       .map((p: any) => ({
@@ -192,7 +190,7 @@ export const getProfile = async (
       success: true,
       message: "Profile retrieved successfully",
       data: {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         phone: user.phone,
@@ -244,7 +242,7 @@ export const getAuthBridge = async (
       success: true,
       message: "Session valid",
       data: {
-        id: user._id,
+        id: user.id,
         role: user.role,
         userType: user.userType,
         name: user.name,
@@ -289,7 +287,7 @@ export const updateProfileHandler = async (
       success: true,
       message: "Profile updated successfully",
       data: {
-        id: updatedUser._id,
+        id: updatedUser.id,
         name: updatedUser.name,
         email: updatedUser.email,
         phone: updatedUser.phone,
@@ -461,7 +459,7 @@ export const googleAuth = async (
     });
 
     const token = generateToken({
-      id: user._id.toString(),
+      id: user.id,
       email: user.email,
       role: user.role,
       userType: user.userType,
@@ -475,7 +473,7 @@ export const googleAuth = async (
       data: {
         token,
         user: {
-          id: user._id,
+          id: user.id,
           name: user.name,
           email: user.email,
           role: user.role,
@@ -553,7 +551,7 @@ export const graduateDependentHandler = async (
       message: "Dependent graduated to independent user successfully",
       data: {
         user: {
-          id: newUser._id,
+          id: newUser.id,
           name: newUser.name,
           email: newUser.email,
           phone: newUser.phone,
@@ -796,7 +794,7 @@ export const confirmProfilePictureUploadHandler = async (
       success: true,
       message: "Profile picture uploaded successfully",
       data: {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         phone: user.phone,
@@ -1094,7 +1092,7 @@ export const linkGoogleHandler = async (req: Request, res: Response): Promise<vo
       message: "Google account linked successfully",
       data: {
         user: {
-          id: user._id,
+          id: user.id,
           name: user.name,
           email: user.email,
           role: user.role,

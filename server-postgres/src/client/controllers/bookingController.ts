@@ -76,7 +76,7 @@ export const initiateNewBooking = async (
       success: true,
       message: "Booking created successfully",
       data: {
-        booking: result.booking.toJSON(),
+        booking: result.booking,
       },
     });
   } catch (error) {
@@ -886,7 +886,7 @@ export const getVenueAvailability = async (
           targetDate,
           slot,
           slotEnd,
-          openingHoursByDay as OpeningHours,
+          openingHoursByDay as unknown as OpeningHours,
         ).isValid;
       });
     }
@@ -1040,7 +1040,7 @@ export const joinBookingWaitlist = async (
       success: true,
       message: "Added to waitlist successfully",
       data: {
-        id: entry._id.toString(),
+        id: entry.id,
         status: entry.status,
       },
     });
@@ -1737,7 +1737,7 @@ export const initiateNewGroupBooking = async (
       success: true,
       message: "Group booking created successfully",
       data: {
-        booking: result.booking.toJSON(),
+        booking: result.booking,
       },
     });
   } catch (error) {
@@ -2116,7 +2116,7 @@ export const rescheduleBookingHandler = async (
     res.status(200).json({
       success: true,
       message: "Booking rescheduled successfully",
-      data: transformDocument(booking.toJSON()),
+      data: transformDocument(booking),
     });
   } catch (error) {
     const status =

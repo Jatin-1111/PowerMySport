@@ -885,7 +885,7 @@ export const markVenueForReview = async (
     where: { id: venueId },
     data: {
       approvalStatus: "REVIEW",
-      reviewNotes: notes,
+      reviewNotes: notes ?? null,
     },
     include: venueInclude,
   });

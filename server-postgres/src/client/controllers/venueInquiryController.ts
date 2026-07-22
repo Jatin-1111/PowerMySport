@@ -20,7 +20,7 @@ export const submitInquiry = async (
       message:
         "Inquiry submitted successfully. Our team will contact you soon.",
       data: {
-        id: inquiry._id,
+        id: inquiry.id,
         venueName: inquiry.venueName,
         status: inquiry.status,
       },
@@ -45,8 +45,8 @@ export const getInquiries = async (
 
     // Transform _id to id for frontend
     const transformedInquiries = inquiries.map((inquiry) => ({
-      ...inquiry.toObject(),
-      id: inquiry._id.toString(),
+      ...inquiry,
+      id: inquiry.id,
     }));
 
     res.status(200).json({
@@ -80,8 +80,8 @@ export const getInquiry = async (
     }
 
     const transformedInquiry = {
-      ...inquiry.toObject(),
-      id: inquiry._id.toString(),
+      ...inquiry,
+      id: inquiry.id,
     };
 
     res.status(200).json({

@@ -399,14 +399,20 @@ export const CommunityService = {
 
     const sportValues = splitCsvValues(filters?.sport);
     if (sportValues.length === 1) {
-      where.sport = sportValues[0];
+      const sportValue = sportValues[0];
+      if (sportValue !== undefined) {
+        where.sport = sportValue;
+      }
     } else if (sportValues.length > 1) {
       where.sport = { in: sportValues };
     }
 
     const cityValues = splitCsvValues(filters?.city);
     if (cityValues.length === 1) {
-      where.city = cityValues[0];
+      const cityValue = cityValues[0];
+      if (cityValue !== undefined) {
+        where.city = cityValue;
+      }
     } else if (cityValues.length > 1) {
       where.city = { in: cityValues };
     }

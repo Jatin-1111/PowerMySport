@@ -943,9 +943,10 @@ export const verifyCoachSubscriptionPaymentStatusHandler = async (
       return;
     }
 
-    const transaction = await CoachSubscriptionPaymentTransaction.findOne({
-      merchantOrderId: merchantOrderIdParam,
-    });
+    const transaction =
+      await prisma.coachSubscriptionPaymentTransaction.findFirst({
+        where: { merchantOrderId: merchantOrderIdParam },
+      });
 
     if (!transaction) {
       res.status(404).json({
@@ -964,8 +965,10 @@ export const verifyCoachSubscriptionPaymentStatusHandler = async (
     }
 
     const status = await getPhonePeOrderStatus(merchantOrderIdParam);
-    transaction.lastStatusPayload = status.raw;
-    await transaction.save();
+    await prisma.coachSubscriptionPaymentTransaction.update({
+      where: { id: transaction.id },
+      data: { lastStatusPayload: status.raw as any },
+    });
 
     const reconciled = await reconcileCoachSubscriptionPaymentByIdentifiers({
       merchantOrderId: merchantOrderIdParam,

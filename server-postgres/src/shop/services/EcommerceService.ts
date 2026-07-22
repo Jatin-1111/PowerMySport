@@ -1192,7 +1192,7 @@ export class ProductService {
 
     const products = await prisma.product.findMany({
       where,
-      orderBy,
+      ...(orderBy ? { orderBy } : {}),
       skip,
       take: limit,
       include: { variants: true },

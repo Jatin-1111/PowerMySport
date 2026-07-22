@@ -58,7 +58,7 @@ export const getGuidanceChat = async (
 
     // Load submission to verify existence & ownership
     const submission = await prisma.guidanceSubmission.findUnique({
-      where: { id: submissionId },
+      where: { id: String(submissionId) },
     });
     if (!submission) {
       res
@@ -76,7 +76,7 @@ export const getGuidanceChat = async (
     // Lazily claim ownership if submission was created as guest
     if (!submission.userId) {
       await prisma.guidanceSubmission.update({
-        where: { id: submissionId },
+        where: { id: String(submissionId) },
         data: { userId: req.user.id },
       });
     }
@@ -86,7 +86,7 @@ export const getGuidanceChat = async (
     // Find or create the session
     let session = await prisma.guidanceChatSession.findUnique({
       where: {
-        submissionId_userId: { submissionId, userId: req.user.id },
+        submissionId_userId: { submissionId: String(submissionId), userId: req.user.id },
       },
       include: { messages: { orderBy: { createdAt: "asc" } } },
     });
@@ -100,7 +100,7 @@ export const getGuidanceChat = async (
       );
       session = await prisma.guidanceChatSession.create({
         data: {
-          submissionId,
+          submissionId: String(submissionId),
           userId: req.user.id,
           messages: {
             create: [{ role: "assistant", content: openingContent }],
@@ -175,7 +175,7 @@ export const sendGuidanceChatMessage = async (
 
     // Load submission
     const submission = await prisma.guidanceSubmission.findUnique({
-      where: { id: submissionId },
+      where: { id: String(submissionId) },
     });
     if (!submission) {
       res
@@ -193,7 +193,7 @@ export const sendGuidanceChatMessage = async (
     // Claim guest submission
     if (!submission.userId) {
       await prisma.guidanceSubmission.update({
-        where: { id: submissionId },
+        where: { id: String(submissionId) },
         data: { userId: req.user.id },
       });
     }
@@ -203,7 +203,7 @@ export const sendGuidanceChatMessage = async (
     // Load or create session
     let session = await prisma.guidanceChatSession.findUnique({
       where: {
-        submissionId_userId: { submissionId, userId: req.user.id },
+        submissionId_userId: { submissionId: String(submissionId), userId: req.user.id },
       },
       include: { messages: { orderBy: { createdAt: "asc" } } },
     });
@@ -216,7 +216,7 @@ export const sendGuidanceChatMessage = async (
       );
       session = await prisma.guidanceChatSession.create({
         data: {
-          submissionId,
+          submissionId: String(submissionId),
           userId: req.user.id,
           messages: {
             create: [{ role: "assistant", content: openingContent }],
