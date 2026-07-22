@@ -107,6 +107,96 @@ export interface ExpertSession {
   createdAt: string;
 }
 
+/** Full child profile for the expert's dedicated booking-detail page — everything ExpertSessionPlayer leaves out. */
+export interface ExpertSessionPlayerDetail {
+  name: string;
+  age?: number;
+  dob?: string;
+  gender?: "MALE" | "FEMALE" | "OTHER";
+  relation?: string;
+  sportsFocus?: string[];
+  skillLevel?: string;
+  yearsPlaying?: number;
+  personalityTags?: string[];
+  primaryObjective?: "Recreational" | "Fitness" | "Compete";
+  weeklyTimeCommitment?: number;
+  budgetTier?: "Budget" | "Moderate" | "Premium";
+  location?: string;
+  heightCm?: number;
+  weightKg?: number;
+  medicalConditions?: string[];
+  build?: "lean" | "average" | "stocky";
+  heightCategory?: "short" | "average" | "tall";
+  energyType?: "explosive" | "endurance";
+  motorType?: "gross" | "fine";
+  visualTracking?: "strong" | "moderate" | "weak";
+  teamIndividual?: number;
+  competitiveResponse?: "fired-up" | "calm" | "discouraged";
+  focusStyle?: "bursts" | "sustained";
+  decisionStyle?: "react" | "strategic";
+  pressureResponse?: "thrives" | "manages" | "avoids";
+  repetitionTolerance?: "high" | "low";
+  contactComfort?: "loves" | "neutral" | "avoids";
+  environment?: "outdoor" | "indoor" | "no-preference";
+  waterComfort?: "comfortable" | "neutral" | "uncomfortable";
+  budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
+  ambition?: "fun" | "competitive" | "national" | "professional";
+  eyesight?: "sharp" | "corrected" | "limited";
+  agility?: "high" | "moderate" | "low";
+  weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
+  experienceLevel?: "beginner" | "intermediate" | "competitive";
+  trainingType?: "self" | "club" | "academy" | "private";
+  sportsInFamily?: string[];
+  peerSports?: string[];
+  informalSports?: string[];
+  informalReaction?: "kept-asking" | "lost-interest";
+  futureFlexibility?: "all-in" | "maybe" | "stay-local";
+  currentStandingTier?: number;
+  bestResultTier?: number;
+  achievementsNote?: string;
+  academyName?: string;
+  sessionsPerWeek?: number;
+  trainingMonths?: number;
+  wizardCity?: string;
+  sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
+  wizardCompletedAt?: string;
+}
+
+/** AI-guidance roadmap narrative for the child, if a guidance report was ever generated for them. */
+export interface ExpertSessionGuidance {
+  profileAnalysis?: string;
+  idealCoachingStyle?: string;
+  weeklyBlueprint?: {
+    trainingHours?: string;
+    freePlayHours?: string;
+    restDays?: string;
+  };
+  recommendedSports?: string[];
+  mentalSkillsRoadmap?: {
+    currentFocus?: string;
+    skills?: Array<{ skill?: string; howToDevelop?: string }>;
+  };
+  talentIdentifiers?: string[];
+  multiSportAdvisory?: string;
+  goalAssessment?: {
+    statedGoal?: string;
+    verdict?: "On Track" | "Achievable" | "Ambitious" | "Long-Term";
+    rationale?: string;
+    benchmark?: string;
+  };
+  burnoutRisk?: {
+    level?: "low" | "medium" | "high";
+    message?: string;
+    recommendations?: string[];
+  };
+  createdAt?: string;
+}
+
+export interface ExpertSessionPlayerDetailResponse {
+  player: ExpertSessionPlayerDetail;
+  guidance?: ExpertSessionGuidance;
+}
+
 export interface ExpertReview {
   rating: number;
   review?: string;
@@ -193,6 +283,16 @@ export const expertApi = {
     sessionId: string,
   ): Promise<ApiResponse<ExpertSession>> => {
     const res = await axiosInstance.get(`/experts/sessions/${sessionId}`);
+    return res.data;
+  },
+
+  // Full child profile + AI guidance narrative — expert-only booking-detail page.
+  getSessionPlayerDetail: async (
+    sessionId: string,
+  ): Promise<ApiResponse<ExpertSessionPlayerDetailResponse>> => {
+    const res = await axiosInstance.get(
+      `/experts/sessions/${sessionId}/player-detail`,
+    );
     return res.data;
   },
 

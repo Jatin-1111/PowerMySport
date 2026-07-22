@@ -379,6 +379,20 @@ export const googleLogin = async (
       });
       await user.save();
 
+      // For self-registered experts create a blank profile pending admin review.
+      if (user.role === "EXPERT") {
+        await Expert.create({
+          userId: user._id,
+          bio: "",
+          sports: [],
+          expertise: [],
+          sessionFee: 0,
+          sessionMode: "ONLINE",
+          isActive: false,
+          verificationStatus: "UNVERIFIED",
+        });
+      }
+
       // Send welcome email for new Google users
       sendWelcomeEmail({
         name: user.name,

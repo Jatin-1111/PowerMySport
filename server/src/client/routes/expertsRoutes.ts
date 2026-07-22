@@ -61,6 +61,11 @@ router.post(
   expert.reconcileSession,
 );
 router.get("/sessions/:sessionId", authMiddleware, expert.getSession);
+router.get(
+  "/sessions/:sessionId/player-detail",
+  authMiddleware,
+  expert.getSessionPlayerDetail,
+);
 router.patch(
   "/sessions/:sessionId/schedule",
   authMiddleware,

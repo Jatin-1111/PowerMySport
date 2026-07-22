@@ -1,0 +1,28 @@
+# Dev-only image for running the Next.js client inside Docker to save host RAM.
+# NOT used for production — the client still deploys to Vercel as before.
+#
+# Build context is the monorepo ROOT (see client/docker-compose.yml), because
+# this is an npm workspaces repo and `npm ci` needs every workspace's
+# package.json to resolve the shared lockfile correctly.
+FROM node:20-alpine
+
+RUN apk add --no-cache socat
+
+WORKDIR /app
+
+# Copy just the manifests needed for a workspace-aware install (better layer caching)
+COPY package.json package-lock.json ./
+COPY client/package.json ./client/package.json
+COPY admin/package.json ./admin/package.json
+COPY community/package.json ./community/package.json
+
+RUN npm ci
+
+COPY client/docker-entrypoint.dev.sh /usr/local/bin/docker-entrypoint.dev.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.dev.sh
+
+WORKDIR /app/client
+
+EXPOSE 3000
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.dev.sh"]

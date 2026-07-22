@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { User } from "../models/User";
 import { Expert } from "../models/ExpertProfile";
 import { Player, PlayerDocument } from "../models/Player";
+import { GuidanceSubmission } from "../models/GuidanceSubmission";
 import {
   ExpertSession,
   ExpertSessionDocument,
@@ -99,6 +100,80 @@ const summarizePlayerForExpert = (player: PlayerDocument | any) => ({
   ambition: player.ambition,
   budgetRange: player.budgetRange,
   wizardCompletedAt: player.wizardCompletedAt,
+});
+
+/**
+ * Full child profile + AI roadmap narrative for the expert's dedicated
+ * booking-detail page — everything summarizePlayerForExpert leaves out,
+ * minus financial/academic-pathway fields that aren't relevant to a
+ * sport-session expert (paymentHistory, pathwayState, costBreakdown).
+ */
+const serializeFullPlayerForExpert = (player: PlayerDocument | any) => ({
+  name: player.name,
+  age: player.age,
+  dob: player.dob,
+  gender: player.gender,
+  relation: player.relation,
+  sportsFocus: player.sportsFocus || [],
+  skillLevel: player.skillLevel,
+  yearsPlaying: player.yearsPlaying,
+  personalityTags: player.personalityTags || [],
+  primaryObjective: player.primaryObjective,
+  weeklyTimeCommitment: player.weeklyTimeCommitment,
+  budgetTier: player.budgetTier,
+  location: player.location,
+  heightCm: player.heightCm,
+  weightKg: player.weightKg,
+  medicalConditions: player.medicalConditions || [],
+  build: player.build,
+  heightCategory: player.heightCategory,
+  energyType: player.energyType,
+  motorType: player.motorType,
+  visualTracking: player.visualTracking,
+  teamIndividual: player.teamIndividual,
+  competitiveResponse: player.competitiveResponse,
+  focusStyle: player.focusStyle,
+  decisionStyle: player.decisionStyle,
+  pressureResponse: player.pressureResponse,
+  repetitionTolerance: player.repetitionTolerance,
+  contactComfort: player.contactComfort,
+  environment: player.environment,
+  waterComfort: player.waterComfort,
+  budgetRange: player.budgetRange,
+  ambition: player.ambition,
+  eyesight: player.eyesight,
+  agility: player.agility,
+  weeklyHoursCategory: player.weeklyHoursCategory,
+  experienceLevel: player.experienceLevel,
+  trainingType: player.trainingType,
+  sportsInFamily: player.sportsInFamily || [],
+  peerSports: player.peerSports || [],
+  informalSports: player.informalSports || [],
+  informalReaction: player.informalReaction,
+  futureFlexibility: player.futureFlexibility,
+  currentStandingTier: player.currentStandingTier,
+  bestResultTier: player.bestResultTier,
+  achievementsNote: player.achievementsNote,
+  academyName: player.academyName,
+  sessionsPerWeek: player.sessionsPerWeek,
+  trainingMonths: player.trainingMonths,
+  wizardCity: player.wizardCity,
+  sportMatches: player.sportMatches || [],
+  wizardCompletedAt: player.wizardCompletedAt,
+});
+
+/** AI-guidance roadmap narrative for a child, trimmed to what's useful pre-session. */
+const serializeGuidanceForExpert = (guidance: any) => ({
+  profileAnalysis: guidance.response?.profileAnalysis,
+  idealCoachingStyle: guidance.response?.idealCoachingStyle,
+  weeklyBlueprint: guidance.response?.weeklyBlueprint,
+  recommendedSports: guidance.response?.recommendedSports || [],
+  mentalSkillsRoadmap: guidance.response?.mentalSkillsRoadmap,
+  talentIdentifiers: guidance.response?.talentIdentifiers || [],
+  multiSportAdvisory: guidance.response?.multiSportAdvisory,
+  goalAssessment: guidance.response?.goalAssessment,
+  burnoutRisk: guidance.response?.burnoutRisk,
+  createdAt: guidance.createdAt,
 });
 
 /** Batch-fetches the players referenced by a set of sessions, keyed by playerId string. */
@@ -1105,6 +1180,42 @@ export const getExpertSessionForUser = async (params: {
   });
 };
 
+/** Full child profile + roadmap narrative for the expert's booking-detail page. Expert-only. */
+export const getExpertSessionPlayerDetail = async (params: {
+  sessionId: string;
+  expertUserId: string;
+}) => {
+  const session = await ExpertSession.findById(params.sessionId).lean();
+  if (!session) throw new Error("Session not found");
+
+  const expert = await Expert.findOne({
+    userId: toObjectId(params.expertUserId),
+  })
+    .select("_id")
+    .lean();
+  if (!expert || expert._id.toString() !== session.expertId.toString()) {
+    throw new Error("You are not authorized to view this session");
+  }
+
+  if (!session.playerId) {
+    throw new Error("No player profile is linked to this session");
+  }
+
+  const player = await Player.findById(session.playerId).lean();
+  if (!player) throw new Error("Player profile not found");
+
+  const guidance = await GuidanceSubmission.findOne({
+    "request.dependent_id": session.playerId,
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return {
+    player: serializeFullPlayerForExpert(player),
+    guidance: guidance ? serializeGuidanceForExpert(guidance) : undefined,
+  };
+};
+
 export const listUserExpertSessions = async (userId: string) => {
   const sessions = await ExpertSession.find({ userId: toObjectId(userId) })
     .sort({ createdAt: -1 })
@@ -1131,7 +1242,13 @@ export const listExpertOwnSessions = async (expertUserId: string) => {
   }).select("_id timezone");
   if (!expert) return [];
   const tz = (expert as any).timezone || "Asia/Kolkata";
-  const sessions = await ExpertSession.find({ expertId: expert._id })
+  const sessions = await ExpertSession.find({
+    expertId: expert._id,
+    // Hide holds the client never actually paid for — these were never a
+    // real booking from the expert's point of view, just noise. Sessions a
+    // person (client/expert/admin) cancelled are always kept.
+    $nor: [{ status: "CANCELLED", cancelledBy: "SYSTEM" }],
+  })
     .populate("userId", "name")
     .sort({ createdAt: -1 })
     .lean();
@@ -1271,11 +1388,30 @@ export const expireUnpaidExpertHolds = async (): Promise<number> => {
   const stale = await ExpertSession.find({
     status: "PENDING_PAYMENT",
     holdExpiresAt: { $lte: now },
-  }).select("_id");
+  });
   let count = 0;
-  for (const s of stale) {
+  for (const session of stale) {
+    // The client-side reconcile call (and previously the webhook, see
+    // phonepeWebhook.ts history) can miss a captured payment — never write
+    // a hold off as expired without confirming with PhonePe first, so a
+    // captured-but-unconfirmed payment doesn't get silently cancelled.
+    try {
+      const status = await getPhonePeOrderStatus(session.merchantOrderId);
+      const state = (status.state || "").toUpperCase();
+      if (["COMPLETED", "SUCCESS", "PAYMENT_SUCCESS"].includes(state)) {
+        await applyExpertPaymentSuccess(session);
+        continue;
+      }
+    } catch (err) {
+      console.error(
+        `[expireUnpaidExpertHolds] failed to check PhonePe status for session ${session._id}, skipping this run`,
+        err,
+      );
+      continue;
+    }
+
     const updated = await ExpertSession.findOneAndUpdate(
-      { _id: s._id, status: "PENDING_PAYMENT" },
+      { _id: session._id, status: "PENDING_PAYMENT" },
       {
         $set: {
           status: "CANCELLED",

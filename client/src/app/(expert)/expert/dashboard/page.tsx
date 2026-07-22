@@ -316,6 +316,12 @@ function SessionRow({
                   ))}
                 </div>
               )}
+              <Link
+                href={`/expert/sessions/${id}`}
+                className="mt-2 inline-block text-xs font-semibold text-power-orange hover:underline"
+              >
+                View full child profile →
+              </Link>
             </div>
           )}
           {session.clientNote && (

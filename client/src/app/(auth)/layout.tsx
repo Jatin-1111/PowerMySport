@@ -2,8 +2,12 @@
 
 import { motion } from "framer-motion";
 import { ArrowLeft, Map, ShieldCheck, Sparkles } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import React from "react";
+// Floodlit stadium at night — Unsplash (free license), pre-cropped to portrait
+// images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=1280&h=1600&fit=crop
+import stadiumNight from "../../../public/auth/stadium-night.jpg";
 
 const features = [
   { Icon: Map, text: "Personalised pathway for your child's sport" },
@@ -11,177 +15,138 @@ const features = [
   { Icon: Sparkles, text: "AI guidance at every decision point" },
 ];
 
-function CourtSVG() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 h-full w-full"
-      viewBox="0 0 480 640"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      preserveAspectRatio="xMidYMid slice"
-    >
-      {/* Outer court */}
-      <rect
-        x="48" y="80" width="384" height="480" rx="2"
-        stroke="rgba(34,197,94,0.10)" strokeWidth="1.5"
-      />
-      {/* Half-court line */}
-      <line
-        x1="48" y1="320" x2="432" y2="320"
-        stroke="rgba(34,197,94,0.08)" strokeWidth="1.5"
-      />
-      {/* Center circle */}
-      <circle
-        cx="240" cy="320" r="56"
-        stroke="rgba(34,197,94,0.10)" strokeWidth="1.5"
-      />
-      <circle cx="240" cy="320" r="4" fill="rgba(34,197,94,0.20)" />
-      {/* Top key */}
-      <rect
-        x="180" y="80" width="120" height="120"
-        stroke="rgba(34,197,94,0.08)" strokeWidth="1.5"
-      />
-      {/* Top free-throw arc */}
-      <path
-        d="M 180 200 A 60 60 0 0 0 300 200"
-        stroke="rgba(34,197,94,0.08)" strokeWidth="1.5"
-      />
-      {/* Bottom key */}
-      <rect
-        x="180" y="440" width="120" height="120"
-        stroke="rgba(34,197,94,0.08)" strokeWidth="1.5"
-      />
-      {/* Bottom free-throw arc */}
-      <path
-        d="M 180 440 A 60 60 0 0 1 300 440"
-        stroke="rgba(34,197,94,0.08)" strokeWidth="1.5"
-      />
-      {/* Top basket ring */}
-      <circle
-        cx="240" cy="110" r="14"
-        stroke="rgba(233,115,22,0.18)" strokeWidth="1.5"
-      />
-      {/* Bottom basket ring */}
-      <circle
-        cx="240" cy="530" r="14"
-        stroke="rgba(233,115,22,0.18)" strokeWidth="1.5"
-      />
-      {/* Backboards */}
-      <line
-        x1="208" y1="84" x2="272" y2="84"
-        stroke="rgba(233,115,22,0.22)" strokeWidth="2"
-      />
-      <line
-        x1="208" y1="556" x2="272" y2="556"
-        stroke="rgba(233,115,22,0.22)" strokeWidth="2"
-      />
-    </svg>
-  );
-}
-
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-      {/* ── LEFT: Brand panel (desktop only) ──────────────────── */}
-      <div className="relative hidden overflow-hidden bg-deep-slate lg:flex lg:flex-col p-12">
-        {/* Ambient glows */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -left-40 -top-40 h-96 w-96 rounded-full bg-power-orange/12 blur-[120px]"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-turf-green/10 blur-[100px]"
-        />
+    <div className="grid min-h-screen grid-cols-1 bg-white dark:bg-slate-950 lg:grid-cols-2">
+      {/* ── LEFT: Image panel (desktop only) ──────────────────── */}
+      <div className="hidden lg:block">
+        <div className="sticky top-0 h-screen p-4">
+          <div className="relative flex h-full flex-col overflow-hidden rounded-[1.75rem] bg-deep-slate">
+            <Image
+              src={stadiumNight}
+              alt="Floodlit stadium under a night sky"
+              fill
+              priority
+              placeholder="blur"
+              sizes="(min-width: 1024px) 50vw, 0px"
+              className="object-cover"
+            />
 
-        <CourtSVG />
+            {/* Scrims for text legibility */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 bg-gradient-to-t from-deep-slate via-deep-slate/30 to-transparent"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-deep-slate/70 to-transparent"
+            />
 
-        {/* Logo */}
-        <motion.div
-          className="relative z-10"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: "easeOut" }}
-        >
-          <Link href="/" className="inline-flex flex-col gap-0.5 group">
-            <span className="font-title text-2xl font-black tracking-tight leading-none">
-              <span className="text-white">Power</span>
-              <span className="text-power-orange">My</span>
-              <span className="text-white">Sport</span>
-            </span>
-            <span className="text-[11px] font-medium uppercase tracking-[0.15em] text-slate-500">
-              Guiding Every Sporting Journey.
-            </span>
-          </Link>
-        </motion.div>
-
-        {/* Headline + features */}
-        <motion.div
-          className="relative z-10 mt-auto mb-auto py-10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.18 }}
-        >
-          <h2
-            className="font-title text-[2.4rem] font-black leading-[1.1] text-white"
-            style={{ textWrap: "balance" } as React.CSSProperties}
-          >
-            The trusted guide for{" "}
-            <span className="text-gradient">every sports parent.</span>
-          </h2>
-          <p className="mt-4 max-w-[270px] text-[15px] leading-relaxed text-slate-400">
-            Personalised pathways, expert guidance, and trusted community — everything to navigate your child&apos;s sporting journey with confidence.
-          </p>
-
-          <ul className="mt-9 space-y-4">
-            {features.map((f, i) => (
-              <motion.li
-                key={f.text}
-                className="flex items-center gap-3"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.32 + i * 0.1 }}
-              >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10">
-                  <f.Icon className="h-3.5 w-3.5 text-turf-green" />
+            {/* Logo */}
+            <motion.div
+              className="relative z-10 p-10"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, ease: "easeOut" }}
+            >
+              <Link href="/" className="group inline-flex flex-col gap-1">
+                <span className="font-title text-2xl font-black leading-none tracking-tight">
+                  <span className="text-white">Power</span>
+                  <span className="text-power-orange">My</span>
+                  <span className="text-white">Sport</span>
                 </span>
-                <span className="text-sm text-slate-300">{f.text}</span>
-              </motion.li>
-            ))}
-          </ul>
-        </motion.div>
+                <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-300/80">
+                  Guiding Every Sporting Journey
+                </span>
+              </Link>
+            </motion.div>
 
+            {/* Headline + features */}
+            <motion.div
+              className="relative z-10 mt-auto p-10 pt-0"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
+            >
+              <h2
+                className="max-w-md font-title text-[2.5rem] font-black leading-[1.08] text-white"
+                style={{ textWrap: "balance" } as React.CSSProperties}
+              >
+                The trusted guide for{" "}
+                <span className="text-power-orange">every sports parent.</span>
+              </h2>
+              <p className="mt-4 max-w-sm text-[15px] leading-relaxed text-slate-200/85">
+                Personalised pathways, expert guidance, and a trusted community
+                — everything you need to navigate your child&apos;s sporting
+                journey with confidence.
+              </p>
 
+              <ul className="mt-8 space-y-3">
+                {features.map((f, i) => (
+                  <motion.li
+                    key={f.text}
+                    className="flex items-center gap-3.5"
+                    initial={{ opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.35 + i * 0.1 }}
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20 backdrop-blur-md">
+                      <f.Icon className="h-4 w-4 text-white" />
+                    </span>
+                    <span className="text-sm font-medium text-slate-100/90">
+                      {f.text}
+                    </span>
+                  </motion.li>
+                ))}
+              </ul>
+            </motion.div>
+          </div>
+        </div>
       </div>
 
       {/* ── RIGHT: Form panel ──────────────────────────────────── */}
-      <div className="flex min-h-screen flex-col bg-white dark:bg-slate-950">
+      <div className="flex min-h-screen flex-col">
         {/* Top bar */}
-        <div className="flex items-center justify-between px-6 pt-6 sm:px-8">
+        <div className="flex items-center justify-between px-6 pt-6 sm:px-10">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition-colors hover:text-power-orange"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 py-1.5 pl-3 pr-4 text-sm font-medium text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
           </Link>
           {/* Mobile logo only */}
-          <Link
-            href="/"
-            className="font-title text-lg font-black text-power-orange lg:hidden"
-          >
-            PowerMySport
+          <Link href="/" className="font-title text-lg font-black lg:hidden">
+            <span className="text-slate-900 dark:text-white">Power</span>
+            <span className="text-power-orange">My</span>
+            <span className="text-slate-900 dark:text-white">Sport</span>
           </Link>
         </div>
 
         {/* Form area */}
-        <div className="flex flex-1 flex-col justify-center px-6 py-8 sm:px-8 lg:px-16 xl:px-20">
+        <div className="flex flex-1 flex-col justify-center px-6 py-10 sm:px-10 lg:px-16 xl:px-24">
           <div className="mx-auto w-full max-w-md">{children}</div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-center gap-5 px-6 pb-6 text-xs text-slate-400 dark:text-slate-600">
+          <span>© {new Date().getFullYear()} PowerMySport</span>
+          <Link
+            href="/terms"
+            className="transition-colors hover:text-slate-600 dark:hover:text-slate-400"
+          >
+            Terms
+          </Link>
+          <Link
+            href="/privacy"
+            className="transition-colors hover:text-slate-600 dark:hover:text-slate-400"
+          >
+            Privacy
+          </Link>
         </div>
       </div>
     </div>

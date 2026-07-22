@@ -136,7 +136,15 @@ app.use(cors(corsOptions));
 app.use(observabilityMiddleware);
 app.use(securityHeadersMiddleware);
 app.use(apiRateLimitMiddleware);
-app.use("/api/payments/phonepe", express.raw({ type: "application/json" }));
+app.use(
+  "/api/payments/phonepe",
+  express.raw({
+    type: "application/json",
+    verify: (req, _res, buf) => {
+      (req as any).rawBody = buf.toString();
+    },
+  }),
+);
 app.use(
   express.json({
     verify: (req, _res, buf) => {

@@ -1,0 +1,19 @@
+# Root .dockerignore — keeps the build context small when building images
+# from the monorepo root (e.g. client/Dockerfile.dev).
+
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/coverage
+**/.git
+.git
+**/lighthouse-reports*
+**/*.log
+**/tsconfig.tsbuildinfo
+
+# Env & secrets — never sent to the Docker daemon
+.env
+.env.*
+!.env.example
+!**/.env.example
