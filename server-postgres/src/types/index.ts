@@ -28,7 +28,9 @@ export interface RoleTemplate {
   permissions: readonly string[];
 }
 
-export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
+// "OFFLINE" is a legacy value preserved verbatim from the MongoDB data; app
+// logic handles only the first three.
+export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID" | "OFFLINE";
 export type BookingStatus =
   | "PENDING_INVITES" // Group booking waiting for invites to be accepted
   | "PENDING_CONFIRMATION" // Awaiting coach/venue confirmation

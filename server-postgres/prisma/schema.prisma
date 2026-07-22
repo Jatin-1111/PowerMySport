@@ -98,6 +98,10 @@ enum ServiceMode {
   OWN_VENUE
   FREELANCE
   HYBRID
+  // Legacy value carried over verbatim from the MongoDB data (predates the
+  // OWN_VENUE/FREELANCE/HYBRID model). Preserved so historical coach records
+  // migrate as-is; app logic treats only the first three.
+  OFFLINE
 }
 
 enum CoachVerificationStatus {

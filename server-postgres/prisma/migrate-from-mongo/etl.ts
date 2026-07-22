@@ -46,16 +46,24 @@ const geo = (loc: any): { lng: number | null; lat: number | null } => {
 };
 
 /**
- * Normalize Coach.serviceMode. Legacy Mongo rows carry values ("OFFLINE"/
- * "ONLINE") that predate the current enum (OWN_VENUE | FREELANCE | HYBRID).
- * Valid values pass through; anything else defaults to FREELANCE (coach
- * delivers a service without a platform-listed own venue) and is logged so the
- * remapping is auditable. Adjust the default here if your data means otherwise.
+ * Normalize Coach.serviceMode to a ServiceMode enum member, preserving the
+ * original value verbatim. The enum includes the legacy "OFFLINE" value, so all
+ * four known values pass through unchanged (whitespace→underscore + upper-cased
+ * to match member spelling). A genuinely unknown value would violate the enum,
+ * so it's logged and falls back to FREELANCE rather than crashing the load.
  */
-const svcMode = (v: any): "OWN_VENUE" | "FREELANCE" | "HYBRID" => {
-  const s = typeof v === "string" ? v.toUpperCase() : "";
-  if (s === "OWN_VENUE" || s === "FREELANCE" || s === "HYBRID") return s;
-  console.warn(`  ⚠️ legacy coach.serviceMode=${JSON.stringify(v)} → FREELANCE`);
+const KNOWN_SERVICE_MODES = new Set([
+  "OWN_VENUE",
+  "FREELANCE",
+  "HYBRID",
+  "OFFLINE",
+]);
+const svcMode = (v: any): "OWN_VENUE" | "FREELANCE" | "HYBRID" | "OFFLINE" => {
+  const s = typeof v === "string" ? v.toUpperCase().replace(/\s+/g, "_") : "";
+  if (KNOWN_SERVICE_MODES.has(s)) return s as any;
+  console.warn(
+    `  ⚠️ unrecognized coach.serviceMode=${JSON.stringify(v)} (not an enum member) → FREELANCE`,
+  );
   return "FREELANCE";
 };
 
@@ -73,6 +81,20 @@ const payUserType = (v: any): "VenueLister" | "Coach" | "Player" => {
     `  ⚠️ unknown booking payment userType=${JSON.stringify(v)} → Player`,
   );
   return "Player";
+};
+
+/**
+ * Normalize Review.targetType casing to the ReviewTargetType enum
+ * (VENUE | Coach | PRODUCT). Mongo stores "COACH"/"VENUE"/"PRODUCT"; these are
+ * the same semantic values, just cased differently — map, don't coerce.
+ */
+const reviewTargetType = (v: any): "VENUE" | "Coach" | "PRODUCT" => {
+  const s = typeof v === "string" ? v.toUpperCase() : "";
+  if (s === "COACH") return "Coach";
+  if (s === "VENUE") return "VENUE";
+  if (s === "PRODUCT") return "PRODUCT";
+  console.warn(`  ⚠️ unknown review targetType=${JSON.stringify(v)} → VENUE`);
+  return "VENUE";
 };
 
 /** Read a whole collection as an array (fine for one-off migration sizes). */
@@ -482,7 +504,7 @@ async function migrateReviews(db: Db) {
         bookingId: oid(d.bookingId),
         orderId: oid(d.orderId),
         userId: String(d.userId),
-        targetType: d.targetType,
+        targetType: reviewTargetType(d.targetType),
         targetId: String(d.targetId),
         rating: num(d.rating, 0)!,
         review: d.review ?? null,
