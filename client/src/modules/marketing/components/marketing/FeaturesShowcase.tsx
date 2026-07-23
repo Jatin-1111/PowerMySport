@@ -16,11 +16,20 @@ export interface ShowcaseFeature {
   [k: string]: any;
 }
 
+export interface FeatureTrack {
+  key: string;
+  label: string;
+  features: ShowcaseFeature[];
+}
+
 interface FeaturesShowcaseProps {
   title?: string;
   subtitle?: string;
   description?: string;
-  features: ShowcaseFeature[];
+  /** Single-track mode — renders the walkthrough directly with no track toggle. */
+  features?: ShowcaseFeature[];
+  /** Multi-track mode — renders a pill toggle above the walkthrough to switch feature sets. */
+  tracks?: FeatureTrack[];
 }
 
 // ─── Per-feature color palette ─────────────────────────────────────────────────
@@ -242,10 +251,19 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
   title,
   subtitle,
   description,
-  features,
+  features: singleFeatures,
+  tracks,
 }) => {
+  const [trackIdx, setTrackIdx] = useState(0);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+
+  const features = tracks ? tracks[trackIdx].features : singleFeatures ?? [];
+
+  // Reset to the first step whenever the track changes
+  useEffect(() => {
+    setActive(0);
+  }, [trackIdx]);
 
   // Auto-advance every 5 s, paused on hover
   useEffect(() => {
@@ -298,6 +316,27 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
               </motion.p>
             )}
           </motion.div>
+        )}
+
+        {/* ── Track toggle (multi-track mode only) ── */}
+        {tracks && tracks.length > 1 && (
+          <div className="mb-8 flex flex-wrap gap-2">
+            {tracks.map((t, i) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => { setTrackIdx(i); setPaused(true); }}
+                className={cn(
+                  "rounded-full border px-4 py-2 text-sm font-semibold transition-colors",
+                  i === trackIdx
+                    ? "border-power-orange bg-orange-50 text-power-orange"
+                    : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         )}
 
         {/* ── Two-panel layout ── */}
@@ -403,7 +442,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
           {/* ── Right: Solution showcase ── */}
           <AnimatePresence mode="wait">
             <motion.div
-              key={active}
+              key={`${trackIdx}-${active}`}
               initial={{ opacity: 0, y: 14, scale: 0.99 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -6, scale: 0.99 }}

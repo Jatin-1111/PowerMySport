@@ -67,7 +67,7 @@ const BASE: WizardAnswers = {
   focusStyle: "bursts", decisionStyle: "react",
   pressureResponse: "thrives", repetitionTolerance: "high",
   contactComfort: "neutral", environment: "indoor",
-  waterComfort: "neutral",
+  waterComfort: "neutral", medicalConditions: [],
   budget: "7k-15k", ambition: "competitive", futureFlexibility: null, weeklyHours: "8-12",
 };
 
@@ -481,7 +481,7 @@ console.log(`${D}Scores, differentials, and bonus mechanics must work correctly.
     visualTracking: null, eyesight: null, agility: null,
     teamIndividual: null, competitiveResponse: null, focusStyle: null,
     decisionStyle: null, pressureResponse: null, repetitionTolerance: null,
-    contactComfort: null, environment: null, waterComfort: null,
+    contactComfort: null, environment: null, waterComfort: null, medicalConditions: [],
     budget: null, ambition: null, futureFlexibility: null, weeklyHours: null,
   };
   let ok = false;

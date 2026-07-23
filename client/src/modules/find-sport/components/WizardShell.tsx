@@ -4,7 +4,7 @@ import React from "react";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, CheckCircle, Clock, Zap, Users, Brain, Heart, Target, User } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle, Clock, Zap, Users, Brain, Heart, Target, User, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { PRIOR_SPORTS_OPTIONS } from "../data/sportProfiles";
 import type { WizardAnswers } from "../types";
@@ -75,6 +75,7 @@ const STEPS: Step[] = [
   { kind: "question", questionKey: "contactComfort" },
   { kind: "question", questionKey: "environment" },
   { kind: "question", questionKey: "waterComfort" },
+  { kind: "question", questionKey: "medicalConditions" },
   { kind: "question", questionKey: "budget" },
   { kind: "question", questionKey: "ambition" },
   { kind: "question", questionKey: "futureFlexibility" },
@@ -227,7 +228,7 @@ function QuestionScreen({
     teamIndividual: "Personality", competitiveResponse: "Personality",
     focusStyle: "Personality", decisionStyle: "Personality",
     pressureResponse: "Personality", repetitionTolerance: "Personality",
-    contactComfort: "Comfort", environment: "Comfort", waterComfort: "Comfort",
+    contactComfort: "Comfort", environment: "Comfort", waterComfort: "Comfort", medicalConditions: "Comfort",
     budget: "Practical", ambition: "Practical", futureFlexibility: "Practical", weeklyHours: "Practical",
   };
 
@@ -615,6 +616,48 @@ function QuestionScreen({
           />
         );
 
+      case "medicalConditions":
+        return (
+          <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="e.g., Asthma — press Enter to add"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const val = (e.target as HTMLInputElement).value.trim();
+                  if (val && !answers.medicalConditions.includes(val)) {
+                    onAnswer("medicalConditions", [...answers.medicalConditions, val]);
+                    (e.target as HTMLInputElement).value = "";
+                  }
+                }
+              }}
+              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-base placeholder:text-slate-300 focus:outline-none focus:border-power-orange focus:ring-2 focus:ring-power-orange/15"
+            />
+            {answers.medicalConditions.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {answers.medicalConditions.map((cond) => (
+                  <span
+                    key={cond}
+                    className="flex items-center gap-1 rounded-full border border-orange-100 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700"
+                  >
+                    {cond}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onAnswer("medicalConditions", answers.medicalConditions.filter((c) => c !== cond))
+                      }
+                      className="ml-0.5 text-orange-400 hover:text-orange-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+
       case "budget":
         return (
           <FourContextCards
@@ -700,6 +743,7 @@ function QuestionScreen({
     contactComfort: "How comfortable is your child with physical contact?",
     environment: "Given a free afternoon, does your child gravitate toward:",
     waterComfort: `How comfortable is ${name} in water?`,
+    medicalConditions: `Does ${name} have any medical conditions or physical limitations we should know about?`,
     budget: "What can your family realistically invest in training each month?",
     ambition: "What is your honest goal for this sport journey?",
     futureFlexibility: `If ${name} shows real talent and wants to go further, would your family be open to relocating or significantly increasing investment?`,
@@ -714,6 +758,7 @@ function QuestionScreen({
     questionKey === "sportsInFamily" ||
     questionKey === "peerSports" ||
     questionKey === "informalSports" ||
+    questionKey === "medicalConditions" ||
     questionKey === "teamIndividual";
 
   const canAdvance = () => {
@@ -721,6 +766,7 @@ function QuestionScreen({
     if (questionKey === "sportsInFamily") return true;
     if (questionKey === "peerSports") return true;
     if (questionKey === "informalSports") return true;
+    if (questionKey === "medicalConditions") return true;
     if (questionKey === "state") return !!answers.state;
     if (questionKey === "height") return true; // default pre-filled from age
     if (questionKey === "weight") return true; // default pre-filled from age
@@ -805,9 +851,10 @@ export function WizardShell() {
       if (Date.now() - new Date(saved.savedAt).getTime() > 24 * 60 * 60 * 1000) return;
       if (!saved.answers) return;
 
-      setAnswers(saved.answers);
-      if (saved.answers.childName) setNameInput(saved.answers.childName);
-      const scored = scoreSports(saved.answers);
+      const restored = { ...EMPTY_ANSWERS, ...saved.answers };
+      setAnswers(restored);
+      if (restored.childName) setNameInput(restored.childName);
+      const scored = scoreSports(restored);
       if (scored.length === 0) return;
       setResults(scored);
       setStepIndex(STEPS.length - 1);
@@ -905,7 +952,7 @@ export function WizardShell() {
         teamIndividual: "Personality", competitiveResponse: "Personality",
         focusStyle: "Personality", decisionStyle: "Personality",
         pressureResponse: "Personality", repetitionTolerance: "Personality",
-        contactComfort: "Comfort", environment: "Comfort", waterComfort: "Comfort",
+        contactComfort: "Comfort", environment: "Comfort", waterComfort: "Comfort", medicalConditions: "Comfort",
         budget: "Practical", ambition: "Practical", futureFlexibility: "Practical", weeklyHours: "Practical",
       };
       return sectionMap[currentStep.questionKey] ?? "";

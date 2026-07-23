@@ -279,7 +279,7 @@ export function SettingsPageTemplate({
       <StaggerContainer staggerChildren={0.08} className="space-y-6">
         {/* Header */}
         <StaggerItem>
-          <div className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/60 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+          <div className="relative overflow-hidden rounded-2xl border-0 bg-white/70 p-6 shadow-[0_2px_16px_rgb(0,0,0,0.06)] backdrop-blur-sm sm:p-8">
             <div className="relative z-10 inline-flex items-center gap-2 rounded-full border border-power-orange/30 bg-power-orange/10 px-3 py-1 text-sm font-semibold text-power-orange">
               <Settings size={14} />
               Account Settings
@@ -297,7 +297,7 @@ export function SettingsPageTemplate({
 
         {/* Account overview */}
         <StaggerItem>
-          <Card className="border-slate-200/70 bg-white p-0 shadow-sm">
+          <Card className="border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
             <div className="flex items-center gap-4 p-6">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-power-orange to-orange-500 text-lg font-bold text-white shadow-md">
                 {initials(user.name)}
@@ -322,7 +322,7 @@ export function SettingsPageTemplate({
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
               Security
             </h2>
-            <Card className="border-slate-200/70 bg-white p-0 shadow-sm">
+            <Card className="border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
               <div className="p-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-3">
@@ -449,7 +449,7 @@ export function SettingsPageTemplate({
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
               Linked Accounts
             </h2>
-            <Card className="border-slate-200/70 bg-white p-0 shadow-sm">
+            <Card className="border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
               <div className="p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-3">
@@ -502,7 +502,7 @@ export function SettingsPageTemplate({
             <Link href={`${basePath}/notifications`}>
               <Card
                 variant="interactive"
-                className="group border-slate-200/70 bg-white p-0 shadow-sm"
+                className="group border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]"
               >
                 <div className="flex items-center gap-4 p-6">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-power-orange/10">
@@ -538,7 +538,7 @@ export function SettingsPageTemplate({
                 <Link key={item.href} href={item.href}>
                   <Card
                     variant="interactive"
-                    className="group border-slate-200/70 bg-white p-0 shadow-sm"
+                    className="group border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]"
                   >
                     <div className="flex items-center gap-4 p-5">
                       <div className="min-w-0 flex-1">
@@ -567,7 +567,7 @@ export function SettingsPageTemplate({
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-rose-600">
               Danger Zone
             </h2>
-            <Card className="border-rose-200 bg-rose-50/40 p-0 shadow-sm">
+            <Card className="border-0 bg-rose-50/40 p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)] ring-1 ring-inset ring-rose-100">
               <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100">

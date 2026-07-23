@@ -131,7 +131,7 @@ export default function CheckInPage() {
 
           {followUp?.kind === "try_next_sport" && (
             <Link
-              href="/assessment"
+              href="/assessment/discover"
               className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-6 py-3 text-sm font-bold text-white hover:bg-orange-600 transition"
             >
               Explore other sports <ArrowRight className="h-4 w-4" />

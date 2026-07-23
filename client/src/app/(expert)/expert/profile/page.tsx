@@ -44,7 +44,10 @@ export default function ExpertProfilePage() {
 
       <div className="mt-6">
         {loading ? (
-          <div className="py-16 text-center text-slate-500">Loading...</div>
+          <div className="flex flex-col items-center justify-center gap-3 py-16">
+            <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-100 border-t-power-orange" />
+            <p className="text-sm text-slate-500">Loading...</p>
+          </div>
         ) : error || !profile ? (
           <div className="py-12 text-center">
             <p className="font-semibold text-red-600">
@@ -52,7 +55,7 @@ export default function ExpertProfilePage() {
             </p>
             <button
               onClick={load}
-              className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+              className="mt-4 rounded-lg bg-power-orange px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
             >
               Retry
             </button>

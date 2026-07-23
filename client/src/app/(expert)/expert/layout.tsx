@@ -27,12 +27,18 @@ export default function ExpertLayout({
   const { user, logout } = useAuthStore();
 
   useEffect(() => {
-    // Redirect UNVERIFIED experts to onboarding unless they're already there.
+    // Redirect any not-yet-approved expert to onboarding unless they're
+    // already there — it renders the right sub-state itself (PENDING shows
+    // the "under review" screen, REJECTED reopens step 1 to fix & resubmit).
+    // Previously this only caught UNVERIFIED, so a PENDING/REJECTED expert
+    // saw the full dashboard UI even though every server-side action for
+    // them now correctly rejects with 403 — confusing, and no actual
+    // security boundary since the real gate is server-side regardless.
     if (!user || user.role !== "EXPERT") return;
     if (pathname === "/expert/onboarding") return;
     expertApi.getMyProfile().then((res) => {
       if (res.success && res.data) {
-        if (res.data.verificationStatus === "UNVERIFIED") {
+        if (res.data.verificationStatus !== "APPROVED") {
           router.replace("/expert/onboarding");
         }
       }

@@ -6,6 +6,24 @@ import { toSlug } from "./PathwayService";
 const expertSportSlugs = (sports: string[]): string[] =>
   (sports || []).map((s) => toSlug(s));
 
+/**
+ * The only real trust boundary for pathway verification: an expert must have
+ * actually been reviewed and approved by an admin. Without this, any
+ * self-registered EXPERT-role signup (verificationStatus starts UNVERIFIED,
+ * isActive false) could grant themselves a public "Verified by [name]" credit
+ * before ever being vetted.
+ */
+const assertExpertApproved = (expert: {
+  verificationStatus: string;
+  isActive: boolean;
+}) => {
+  if (expert.verificationStatus !== "APPROVED" || !expert.isActive) {
+    throw new Error(
+      "Only admin-approved experts can verify sport pathways",
+    );
+  }
+};
+
 interface GroupedPathway {
   _id: string;
   sportName: string;
@@ -26,11 +44,12 @@ export const listPathwaysForExpertVerification = async (
   expertUserId: string,
 ) => {
   const expert = await Expert.findOne({ userId: expertUserId })
-    .select("sports")
+    .select("sports approvedSports verificationStatus isActive")
     .lean();
   if (!expert) throw new Error("Expert profile not found");
+  assertExpertApproved(expert);
 
-  const slugs = expertSportSlugs(expert.sports);
+  const slugs = expertSportSlugs(expert.approvedSports ?? expert.sports);
   if (slugs.length === 0) return [];
 
   const grouped: GroupedPathway[] = await SportPathway.aggregate([
@@ -98,8 +117,9 @@ export const verifyPathwayAsExpert = async (
     "name",
   );
   if (!expert) throw new Error("Expert profile not found");
+  assertExpertApproved(expert);
 
-  assertExpertOwnsSport(expert.sports || [], sportSlug);
+  assertExpertOwnsSport(expert.approvedSports ?? expert.sports ?? [], sportSlug);
 
   // Any state variant will do — we only need the canonical display name.
   const anyVariant = await SportPathway.findOne({ sportSlug })

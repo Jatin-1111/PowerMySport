@@ -449,7 +449,14 @@ export function ExpertAdminPanel({
         </button>
         <button
           onClick={toggleActive}
-          disabled={busy}
+          disabled={
+            busy || (!expert.isActive && expert.verificationStatus !== "APPROVED")
+          }
+          title={
+            !expert.isActive && expert.verificationStatus !== "APPROVED"
+              ? "Approve this expert first — only APPROVED experts can be activated"
+              : undefined
+          }
           className={`rounded-lg px-3 py-1.5 text-sm font-semibold disabled:opacity-60 ${
             expert.isActive
               ? "border border-red-200 text-red-600 hover:bg-red-50"

@@ -1,14 +1,12 @@
 "use client";
 
-import { SportKnownFlow } from "@/modules/find-sport/components/SportKnownFlow";
-import { WizardShell } from "@/modules/find-sport/components/WizardShell";
 import { motion } from "framer-motion";
 import { CheckCircle2, HelpCircle, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-type Mode = "pick" | "discover" | "known";
+export default function AssessmentPage() {
+  const router = useRouter();
 
-function ModePicker({ onSelect }: { onSelect: (mode: Mode) => void }) {
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 py-16">
       {/* Ambient background */}
@@ -29,7 +27,7 @@ function ModePicker({ onSelect }: { onSelect: (mode: Mode) => void }) {
         >
           <div className="inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-power-orange mb-4">
             <Sparkles className="h-3 w-3" />
-            Sport Assessment
+            Get Started
           </div>
           <h1 className="font-title text-3xl font-bold text-slate-900 sm:text-4xl mb-3 tracking-tight">
             How can we help you today?
@@ -49,7 +47,7 @@ function ModePicker({ onSelect }: { onSelect: (mode: Mode) => void }) {
           >
             <button
               type="button"
-              onClick={() => onSelect("discover")}
+              onClick={() => router.push("/assessment/discover")}
               className="group flex h-full w-full flex-col text-left rounded-3xl border-2 border-slate-200 bg-white p-7 shadow-sm hover:border-power-orange hover:shadow-md transition-all duration-200 active:scale-[0.99]"
             >
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-power-orange transition-transform duration-300 group-hover:scale-110">
@@ -81,7 +79,7 @@ function ModePicker({ onSelect }: { onSelect: (mode: Mode) => void }) {
           >
             <button
               type="button"
-              onClick={() => onSelect("known")}
+              onClick={() => router.push("/sport-profile")}
               className="group flex h-full w-full flex-col text-left rounded-3xl border-2 border-slate-200 bg-white p-7 shadow-sm hover:border-emerald-400 hover:shadow-md transition-all duration-200 active:scale-[0.99]"
             >
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 transition-transform duration-300 group-hover:scale-110">
@@ -117,12 +115,4 @@ function ModePicker({ onSelect }: { onSelect: (mode: Mode) => void }) {
       </div>
     </div>
   );
-}
-
-export default function AssessmentPage() {
-  const [mode, setMode] = useState<Mode>("pick");
-
-  if (mode === "discover") return <WizardShell />;
-  if (mode === "known") return <SportKnownFlow onBack={() => setMode("pick")} />;
-  return <ModePicker onSelect={setMode} />;
 }

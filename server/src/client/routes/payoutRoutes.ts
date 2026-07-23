@@ -1,4 +1,5 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import {
   getCoachPayoutMethod,
   getCoachPayoutMethods,
@@ -18,6 +19,19 @@ import {
 import { authMiddleware, venueListerMiddleware } from "../../middleware/auth";
 
 const router = Router();
+
+// This whole file previously had no rate limiting at all — payout method
+// mutations write real bank/UPI account details, so throttle them.
+const payoutMutationRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 15, // max 15 payout-method writes per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many requests. Please wait a moment and try again.",
+  },
+});
 
 // ============================================
 // COACH PAYOUT ROUTES
@@ -39,7 +53,12 @@ router.get("/coach/my-payout-methods", authMiddleware, getCoachPayoutMethods);
  * PUT /api/payouts/coach/my-payout-method
  * Save / update coach's payout method (add new or update existing)
  */
-router.put("/coach/my-payout-method", authMiddleware, upsertCoachPayoutMethod);
+router.put(
+  "/coach/my-payout-method",
+  payoutMutationRateLimiter,
+  authMiddleware,
+  upsertCoachPayoutMethod,
+);
 
 /**
  * DELETE /api/payouts/coach/my-payout-method/:methodId
@@ -47,11 +66,13 @@ router.put("/coach/my-payout-method", authMiddleware, upsertCoachPayoutMethod);
  */
 router.delete(
   "/coach/my-payout-method",
+  payoutMutationRateLimiter,
   authMiddleware,
   deleteCoachPayoutMethod,
 );
 router.delete(
   "/coach/my-payout-method/:methodId",
+  payoutMutationRateLimiter,
   authMiddleware,
   deleteCoachPayoutMethod,
 );
@@ -62,6 +83,7 @@ router.delete(
  */
 router.put(
   "/coach/my-payout-method/:methodId/set-default",
+  payoutMutationRateLimiter,
   authMiddleware,
   setCoachDefaultPayoutMethod,
 );
@@ -87,6 +109,7 @@ router.get(
  */
 router.put(
   "/venue/my-payout-method",
+  payoutMutationRateLimiter,
   authMiddleware,
   venueListerMiddleware,
   upsertVenuePayoutMethod,
@@ -98,12 +121,14 @@ router.put(
  */
 router.delete(
   "/venue/my-payout-method",
+  payoutMutationRateLimiter,
   authMiddleware,
   venueListerMiddleware,
   deleteVenuePayoutMethod,
 );
 router.delete(
   "/venue/my-payout-method/:methodId",
+  payoutMutationRateLimiter,
   authMiddleware,
   venueListerMiddleware,
   deleteVenuePayoutMethod,
@@ -115,6 +140,7 @@ router.delete(
  */
 router.put(
   "/venue/my-payout-method/:methodId/set-default",
+  payoutMutationRateLimiter,
   authMiddleware,
   venueListerMiddleware,
   setVenueDefaultPayoutMethod,
@@ -142,6 +168,7 @@ router.get("/expert/my-payout-methods", authMiddleware, getExpertPayoutMethods);
  */
 router.put(
   "/expert/my-payout-method",
+  payoutMutationRateLimiter,
   authMiddleware,
   upsertExpertPayoutMethod,
 );
@@ -152,11 +179,13 @@ router.put(
  */
 router.delete(
   "/expert/my-payout-method",
+  payoutMutationRateLimiter,
   authMiddleware,
   deleteExpertPayoutMethod,
 );
 router.delete(
   "/expert/my-payout-method/:methodId",
+  payoutMutationRateLimiter,
   authMiddleware,
   deleteExpertPayoutMethod,
 );
@@ -167,6 +196,7 @@ router.delete(
  */
 router.put(
   "/expert/my-payout-method/:methodId/set-default",
+  payoutMutationRateLimiter,
   authMiddleware,
   setExpertDefaultPayoutMethod,
 );

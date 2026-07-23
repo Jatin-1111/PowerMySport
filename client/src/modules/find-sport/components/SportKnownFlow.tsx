@@ -27,7 +27,6 @@ import {
   isAnswered,
 } from "../utils/sportKnownFlowUtils";
 import type { KnownSportForm } from "../utils/sportKnownFlowUtils";
-// import { JourneyPipeline } from "./JourneyPipeline"; // SCREENING_DISABLED
 
 // ─── Wizard step definitions ─────────────────────────────────────────────────
 
@@ -594,13 +593,6 @@ function ResultsView({ form, onReset }: { form: KnownSportForm; onReset: () => v
             </div>
           )}
         </div>
-
-        {/* SCREENING_DISABLED
-        <JourneyPipeline
-          childName={form.childName || ""}
-          topSport={form.sport || undefined}
-        />
-        */}
 
         <div className="space-y-3">
           <Link

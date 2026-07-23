@@ -30,6 +30,7 @@ export type WizardAnswers = {
   contactComfort: "loves" | "neutral" | "avoids" | null;
   environment: "outdoor" | "indoor" | "no-preference" | null;
   waterComfort: "comfortable" | "neutral" | "uncomfortable" | null;
+  medicalConditions: string[];
   // Section E — Practical
   budget: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus" | null;
   ambition: "fun" | "competitive" | "national" | "professional" | null;
@@ -63,6 +64,7 @@ export const EMPTY_ANSWERS: WizardAnswers = {
   contactComfort: null,
   environment: null,
   waterComfort: null,
+  medicalConditions: [],
   budget: null,
   ambition: null,
   futureFlexibility: null,

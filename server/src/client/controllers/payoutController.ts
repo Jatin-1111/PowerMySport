@@ -920,6 +920,17 @@ export const upsertExpertPayoutMethod = async (
         .json({ success: false, message: "Expert profile not found" });
       return;
     }
+    // Adding real bank/UPI details shouldn't be possible before an admin has
+    // actually vetted this expert — otherwise a brand-new, never-reviewed
+    // signup could pre-stage financial details with zero identity checks.
+    if (expert.verificationStatus !== "APPROVED") {
+      res.status(403).json({
+        success: false,
+        message:
+          "Your expert profile must be approved before adding a payout method",
+      });
+      return;
+    }
 
     const payoutMethods = expert.payoutMethods ?? [];
 

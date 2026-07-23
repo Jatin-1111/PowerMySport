@@ -15,6 +15,7 @@ import {
   initiatePhonePeRefund,
 } from "../../shared/services/PhonePeService";
 import { NotificationService } from "./NotificationService";
+import { PathwayExpertVerification } from "../../shared/models/PathwayExpertVerification";
 import {
   computeOpenSlots,
   assertSlotBookable,
@@ -422,7 +423,24 @@ export const updateExpertByAdmin = async (
   patch: Record<string, unknown>,
 ) => {
   const update = sanitizeProfilePatch(patch);
-  if (patch.isActive !== undefined) update.isActive = Boolean(patch.isActive);
+  if (patch.isActive !== undefined) {
+    const wantsActive = Boolean(patch.isActive);
+    if (wantsActive) {
+      // isActive:true is only meaningful alongside APPROVED — otherwise a
+      // stray toggle here would make an un-vetted expert publicly bookable
+      // with no independent status check anywhere in the booking path.
+      const current = await Expert.findById(expertId).select(
+        "verificationStatus",
+      );
+      if (!current) throw new Error("Expert not found");
+      if (current.verificationStatus !== "APPROVED") {
+        throw new Error(
+          "Only an APPROVED expert can be activated — approve them first",
+        );
+      }
+    }
+    update.isActive = wantsActive;
+  }
   const expert = await Expert.findByIdAndUpdate(expertId, update, { new: true })
     .populate("userId", "name email")
     .lean();
@@ -431,6 +449,17 @@ export const updateExpertByAdmin = async (
 };
 
 export const setExpertActive = async (expertId: string, isActive: boolean) => {
+  if (isActive) {
+    const current = await Expert.findById(expertId).select(
+      "verificationStatus",
+    );
+    if (!current) throw new Error("Expert not found");
+    if (current.verificationStatus !== "APPROVED") {
+      throw new Error(
+        "Only an APPROVED expert can be activated — approve them first",
+      );
+    }
+  }
   const expert = await Expert.findByIdAndUpdate(
     expertId,
     { isActive },
@@ -443,8 +472,35 @@ export const setExpertActive = async (expertId: string, isActive: boolean) => {
 };
 
 export const submitExpertForReview = async (userId: string) => {
-  const expert = await Expert.findOneAndUpdate(
-    { userId: toObjectId(userId), verificationStatus: { $in: ["UNVERIFIED", "REJECTED"] } },
+  const current = await Expert.findOne({
+    userId: toObjectId(userId),
+    verificationStatus: { $in: ["UNVERIFIED", "REJECTED"] },
+  });
+  if (!current) {
+    throw new Error("Expert profile not found or not eligible for review submission");
+  }
+
+  // Mirrors the onboarding wizard's own required-field gates — enforced here
+  // too so the review queue can't be flooded with essentially blank profiles
+  // via a direct API call that skips the wizard's client-side checks.
+  const missing: string[] = [];
+  if (!current.bio?.trim() || current.bio.trim().length < 20) missing.push("a bio (20+ characters)");
+  if (!current.achievements?.trim()) missing.push("achievements");
+  if (!current.sports || current.sports.length === 0) missing.push("at least one sport");
+  if (!current.expertise || current.expertise.length === 0) missing.push("at least one expertise tag");
+  if (!current.sessionFee || current.sessionFee <= 0) missing.push("a valid session fee");
+  if (
+    (current.sessionMode === "IN_PERSON" || current.sessionMode === "BOTH") &&
+    !current.inPersonAddress?.trim()
+  ) {
+    missing.push("an in-person location");
+  }
+  if (missing.length > 0) {
+    throw new Error(`Complete your profile before submitting: ${missing.join(", ")}`);
+  }
+
+  const expert = await Expert.findByIdAndUpdate(
+    current._id,
     { verificationStatus: "PENDING" },
     { new: true },
   )
@@ -455,9 +511,19 @@ export const submitExpertForReview = async (userId: string) => {
 };
 
 export const approveExpert = async (expertId: string) => {
+  const current = await Expert.findById(expertId).select("sports");
+  if (!current) throw new Error("Expert not found");
+
   const expert = await Expert.findByIdAndUpdate(
     expertId,
-    { verificationStatus: "APPROVED", isActive: true, $unset: { rejectionReason: 1 } },
+    {
+      verificationStatus: "APPROVED",
+      isActive: true,
+      // Snapshot what was actually reviewed — pathway-verification eligibility
+      // checks against this, not the live (self-editable) `sports` array.
+      approvedSports: current.sports || [],
+      $unset: { rejectionReason: 1 },
+    },
     { new: true },
   )
     .populate("userId", "name email")
@@ -475,6 +541,10 @@ export const rejectExpert = async (expertId: string, reason: string) => {
     .populate("userId", "name email")
     .lean();
   if (!expert) throw new Error("Expert not found");
+  // A rejected expert's public "Verified by [name]" pathway credit should not
+  // persist — otherwise a for-cause rejection still leaves their name/photo
+  // attached to a live, indexable trust signal parents see.
+  await PathwayExpertVerification.deleteMany({ expertId: expert._id });
   return serializeExpertFull(expert);
 };
 
@@ -590,6 +660,26 @@ export const getExpertReviews = async (expertId: string) => {
 const assertSessionOwner = (session: ExpertSessionDocument, userId: string) => {
   if (session.userId.toString() !== userId) {
     throw new Error("You are not authorized to modify this session");
+  }
+};
+
+/**
+ * A session's expert-side "keep operating" actions (accepting/rescheduling,
+ * marking complete, sharing a meeting link, reading the child's profile) all
+ * require the expert to still be an active, approved account — not just the
+ * original owner of the session. Getting rejected after a booking already
+ * exists should cut off further ability to act as their expert, not just
+ * remove them from public discovery. Declining or cancelling stays allowed
+ * regardless of status, since ending a session is the safe direction.
+ */
+const assertExpertOperational = (expert: {
+  verificationStatus: string;
+  isActive: boolean;
+}) => {
+  if (!expert.isActive || expert.verificationStatus !== "APPROVED") {
+    throw new Error(
+      "Your expert account is not currently active — contact support.",
+    );
   }
 };
 
@@ -782,10 +872,13 @@ export const completeExpertSession = async (params: {
   const session = await ExpertSession.findById(params.sessionId);
   if (!session) throw new Error("Session not found");
   if (!params.isAdmin) {
-    const expert = await Expert.findById(session.expertId).select("userId");
+    const expert = await Expert.findById(session.expertId).select(
+      "userId isActive verificationStatus",
+    );
     if (!expert || expert.userId.toString() !== params.actorUserId) {
       throw new Error("Only the expert or an admin can complete this session");
     }
+    assertExpertOperational(expert);
   }
   if (!["PAID", "SCHEDULED"].includes(session.status)) {
     throw new Error("Session cannot be completed from its current state");
@@ -814,10 +907,13 @@ export const setSessionMeetingLink = async (params: {
   const session = await ExpertSession.findById(params.sessionId);
   if (!session) throw new Error("Session not found");
   if (!params.isAdmin) {
-    const expert = await Expert.findById(session.expertId).select("userId");
+    const expert = await Expert.findById(session.expertId).select(
+      "userId isActive verificationStatus",
+    );
     if (!expert || expert.userId.toString() !== params.actorUserId) {
       throw new Error("Only the expert or an admin can set the meeting link");
     }
+    assertExpertOperational(expert);
   }
   const link = params.meetingLink.trim();
   if (link && !/^https?:\/\//i.test(link)) {
@@ -861,6 +957,12 @@ export const respondToExpertSession = async (params: {
       params.expertUserId
   ) {
     throw new Error("Only the expert or an admin can respond to this session");
+  }
+  // DECLINE is a wind-down action (like cancel) and stays available
+  // regardless of status — but ACCEPT/RESCHEDULE mean continuing to operate
+  // as an expert, which requires still being active + approved.
+  if (!params.isAdmin && params.action !== "DECLINE") {
+    assertExpertOperational(expert);
   }
   if (!["PAID", "SCHEDULED"].includes(session.status)) {
     throw new Error("This session can no longer be modified");
@@ -1191,11 +1293,12 @@ export const getExpertSessionPlayerDetail = async (params: {
   const expert = await Expert.findOne({
     userId: toObjectId(params.expertUserId),
   })
-    .select("_id")
+    .select("_id isActive verificationStatus")
     .lean();
   if (!expert || expert._id.toString() !== session.expertId.toString()) {
     throw new Error("You are not authorized to view this session");
   }
+  assertExpertOperational(expert);
 
   if (!session.playerId) {
     throw new Error("No player profile is linked to this session");

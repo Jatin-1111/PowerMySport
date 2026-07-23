@@ -42,6 +42,11 @@ export interface ExpertDocument extends Document {
   isActive: boolean;
   verificationStatus: "UNVERIFIED" | "PENDING" | "APPROVED" | "REJECTED";
   rejectionReason?: string;
+  /** Snapshot of `sports` taken the moment an admin approves this expert —
+   *  pathway-verification eligibility checks against this, not the live
+   *  `sports` array, so adding a new sport post-approval can't grant instant
+   *  "verified expert" credit for it without going through review again. */
+  approvedSports?: string[];
   rating: number;
   reviewCount: number;
   payoutMethods: IPayoutMethod[];
@@ -95,6 +100,7 @@ const expertSchema = new Schema<ExpertDocument>(
       index: true,
     },
     rejectionReason: { type: String, trim: true },
+    approvedSports: { type: [String] },
     rating: { type: Number, default: 0, min: 0, max: 5 },
     reviewCount: { type: Number, default: 0, min: 0 },
     payoutMethods: {

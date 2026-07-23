@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Find the Right Sport for Your Child | PowerMySport",
+  title: "Get Started | PowerMySport",
   description:
-    "Answer 20 questions and get a personalised sport recommendation for your child — based on personality, physical traits, budget, and goals.",
+    "Tell us whether you already know your child's sport or need help finding the right fit — we'll build the right plan either way.",
   alternates: { canonical: "https://www.powermysport.com/assessment" },
 };
 

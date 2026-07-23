@@ -641,7 +641,7 @@ export function PathwayExplorerSection() {
         {hasWizardResults && (
           <div className="flex justify-center mb-5">
             <a
-              href="/assessment"
+              href="/assessment/discover"
               className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-medium text-slate-500 shadow-sm hover:border-power-orange hover:text-power-orange transition-all"
             >
               <ArrowLeft className="h-3 w-3" />
@@ -953,7 +953,7 @@ export function PathwayExplorerSection() {
                 ))}
               </div>
               <a
-                href="/assessment"
+                href="/assessment/discover"
                 className="mt-2 flex items-center gap-2 rounded-full border border-power-orange/40 bg-orange-50 px-4 py-2 text-xs font-bold text-power-orange shadow-sm hover:bg-orange-100 hover:border-power-orange transition-colors"
               >
                 <Sparkles className="h-3.5 w-3.5" />
@@ -2096,7 +2096,7 @@ export function PathwayExplorerSection() {
           onNo={() => {
             localStorage.setItem(INTRO_KEY, "1");
             setIntroModalOpen(false);
-            router.push("/assessment");
+            router.push("/assessment/discover");
           }}
         />
 

@@ -4,7 +4,11 @@ import {
     pathwayApi,
     type ExpertVerifiablePathway,
 } from "@/modules/sports/services/pathway";
-import { BadgeCheck, Eye, ShieldCheck } from "lucide-react";
+import {
+    StaggerContainer,
+    StaggerItem,
+} from "@/modules/shared/ui/motion/StaggerContainer";
+import { BadgeCheck, Eye, ShieldCheck, Trophy, Users2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -59,19 +63,22 @@ export default function ExpertPathwaysPage() {
 
       <div className="mt-6">
         {loading ? (
-          <div className="py-16 text-center text-slate-500">Loading...</div>
+          <div className="flex flex-col items-center justify-center gap-3 py-16">
+            <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-100 border-t-power-orange" />
+            <p className="text-sm text-slate-500">Loading...</p>
+          </div>
         ) : error ? (
           <div className="py-12 text-center">
             <p className="font-semibold text-red-600">{error}</p>
             <button
               onClick={load}
-              className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+              className="mt-4 rounded-lg bg-power-orange px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
             >
               Retry
             </button>
           </div>
         ) : pathways.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center text-slate-500">
+          <div className="rounded-2xl border-0 bg-white py-16 text-center text-slate-500 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
             <p className="font-semibold text-slate-700">
               No pathways found for your sports yet.
             </p>
@@ -82,11 +89,26 @@ export default function ExpertPathwaysPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {pathways.map((p) => (
-              <PathwayRow key={p.sportSlug} pathway={p} onChange={updateOne} />
-            ))}
-          </div>
+          <>
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm text-slate-500">
+                {pathways.length} pathway{pathways.length === 1 ? "" : "s"}{" "}
+                on your profile
+              </p>
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
+                <BadgeCheck className="h-4 w-4" />
+                {pathways.filter((p) => p.verifiedByMe).length} verified by
+                you
+              </p>
+            </div>
+            <StaggerContainer className="space-y-3">
+              {pathways.map((p) => (
+                <StaggerItem key={p.sportSlug}>
+                  <PathwayRow pathway={p} onChange={updateOne} />
+                </StaggerItem>
+              ))}
+            </StaggerContainer>
+          </>
         )}
       </div>
     </div>
@@ -159,34 +181,48 @@ function PathwayRow({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="font-semibold text-slate-900">{pathway.sportName}</p>
-            {pathway.category && (
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                {pathway.category}
-              </span>
-            )}
-            {pathway.verifiedByMe && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                <BadgeCheck className="h-3 w-3" /> Verified by you
-              </span>
-            )}
+    <div className="rounded-2xl border-0 bg-white p-5 shadow-[0_2px_16px_rgb(0,0,0,0.06)] transition-shadow hover:shadow-[0_8px_24px_rgb(0,0,0,0.1)]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+              pathway.verifiedByMe
+                ? "bg-emerald-50 text-emerald-600"
+                : "bg-power-orange/10 text-power-orange"
+            }`}
+          >
+            <Trophy className="h-5 w-5" />
           </div>
-          {pathway.overview && (
-            <p className="mt-1.5 line-clamp-2 text-sm text-slate-500">
-              {pathway.overview}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-bold tracking-tight text-slate-900">
+                {pathway.sportName}
+              </p>
+              {pathway.category && (
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                  {pathway.category}
+                </span>
+              )}
+              {pathway.verifiedByMe && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                  <BadgeCheck className="h-3 w-3" /> Verified by you
+                </span>
+              )}
+            </div>
+            {pathway.overview && (
+              <p className="mt-1.5 line-clamp-2 text-sm text-slate-500">
+                {pathway.overview}
+              </p>
+            )}
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-400">
+              <Users2 className="h-3 w-3" />
+              {pathway.expertVerificationCount} expert
+              {pathway.expertVerificationCount === 1 ? "" : "s"} verified ·{" "}
+              {pathway.lookupCount} lookups
+              {pathway.stateVariants > 1 &&
+                ` · covers ${pathway.stateVariants} state variants`}
             </p>
-          )}
-          <p className="mt-1.5 text-xs text-slate-400">
-            {pathway.expertVerificationCount} expert
-            {pathway.expertVerificationCount === 1 ? "" : "s"} verified ·{" "}
-            {pathway.lookupCount} lookups
-            {pathway.stateVariants > 1 &&
-              ` · covers ${pathway.stateVariants} state variants`}
-          </p>
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <a

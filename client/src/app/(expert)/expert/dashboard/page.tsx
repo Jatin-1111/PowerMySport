@@ -9,6 +9,10 @@ import {
 } from "@/modules/expert/services/expert";
 import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
 import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
+import {
+    StaggerContainer,
+    StaggerItem,
+} from "@/modules/shared/ui/motion/StaggerContainer";
 import { AlertCircle, CalendarClock, Check, Clock, Star, Target, Users, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -141,28 +145,32 @@ export default function ExpertDashboardPage() {
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          icon={<Users className="h-5 w-5" />}
+          icon={<Users className="h-4.5 w-4.5" />}
           label="Total sessions"
           value={String(stats.total)}
+          tint="bg-indigo-50 text-indigo-600"
         />
         <StatCard
-          icon={<CalendarClock className="h-5 w-5" />}
+          icon={<CalendarClock className="h-4.5 w-4.5" />}
           label="Upcoming"
           value={String(stats.upcoming)}
+          tint="bg-orange-50 text-power-orange"
         />
         <StatCard
-          icon={<Wallet className="h-5 w-5" />}
+          icon={<Wallet className="h-4.5 w-4.5" />}
           label="Collected"
           value={formatInr(stats.earnings)}
+          tint="bg-emerald-50 text-emerald-600"
         />
         <StatCard
-          icon={<Star className="h-5 w-5" />}
+          icon={<Star className="h-4.5 w-4.5" />}
           label="Avg rating"
           value={
             stats.reviewCount
               ? `${stats.avg.toFixed(1)} (${stats.reviewCount})`
               : "—"
           }
+          tint="bg-amber-50 text-amber-600"
         />
       </div>
 
@@ -170,31 +178,32 @@ export default function ExpertDashboardPage() {
 
       <div className="mt-4">
         {loading ? (
-          <div className="py-16 text-center text-slate-500">Loading...</div>
+          <div className="flex flex-col items-center justify-center gap-3 py-16">
+            <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-100 border-t-power-orange" />
+            <p className="text-sm text-slate-500">Loading...</p>
+          </div>
         ) : error ? (
           <div className="py-12 text-center">
             <p className="font-semibold text-red-600">{error}</p>
             <button
               onClick={load}
-              className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+              className="mt-4 rounded-lg bg-power-orange px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
             >
               Retry
             </button>
           </div>
         ) : sessions.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center text-slate-500">
+          <div className="rounded-2xl border-0 bg-white py-16 text-center text-slate-500 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
             No sessions booked yet.
           </div>
         ) : (
-          <div className="space-y-3">
+          <StaggerContainer className="space-y-3">
             {sessions.map((s) => (
-              <SessionRow
-                key={s.id || s._id}
-                session={s}
-                onChange={updateOne}
-              />
+              <StaggerItem key={s.id || s._id}>
+                <SessionRow session={s} onChange={updateOne} />
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         )}
       </div>
     </div>
@@ -270,7 +279,7 @@ function SessionRow({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border-0 bg-white p-5 shadow-[0_2px_16px_rgb(0,0,0,0.06)] transition-shadow hover:shadow-[0_8px_24px_rgb(0,0,0,0.1)]">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="font-semibold text-slate-900">
@@ -519,15 +528,19 @@ function StatCard({
   icon,
   label,
   value,
+  tint,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
+  tint: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center gap-2 text-slate-400">{icon}</div>
-      <p className="mt-2 text-xs uppercase tracking-wide text-slate-500">
+    <div className="rounded-xl border-0 bg-white p-4 shadow-[0_2px_16px_rgb(0,0,0,0.06)] transition-shadow hover:shadow-[0_8px_24px_rgb(0,0,0,0.1)]">
+      <div className={`flex h-9 w-9 items-center justify-center rounded-full ${tint}`}>
+        {icon}
+      </div>
+      <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </p>
       <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>

@@ -6,8 +6,10 @@ import { toast } from "@/lib/toast";
 import { INDIAN_STATES } from "@/modules/guidance/constants";
 import { BinaryCards } from "@/modules/find-sport/components/inputs/BinaryCards";
 import { FourContextCards } from "@/modules/find-sport/components/inputs/FourContextCards";
+import { MultiSelectPills } from "@/modules/find-sport/components/inputs/MultiSelectPills";
 import { SpectrumSlider } from "@/modules/find-sport/components/inputs/SpectrumSlider";
 import { ThreeOptionCards } from "@/modules/find-sport/components/inputs/ThreeOptionCards";
+import { PRIOR_SPORTS_OPTIONS } from "@/modules/find-sport/data/sportProfiles";
 import {
   buildDependentPayload,
   cmToFeetInches,
@@ -62,6 +64,9 @@ const EMPTY_FORM: DependentFormData = {
   gender: "MALE",
   relation: DEFAULT_DEPENDENT_RELATION,
   sportsFocus: [],
+  sportsInFamily: [],
+  peerSports: [],
+  informalSports: [],
   location: "",
   heightCm: undefined,
   weightKg: undefined,
@@ -70,8 +75,8 @@ const EMPTY_FORM: DependentFormData = {
 
 const STEPS = [
   { id: "about",       title: "About the child",       sub: "Name, age, and key details",                      required: true  },
-  { id: "sport",       title: "Sport & setup",          sub: "What they play and where they're based",          required: false },
-  { id: "goals",       title: "Goals & commitment",     sub: "Ambition, time, and budget",                      required: false },
+  { id: "sport",       title: "Sport & setup",          sub: "What they play, their background, and where they're based", required: false },
+  { id: "goals",       title: "Goals & commitment",     sub: "Ambition, time, budget, and long-term flexibility", required: false },
   { id: "physical",    title: "Physical traits",        sub: "Body type, energy, and motor skills — optional",  required: false },
   { id: "personality", title: "Mind & play style",      sub: "How they think and compete — optional",           required: false },
   { id: "environment", title: "Environment & senses",   sub: "Preferences and sensory profile — optional",      required: false },
@@ -320,6 +325,55 @@ export default function DependentManagementModal({
                   />
                 </ProfileEditField>
 
+                <ProfileEditField
+                  label="Sports in the family"
+                  hint="Anyone in the immediate family played these seriously — school/college level or higher"
+                >
+                  <MultiSelectPills
+                    options={PRIOR_SPORTS_OPTIONS}
+                    selected={formData.sportsInFamily || []}
+                    onChange={(v) => handleChange("sportsInFamily", v)}
+                    noneLabel="None of these"
+                  />
+                </ProfileEditField>
+
+                <ProfileEditField
+                  label="Sports friends play"
+                  hint="Do any close friends play these seriously?"
+                >
+                  <MultiSelectPills
+                    options={PRIOR_SPORTS_OPTIONS}
+                    selected={formData.peerSports || []}
+                    onChange={(v) => handleChange("peerSports", v)}
+                    noneLabel="None of these"
+                  />
+                </ProfileEditField>
+
+                <ProfileEditField
+                  label="Tried casually"
+                  hint="Not lessons — just for fun (park, backyard, with friends)"
+                >
+                  <MultiSelectPills
+                    options={PRIOR_SPORTS_OPTIONS}
+                    selected={formData.informalSports || []}
+                    onChange={(v) => handleChange("informalSports", v)}
+                    noneLabel="None of these"
+                  />
+                </ProfileEditField>
+
+                {(formData.informalSports?.length ?? 0) > 0 && (
+                  <ProfileEditField label={`Did ${childLabel} ask to keep playing, or lose interest quickly?`}>
+                    <BinaryCards
+                      options={[
+                        { value: "kept-asking", title: "Kept asking to play again", sub: `${childLabel} wanted to go back and do it more` },
+                        { value: "lost-interest", title: "Lost interest quickly", sub: "Tried it, but didn't ask to continue" },
+                      ]}
+                      value={formData.informalReaction ?? null}
+                      onChange={(v) => handleChange("informalReaction", v)}
+                    />
+                  </ProfileEditField>
+                )}
+
                 <ProfileEditField label="State / UT" htmlFor="dep-location" hint="For local resource recommendations">
                   <ProfileFormSelect
                     id="dep-location"
@@ -438,6 +492,18 @@ export default function DependentManagementModal({
                     ]}
                     value={formData.budgetRange ?? null}
                     onChange={(v) => handleChange("budgetRange", v)}
+                  />
+                </ProfileEditField>
+
+                <ProfileEditField label={`If ${childLabel} shows real talent and wants to go further, would your family be open to relocating or significantly increasing investment?`}>
+                  <ThreeOptionCards
+                    options={[
+                      { value: "all-in", label: "Yes — we'd go all in" },
+                      { value: "maybe", label: "Maybe, depends how far" },
+                      { value: "stay-local", label: "No — want to stay local and keep costs steady" },
+                    ]}
+                    value={formData.futureFlexibility ?? null}
+                    onChange={(v) => handleChange("futureFlexibility", v)}
                   />
                 </ProfileEditField>
               </>

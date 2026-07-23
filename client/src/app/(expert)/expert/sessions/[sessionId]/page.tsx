@@ -180,17 +180,22 @@ function TagList({ label, values }: { label: string; values?: string[] }) {
 
 function Section({
   icon,
+  tint,
   title,
   children,
 }: {
   icon: React.ReactNode;
+  tint: string;
   title: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-slate-900">
-        {icon} {title}
+    <div className="rounded-2xl border-0 bg-white p-6 shadow-[0_2px_16px_rgb(0,0,0,0.06)] transition-shadow hover:shadow-[0_8px_24px_rgb(0,0,0,0.1)]">
+      <h2 className="mb-5 flex items-center gap-3 text-base font-bold text-slate-900">
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tint}`}>
+          {icon}
+        </span>
+        {title}
       </h2>
       <div className="grid gap-4 sm:grid-cols-2">{children}</div>
     </div>
@@ -237,8 +242,9 @@ export default function ExpertSessionPlayerDetailPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl px-6 py-16 text-center text-slate-500">
-        Loading child profile...
+      <div className="mx-auto flex max-w-3xl flex-col items-center justify-center gap-3 px-6 py-24">
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-100 border-t-power-orange" />
+        <p className="text-sm text-slate-500">Loading child profile...</p>
       </div>
     );
   }
@@ -317,7 +323,7 @@ export default function ExpertSessionPlayerDetailPage() {
       )}
 
       {/* Sport, skill & training */}
-      <Section icon={<Target className="h-5 w-5 text-power-orange" />} title="Sport & Skill">
+      <Section icon={<Target className="h-4.5 w-4.5" />} tint="bg-power-orange/10 text-power-orange" title="Sport & Skill">
         <TagList label="Sport(s)" values={player.sportsFocus} />
         <Field label="Skill level" value={player.skillLevel} />
         <Field label="Years playing" value={player.yearsPlaying} />
@@ -387,7 +393,7 @@ export default function ExpertSessionPlayerDetailPage() {
         player.visualTracking ||
         player.agility ||
         player.eyesight) && (
-        <Section icon={<Compass className="h-5 w-5 text-power-orange" />} title="Physical Profile">
+        <Section icon={<Compass className="h-4.5 w-4.5" />} tint="bg-indigo-50 text-indigo-600" title="Physical Profile">
           <Field
             label="Height"
             value={player.heightCm ? `${player.heightCm} cm` : undefined}
@@ -432,7 +438,7 @@ export default function ExpertSessionPlayerDetailPage() {
         player.environment ||
         player.waterComfort ||
         player.personalityTags?.length) && (
-        <Section icon={<Users className="h-5 w-5 text-power-orange" />} title="Personality & Play Style">
+        <Section icon={<Users className="h-4.5 w-4.5" />} tint="bg-purple-50 text-purple-600" title="Personality & Play Style">
           <Field
             label="Wants a partner/team, or goes it alone?"
             value={
@@ -483,7 +489,7 @@ export default function ExpertSessionPlayerDetailPage() {
         player.informalSports?.length ||
         player.informalReaction ||
         player.futureFlexibility) && (
-        <Section icon={<Home className="h-5 w-5 text-power-orange" />} title="Background & Exposure">
+        <Section icon={<Home className="h-4.5 w-4.5" />} tint="bg-teal-50 text-teal-600" title="Background & Exposure">
           <TagList
             label="Played seriously by immediate family"
             values={player.sportsInFamily}
@@ -509,7 +515,7 @@ export default function ExpertSessionPlayerDetailPage() {
 
       {/* Sport fit matches */}
       {player.sportMatches && player.sportMatches.length > 0 && (
-        <Section icon={<Sparkles className="h-5 w-5 text-power-orange" />} title="Sport Fit Matches">
+        <Section icon={<Sparkles className="h-4.5 w-4.5" />} tint="bg-amber-50 text-amber-600" title="Sport Fit Matches">
           {player.sportMatches.map((m) => (
             <Field
               key={m.sport}

@@ -12,7 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import type { SportResult, WizardAnswers } from "../../types";
-// import { JourneyPipeline } from "../JourneyPipeline"; // SCREENING_DISABLED
+import { JourneyPipeline } from "../JourneyPipeline";
 
 // ─── Portfolio roles ────────────────────────────────────────────────────────
 // Not a similarity ranking (1st/2nd/3rd best) — three different jobs. Best-fit
@@ -234,12 +234,11 @@ export function ResultsView({
         ))}
       </div>
 
-      {/* Journey pipeline — SCREENING_DISABLED
+      {/* Journey pipeline */}
       <JourneyPipeline
         childName={name}
         topSport={topResults[0]?.sport.name}
       />
-      */}
 
       {/* What's next — unified dark panel */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 mb-8">

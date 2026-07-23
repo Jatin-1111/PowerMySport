@@ -1,5 +1,6 @@
 "use client";
 
+import { authApi } from "@/modules/auth/services/auth";
 import {
     expertApi,
     type Expert,
@@ -75,6 +76,7 @@ export function ExpertProfileEditor({
   profile: Expert;
   onSaved: (p: Expert) => void;
 }) {
+  const [name, setName] = useState(profile.name || "");
   const [bio, setBio] = useState(profile.bio || "");
   const [achievements, setAchievements] = useState(profile.achievements || "");
   const [sports, setSports] = useState<string[]>(profile.sports || []);
@@ -119,9 +121,31 @@ export function ExpertProfileEditor({
     setWindows((w) => w.filter((_, i) => i !== idx));
 
   const save = async () => {
+    // Same validation rules as onboarding — keep create and edit in sync.
+    if (!name.trim()) {
+      toast.error("Name is required.");
+      return;
+    }
+    if (!bio.trim() || bio.trim().length < 20) {
+      toast.error("Bio must be at least 20 characters.");
+      return;
+    }
+    if (!achievements.trim()) {
+      toast.error(
+        "Achievements are required — this is your main trust signal with clients.",
+      );
+      return;
+    }
     const fee = Number(sessionFee);
-    if (isNaN(fee) || fee < 0) {
+    if (!sessionFee || isNaN(fee) || fee <= 0) {
       toast.error("Enter a valid session fee.");
+      return;
+    }
+    if (
+      (sessionMode === "IN_PERSON" || sessionMode === "BOTH") &&
+      !inPersonAddress.trim()
+    ) {
+      toast.error("In-person address is required for in-person sessions.");
       return;
     }
     for (const w of windows) {
@@ -134,6 +158,14 @@ export function ExpertProfileEditor({
     }
     setSaving(true);
     try {
+      if (name.trim() !== profile.name) {
+        const nameRes = await authApi.updateProfile({ name: name.trim() });
+        if (!nameRes.success) {
+          toast.error(nameRes.message || "Could not update name.");
+          setSaving(false);
+          return;
+        }
+      }
       const res = await expertApi.updateMyProfile({
         bio,
         achievements,
@@ -151,7 +183,7 @@ export function ExpertProfileEditor({
         blackoutDates: blackout,
       });
       if (res.success && res.data) {
-        onSaved(res.data);
+        onSaved({ ...res.data, name: name.trim() });
         toast.success("Profile updated.");
       } else {
         toast.error(res.message || "Could not save.");
@@ -177,7 +209,7 @@ export function ExpertProfileEditor({
   return (
     <div className="space-y-6 pb-24 sm:space-y-8">
       {/* Hero */}
-      <Card className="overflow-hidden border border-slate-200 bg-white p-0 shadow-sm">
+      <Card className="overflow-hidden border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
         <div className="bg-linear-to-r from-slate-50 to-white px-5 py-6 sm:px-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">
@@ -193,7 +225,7 @@ export function ExpertProfileEditor({
                   Expert Profile
                 </p>
                 <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-                  {profile.name || "Expert"}
+                  {name || "Expert"}
                 </h2>
                 {profile.email && (
                   <p className="mt-0.5 text-sm text-slate-500">
@@ -244,7 +276,7 @@ export function ExpertProfileEditor({
       <div className="grid gap-6 xl:grid-cols-12 xl:items-start">
         {/* Left column */}
         <div className="space-y-6 xl:col-span-7">
-          <Card className="border border-slate-200 bg-white shadow-sm">
+          <Card className="border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
             <SectionHeader
               icon={User}
               iconClassName="bg-indigo-50 text-indigo-600"
@@ -253,13 +285,26 @@ export function ExpertProfileEditor({
             />
             <div className="space-y-4">
               <div>
+                <label className={fieldLabel}>Name</label>
+                <input
+                  className={field}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your full name"
+                />
+              </div>
+              <div>
                 <label className={fieldLabel}>Bio</label>
                 <textarea
                   rows={4}
                   className={field}
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
+                  maxLength={4000}
                 />
+                <p className="mt-1 text-right text-xs text-slate-400">
+                  {bio.length}/4000
+                </p>
               </div>
               <div>
                 <label className={fieldLabel}>Achievements</label>
@@ -276,12 +321,13 @@ export function ExpertProfileEditor({
                   className={field}
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
+                  placeholder="e.g. Mumbai"
                 />
               </div>
             </div>
           </Card>
 
-          <Card className="border border-slate-200 bg-white shadow-sm">
+          <Card className="border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
             <SectionHeader
               icon={Award}
               iconClassName="bg-purple-50 text-purple-600"
@@ -310,7 +356,7 @@ export function ExpertProfileEditor({
             </div>
           </Card>
 
-          <Card className="border border-slate-200 bg-white shadow-sm">
+          <Card className="border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
             <SectionHeader
               icon={BadgeIndianRupee}
               iconClassName="bg-emerald-50 text-emerald-600"
@@ -329,29 +375,41 @@ export function ExpertProfileEditor({
                 />
               </div>
               <div>
-                <label className={fieldLabel}>Session length (minutes)</label>
-                <input
-                  type="number"
-                  min="15"
-                  step="15"
+                <label className={fieldLabel}>Session length</label>
+                <select
                   className={field}
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                />
+                >
+                  {[30, 45, 60, 75, 90, 120].map((m) => (
+                    <option key={m} value={m}>
+                      {m} minutes
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="sm:col-span-2">
                 <label className={fieldLabel}>Session mode</label>
-                <select
-                  className={field}
-                  value={sessionMode}
-                  onChange={(e) =>
-                    setSessionMode(e.target.value as Expert["sessionMode"])
-                  }
-                >
-                  <option value="ONLINE">Online</option>
-                  <option value="IN_PERSON">In-person</option>
-                  <option value="BOTH">Online or in-person</option>
-                </select>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["ONLINE", "IN_PERSON", "BOTH"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setSessionMode(mode)}
+                      className={`rounded-xl border py-3 text-sm font-semibold transition-all ${
+                        sessionMode === mode
+                          ? "border-power-orange bg-power-orange/10 text-power-orange"
+                          : "border-slate-200 bg-slate-50 text-slate-600 hover:border-power-orange/50"
+                      }`}
+                    >
+                      {mode === "ONLINE"
+                        ? "Online"
+                        : mode === "IN_PERSON"
+                          ? "In-person"
+                          : "Both"}
+                    </button>
+                  ))}
+                </div>
               </div>
               {(sessionMode === "IN_PERSON" || sessionMode === "BOTH") && (
                 <div className="sm:col-span-2">
@@ -377,7 +435,7 @@ export function ExpertProfileEditor({
 
         {/* Right column */}
         <div className="space-y-6 xl:col-span-5">
-          <Card className="border border-slate-200 bg-white shadow-sm">
+          <Card className="border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
             <SectionHeader
               icon={CalendarClock}
               iconClassName="bg-orange-50 text-power-orange"
@@ -389,13 +447,21 @@ export function ExpertProfileEditor({
                 const dayWindows = windows
                   .map((w, i) => ({ w, i }))
                   .filter(({ w }) => w.dayOfWeek === dayIdx);
+                const hasSlots = dayWindows.length > 0;
                 return (
                   <div
                     key={day}
-                    className="rounded-xl border border-slate-100 bg-slate-50/60 p-3"
+                    className={`rounded-xl border p-3 transition-colors ${
+                      hasSlots
+                        ? "border-emerald-100 bg-emerald-50/40"
+                        : "border-slate-100 bg-slate-50/60"
+                    }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-slate-700">
+                      <span className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${hasSlots ? "bg-emerald-500" : "bg-slate-300"}`}
+                        />
                         {day}
                       </span>
                       <button

@@ -60,11 +60,17 @@ router.get("/entities", pathwayRateLimiter, getPathwayEntities);
 // pathways are cached per-state, but an expert's credit applies sport-wide.
 
 // GET /api/pathways/expert/mine — sports matching the logged-in expert's own profile
-router.get("/expert/mine", authMiddleware, getPathwaysForExpertVerification);
+router.get(
+  "/expert/mine",
+  pathwayRateLimiter,
+  authMiddleware,
+  getPathwaysForExpertVerification,
+);
 
 // POST /api/pathways/expert/:sportSlug/verify — add/update this expert's verification credit
 router.post(
   "/expert/:sportSlug/verify",
+  pathwayRateLimiter,
   authMiddleware,
   postPathwayExpertVerify,
 );
@@ -72,6 +78,7 @@ router.post(
 // DELETE /api/pathways/expert/:sportSlug/verify — remove this expert's own verification credit
 router.delete(
   "/expert/:sportSlug/verify",
+  pathwayRateLimiter,
   authMiddleware,
   deletePathwayExpertVerify,
 );
