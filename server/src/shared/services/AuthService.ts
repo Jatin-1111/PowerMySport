@@ -272,6 +272,11 @@ export const changePassword = async (
  * locked out) and anonymizes personally-identifying fields on the User
  * document itself. Player/Booking/Payment history is intentionally left
  * untouched.
+ *
+ * NOTE: `delete user.field` on a Mongoose document does NOT issue an
+ * $unset — it only removes the JS property from the in-memory object.
+ * We use a single updateOne with $set + $unset to guarantee the fields
+ * are actually removed from MongoDB.
  */
 export const deleteAccount = async (
   userId: string,
@@ -290,24 +295,44 @@ export const deleteAccount = async (
   }
 
   const anonymizedTag = `deleted-${user._id.toString()}`;
-  user.name = "Deleted User";
-  user.email = `${anonymizedTag}@deleted.powermysport.com`;
-  user.phone = anonymizedTag;
-  delete user.password;
-  delete user.googleId;
-  delete user.photoUrl;
-  delete user.photoS3Key;
-  user.addresses = [];
-  delete user.shippingAddress;
-  user.refundMethods = [];
-  delete user.resetPasswordToken;
-  delete user.resetPasswordExpires;
-  user.pushSubscriptions = [];
-  user.isActive = false;
-  user.deactivatedAt = new Date();
 
-  await user.save();
+  await User.updateOne(
+    { _id: user._id },
+    {
+      $set: {
+        name: "Deleted User",
+        email: `${anonymizedTag}@deleted.powermysport.com`,
+        phone: anonymizedTag,
+        isActive: false,
+        deactivatedAt: new Date(),
+        addresses: [],
+        refundMethods: [],
+        pushSubscriptions: [],
+      },
+      $unset: {
+        password: "",
+        googleId: "",
+        photoUrl: "",
+        photoS3Key: "",
+        dob: "",
+        city: "",
+        defaultAddressId: "",
+        shippingAddress: "",
+        legalConsents: "",
+        notificationPreferences: "",
+        reminderPreferences: "",
+        resetPasswordToken: "",
+        resetPasswordExpires: "",
+        parentProfile: "",
+        playerProfile: "",
+        bio: "",
+        sportInterests: "",
+        involvementYears: "",
+      },
+    },
+  );
 };
+
 
 export interface GoogleLoginPayload {
   googleId: string;
