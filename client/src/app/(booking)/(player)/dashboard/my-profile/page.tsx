@@ -67,7 +67,7 @@ import {
     Users,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 type Dependent = NonNullable<User["dependents"]>[number];
 
@@ -104,7 +104,7 @@ function ProfilePageSkeleton() {
   );
 }
 
-export default function ProfilePage() {
+function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
@@ -1606,5 +1606,13 @@ export default function ProfilePage() {
         </div>
       </Modal>
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<ProfilePageSkeleton />}>
+      <ProfilePageContent />
+    </Suspense>
   );
 }
