@@ -24,6 +24,7 @@ import { ResultsView } from "@/modules/guidance/components/results/ResultsView";
 import { TagAssistedTextarea } from "@/modules/guidance/components/shared/TagAssistedTextarea";
 import { downloadGuidanceReportPdf, getGuidanceWhatsAppUrl } from "@/modules/guidance/services/guidance";
 import type { GuidanceSubmission } from "@/modules/guidance/types";
+import { CompleteProfileNudge, shouldShowTraitsNudge } from "@/modules/player/components/CompleteProfileNudge";
 import { BinaryCards } from "@/modules/find-sport/components/inputs/BinaryCards";
 import { FourContextCards } from "@/modules/find-sport/components/inputs/FourContextCards";
 import { SportSearchInput } from "@/modules/find-sport/components/inputs/SportSearchInput";
@@ -783,21 +784,25 @@ function ResultsScreen({
   submission,
   problemId,
   onReset,
+  dependent,
 }: {
   submission: GuidanceSubmission;
   problemId: ProblemId;
   onReset: () => void;
+  dependent?: any | null;
 }) {
   const { user } = useAuthStore();
   const [chatOpen, setChatOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [traitsNudgeOpen, setTraitsNudgeOpen] = useState(false);
 
   const pt = PROBLEM_TYPES.find((p) => p.id === problemId) ?? PROBLEM_TYPES[3];
 
   const handleChatClick = () => {
-    if (!user) setLoginModalOpen(true);
-    else setChatOpen(true);
+    if (!user) { setLoginModalOpen(true); return; }
+    if (shouldShowTraitsNudge(dependent)) { setTraitsNudgeOpen(true); return; }
+    setChatOpen(true);
   };
 
   const handleDownloadPdf = async () => {
@@ -872,6 +877,18 @@ function ResultsScreen({
         sport={submission.query.sport}
         redirectPath={`/guidance?submissionId=${submission.id}&openChat=1`}
       />
+
+      {dependent && (
+        <CompleteProfileNudge
+          isOpen={traitsNudgeOpen}
+          dependentId={dependent._id}
+          dependentName={dependent.name ?? "Your child"}
+          onProceed={() => {
+            setTraitsNudgeOpen(false);
+            setChatOpen(true);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1043,7 +1060,15 @@ function ProblemWizardInner({
   };
 
   if (loading) return <LoadingView problemId={problemId} />;
-  if (submission) return <ResultsScreen submission={submission} problemId={problemId} onReset={reset} />;
+  if (submission)
+    return (
+      <ResultsScreen
+        submission={submission}
+        problemId={problemId}
+        onReset={reset}
+        dependent={dependents.find((d) => d._id === selectedDependentId) ?? null}
+      />
+    );
 
   // Brief loading state while we fetch dependents
   if (preFillPhase === "loading") {

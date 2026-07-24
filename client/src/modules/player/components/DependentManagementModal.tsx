@@ -56,6 +56,9 @@ interface DependentManagementModalProps {
   initialDependent?: Dependent | null;
   isLoading?: boolean;
   mode: "add" | "edit";
+  /** Deep-link to a specific step on open (e.g. from a "complete your profile"
+   * nudge elsewhere) instead of always starting at step 0. */
+  initialStepId?: DependentModalStepId;
 }
 
 const EMPTY_FORM: DependentFormData = {
@@ -73,7 +76,7 @@ const EMPTY_FORM: DependentFormData = {
   medicalConditions: [],
 };
 
-const STEPS = [
+export const STEPS = [
   { id: "about",       title: "About the child",       sub: "Name, age, and key details",                      required: true  },
   { id: "sport",       title: "Sport & setup",          sub: "What they play, their background, and where they're based", required: false },
   { id: "goals",       title: "Goals & commitment",     sub: "Ambition, time, budget, and long-term flexibility", required: false },
@@ -81,6 +84,8 @@ const STEPS = [
   { id: "personality", title: "Mind & play style",      sub: "How they think and compete — optional",           required: false },
   { id: "environment", title: "Environment & senses",   sub: "Preferences and sensory profile — optional",      required: false },
 ] as const;
+
+export type DependentModalStepId = (typeof STEPS)[number]["id"];
 
 const stepVariants = {
   enter: (d: number) => ({ opacity: 0, x: d * 32 }),
@@ -95,6 +100,7 @@ export default function DependentManagementModal({
   initialDependent,
   isLoading = false,
   mode,
+  initialStepId,
 }: DependentManagementModalProps) {
   const [formData, setFormData] = useState<DependentFormData>(EMPTY_FORM);
   const [stepIndex, setStepIndex] = useState(0);
@@ -109,7 +115,8 @@ export default function DependentManagementModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    setStepIndex(0);
+    const deepLinkIndex = initialStepId ? STEPS.findIndex((s) => s.id === initialStepId) : -1;
+    setStepIndex(deepLinkIndex >= 0 ? deepLinkIndex : 0);
     setDir(1);
     if (initialDependent) {
       setFormData({
@@ -122,7 +129,7 @@ export default function DependentManagementModal({
     } else {
       setFormData(EMPTY_FORM);
     }
-  }, [isOpen, initialDependent]);
+  }, [isOpen, initialDependent, initialStepId]);
 
   const handleChange = (field: keyof DependentFormData, value: unknown) =>
     setFormData((prev) => ({ ...prev, [field]: value }));

@@ -7,7 +7,16 @@ import { Expert } from "../../client/models/ExpertProfile";
 import { ExpertSession } from "../../client/models/ExpertBooking";
 import { markSessionPayoutDone } from "../../client/services/ExpertsService";
 import { sendPayoutProcessedEmail } from "../../utils/email";
+import { decryptValue } from "../../shared/utils/encryption";
 import mongoose from "mongoose";
+
+const decryptPayoutMethod = (m: IPayoutMethod): IPayoutMethod => {
+  const out: IPayoutMethod = { ...m };
+  if (out.accountNumber) out.accountNumber = decryptValue(out.accountNumber);
+  if (out.ifscCode) out.ifscCode = decryptValue(out.ifscCode);
+  if (out.upiId) out.upiId = decryptValue(out.upiId);
+  return out;
+};
 
 const getPrimaryPayoutMethod = (
   payoutMethods?: IPayoutMethod[],
@@ -137,6 +146,9 @@ export const listPendingPayouts = async (
             expert?.payoutMethods as unknown as IPayoutMethod[] | undefined,
           );
         }
+        // .lean() bypasses the models' schema-level decrypt getters — admin
+        // needs the real, unmasked value here to actually process the payout.
+        if (payoutMethod) payoutMethod = decryptPayoutMethod(payoutMethod);
 
         return {
           ...payout,

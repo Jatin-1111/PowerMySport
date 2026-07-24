@@ -2,9 +2,47 @@ import { Request, Response } from "express";
 import { Coach, IPayoutMethod } from "../../client/models/Coach";
 import { Venue } from "../../client/models/Venue";
 import { Expert } from "../../client/models/ExpertProfile";
+import { encryptValue, decryptValue } from "../../shared/utils/encryption";
 
 type PayoutMethodRecord = IPayoutMethod & {
   _id?: unknown;
+};
+
+/**
+ * These endpoints read/write via a mix of `.lean()` queries, `.save()`, and
+ * direct `$push`/`updateMany` operations — only `.save()` on a hydrated
+ * document runs the models' schema-level getters/pre("save") encryption
+ * hook. To stay correct regardless of which write path a given function
+ * uses, sensitive fields are encrypted explicitly right where a payout
+ * method is constructed, and decrypted explicitly right before every
+ * response — not left to those hooks/getters to happen to cover it.
+ */
+// exactOptionalPropertyTypes forbids assigning `string | undefined` to an
+// optional `string` field — only overwrite when there's an actual value.
+const encryptPayoutMethodFields = (m: IPayoutMethod): IPayoutMethod => {
+  const out: IPayoutMethod = { ...m };
+  if (out.accountNumber) out.accountNumber = encryptValue(out.accountNumber);
+  if (out.ifscCode) out.ifscCode = encryptValue(out.ifscCode);
+  if (out.upiId) out.upiId = encryptValue(out.upiId);
+  return out;
+};
+const decryptPayoutMethod = (m: IPayoutMethod): IPayoutMethod => {
+  // `m` is a plain object when it came from a .lean() query, but a live
+  // Mongoose subdocument when it came straight off a just-.save()'d document
+  // (as in the upsert/delete/set-default responses below) — spreading THAT
+  // directly would capture Mongoose's internal bookkeeping ($__, _doc, etc.)
+  // as if they were data fields. .toObject() normalizes either case to a
+  // clean plain object first.
+  const plain =
+    typeof (m as unknown as { toObject?: () => IPayoutMethod }).toObject ===
+    "function"
+      ? (m as unknown as { toObject: () => IPayoutMethod }).toObject()
+      : m;
+  const out: IPayoutMethod = { ...plain };
+  if (out.accountNumber) out.accountNumber = decryptValue(out.accountNumber);
+  if (out.ifscCode) out.ifscCode = decryptValue(out.ifscCode);
+  if (out.upiId) out.upiId = decryptValue(out.upiId);
+  return out;
 };
 
 const getPayoutMethodId = (method: PayoutMethodRecord): string | undefined => {
@@ -68,13 +106,14 @@ export const getCoachPayoutMethod = async (
       return;
     }
 
+    const primary = getPrimaryPayoutMethod(
+      coach.payoutMethods as IPayoutMethod[] | undefined,
+    );
     res.json({
       success: true,
       message: "Payout method retrieved",
       data: {
-        payoutMethod: getPrimaryPayoutMethod(
-          coach.payoutMethods as IPayoutMethod[] | undefined,
-        ),
+        payoutMethod: primary ? decryptPayoutMethod(primary) : null,
       },
     });
   } catch (error) {
@@ -113,7 +152,11 @@ export const getCoachPayoutMethods = async (
     res.json({
       success: true,
       message: "Payout methods retrieved",
-      data: { payoutMethods: coach.payoutMethods || [] },
+      data: {
+        payoutMethods: (coach.payoutMethods || []).map((m: IPayoutMethod) =>
+          decryptPayoutMethod(m),
+        ),
+      },
     });
   } catch (error) {
     console.error("getCoachPayoutMethods error:", error);
@@ -233,6 +276,7 @@ export const upsertCoachPayoutMethod = async (
     } else {
       payoutMethodData.upiId = upiId!.trim();
     }
+    const encryptedPayoutMethodData = encryptPayoutMethodFields(payoutMethodData);
 
     if (id) {
       // Update existing method
@@ -245,12 +289,12 @@ export const upsertCoachPayoutMethod = async (
           .json({ success: false, message: "Payout method not found" });
         return;
       }
-      payoutMethodData.id = id;
-      payoutMethodData.addedAt = payoutMethods[methodIndex]!.addedAt;
-      payoutMethods[methodIndex] = payoutMethodData;
+      encryptedPayoutMethodData.id = id;
+      encryptedPayoutMethodData.addedAt = payoutMethods[methodIndex]!.addedAt;
+      payoutMethods[methodIndex] = encryptedPayoutMethodData;
     } else {
       // Add new method
-      payoutMethods.push(payoutMethodData);
+      payoutMethods.push(encryptedPayoutMethodData);
     }
 
     coach.payoutMethods = payoutMethods;
@@ -260,7 +304,11 @@ export const upsertCoachPayoutMethod = async (
     res.json({
       success: true,
       message: "Payout method saved successfully",
-      data: { payoutMethods: coach.payoutMethods },
+      data: {
+        payoutMethods: (coach.payoutMethods || []).map((m: IPayoutMethod) =>
+          decryptPayoutMethod(m),
+        ),
+      },
     });
   } catch (error) {
     console.error("upsertCoachPayoutMethod error:", error);
@@ -329,7 +377,11 @@ export const deleteCoachPayoutMethod = async (
     res.json({
       success: true,
       message: "Payout method removed",
-      data: { payoutMethods: coach.payoutMethods },
+      data: {
+        payoutMethods: (coach.payoutMethods || []).map((m: IPayoutMethod) =>
+          decryptPayoutMethod(m),
+        ),
+      },
     });
   } catch (error) {
     console.error("deleteCoachPayoutMethod error:", error);
@@ -386,7 +438,11 @@ export const setCoachDefaultPayoutMethod = async (
     res.json({
       success: true,
       message: "Default payout method updated",
-      data: { payoutMethods: coach.payoutMethods },
+      data: {
+        payoutMethods: (coach.payoutMethods || []).map((m: IPayoutMethod) =>
+          decryptPayoutMethod(m),
+        ),
+      },
     });
   } catch (error) {
     console.error("setCoachDefaultPayoutMethod error:", error);
@@ -427,13 +483,14 @@ export const getVenuePayoutMethod = async (
       return;
     }
 
+    const primary = getPrimaryPayoutMethod(
+      venue.payoutMethods as IPayoutMethod[] | undefined,
+    );
     res.json({
       success: true,
       message: "Payout method retrieved",
       data: {
-        payoutMethod: getPrimaryPayoutMethod(
-          venue.payoutMethods as IPayoutMethod[] | undefined,
-        ),
+        payoutMethod: primary ? decryptPayoutMethod(primary) : null,
         venueName: venue.name,
       },
     });
@@ -557,9 +614,12 @@ export const upsertVenuePayoutMethod = async (
     } else {
       payoutMethodData.upiId = upiId!.trim();
     }
+    // Encrypted once here, up front — the two branches below write via
+    // different Mongoose mechanisms (.save() vs. a raw $push/updateMany),
+    // and only the former runs the model's schema-level encryption hook.
+    const encryptedPayoutMethodData = encryptPayoutMethodFields(payoutMethodData);
 
     // Apply to all venues owned by this user
-    let update: any = {};
     if (id) {
       // Update existing method - use a more complex update
       // First, update all venues' payout methods
@@ -570,9 +630,9 @@ export const upsertVenuePayoutMethod = async (
           (method) => getPayoutMethodId(method as PayoutMethodRecord) === id,
         );
         if (methodIndex !== -1) {
-          payoutMethodData.id = id;
-          payoutMethodData.addedAt = venueMethods[methodIndex]!.addedAt;
-          venueMethods[methodIndex] = payoutMethodData;
+          encryptedPayoutMethodData.id = id;
+          encryptedPayoutMethodData.addedAt = venueMethods[methodIndex]!.addedAt;
+          venueMethods[methodIndex] = encryptedPayoutMethodData;
           venue.payoutMethods = venueMethods;
           await venue.save();
         }
@@ -581,7 +641,7 @@ export const upsertVenuePayoutMethod = async (
       // Add new method - append to all venues
       await Venue.updateMany(
         { ownerId: userId },
-        { $push: { payoutMethods: payoutMethodData } },
+        { $push: { payoutMethods: encryptedPayoutMethodData } },
       );
     }
 
@@ -592,7 +652,11 @@ export const upsertVenuePayoutMethod = async (
     res.json({
       success: true,
       message: "Payout method saved successfully for all your venues",
-      data: { payoutMethods: updatedVenue?.payoutMethods || [] },
+      data: {
+        payoutMethods: (updatedVenue?.payoutMethods || []).map((m: IPayoutMethod) =>
+          decryptPayoutMethod(m),
+        ),
+      },
     });
   } catch (error) {
     console.error("upsertVenuePayoutMethod error:", error);
@@ -648,7 +712,11 @@ export const deleteVenuePayoutMethod = async (
       res.json({
         success: true,
         message: "Payout method removed from all your venues",
-        data: { payoutMethods: updatedVenue?.payoutMethods || [] },
+        data: {
+          payoutMethods: (updatedVenue?.payoutMethods || []).map((m: IPayoutMethod) =>
+            decryptPayoutMethod(m),
+          ),
+        },
       });
     } else {
       // Delete all methods from all venues
@@ -734,7 +802,11 @@ export const setVenueDefaultPayoutMethod = async (
     res.json({
       success: true,
       message: "Default payout method updated for all your venues",
-      data: { payoutMethods: updatedVenue?.payoutMethods || [] },
+      data: {
+        payoutMethods: (updatedVenue?.payoutMethods || []).map((m: IPayoutMethod) =>
+          decryptPayoutMethod(m),
+        ),
+      },
     });
   } catch (error) {
     console.error("setVenueDefaultPayoutMethod error:", error);
@@ -773,13 +845,14 @@ export const getExpertPayoutMethod = async (
       return;
     }
 
+    const primary = getPrimaryPayoutMethod(
+      expert.payoutMethods as IPayoutMethod[] | undefined,
+    );
     res.json({
       success: true,
       message: "Payout method retrieved",
       data: {
-        payoutMethod: getPrimaryPayoutMethod(
-          expert.payoutMethods as IPayoutMethod[] | undefined,
-        ),
+        payoutMethod: primary ? decryptPayoutMethod(primary) : null,
       },
     });
   } catch (error) {
@@ -818,7 +891,11 @@ export const getExpertPayoutMethods = async (
     res.json({
       success: true,
       message: "Payout methods retrieved",
-      data: { payoutMethods: expert.payoutMethods || [] },
+      data: {
+        payoutMethods: (expert.payoutMethods || []).map((m: IPayoutMethod) =>
+          decryptPayoutMethod(m),
+        ),
+      },
     });
   } catch (error) {
     console.error("getExpertPayoutMethods error:", error);
@@ -920,14 +997,17 @@ export const upsertExpertPayoutMethod = async (
         .json({ success: false, message: "Expert profile not found" });
       return;
     }
-    // Adding real bank/UPI details shouldn't be possible before an admin has
-    // actually vetted this expert — otherwise a brand-new, never-reviewed
-    // signup could pre-stage financial details with zero identity checks.
-    if (expert.verificationStatus !== "APPROVED") {
+    // Payout details can be captured while onboarding (UNVERIFIED/REJECTED,
+    // so an admin has something concrete to review alongside the rest of the
+    // profile — see the Tax & Payout onboarding step) or edited freely once
+    // APPROVED via the dashboard. The one state that must stay locked is
+    // PENDING: the expert has already submitted for review and every other
+    // field is frozen until an admin acts (see submitExpertForReview).
+    if (expert.verificationStatus === "PENDING") {
       res.status(403).json({
         success: false,
         message:
-          "Your expert profile must be approved before adding a payout method",
+          "Your profile is awaiting review — payout details can't be changed until it's reviewed.",
       });
       return;
     }
@@ -949,6 +1029,7 @@ export const upsertExpertPayoutMethod = async (
     } else {
       payoutMethodData.upiId = upiId!.trim();
     }
+    const encryptedPayoutMethodData = encryptPayoutMethodFields(payoutMethodData);
 
     if (id) {
       // Update existing method
@@ -962,12 +1043,12 @@ export const upsertExpertPayoutMethod = async (
           .json({ success: false, message: "Payout method not found" });
         return;
       }
-      payoutMethodData.id = id;
-      payoutMethodData.addedAt = payoutMethods[methodIndex]!.addedAt;
-      payoutMethods[methodIndex] = payoutMethodData;
+      encryptedPayoutMethodData.id = id;
+      encryptedPayoutMethodData.addedAt = payoutMethods[methodIndex]!.addedAt;
+      payoutMethods[methodIndex] = encryptedPayoutMethodData;
     } else {
       // Add new method
-      payoutMethods.push(payoutMethodData);
+      payoutMethods.push(encryptedPayoutMethodData);
     }
 
     expert.payoutMethods = payoutMethods;
@@ -977,7 +1058,11 @@ export const upsertExpertPayoutMethod = async (
     res.json({
       success: true,
       message: "Payout method saved successfully",
-      data: { payoutMethods: expert.payoutMethods },
+      data: {
+        payoutMethods: (expert.payoutMethods || []).map((m: IPayoutMethod) =>
+          decryptPayoutMethod(m),
+        ),
+      },
     });
   } catch (error) {
     console.error("upsertExpertPayoutMethod error:", error);
@@ -1048,7 +1133,11 @@ export const deleteExpertPayoutMethod = async (
     res.json({
       success: true,
       message: "Payout method removed",
-      data: { payoutMethods: expert.payoutMethods },
+      data: {
+        payoutMethods: (expert.payoutMethods || []).map((m: IPayoutMethod) =>
+          decryptPayoutMethod(m),
+        ),
+      },
     });
   } catch (error) {
     console.error("deleteExpertPayoutMethod error:", error);
@@ -1106,7 +1195,11 @@ export const setExpertDefaultPayoutMethod = async (
     res.json({
       success: true,
       message: "Default payout method updated",
-      data: { payoutMethods: expert.payoutMethods },
+      data: {
+        payoutMethods: (expert.payoutMethods || []).map((m: IPayoutMethod) =>
+          decryptPayoutMethod(m),
+        ),
+      },
     });
   } catch (error) {
     console.error("setExpertDefaultPayoutMethod error:", error);

@@ -5,75 +5,93 @@
 // bespoke ladder per sport, every sport maps to one of four archetypes, and
 // the "current standing" / "best result" questions in SportKnownFlow render
 // whichever ladder matches — the parent never sees the archetype itself.
+//
+// The archetype map itself is shared with the roadmap skeletons — see
+// @/modules/sports/config/sportArchetypes. This file keeps only the
+// wizard-facing ladders and ambition options.
 
-export type Archetype = "federation" | "ranking" | "rating" | "standard";
+import {
+  getSportArchetypeInfo,
+  type Archetype,
+} from "@/modules/sports/config/sportArchetypes";
+
+export type { Archetype };
 
 export interface LadderTier {
   value: 1 | 2 | 3 | 4 | 5;
   label: string;
-}
-
-interface SportArchetypeInfo {
-  archetype: Archetype;
-  /** Only meaningful for the "standard" archetype — swaps wording between a timed and a scored qualifying standard. */
-  unit?: "time" | "score";
-}
-
-const SPORT_ARCHETYPE: Record<string, SportArchetypeInfo> = {
-  cricket: { archetype: "federation" },
-  football: { archetype: "federation" },
-  basketball: { archetype: "federation" },
-  kabaddi: { archetype: "federation" },
-  wrestling: { archetype: "federation" },
-  volleyball: { archetype: "federation" },
-  gymnastics: { archetype: "federation" },
-  tennis: { archetype: "ranking" },
-  badminton: { archetype: "ranking" },
-  "table tennis": { archetype: "ranking" },
-  chess: { archetype: "rating" },
-  athletics: { archetype: "standard", unit: "time" },
-  swimming: { archetype: "standard", unit: "time" },
-  shooting: { archetype: "standard", unit: "score" },
-};
-
-/** Federation is the safest generic default for sports outside our explicit map — most Indian sports run on a district/state/national structure. */
-const DEFAULT_ARCHETYPE_INFO: SportArchetypeInfo = { archetype: "federation" };
-
-function getSportArchetypeInfo(sport: string): SportArchetypeInfo {
-  const key = sport.trim().toLowerCase();
-  return SPORT_ARCHETYPE[key] ?? DEFAULT_ARCHETYPE_INFO;
+  /** Secondary line shown under the label — used to spell out nuance (e.g.
+   * tier 1 is about competitive record, not raw skill or time played). */
+  context?: string;
 }
 
 // ─── Ladders ────────────────────────────────────────────────────────────────
+//
+// Tier 1 in every ladder means "no competitive record yet" — nothing more.
+// It must NOT imply either axis of "beginner": not duration (a child can
+// train for years before their first ranking tournament — many circuits have
+// age floors) and not commitment (a child can train at a serious/academy
+// level and still have zero ranking, rating, or trial record). The label
+// stays purely factual about the record; the context line hedges both axes
+// explicitly so neither a casual player nor a professional-track prospect
+// with no ranking yet feels mischaracterized.
 
 const CURRENT_STANDING_LADDERS: Record<Archetype, LadderTier[]> = {
   federation: [
-    { value: 1, label: "Just starting — school-level only" },
-    { value: 2, label: "Competes at district level" },
-    { value: 3, label: "Competes at state level" },
-    { value: 4, label: "Competes at national level" },
-    { value: 5, label: "International exposure" },
+    {
+      value: 1,
+      label: "No trials yet",
+      context: "Hasn't reached district trials yet — no matter how long or how seriously they've trained",
+    },
+    { value: 2, label: "District level", context: "Competes at district level" },
+    { value: 3, label: "State level", context: "Competes at state level" },
+    { value: 4, label: "National level", context: "Competes at national level" },
+    { value: 5, label: "International", context: "Has international exposure" },
   ],
   ranking: [
-    { value: 1, label: "Just starting — no ranking tournaments yet" },
-    { value: 2, label: "Plays state-level ranking tournaments" },
-    { value: 3, label: "Has an All-India (national) ranking" },
-    { value: 4, label: "Ranked in the top tier nationally" },
-    { value: 5, label: "Competes on the international junior circuit (ITF / BWF)" },
+    {
+      value: 1,
+      label: "No ranking yet",
+      context: "Hasn't entered ranking tournaments yet — no matter how long or how seriously they've trained",
+    },
+    { value: 2, label: "State ranking", context: "Plays state-level ranking tournaments" },
+    { value: 3, label: "All-India ranking", context: "Has an All-India (national) ranking" },
+    { value: 4, label: "Top national tier", context: "Ranked in the top tier nationally" },
+    {
+      value: 5,
+      label: "International circuit",
+      context: "Competes on the international junior circuit (ITF / BWF)",
+    },
   ],
   rating: [
-    { value: 1, label: "Unrated — just starting" },
-    { value: 2, label: "State-rated" },
-    { value: 3, label: "Nationally rated (AICF)" },
-    { value: 4, label: "Internationally rated (FIDE)" },
-    { value: 5, label: "Titled / competes in international age-group events" },
+    {
+      value: 1,
+      label: "Unrated",
+      context: "Not yet officially rated — no matter how long or how seriously they've trained",
+    },
+    { value: 2, label: "State-rated", context: "Has a state rating" },
+    { value: 3, label: "Nationally rated", context: "Has a national (AICF) rating" },
+    { value: 4, label: "Internationally rated", context: "Has an international (FIDE) rating" },
+    {
+      value: 5,
+      label: "Titled",
+      context: "Titled, or competes in international age-group events",
+    },
   ],
   standard: [
-    { value: 1, label: "Just starting — no {unit} recorded yet" },
-    { value: 2, label: "Has a district/club-level {unit}" },
-    { value: 3, label: "Meets the state qualifying standard" },
-    { value: 4, label: "Meets the national qualifying standard" },
-    { value: 5, label: "Meets the international/Olympic qualifying standard" },
+    {
+      value: 1,
+      label: "No {unit} yet",
+      context: "No {unit} recorded yet — no matter how long or how seriously they've trained",
+    },
+    { value: 2, label: "District/club level", context: "Has a district/club-level {unit}" },
+    { value: 3, label: "State standard", context: "Meets the state qualifying standard" },
+    { value: 4, label: "National standard", context: "Meets the national qualifying standard" },
+    {
+      value: 5,
+      label: "International standard",
+      context: "Meets the international/Olympic qualifying standard",
+    },
   ],
 };
 
@@ -110,7 +128,11 @@ const BEST_RESULT_LADDERS: Record<Archetype, LadderTier[]> = {
 
 function resolveLadder(ladder: LadderTier[], unit: "time" | "score" | undefined): LadderTier[] {
   if (!unit) return ladder;
-  return ladder.map((tier) => ({ ...tier, label: tier.label.replace("{unit}", unit) }));
+  return ladder.map((tier) => ({
+    ...tier,
+    label: tier.label.replace("{unit}", unit),
+    context: tier.context?.replace("{unit}", unit),
+  }));
 }
 
 export function getCurrentStandingLadder(sport: string): LadderTier[] {

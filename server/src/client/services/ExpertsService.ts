@@ -2,6 +2,7 @@ import crypto from "crypto";
 import mongoose from "mongoose";
 import { User } from "../models/User";
 import { Expert } from "../models/ExpertProfile";
+import { IPayoutMethod } from "../models/Coach";
 import { Player, PlayerDocument } from "../models/Player";
 import { GuidanceSubmission } from "../models/GuidanceSubmission";
 import {
@@ -21,12 +22,27 @@ import {
   assertSlotBookable,
   OpenSlot,
 } from "./ExpertAvailabilityService";
+import { encryptValue, decryptValue } from "../../shared/utils/encryption";
 
 const toObjectId = (id: string) => new mongoose.Types.ObjectId(id);
 const frontendUrl = () => process.env.FRONTEND_URL || "http://localhost:3000";
 const toPaise = (rupees: number) => Math.round(rupees * 100);
 const HOLD_MINUTES = 15;
 const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+// Enforces the literal checksum-style "Z" in the 14th character — stricter
+// (and more correct) than the looser GSTIN regex historically used server-side
+// for Academy's onboarding, matching what the client already validates.
+const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+const decryptPayoutMethod = (m: IPayoutMethod): IPayoutMethod => {
+  // exactOptionalPropertyTypes forbids assigning `string | undefined` to an
+  // optional `string` field — only overwrite when there's an actual value.
+  const out: IPayoutMethod = { ...m };
+  if (out.accountNumber) out.accountNumber = decryptValue(out.accountNumber);
+  if (out.ifscCode) out.ifscCode = decryptValue(out.ifscCode);
+  if (out.upiId) out.upiId = decryptValue(out.upiId);
+  return out;
+};
 
 export const generateTemporaryPassword = (): string =>
   crypto
@@ -70,7 +86,15 @@ const serializeExpert = (expert: any) => {
   };
 };
 
-/** Owner/admin view — includes editable availability + photoKey. */
+/**
+ * Owner/admin view — includes editable availability + photoKey, plus
+ * tax/payout fields. Never merged into the public `serializeExpert`.
+ *
+ * `expert` here is almost always a `.lean()` result (plain object, not a
+ * live Mongoose document), which bypasses the schema-level `get: decryptValue`
+ * getters entirely — so panNumber/payoutMethods are decrypted explicitly
+ * here rather than relying on those getters to have already run.
+ */
 const serializeExpertFull = (expert: any) => ({
   ...serializeExpert(expert),
   photoKey: expert.photoKey,
@@ -78,6 +102,9 @@ const serializeExpertFull = (expert: any) => ({
   blackoutDates: expert.blackoutDates || [],
   inPersonAddress: expert.inPersonAddress,
   rejectionReason: expert.rejectionReason,
+  panNumber: expert.panNumber ? decryptValue(expert.panNumber) : expert.panNumber,
+  gstNumber: expert.gstNumber,
+  payoutMethods: (expert.payoutMethods || []).map(decryptPayoutMethod),
 });
 
 /**
@@ -371,6 +398,11 @@ export const listExpertsForAdmin = async (params: {
 };
 
 // Fields an admin (or the expert) may edit on a profile.
+// Note: `payoutMethods` is deliberately NOT here — it's gated separately via
+// upsertExpertPayoutMethod (see payoutController.ts), which enforces its own
+// upsert-by-id/append semantics and verificationStatus rules. Adding it to
+// this whitelist would reopen a raw, ungated write path to the exact field
+// that gate exists to protect.
 const EDITABLE_FIELDS = [
   "bio",
   "sports",
@@ -387,6 +419,8 @@ const EDITABLE_FIELDS = [
   "photoUrl",
   "photoKey",
   "inPersonAddress",
+  "panNumber",
+  "gstNumber",
 ] as const;
 
 const sanitizeProfilePatch = (patch: Record<string, unknown>) => {
@@ -414,6 +448,25 @@ const sanitizeProfilePatch = (patch: Record<string, unknown>) => {
         throw new Error("Invalid availability window");
       }
     }
+  }
+  if (out.panNumber != null) {
+    const pan = String(out.panNumber).trim().toUpperCase();
+    if (!PAN_REGEX.test(pan)) {
+      throw new Error("Invalid PAN number format (e.g. ABCDE1234F)");
+    }
+    // This patch is applied via findOneAndUpdate (see updateMyExpertProfile /
+    // updateExpertByAdmin below), which does NOT run the model's pre("save")
+    // hook — so encryption has to happen explicitly here, not rely on that hook.
+    out.panNumber = encryptValue(pan);
+  }
+  if (out.gstNumber != null && String(out.gstNumber).trim() !== "") {
+    const gst = String(out.gstNumber).trim().toUpperCase();
+    if (!GST_REGEX.test(gst)) {
+      throw new Error("Invalid GST number format");
+    }
+    out.gstNumber = gst;
+  } else if (out.gstNumber != null) {
+    out.gstNumber = "";
   }
   return out;
 };
@@ -494,6 +547,10 @@ export const submitExpertForReview = async (userId: string) => {
     !current.inPersonAddress?.trim()
   ) {
     missing.push("an in-person location");
+  }
+  if (!current.panNumber?.trim()) missing.push("a PAN number");
+  if (!current.payoutMethods || current.payoutMethods.length === 0) {
+    missing.push("a payout method (bank account or UPI)");
   }
   if (missing.length > 0) {
     throw new Error(`Complete your profile before submitting: ${missing.join(", ")}`);

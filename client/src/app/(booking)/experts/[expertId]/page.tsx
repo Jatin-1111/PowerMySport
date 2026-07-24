@@ -9,6 +9,7 @@ import {
     type ExpertReview,
     type ExpertSessionMode,
 } from "@/modules/expert/services/expert";
+import { CompleteProfileNudge, shouldShowTraitsNudge } from "@/modules/player/components/CompleteProfileNudge";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
@@ -108,6 +109,7 @@ export default function ExpertDetailPage() {
   const [slot, setSlot] = useState<string | null>(null);
   const [dependents, setDependents] = useState<DependentOption[]>([]);
   const [selectedDependentId, setSelectedDependentId] = useState<string | null>(null);
+  const [traitsNudgeOpen, setTraitsNudgeOpen] = useState(false);
 
   // Fetch the parent's children so they can optionally attach one to this
   // booking — auto-select when there's exactly one, same rule as the wizard.
@@ -150,19 +152,13 @@ export default function ExpertDetailPage() {
     if (expertId) load();
   }, [expertId, load]);
 
-  const handleConnect = async () => {
-    if (!user) {
-      router.push(`/login?redirect=/experts/${expertId}`);
-      return;
-    }
-    if (!slot) {
-      toast.error("Please pick a session time first.");
-      return;
-    }
+  const selectedDependent = dependents.find((d) => d._id === selectedDependentId);
+
+  const proceedToPayment = async () => {
     setConnecting(true);
     try {
       const res = await expertApi.initiateSession(expertId, {
-        scheduledAt: slot,
+        scheduledAt: slot!,
         mode: expert?.sessionMode === "BOTH" ? mode : undefined,
         clientNote: note.trim() || undefined,
         playerId: selectedDependentId || undefined,
@@ -181,6 +177,22 @@ export default function ExpertDetailPage() {
       toast.error(msg);
       setConnecting(false);
     }
+  };
+
+  const handleConnect = () => {
+    if (!user) {
+      router.push(`/login?redirect=/experts/${expertId}`);
+      return;
+    }
+    if (!slot) {
+      toast.error("Please pick a session time first.");
+      return;
+    }
+    if (shouldShowTraitsNudge(selectedDependent)) {
+      setTraitsNudgeOpen(true);
+      return;
+    }
+    proceedToPayment();
   };
 
   if (loading) return <DetailSkeleton />;
@@ -487,6 +499,18 @@ export default function ExpertDetailPage() {
           </div>
         </div>
       </div>
+
+      {selectedDependent && (
+        <CompleteProfileNudge
+          isOpen={traitsNudgeOpen}
+          dependentId={selectedDependent._id}
+          dependentName={selectedDependent.name}
+          onProceed={() => {
+            setTraitsNudgeOpen(false);
+            proceedToPayment();
+          }}
+        />
+      )}
     </div>
   );
 }

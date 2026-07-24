@@ -5,11 +5,14 @@ import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
 import RoadmapIntroModal from "./RoadmapIntroModal";
+import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
-import { PathwayConciergeModal } from "@/modules/sports/components/PathwayConciergeModal";
 import { RoadmapChatDrawer } from "@/modules/sports/components/RoadmapChatDrawer";
 import {
+    getArchetypeForSport,
     groupLevelsIntoMacro,
+    stageIndexForRawLevel,
 } from "@/modules/sports/config/macroLevels";
 import {
     federationApi,
@@ -80,26 +83,28 @@ import {
     saveSaved,
     saveState
 } from '../utils';
+import {
+    loadGuestPersona,
+    personaFromDependent,
+    personaRawLevel,
+    personalNotesParams,
+    ambitionTargetRawLevel,
+    possessive,
+    BUDGET_RANGE_DISPLAY,
+    RoadmapPersona,
+} from '../utils/persona';
 import { ApplicationsTab } from './ApplicationsTab';
 import { BudgetCalculator } from './BudgetCalculator';
 import { ComparePanel } from './ComparePanel';
 import { PathwayLevelCard } from './PathwayLevelCard';
 import { PathwayLevelDetail } from './PathwayLevelDetail';
-import { ProgressionStepper } from './ProgressionStepper';
+import { ArchetypeStepper } from './skeletons/ArchetypeStepper';
 import { SaveButton } from './SaveButton';
 import { SavedTab } from './SavedTab';
 import { StoriesTab } from './StoriesTab';
 import { AmbientBlob } from './SubComponents';
 
 // ─── Sport search section ──────────────────────────────────────────────────────
-
-// Maps 1:1 onto the 3 macro pathway tiers (MACRO_LEVEL_CONFIGS) — the same
-// enum already collected by the find-sport/guidance wizards.
-const EXPERIENCE_TO_MACRO_INDEX: Record<string, number> = {
-  beginner: 0,
-  intermediate: 1,
-  competitive: 2,
-};
 
 export function PathwayExplorerSection() {
   const [query, setQuery] = useState("");
@@ -141,10 +146,6 @@ export function PathwayExplorerSection() {
       else next.add(key);
       return next;
     });
-  const [modalData, setModalData] = useState<{
-    item: any;
-    type: "tournament" | "scholarship" | "university";
-  } | null>(null);
   const [federations, setFederations] = useState<Federation[]>([]);
 
   // P1: progress tracker state
@@ -162,6 +163,17 @@ export function PathwayExplorerSection() {
   const [dependents, setDependents] = useState<any[]>([]);
   const [selectedDependentId, setSelectedDependentId] = useState<string | null>(null);
   const ROADMAP_DEPENDENT_KEY = "pms_roadmap_dependent";
+
+  // Layer-1 persona: guests get wizard/sport-profile localStorage data
+  // (loaded in an effect — localStorage is unavailable during SSR); logged-in
+  // users get the selected dependent. Dismissal turns all personalization off
+  // for the session.
+  const [guestPersona, setGuestPersona] = useState<RoadmapPersona | null>(null);
+  const [personaDismissed, setPersonaDismissed] = useState(false);
+
+  // Layer-2: per-level AI notes for this child's (anonymized) signature.
+  const [personalNotes, setPersonalNotes] = useState<Record<number, string> | null>(null);
+  const [personalNotesLoading, setPersonalNotesLoading] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -277,6 +289,12 @@ export function PathwayExplorerSection() {
       setIntroModalOpen(true);
     }
   }, []);
+
+  // Guest persona from /sport-profile + /assessment/discover localStorage.
+  useEffect(() => {
+    if (!user) setGuestPersona(loadGuestPersona());
+    else setGuestPersona(null);
+  }, [user]);
 
   // Show "Back to assessment" link when wizard results exist in localStorage
   useEffect(() => {
@@ -412,18 +430,25 @@ export function PathwayExplorerSection() {
       setQuery(pr.pathway.sportName);
       setStatus("success");
 
-      // Position-first: if the selected child already plays this exact sport
-      // and told us their level, open there instead of always starting at
-      // Beginner — a returning parent shouldn't have to re-navigate to where
-      // their child already is.
+      // Position-first: if we know this child in this exact sport (selected
+      // dependent, or a guest's sport-profile/wizard answers), open at their
+      // stage instead of always starting at the first one. The persona's
+      // 1–5 standing tier maps straight onto raw pathway levels; the coarser
+      // experienceLevel enum is the fallback inside personaRawLevel.
       const activeDependent = dependents.find((d) => d._id === selectedDependentId);
-      if (
-        activeDependent?.experienceLevel &&
-        (activeDependent.sportsFocus || []).some(
-          (s: string) => s.toLowerCase() === pr.pathway.sportName.toLowerCase(),
-        )
-      ) {
-        setActiveIdx(EXPERIENCE_TO_MACRO_INDEX[activeDependent.experienceLevel] ?? 0);
+      const searchPersona = user
+        ? activeDependent
+          ? personaFromDependent(activeDependent)
+          : null
+        : loadGuestPersona();
+      const searchRawLevel = personaRawLevel(searchPersona, pr.pathway.sportName);
+      if (searchRawLevel) {
+        setActiveIdx(
+          stageIndexForRawLevel(
+            getArchetypeForSport(pr.pathway.sportName).archetype,
+            searchRawLevel,
+          ),
+        );
       }
 
       // Cache for instant back-navigation restore
@@ -565,9 +590,110 @@ export function PathwayExplorerSection() {
     }
   };
 
+  // Application assistance now routes straight to a human on WhatsApp instead
+  // of the in-app document-upload concierge flow.
+  const getConciergeWhatsAppUrl = (
+    item: { name?: string },
+    type: "tournament" | "scholarship" | "university",
+  ) => {
+    const sport = result?.pathway.sportName;
+    const kind =
+      type === "scholarship"
+        ? "scholarship"
+        : type === "university"
+          ? "university admission"
+          : "tournament registration";
+    return buildWhatsAppUrl(
+      `Hi! I'd like help with the ${item.name ?? kind} ${kind}${
+        sport ? ` (${sport})` : ""
+      } I found on PowerMySport.`,
+    );
+  };
+
   const currentLevels = result ? result.pathway.levels : pathwayLevels;
-  const macroLevels = groupLevelsIntoMacro(currentLevels as PathwayLevel[]);
-  const selectedMacroLevel = macroLevels[activeIdx] || macroLevels[0];
+  // The four archetypes each define their own skeleton (stage count, grouping,
+  // labels, visuals) — the same 5 raw levels flow into whichever matches.
+  const {
+    archetype,
+    unit: archetypeUnit,
+    meta: archetypeMeta,
+  } = getArchetypeForSport(result ? result.pathway.sportName : "");
+  const macroLevels = groupLevelsIntoMacro(
+    currentLevels as PathwayLevel[],
+    archetype,
+  );
+  // Stage counts differ per archetype (3 vs 4), so an index carried over from
+  // a previous sport or URL param may overshoot — clamp instead of vanishing.
+  const safeActiveIdx = Math.min(activeIdx, Math.max(macroLevels.length - 1, 0));
+  const selectedMacroLevel = macroLevels[safeActiveIdx] || macroLevels[0];
+
+  // ── Layer-1 persona (deterministic personalization) ──
+  const activeDependentForPersona = dependents.find(
+    (d) => d._id === selectedDependentId,
+  );
+  const persona: RoadmapPersona | null = personaDismissed
+    ? null
+    : user
+      ? activeDependentForPersona
+        ? personaFromDependent(activeDependentForPersona)
+        : null
+      : guestPersona;
+  // Explicit progress-tracker level wins; the persona's standing (only valid
+  // when they actually told us about THIS sport) fills in otherwise.
+  const personaLevel = result
+    ? personaRawLevel(persona, result.pathway.sportName)
+    : null;
+  const effectiveCurrentLevel = progress.currentLevel || personaLevel || 0;
+  const goalRawLevel = persona
+    ? (ambitionTargetRawLevel(persona.ambition) ?? undefined)
+    : undefined;
+
+  // Layer-2 fetch: per-level "for your child" notes, keyed by the anonymized
+  // signature (no name leaves the client). sessionStorage keeps stage/tab
+  // switching and back-navigation free; the server caches by cohort anyway.
+  const notesSig =
+    result && persona
+      ? JSON.stringify(personalNotesParams(persona, result.pathway.sportName))
+      : "";
+  const resultSportSlug = result?.pathway.sportSlug;
+  useEffect(() => {
+    setPersonalNotes(null);
+    setPersonalNotesLoading(false);
+    if (!resultSportSlug || !selectedState || !notesSig || notesSig === "null")
+      return;
+    const cacheK = `pms_personal_notes|${resultSportSlug}|${selectedState}|${notesSig}`;
+    try {
+      const raw = sessionStorage.getItem(cacheK);
+      if (raw) {
+        setPersonalNotes(JSON.parse(raw));
+        return;
+      }
+    } catch {}
+    let cancelled = false;
+    setPersonalNotesLoading(true);
+    pathwayApi
+      .getPersonalNotes(
+        result!.pathway.sportName,
+        selectedState,
+        JSON.parse(notesSig),
+      )
+      .then((notes) => {
+        if (cancelled) return;
+        setPersonalNotes(notes);
+        if (notes) {
+          try {
+            sessionStorage.setItem(cacheK, JSON.stringify(notes));
+          } catch {}
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setPersonalNotesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resultSportSlug, selectedState, notesSig]);
   const totalOpportunities = result
     ? (result.pathway.tournaments?.length || 0) +
       (result.pathway.scholarships?.length || 0) +
@@ -616,24 +742,45 @@ export function PathwayExplorerSection() {
 
         {/* Whose progress is this — visible only when there's an actual choice to make */}
         {dependents.length > 1 && (
-          <div className="flex flex-wrap justify-center gap-2 mb-5">
-            <span className="self-center text-xs font-medium text-slate-400 mr-1">
-              Whose progress is this?
+          <div className="mb-6 flex flex-wrap items-center justify-center gap-2.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Whose progress?
             </span>
-            {dependents.map((dep) => (
-              <button
-                key={dep._id}
-                type="button"
-                onClick={() => selectDependent(dep._id)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-                  selectedDependentId === dep._id
-                    ? "border-power-orange bg-orange-50 text-power-orange"
-                    : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
-                }`}
-              >
-                {dep.name}
-              </button>
-            ))}
+            <div className="inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm">
+              {dependents.map((dep) => {
+                const active = selectedDependentId === dep._id;
+                return (
+                  <button
+                    key={dep._id}
+                    type="button"
+                    onClick={() => selectDependent(dep._id)}
+                    className={`relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors duration-200 ${
+                      active
+                        ? "text-white"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    {active && (
+                      <motion.div
+                        layoutId="activeDependentPill"
+                        className="absolute inset-0 -z-10 rounded-full bg-power-orange shadow-[0_2px_10px_-2px_rgba(233,115,22,0.55)]"
+                        transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
+                      />
+                    )}
+                    <span
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black transition-colors duration-200 ${
+                        active
+                          ? "bg-white/25 text-white"
+                          : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {dep.name?.[0]?.toUpperCase() ?? "?"}
+                    </span>
+                    {dep.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -779,48 +926,65 @@ export function PathwayExplorerSection() {
             </div>
           </div>
 
-          {/* State filter indicator */}
-          {selectedState && (
+          {/* Active-filter chips — state + personalisation in one compact,
+              non-redundant row instead of two stacked full-width banners.
+              Persona (when present) supersedes the coarser URL-param
+              context banner and already carries its own state mention, so
+              the state chip drops it there to avoid saying it twice. */}
+          {(selectedState || persona || contextBanner) && (
             <motion.div
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-2 flex items-center gap-2"
+              className="mt-3 flex flex-wrap items-center gap-2"
             >
-              <span className="flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-power-orange">
-                <MapPin className="h-3 w-3" />
-                Localised for {selectedState}
-                <button
-                  onClick={() => handleStateChange("")}
-                  className="ml-1 hover:text-orange-800 transition"
+              {selectedState && (
+                <span
+                  className="group inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 py-1.5 pl-3 pr-1.5 text-xs font-semibold text-power-orange"
+                  title={`Results will include ${selectedState}-specific data`}
                 >
-                  <X className="h-2.5 w-2.5" />
-                </button>
-              </span>
-              <span className="text-xs text-slate-400">
-                Results will include {selectedState}-specific data
-              </span>
-            </motion.div>
-          )}
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  {selectedState}
+                  <button
+                    onClick={() => handleStateChange("")}
+                    className="flex h-4 w-4 items-center justify-center rounded-full text-orange-400 transition hover:bg-orange-100 hover:text-orange-700"
+                    title="Clear state filter"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </span>
+              )}
 
-          {/* Context banner from URL params */}
-          {contextBanner && (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2"
-            >
-              <span className="text-xs font-semibold text-indigo-700 flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5" />
-                Personalised view · Age {contextBanner.age} ·{" "}
-                {contextBanner.budget} tier
-                {contextBanner.state ? ` · ${contextBanner.state}` : ""}
-              </span>
-              <button
-                onClick={() => setContextBanner(null)}
-                className="text-indigo-400 hover:text-indigo-700 transition"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
+              {persona ? (
+                <span className="group inline-flex max-w-full items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50 py-1.5 pl-3 pr-1.5 text-xs font-semibold text-violet-700">
+                  <Sparkles className="h-3 w-3 shrink-0" />
+                  <span className="truncate">
+                    Personalised for {persona.name ?? "your child"}
+                    {persona.age ? ` · Age ${persona.age}` : ""}
+                    {persona.budgetRange
+                      ? ` · ${BUDGET_RANGE_DISPLAY[persona.budgetRange]}`
+                      : ""}
+                  </span>
+                  <button
+                    onClick={() => setPersonaDismissed(true)}
+                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-violet-400 transition hover:bg-violet-100 hover:text-violet-700"
+                    title="Turn off personalisation"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </span>
+              ) : contextBanner ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50 py-1.5 pl-3 pr-1.5 text-xs font-semibold text-violet-700">
+                  <Sparkles className="h-3 w-3 shrink-0" />
+                  Personalised view · Age {contextBanner.age} ·{" "}
+                  {contextBanner.budget} tier
+                  <button
+                    onClick={() => setContextBanner(null)}
+                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-violet-400 transition hover:bg-violet-100 hover:text-violet-700"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </span>
+              ) : null}
             </motion.div>
           )}
 
@@ -1194,6 +1358,12 @@ export function PathwayExplorerSection() {
                               {result.pathway.category}
                             </span>
                           )}
+                          {/* Journey structure — which of the four archetype
+                              skeletons this sport's data flows into */}
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-600 border border-violet-100">
+                            <TrendingUp className="h-3 w-3" />
+                            {archetypeMeta.label}
+                          </span>
                           {(() => {
                             const lastCheckedRaw =
                               result.pathway.lastRefreshedAt ||
@@ -1226,10 +1396,21 @@ export function PathwayExplorerSection() {
                           </div>
                         )}
                         <h2 className="font-title text-2xl font-bold text-slate-900 break-words sm:text-3xl">
-                          {result.pathway.sportName}
-                          <span className="ml-2 text-slate-400 font-normal text-xl sm:text-2xl">
-                            Pathway
-                          </span>
+                          {persona?.name ? (
+                            <>
+                              {possessive(persona.name)} {result.pathway.sportName}
+                              <span className="ml-2 text-slate-400 font-normal text-xl sm:text-2xl">
+                                Roadmap
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              {result.pathway.sportName}
+                              <span className="ml-2 text-slate-400 font-normal text-xl sm:text-2xl">
+                                Pathway
+                              </span>
+                            </>
+                          )}
                         </h2>
                         {result.pathway.overview && (
                           <p className="mt-2 max-w-2xl text-sm text-slate-600 leading-relaxed sm:text-base">
@@ -1447,13 +1628,17 @@ export function PathwayExplorerSection() {
                     transition={{ duration: 0.2 }}
                   >
                     <div className="space-y-5">
-                      {/* Visual progression stepper */}
+                      {/* Archetype-matched progression skeleton */}
                       <div className="rounded-3xl border border-slate-200/60 bg-white/70 shadow-sm backdrop-blur-sm overflow-hidden">
-                        <ProgressionStepper
-                          macroLevels={macroLevels}
-                          activeIdx={activeIdx}
+                        <ArchetypeStepper
+                          archetype={archetype}
+                          unit={archetypeUnit}
+                          stages={macroLevels}
+                          activeIdx={safeActiveIdx}
                           onSelect={setActiveIdx}
-                          currentLevel={progress.currentLevel}
+                          currentLevel={effectiveCurrentLevel}
+                          personaName={persona?.name}
+                          goalRawLevel={goalRawLevel}
                         />
                       </div>
 
@@ -1468,7 +1653,10 @@ export function PathwayExplorerSection() {
                                 result ? result.pathway.sportName : "General"
                               }
                               state={selectedState || undefined}
-                              nextMacroLevel={macroLevels[activeIdx + 1]}
+                              nextMacroLevel={macroLevels[safeActiveIdx + 1]}
+                              persona={persona}
+                              personalNotes={personalNotes}
+                              personalNotesLoading={personalNotesLoading}
                             />
                           )}
                         </AnimatePresence>
@@ -1612,19 +1800,16 @@ export function PathwayExplorerSection() {
                                           savedItems={savedItems}
                                           onToggle={handleSavedChange}
                                         />
-                                        <button
-                                          onClick={() => {
-                                            toggleCard(key);
-                                            setModalData({
-                                              item: s,
-                                              type: "scholarship",
-                                            });
-                                          }}
+                                        <a
+                                          href={getConciergeWhatsAppUrl(s, "scholarship")}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={() => toggleCard(key)}
                                           className="ml-auto flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-700 transition"
                                         >
-                                          Apply{" "}
-                                          <ArrowRight className="h-3.5 w-3.5" />
-                                        </button>
+                                          <WhatsAppIcon className="h-3.5 w-3.5 text-[#25D366]" />
+                                          Apply via WhatsApp
+                                        </a>
                                       </div>
                                     </div>
                                   </div>
@@ -1729,19 +1914,16 @@ export function PathwayExplorerSection() {
                                           savedItems={savedItems}
                                           onToggle={handleSavedChange}
                                         />
-                                        <button
-                                          onClick={() => {
-                                            toggleCard(key);
-                                            setModalData({
-                                              item: u,
-                                              type: "university",
-                                            });
-                                          }}
+                                        <a
+                                          href={getConciergeWhatsAppUrl(u, "university")}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={() => toggleCard(key)}
                                           className="ml-auto flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-700 transition"
                                         >
-                                          Learn More{" "}
-                                          <ArrowRight className="h-3.5 w-3.5" />
-                                        </button>
+                                          <WhatsAppIcon className="h-3.5 w-3.5 text-[#25D366]" />
+                                          Get Help via WhatsApp
+                                        </a>
                                       </div>
                                     </div>
                                   </div>
@@ -2069,7 +2251,13 @@ export function PathwayExplorerSection() {
                     onUnsave={(id) =>
                       handleSavedChange(savedItems.filter((s) => s.id !== id))
                     }
-                    onOpenModal={(item, type) => setModalData({ item, type })}
+                    onGetHelp={(item, type) =>
+                      window.open(
+                        getConciergeWhatsAppUrl(item, type),
+                        "_blank",
+                        "noopener,noreferrer",
+                      )
+                    }
                   />
                 )}
 
@@ -2099,19 +2287,6 @@ export function PathwayExplorerSection() {
             router.push("/assessment/discover");
           }}
         />
-
-        {/* Concierge modal — scholarships & universities only */}
-        {modalData && (
-          <PathwayConciergeModal
-            isOpen={!!modalData}
-            onClose={() => setModalData(null)}
-            item={modalData.item}
-            type={modalData.type}
-            onSubmitSuccess={(record) => {
-              handleApplicationsChange([...applications, record]);
-            }}
-          />
-        )}
 
         {/* Floating "Ask AI Coach" CTA — always visible, no scrolling needed */}
         {result && !chatOpen && (

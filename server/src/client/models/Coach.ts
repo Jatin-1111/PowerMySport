@@ -4,6 +4,11 @@ import {
   IOwnVenueDetails,
   ServiceMode,
 } from "../../types/index";
+import {
+  isEncryptedValue,
+  encryptValue,
+  decryptValue,
+} from "../../shared/utils/encryption";
 
 export type PayoutMethodType = "BANK_TRANSFER" | "UPI";
 
@@ -361,10 +366,19 @@ const coachSchema = new Schema<CoachDocument>(
           enum: ["BANK_TRANSFER", "UPI"],
         },
         accountHolderName: { type: String, trim: true },
-        accountNumber: { type: String, trim: true },
-        ifscCode: { type: String, trim: true, uppercase: true },
+        accountNumber: {
+          type: String,
+          trim: true,
+          get: (v: string) => decryptValue(v),
+        },
+        ifscCode: {
+          type: String,
+          trim: true,
+          uppercase: true,
+          get: (v: string) => decryptValue(v),
+        },
         bankName: { type: String, trim: true },
-        upiId: { type: String, trim: true },
+        upiId: { type: String, trim: true, get: (v: string) => decryptValue(v) },
         isDefault: { type: Boolean, default: false },
         addedAt: { type: Date, default: Date.now },
         updatedAt: { type: Date, default: Date.now },
@@ -375,6 +389,7 @@ const coachSchema = new Schema<CoachDocument>(
     timestamps: true,
     toJSON: {
       virtuals: true,
+      getters: true,
       transform(doc: any, ret: any) {
         ret.id = ret._id?.toString();
         delete ret.__v;
@@ -390,6 +405,7 @@ const coachSchema = new Schema<CoachDocument>(
     },
     toObject: {
       virtuals: true,
+      getters: true,
       transform(doc: any, ret: any) {
         ret.id = ret._id?.toString();
         delete ret.__v;
@@ -405,6 +421,22 @@ const coachSchema = new Schema<CoachDocument>(
     },
   },
 );
+
+coachSchema.pre("save", function () {
+  if (this.isModified("payoutMethods") && Array.isArray(this.payoutMethods)) {
+    this.payoutMethods.forEach((method) => {
+      if (method.accountNumber && !isEncryptedValue(method.accountNumber)) {
+        method.accountNumber = encryptValue(method.accountNumber);
+      }
+      if (method.ifscCode && !isEncryptedValue(method.ifscCode)) {
+        method.ifscCode = encryptValue(method.ifscCode);
+      }
+      if (method.upiId && !isEncryptedValue(method.upiId)) {
+        method.upiId = encryptValue(method.upiId);
+      }
+    });
+  }
+});
 
 // Virtual for easy access to id as a string
 coachSchema.virtual("id").get(function (this: CoachDocument) {

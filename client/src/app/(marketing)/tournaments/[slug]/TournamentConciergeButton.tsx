@@ -1,9 +1,7 @@
 "use client";
 
-import { PathwayConciergeModal } from "@/modules/sports/components/PathwayConciergeModal";
-import { Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 interface ConciergeTournamentItem {
   _id: string;
@@ -23,35 +21,22 @@ export function TournamentConciergeButton({
   item: ConciergeTournamentItem;
   buttonClassName?: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const message = `Hi! I'd like help registering for ${item.name} (${item.sportName}) that I found on PowerMySport.${
+    item.prerequisiteName ? ` I understand it needs a ${item.prerequisiteName}.` : ""
+  }`;
 
   return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        className={
-          buttonClassName ??
-          "flex items-center justify-center gap-2 w-full rounded-xl bg-slate-900 py-3 text-sm font-bold text-white hover:bg-slate-800 transition"
-        }
-      >
-        <Sparkles className="h-4 w-4 text-amber-300" />
-        Get Free Concierge Help
-      </button>
-      {mounted &&
-        createPortal(
-          <PathwayConciergeModal
-            isOpen={open}
-            onClose={() => setOpen(false)}
-            item={item}
-            type="tournament"
-          />,
-          document.body,
-        )}
-    </>
+    <a
+      href={buildWhatsAppUrl(message)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={
+        buttonClassName ??
+        "flex items-center justify-center gap-2 w-full rounded-xl bg-slate-900 py-3 text-sm font-bold text-white hover:bg-slate-800 transition"
+      }
+    >
+      <WhatsAppIcon className="h-4 w-4 text-[#25D366]" />
+      Get Free Help via WhatsApp
+    </a>
   );
 }

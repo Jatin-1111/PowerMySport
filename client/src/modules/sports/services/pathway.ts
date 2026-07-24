@@ -396,6 +396,40 @@ export const pathwayApi = {
   },
 
   /**
+   * Layer-2 personalization: one short AI note per raw level (1–5) for an
+   * anonymized child signature. Returns a level→note map, or null on any
+   * error so the roadmap can silently skip the card. No name is ever sent.
+   */
+  getPersonalNotes: async (
+    sportName: string,
+    state: string,
+    params: {
+      age?: number;
+      tier?: number;
+      ambition?: string;
+      budget?: string;
+      hours?: string;
+    },
+  ): Promise<Record<number, string> | null> => {
+    try {
+      const q = new URLSearchParams({ sport: sportName, state });
+      if (params.age) q.append("age", String(params.age));
+      if (params.tier) q.append("tier", String(params.tier));
+      if (params.ambition) q.append("ambition", params.ambition);
+      if (params.budget) q.append("budget", params.budget);
+      if (params.hours) q.append("hours", params.hours);
+      const resp = await axiosInstance.get<
+        ApiResponse<Array<{ level: number; note: string }>>
+      >(`/pathways/personal-notes?${q.toString()}`);
+      const notes = resp.data.data ?? [];
+      if (!notes.length) return null;
+      return Object.fromEntries(notes.map((n) => [n.level, n.note]));
+    } catch {
+      return null;
+    }
+  },
+
+  /**
    * Fetch (or lazily generate) the progression plan for a raw pathway level.
    * level must be 1–4 (level 5 is the top — no next level to progress to).
    * Returns null on any error so the caller can show a graceful error state.

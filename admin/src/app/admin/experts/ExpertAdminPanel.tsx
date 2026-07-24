@@ -18,6 +18,10 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
+// Display convenience for a wide/shared admin screen — not a security
+// boundary, the real value already reached this browser either way.
+const maskAccountNumber = (num: string) =>
+  num.length > 4 ? "•".repeat(num.length - 4) + num.slice(-4) : num;
 const formatDate = (v?: string) =>
   v
     ? new Date(v).toLocaleDateString("en-IN", {
@@ -521,6 +525,44 @@ export function ExpertAdminPanel({
           <p className="text-sm leading-relaxed text-slate-700">{expert.bio}</p>
         </DetailSection>
       )}
+
+      <DetailSection title="Tax & payout info">
+        <DetailRow label="PAN number" value={expert.panNumber || "Not provided"} />
+        {expert.gstNumber && (
+          <DetailRow label="GST number" value={expert.gstNumber} />
+        )}
+        {(() => {
+          const methods = expert.payoutMethods || [];
+          const primary = methods.find((m) => m.isDefault) || methods[0];
+          if (!primary) {
+            return <DetailRow label="Payout method" value="Not provided" />;
+          }
+          return primary.type === "BANK_TRANSFER" ? (
+            <>
+              <DetailRow label="Payout method" value="Bank transfer" />
+              <DetailRow
+                label="Account holder"
+                value={primary.accountHolderName || "—"}
+              />
+              <DetailRow
+                label="Account number"
+                value={
+                  primary.accountNumber
+                    ? maskAccountNumber(primary.accountNumber)
+                    : "—"
+                }
+              />
+              <DetailRow label="IFSC" value={primary.ifscCode || "—"} />
+              <DetailRow label="Bank" value={primary.bankName || "—"} />
+            </>
+          ) : (
+            <>
+              <DetailRow label="Payout method" value="UPI" />
+              <DetailRow label="UPI ID" value={primary.upiId || "—"} />
+            </>
+          );
+        })()}
+      </DetailSection>
 
       <DetailSection title="Sessions & earnings">
         {!sessions ? (

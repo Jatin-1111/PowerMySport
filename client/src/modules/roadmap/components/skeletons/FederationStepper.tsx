@@ -1,37 +1,34 @@
 "use client";
 
-import { MacroLevel } from "@/modules/sports/config/macroLevels";
 import { motion } from "framer-motion";
 
-const STAGE = [
-  { hex: "#10b981", soft: "#ecfdf5", ring: "#a7f3d0", dark: "#065f46" },
-  { hex: "#f59e0b", soft: "#fffbeb", ring: "#fde68a", dark: "#78350f" },
-  { hex: "#8b5cf6", soft: "#f5f3ff", ring: "#ddd6fe", dark: "#4c1d95" },
-];
+import { StageChips, stageStatus } from "./StageChips";
+import { StepperProps } from "./types";
 
-const DURATION = ["~12–18 months to next", "~2–4 years to next", "Peak stage"];
+// ─── Federation skeleton: selection pyramid ─────────────────────────────────
+//
+// Three broad panels — the classic City → District/State → National ladder.
+// Advancement is by selection, so the visual keeps calm, equal-weight stages.
 
-interface ProgressionStepperProps {
-  macroLevels: MacroLevel[];
-  activeIdx: number;
-  onSelect: (i: number) => void;
-  currentLevel: number;
-}
-
-export function ProgressionStepper({
-  macroLevels,
+export function FederationStepper({
+  stages,
   activeIdx,
   onSelect,
   currentLevel,
-}: ProgressionStepperProps) {
+  personaName,
+  goalRawLevel,
+}: StepperProps) {
   return (
     <>
-      {/* ─── Desktop: three-panel card selector ─────────────────────────────── */}
-      <div className="hidden lg:grid grid-cols-3">
-        {macroLevels.map((macro, i) => {
-          const c = STAGE[i] ?? STAGE[0];
+      {/* ─── Desktop: panel-per-stage selector ─────────────────────────────── */}
+      <div
+        className="hidden lg:grid"
+        style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))` }}
+      >
+        {stages.map((macro, i) => {
+          const c = macro.stepper;
           const isActive = i === activeIdx;
-          const isCurrent = macro.rawLevels.some((l) => l.level === currentLevel);
+          const { isCurrent, isGoal } = stageStatus(macro, currentLevel, goalRawLevel);
 
           return (
             <button
@@ -52,7 +49,6 @@ export function ProgressionStepper({
               <div className="flex flex-col gap-5 px-8 py-7">
                 {/* Icon + meta row */}
                 <div className="flex items-start justify-between">
-                  {/* Icon circle */}
                   <motion.div
                     animate={{
                       background: isActive ? c.hex : c.soft,
@@ -65,7 +61,6 @@ export function ProgressionStepper({
                     {macro.icon}
                   </motion.div>
 
-                  {/* Step number + current badge */}
                   <div className="flex flex-col items-end gap-2">
                     <span
                       className="text-[11px] font-black tracking-[0.18em] transition-colors duration-200"
@@ -73,14 +68,12 @@ export function ProgressionStepper({
                     >
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    {isCurrent && (
-                      <span
-                        className="text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
-                        style={{ background: c.ring, color: c.dark }}
-                      >
-                        Your level
-                      </span>
-                    )}
+                    <StageChips
+                      isCurrent={isCurrent}
+                      isGoal={isGoal}
+                      personaName={personaName}
+                      palette={c}
+                    />
                   </div>
                 </div>
 
@@ -108,7 +101,7 @@ export function ProgressionStepper({
                     color: isActive ? c.dark : "#94a3b8",
                   }}
                 >
-                  {DURATION[i]}
+                  {macro.durationNote}
                 </span>
               </div>
 
@@ -126,10 +119,10 @@ export function ProgressionStepper({
 
       {/* ─── Mobile: stacked row cards ──────────────────────────────────────── */}
       <div className="flex lg:hidden flex-col divide-y divide-slate-100">
-        {macroLevels.map((macro, i) => {
-          const c = STAGE[i] ?? STAGE[0];
+        {stages.map((macro, i) => {
+          const c = macro.stepper;
           const isActive = i === activeIdx;
-          const isCurrent = macro.rawLevels.some((l) => l.level === currentLevel);
+          const { isCurrent, isGoal } = stageStatus(macro, currentLevel, goalRawLevel);
 
           return (
             <button
@@ -139,14 +132,12 @@ export function ProgressionStepper({
               className="relative flex items-center gap-4 px-5 py-4 text-left focus:outline-none transition-colors duration-300 overflow-hidden"
               style={{ background: isActive ? c.soft : "#fff" }}
             >
-              {/* Left accent */}
               <motion.div
                 className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full"
                 animate={{ opacity: isActive ? 1 : 0 }}
                 style={{ background: c.hex }}
               />
 
-              {/* Icon */}
               <motion.div
                 animate={{
                   background: isActive ? c.hex : c.soft,
@@ -159,7 +150,6 @@ export function ProgressionStepper({
                 {macro.icon}
               </motion.div>
 
-              {/* Text */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span
@@ -168,19 +158,17 @@ export function ProgressionStepper({
                   >
                     {macro.label}
                   </span>
-                  {isCurrent && (
-                    <span
-                      className="text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
-                      style={{ background: c.ring, color: c.dark }}
-                    >
-                      Your level
-                    </span>
-                  )}
+                  <StageChips
+                    isCurrent={isCurrent}
+                    isGoal={isGoal}
+                    personaName={personaName}
+                    palette={c}
+                    compact
+                  />
                 </div>
                 <span className="text-[11px] text-slate-400">{macro.scopeTag}</span>
               </div>
 
-              {/* Step number */}
               <span
                 className="shrink-0 text-[11px] font-black transition-colors duration-200"
                 style={{ color: isActive ? c.hex : "#e2e8f0" }}

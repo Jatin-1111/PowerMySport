@@ -219,4 +219,10 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Anchor targets inside legal documents sit under the sticky site nav
+     (h-16) — offset so a jumped-to heading isn't flush against it. */
+  .legal-content section[id] {
+    scroll-margin-top: 6rem;
+  }
 }

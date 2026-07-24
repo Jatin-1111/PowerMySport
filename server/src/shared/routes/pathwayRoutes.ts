@@ -14,6 +14,7 @@ import {
   getCuratedTournamentBySlug,
   getCuratedTournaments,
   getProgressionPlan,
+  getPersonalNotes,
 } from "../controller/pathwayController";
 import { authMiddleware } from "../../middleware/auth";
 
@@ -38,6 +39,10 @@ router.get("/search", pathwayRateLimiter, searchPathways);
 // GET /api/pathways/progression?sport=&state=&level=
 // Returns (or lazily generates) the transition plan from one macro-level to the next.
 router.get("/progression", pathwayRateLimiter, getProgressionPlan);
+
+// GET /api/pathways/personal-notes?sport=&state=&age=&tier=&ambition=&budget=&hours=
+// Layer-2 personalization: per-level notes for an anonymized child signature.
+router.get("/personal-notes", pathwayRateLimiter, getPersonalNotes);
 
 // GET /api/pathways/stories?sport=cricket&level=2
 router.get("/stories", pathwayRateLimiter, getPathwayStories);

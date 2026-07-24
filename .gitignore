@@ -16,3 +16,5 @@ PROJECT_CONTEXT.md
 *.txt
 
 asset
+logs
+docs

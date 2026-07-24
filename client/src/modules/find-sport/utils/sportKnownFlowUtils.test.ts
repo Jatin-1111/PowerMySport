@@ -172,7 +172,7 @@ describe("buildProfileChips", () => {
     expect(chips).toContain("Boy");
     expect(chips).toContain("Age 10");
     expect(chips).toContain("Maharashtra");
-    expect(chips).toContain("Competes at state level"); // federation tier 3, Cricket
+    expect(chips).toContain("State level"); // federation tier 3, Cricket
     expect(chips).toContain("3 yrs playing");
     expect(chips).toContain("Academy");
     expect(chips).toContain("Sunrise Academy");
@@ -235,7 +235,7 @@ describe("buildProfileChips", () => {
     // Tennis = ranking archetype
     expect(
       buildProfileChips(form({ sport: "Tennis", currentStandingTier: 1 })),
-    ).toContain("Just starting — no ranking tournaments yet");
+    ).toContain("No ranking yet");
     // Chess = rating archetype
     expect(
       buildProfileChips(form({ sport: "Chess", currentStandingTier: 2 })),
@@ -366,11 +366,11 @@ describe("getCurrentStandingLadder / getBestResultLadder — archetype resolutio
   it("federation sports (e.g. Cricket) get the district/state/national ladder", () => {
     const ladder = getCurrentStandingLadder("Cricket");
     expect(ladder.map((t) => t.label)).toEqual([
-      "Just starting — school-level only",
-      "Competes at district level",
-      "Competes at state level",
-      "Competes at national level",
-      "International exposure",
+      "No trials yet",
+      "District level",
+      "State level",
+      "National level",
+      "International",
     ]);
   });
 
@@ -382,32 +382,52 @@ describe("getCurrentStandingLadder / getBestResultLadder — archetype resolutio
   });
 
   it("ranking sports (Tennis, Badminton) get the ranking-tournament ladder", () => {
-    expect(getCurrentStandingLadder("Tennis")[2].label).toBe("Has an All-India (national) ranking");
-    expect(getCurrentStandingLadder("Badminton")[2].label).toBe("Has an All-India (national) ranking");
+    expect(getCurrentStandingLadder("Tennis")[2].context).toBe("Has an All-India (national) ranking");
+    expect(getCurrentStandingLadder("Badminton")[2].context).toBe("Has an All-India (national) ranking");
   });
 
   it("Chess's rating ladder correctly distinguishes AICF (national) from FIDE (international) — not the same body", () => {
     const ladder = getCurrentStandingLadder("Chess");
     expect(ladder[1].label).toBe("State-rated");
-    expect(ladder[2].label).toContain("AICF");
-    expect(ladder[2].label).not.toContain("FIDE");
-    expect(ladder[3].label).toContain("FIDE");
+    expect(ladder[2].context).toContain("AICF");
+    expect(ladder[2].context).not.toContain("FIDE");
+    expect(ladder[3].context).toContain("FIDE");
   });
 
   it("Athletics/Swimming (time-based standard) swap in 'time'", () => {
-    expect(getCurrentStandingLadder("Athletics")[0].label).toBe("Just starting — no time recorded yet");
-    expect(getCurrentStandingLadder("Swimming")[1].label).toBe("Has a district/club-level time");
+    expect(getCurrentStandingLadder("Athletics")[0].context).toBe(
+      "No time recorded yet — no matter how long or how seriously they've trained",
+    );
+    expect(getCurrentStandingLadder("Swimming")[1].context).toBe("Has a district/club-level time");
   });
 
   it("Shooting (score-based standard) swaps in 'score'", () => {
-    expect(getCurrentStandingLadder("Shooting")[0].label).toBe("Just starting — no score recorded yet");
+    expect(getCurrentStandingLadder("Shooting")[0].context).toBe(
+      "No score recorded yet — no matter how long or how seriously they've trained",
+    );
+  });
+
+  it("tier 1 never implies the child is a raw or casual beginner — only that they lack a competitive record", () => {
+    Object.values(["Cricket", "Tennis", "Chess", "Athletics", "Shooting"]).forEach((sport) => {
+      const tier1 = getCurrentStandingLadder(sport)[0];
+      // Label stays purely factual about the record — no beginner framing...
+      expect(tier1.label.toLowerCase()).not.toContain("just starting");
+      // ...and no commitment-level framing either: a professionally-trained
+      // prospect can have zero ranking (many circuits have age floors), so
+      // "casually"/"informally" is just as wrong a label as "beginner" was.
+      expect(tier1.label.toLowerCase()).not.toContain("casual");
+      expect(tier1.label.toLowerCase()).not.toContain("informal");
+      // Context hedges both axes: duration and seriousness.
+      expect(tier1.context?.toLowerCase()).toContain("no matter how long");
+      expect(tier1.context?.toLowerCase()).toContain("seriously");
+    });
   });
 
   it("standard archetype doesn't falsely imply a formal qualifying cutoff at district/club level (only state-and-above genuinely gate on a standard)", () => {
     ["Athletics", "Swimming", "Shooting"].forEach((sport) => {
       const ladder = getCurrentStandingLadder(sport);
-      expect(ladder[1].label.toLowerCase()).not.toContain("qualifying");
-      expect(ladder[2].label.toLowerCase()).toContain("qualifying"); // state tier genuinely does
+      expect(ladder[1].context?.toLowerCase()).not.toContain("qualifying");
+      expect(ladder[2].context?.toLowerCase()).toContain("qualifying"); // state tier genuinely does
     });
   });
 

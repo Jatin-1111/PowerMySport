@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { Sport } from "../models/Sport";
 import { SportPathway, SportPathwayDocument, ProgressionPlan, PathwayLevel } from "../models/SportPathway";
+import { PathwayPersonalNote, PersonalNote } from "../models/PathwayPersonalNote";
 import { Tournament } from "../models/Tournament";
 import { Scholarship } from "../models/Scholarship";
 import { University } from "../models/University";
@@ -244,6 +245,106 @@ Return ONLY a valid JSON object (no markdown, no code fences) with this exact st
 All content must be specific to ${sportName} in India. Focus only on the ${currentLevel.label}-to-${nextLevel.label} transition. The milestones array must have exactly 3 or 4 items. The prerequisites array must have 3 to 5 items.`;
 }
 
+// ─── Personal notes (Layer-2 personalization) ────────────────────────────────
+
+/**
+ * Anonymized child signature — deliberately no name and no exact age. The
+ * client renders the "For <name>" label itself; the server only ever sees
+ * cohort-level facts, and cache hits are shared across similar children.
+ */
+export interface PersonaSignature {
+  ageBand?: "under-5" | "5-7" | "8-10" | "11-13" | "14-16" | "17-plus" | undefined;
+  standingTier?: number | undefined; // 1–5, their current raw level in THIS sport
+  ambition?: "fun" | "competitive" | "national" | "professional" | undefined;
+  budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus" | undefined;
+  weeklyHours?: "1-3" | "4-7" | "8-12" | "13-plus" | undefined;
+}
+
+const AMBITION_LABEL: Record<string, string> = {
+  fun: "fitness and enjoyment only — no competitive goals",
+  competitive: "competing seriously at the local/state level",
+  national: "reaching the national level",
+  professional: "pursuing the sport professionally / internationally",
+};
+
+const BUDGET_LABEL: Record<string, string> = {
+  "under-3k": "under ₹3,000 per month",
+  "3k-7k": "₹3,000–7,000 per month",
+  "7k-15k": "₹7,000–15,000 per month",
+  "15k-plus": "₹15,000+ per month",
+};
+
+const HOURS_LABEL: Record<string, string> = {
+  "1-3": "1–3 hours a week",
+  "4-7": "4–7 hours a week",
+  "8-12": "8–12 hours a week",
+  "13-plus": "13+ hours a week",
+};
+
+const AGE_BAND_LABEL: Record<string, string> = {
+  "under-5": "under 5",
+  "5-7": "5 to 7",
+  "8-10": "8 to 10",
+  "11-13": "11 to 13",
+  "14-16": "14 to 16",
+  "17-plus": "17 or older",
+};
+
+function buildPersonalNotesPrompt(
+  sportName: string,
+  state: string,
+  levels: PathwayLevel[],
+  persona: PersonaSignature,
+): string {
+  const levelFacts = levels
+    .map(
+      (l) =>
+        `Level ${l.level} — "${l.label}": focus: ${l.keyFocus}; typical ages: ${l.ageRange}; competitions: ${l.competitions}`,
+    )
+    .join("\n");
+
+  const childFacts = [
+    persona.ageBand
+      ? `- The child's approximate age bracket is ${AGE_BAND_LABEL[persona.ageBand]} years old. This is a rounded bracket for privacy, NOT their exact age — never state it back as "your child is X to Y" or as a specific fact; use it only to judge what's age-appropriate.`
+      : null,
+    persona.standingTier
+      ? `- The child is CURRENTLY at Level ${persona.standingTier} of this pathway.`
+      : "- We do not know the child's current level.",
+    persona.ambition ? `- The family's stated goal: ${AMBITION_LABEL[persona.ambition]}.` : null,
+    persona.budgetRange ? `- The family's monthly sports budget: ${BUDGET_LABEL[persona.budgetRange]}.` : null,
+    persona.weeklyHours ? `- Current training time: ${HOURS_LABEL[persona.weeklyHours]}.` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return `You are an expert Indian sports development consultant. A parent in ${state} is looking at the ${sportName} development pathway for their child. Write ONE short personal note for EACH of the 5 pathway levels, connecting THIS child's situation to that level.
+
+THE PATHWAY LEVELS (facts to ground every note in):
+${levelFacts}
+
+THIS CHILD:
+${childFacts}
+
+RULES — all of them matter:
+- WRITE IN SIMPLE LANGUAGE: short sentences, everyday words, spoken directly to the parent. Refer to the child only as "your child" — never invent a name.
+- NEVER state the child's age bracket as if it were their exact age (do not write things like "since your child is 5 to 7" or "your child is X-Y"). If age is relevant, phrase it naturally instead — e.g. "at this age" or "for a child this young" — without repeating the bracket's numbers.
+- Each note is 2–3 sentences, tied to that level's actual facts (its focus, competitions, typical ages) AND the child's situation (level, goal, budget, hours).
+- For levels BELOW the child's current level: one sentence on what should already be in place from that stage, framed as consolidation — never as failure.
+- For the child's CURRENT level: what to focus on right now, and the single most useful next action.
+- For levels ABOVE: what it realistically takes from where they are — training hours, costs, and time, in concrete terms. If the family's stated budget or hours fall short of what that level typically needs, say so plainly and mention what families usually adjust.
+- BE HONEST, NEVER FLATTERING: no praise, no predictions like "your child will reach", no motivational filler, no words like "journey", "unlock", "potential", "embark".
+- If the child's current level is unknown, write each note for a family just starting to explore this sport.
+
+Return ONLY a valid JSON array (no markdown, no code fences), exactly 5 entries:
+[
+  {"level": 1, "note": "..."},
+  {"level": 2, "note": "..."},
+  {"level": 3, "note": "..."},
+  {"level": 4, "note": "..."},
+  {"level": 5, "note": "..."}
+]`;
+}
+
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 export class PathwayService {
@@ -253,6 +354,8 @@ export class PathwayService {
   private refreshInProgressSet = new Set<string>();
   /** Set of "cacheKey_level" strings currently generating a progression plan */
   private progressionInProgressSet = new Set<string>();
+  /** Set of persona-signature cache keys currently generating personal notes */
+  private personalNotesInProgressSet = new Set<string>();
   private sportValidationCache = new Map<string, boolean>();
 
   constructor() {
@@ -524,6 +627,121 @@ export class PathwayService {
       return planWithDate;
     } finally {
       this.progressionInProgressSet.delete(guardKey);
+    }
+  }
+
+  /**
+   * Layer-2 personalization: one short note per raw level (1–5) tailored to
+   * an anonymized child signature, generated lazily and cached by signature.
+   * Only works against an ALREADY-CACHED pathway — this endpoint must never
+   * become a pathway-generation vector.
+   */
+  async getOrGeneratePersonalNotes(
+    sportName: string,
+    state: string,
+    persona: PersonaSignature,
+  ): Promise<PersonalNote[] | null> {
+    if (!this.genAI) return null;
+
+    const slug = toSlug(sportName);
+    const stateSlug = toSlug(state);
+    const pathwayKey = `${slug}_${stateSlug}`;
+    const sig = [
+      `a${persona.ageBand ?? "x"}`,
+      `t${persona.standingTier ?? "x"}`,
+      persona.ambition ?? "x",
+      persona.budgetRange ?? "x",
+      `h${persona.weeklyHours ?? "x"}`,
+    ].join("_");
+    const cacheKey = `${pathwayKey}__${sig}`;
+
+    // Cache hit — shared across all children with the same signature.
+    const cached = await PathwayPersonalNote.findOne({ cacheKey }).lean();
+    if (cached?.notes?.length) return cached.notes as PersonalNote[];
+
+    // Grounding data must already exist; never trigger pathway generation here.
+    const pathway = await SportPathway.findOne({ cacheKey: pathwayKey }).lean();
+    const levels = (pathway?.levels ?? []) as PathwayLevel[];
+    if (levels.length < 5) return null;
+
+    if (this.personalNotesInProgressSet.has(cacheKey)) return null;
+    this.personalNotesInProgressSet.add(cacheKey);
+
+    try {
+      const modelCandidates = [
+        "gemini-2.5-flash",
+        "gemini-3.5-flash",
+        "gemini-2.5-flash-lite",
+      ];
+      const prompt = buildPersonalNotesPrompt(
+        pathway!.sportName ?? sportName,
+        state,
+        levels,
+        persona,
+      );
+      let notes: PersonalNote[] | null = null;
+
+      for (const modelName of modelCandidates) {
+        try {
+          const result = await Promise.race([
+            this.genAI.models.generateContent({
+              model: modelName,
+              contents: prompt,
+              config: {
+                responseMimeType: "application/json",
+                temperature: 0.5,
+                thinkingConfig: { thinkingBudget: 0 },
+                maxOutputTokens: 1024,
+              } as any,
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("client_timeout")), 25000),
+            ),
+          ]);
+
+          const text = (result.text ?? "").trim();
+          const jsonText = text
+            .replace(/^```[a-z]*\n?/i, "")
+            .replace(/```$/i, "")
+            .trim();
+          const parsed = JSON.parse(jsonText) as PersonalNote[];
+
+          const valid =
+            Array.isArray(parsed) &&
+            parsed.length === 5 &&
+            parsed.every(
+              (n) =>
+                typeof n.level === "number" &&
+                n.level >= 1 &&
+                n.level <= 5 &&
+                typeof n.note === "string" &&
+                n.note.trim().length > 20,
+            );
+          if (!valid) throw new Error("Invalid personal notes shape");
+
+          notes = parsed.map((n) => ({ level: n.level, note: n.note.trim() }));
+          log.info(
+            `[PathwayService] Personal notes generated: ${cacheKey} via ${modelName}`,
+          );
+          break;
+        } catch (err: any) {
+          log.warn(
+            `[PathwayService] Personal notes failed on ${modelName} for ${cacheKey}: ${err.message}`,
+          );
+        }
+      }
+
+      if (!notes) return null;
+
+      await PathwayPersonalNote.updateOne(
+        { cacheKey },
+        { $set: { cacheKey, sportSlug: slug, state, notes, createdAt: new Date() } },
+        { upsert: true },
+      );
+
+      return notes;
+    } finally {
+      this.personalNotesInProgressSet.delete(cacheKey);
     }
   }
 

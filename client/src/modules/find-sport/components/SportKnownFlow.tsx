@@ -306,7 +306,7 @@ function QuestionInput({
       const ladder = getCurrentStandingLadder(form.sport || "");
       return (
         <FourContextCards
-          options={ladder.map((t) => ({ value: String(t.value), label: t.label, context: "" }))}
+          options={ladder.map((t) => ({ value: String(t.value), label: t.label, context: t.context ?? "" }))}
           value={form.currentStandingTier !== null ? String(form.currentStandingTier) : null}
           onChange={(v) => set("currentStandingTier", Number(v))}
         />
@@ -596,7 +596,7 @@ function ResultsView({ form, onReset }: { form: KnownSportForm; onReset: () => v
 
         <div className="space-y-3">
           <Link
-            href={`/roadmap?sport=${encodeURIComponent(form.sport)}`}
+            href={`/roadmap?sport=${encodeURIComponent(form.sport)}${form.state ? `&state=${encodeURIComponent(form.state)}` : ""}`}
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-power-orange px-5 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98]"
           >
             <Map className="h-4 w-4" />
@@ -708,6 +708,15 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
   const goNext = () => {
     setDir(1);
     if (idx >= STEPS.length - 1) {
+      // Persist locally so /roadmap can personalise (name, standing tier,
+      // budget, ambition) — the only durable record for guests, and for
+      // logged-in users it covers the window before the dependent refetch.
+      try {
+        localStorage.setItem(
+          "pms_sport_profile",
+          JSON.stringify({ form, savedAt: new Date().toISOString() }),
+        );
+      } catch {}
       if (token) {
         const wizardFields = {
           ...(form.sport ? { sportsFocus: [form.sport] } : {}),

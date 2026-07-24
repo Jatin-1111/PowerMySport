@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { INDIAN_STATES } from "@/modules/guidance/constants";
-import DependentManagementModal from "@/modules/player/components/DependentManagementModal";
+import DependentManagementModal, {
+  type DependentModalStepId,
+} from "@/modules/player/components/DependentManagementModal";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { ProfileCompletionRing } from "@/modules/player/components/ProfileCompletionRing";
 import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
@@ -64,6 +66,7 @@ import {
     UserRound,
     Users,
 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type Dependent = NonNullable<User["dependents"]>[number];
@@ -102,6 +105,8 @@ function ProfilePageSkeleton() {
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [graduatingDependentId, setGraduatingDependentId] = useState<
@@ -112,6 +117,9 @@ export default function ProfilePage() {
   const [dependentModalMode, setDependentModalMode] = useState<"add" | "edit">(
     "add",
   );
+  const [dependentModalStepId, setDependentModalStepId] = useState<
+    DependentModalStepId | undefined
+  >(undefined);
   const [selectedDependent, setSelectedDependent] = useState<Dependent | null>(
     null,
   );
@@ -170,6 +178,28 @@ export default function ProfilePage() {
       setIsLoading(false);
     }
   };
+
+  // Deep-link from cross-flow "complete your profile" nudges (guidance,
+  // expert booking): ?editDependent=<id>&step=<stepId> opens that dependent
+  // straight at the relevant step, then clears the URL so a refresh doesn't
+  // reopen it.
+  useEffect(() => {
+    if (!user) return;
+    const editDependentId = searchParams.get("editDependent");
+    if (!editDependentId) return;
+    const dependent = user.dependents?.find(
+      (d) => d._id?.toString() === editDependentId,
+    );
+    if (!dependent) return;
+    setSelectedDependent(dependent);
+    setDependentModalMode("edit");
+    setDependentModalStepId(
+      (searchParams.get("step") as DependentModalStepId | null) ?? undefined,
+    );
+    setShowDependentModal(true);
+    router.replace("/dashboard/my-profile", { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, searchParams]);
 
   const handleStartGraduation = (dependent: Dependent) => {
     if (!dependent._id) {
@@ -248,12 +278,14 @@ export default function ProfilePage() {
   const handleAddDependent = () => {
     setSelectedDependent(null);
     setDependentModalMode("add");
+    setDependentModalStepId(undefined);
     setShowDependentModal(true);
   };
 
   const handleEditDependent = (dependent: Dependent) => {
     setSelectedDependent(dependent);
     setDependentModalMode("edit");
+    setDependentModalStepId(undefined);
     setShowDependentModal(true);
   };
 
@@ -1436,6 +1468,7 @@ export default function ProfilePage() {
         initialDependent={selectedDependent}
         isLoading={savingDependentId !== null}
         mode={dependentModalMode}
+        initialStepId={dependentModalStepId}
       />
 
       <Modal

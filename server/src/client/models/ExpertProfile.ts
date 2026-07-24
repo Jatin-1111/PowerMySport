@@ -1,5 +1,10 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { IPayoutMethod } from "./Coach";
+import {
+  isEncryptedValue,
+  encryptValue,
+  decryptValue,
+} from "../../shared/utils/encryption";
 
 /**
  * Expert = an elite/ex-professional player who offers paid 1:1 sessions.
@@ -50,6 +55,10 @@ export interface ExpertDocument extends Document {
   rating: number;
   reviewCount: number;
   payoutMethods: IPayoutMethod[];
+  /** PAN — stored encrypted at rest. Required to submit for review. */
+  panNumber?: string;
+  /** GST number — optional; not every individual expert is GST-registered. */
+  gstNumber?: string;
   createdBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -109,10 +118,10 @@ const expertSchema = new Schema<ExpertDocument>(
           id: String,
           type: { type: String, enum: ["BANK_TRANSFER", "UPI"] },
           accountHolderName: String,
-          accountNumber: String,
-          ifscCode: String,
+          accountNumber: { type: String, get: (v: string) => decryptValue(v) },
+          ifscCode: { type: String, get: (v: string) => decryptValue(v) },
           bankName: String,
-          upiId: String,
+          upiId: { type: String, get: (v: string) => decryptValue(v) },
           isDefault: Boolean,
           addedAt: { type: Date, default: Date.now },
           updatedAt: { type: Date, default: Date.now },
@@ -120,10 +129,41 @@ const expertSchema = new Schema<ExpertDocument>(
       ],
       default: [],
     },
+    // PAN — encrypted at rest (see pre("save") hook below).
+    panNumber: { type: String, trim: true, get: (v: string) => decryptValue(v) },
+    // GST — not encrypted: a business-registration number, semi-public by
+    // nature, unlike PAN or bank details. Matches Academy's own precedent.
+    gstNumber: { type: String, trim: true, uppercase: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "Admin" },
   },
   { timestamps: true },
 );
+
+expertSchema.set("toJSON", { getters: true });
+expertSchema.set("toObject", { getters: true });
+
+// Backstop for any direct .save()/.create() path (e.g. Expert.create in
+// createExpertByAdmin). The onboarding/admin-edit path (sanitizeProfilePatch
+// in ExpertsService.ts) writes via findOneAndUpdate, which never runs this
+// hook, so panNumber is encrypted explicitly there too — not just here.
+expertSchema.pre("save", function () {
+  if (this.isModified("panNumber") && this.panNumber && !isEncryptedValue(this.panNumber)) {
+    this.panNumber = encryptValue(this.panNumber);
+  }
+  if (this.isModified("payoutMethods") && Array.isArray(this.payoutMethods)) {
+    this.payoutMethods.forEach((method) => {
+      if (method.accountNumber && !isEncryptedValue(method.accountNumber)) {
+        method.accountNumber = encryptValue(method.accountNumber);
+      }
+      if (method.ifscCode && !isEncryptedValue(method.ifscCode)) {
+        method.ifscCode = encryptValue(method.ifscCode);
+      }
+      if (method.upiId && !isEncryptedValue(method.upiId)) {
+        method.upiId = encryptValue(method.upiId);
+      }
+    });
+  }
+});
 
 expertSchema.index({ isActive: 1, rating: -1 });
 // Text index to support server-side search across name-adjacent fields.

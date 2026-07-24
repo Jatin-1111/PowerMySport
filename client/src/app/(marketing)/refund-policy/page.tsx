@@ -1,6 +1,35 @@
 "use client";
 
+import { LegalPageHeader } from "@/components/legal/LegalPageHeader";
+import {
+  LegalTableOfContents,
+  type LegalTocItem,
+} from "@/components/legal/LegalTableOfContents";
+import { Card } from "@/modules/shared/ui/Card";
+import {
+  AlertTriangle,
+  CalendarCheck,
+  Gavel,
+  HandCoins,
+  Mail,
+  Scale,
+  ScrollText,
+  ShieldAlert,
+  Wallet,
+} from "lucide-react";
 import { useEffect } from "react";
+
+const REFUND_POLICY_TOC: LegalTocItem[] = [
+  { id: "overview", label: "Overview", icon: ScrollText },
+  { id: "cancellation-windows", label: "Cancellation & Refund Windows", icon: CalendarCheck },
+  { id: "refund-processing", label: "Refund Processing", icon: Wallet },
+  { id: "disputes-chargebacks", label: "Payment Disputes & Chargebacks", icon: ShieldAlert },
+  { id: "special-cases", label: "Special Cases", icon: AlertTriangle },
+  { id: "coach-venue-refunds", label: "Coach & Venue Refunds", icon: HandCoins },
+  { id: "escalation-appeals", label: "Escalation & Appeals", icon: Gavel },
+  { id: "contact-support", label: "Contact & Support", icon: Mail },
+  { id: "statutory-rights", label: "Your Statutory Rights", icon: Scale },
+];
 
 export default function RefundPolicy() {
   useEffect(() => {
@@ -8,20 +37,20 @@ export default function RefundPolicy() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-white">
-      <div className="container mx-auto max-w-4xl px-4 py-16 md:py-24">
-        <article className="prose prose-lg max-w-none">
-          <h1 className="text-4xl font-bold mb-4">
-            Cancellation, Refund &amp; Dispute Policy
-          </h1>
+    <div className="min-h-screen bg-slate-50">
+      <LegalPageHeader
+        icon={Wallet}
+        title="Cancellation, Refund & Dispute Policy"
+        lastUpdated="July 24, 2026"
+        effective="July 24, 2026"
+      />
 
-          <p className="text-gray-600 text-sm mb-8">
-            <strong>Last Updated:</strong> July 9, 2026 |{" "}
-            <strong>Effective Date:</strong> July 9, 2026
-          </p>
-
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mt-8 mb-4">1. Overview</h2>
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-10">
+          <LegalTableOfContents items={REFUND_POLICY_TOC} />
+          <Card className="legal-content bg-white p-8 prose prose-lg max-w-none lg:col-start-2">
+          <section id="overview" className="mb-8">
+            <h2 className="text-2xl font-semibold mt-2 mb-4">1. Overview</h2>
             <p>
               This policy governs all cancellations, refunds, no-shows, and
               payment disputes for bookings made through PowerMySport and is
@@ -35,7 +64,7 @@ export default function RefundPolicy() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="cancellation-windows" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               2. Cancellation &amp; Refund Windows
             </h2>
@@ -43,59 +72,61 @@ export default function RefundPolicy() {
             <h3 className="text-xl font-semibold mt-6 mb-3">
               2.1 Player-Initiated Cancellations
             </h3>
-            <table className="w-full border-collapse border border-gray-300 mt-4 mb-4">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="border border-gray-300 p-3 text-left">
-                    Cancellation Window
-                  </th>
-                  <th className="border border-gray-300 p-3 text-left">
-                    Refund Percentage
-                  </th>
-                  <th className="border border-gray-300 p-3 text-left">
-                    Timeline
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="border border-gray-300 p-3">
-                    &gt;48 hours before booking
-                  </td>
-                  <td className="border border-gray-300 p-3">100% refund</td>
-                  <td className="border border-gray-300 p-3">
-                    5-10 business days to original payment method (instant if
-                    issued as wallet credit)
-                  </td>
-                </tr>
-                <tr className="bg-gray-50">
-                  <td className="border border-gray-300 p-3">
-                    24-48 hours before booking
-                  </td>
-                  <td className="border border-gray-300 p-3">50% refund</td>
-                  <td className="border border-gray-300 p-3">
-                    5-10 business days to original payment method (instant if
-                    issued as wallet credit)
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-300 p-3">
-                    &lt;24 hours before booking
-                  </td>
-                  <td className="border border-gray-300 p-3">
-                    No refund (full forfeiture)
-                  </td>
-                  <td className="border border-gray-300 p-3">N/A</td>
-                </tr>
-                <tr className="bg-gray-50">
-                  <td className="border border-gray-300 p-3">
-                    After booking completed or no-show
-                  </td>
-                  <td className="border border-gray-300 p-3">No refund</td>
-                  <td className="border border-gray-300 p-3">N/A</td>
-                </tr>
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300 mt-4 mb-4">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="border border-gray-300 p-3 text-left">
+                      Cancellation Window
+                    </th>
+                    <th className="border border-gray-300 p-3 text-left">
+                      Refund Percentage
+                    </th>
+                    <th className="border border-gray-300 p-3 text-left">
+                      Timeline
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="border border-gray-300 p-3">
+                      &gt;48 hours before booking
+                    </td>
+                    <td className="border border-gray-300 p-3">100% refund</td>
+                    <td className="border border-gray-300 p-3">
+                      5-10 business days to original payment method (instant if
+                      issued as wallet credit)
+                    </td>
+                  </tr>
+                  <tr className="bg-gray-50">
+                    <td className="border border-gray-300 p-3">
+                      24-48 hours before booking
+                    </td>
+                    <td className="border border-gray-300 p-3">50% refund</td>
+                    <td className="border border-gray-300 p-3">
+                      5-10 business days to original payment method (instant if
+                      issued as wallet credit)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="border border-gray-300 p-3">
+                      &lt;24 hours before booking
+                    </td>
+                    <td className="border border-gray-300 p-3">
+                      No refund (full forfeiture)
+                    </td>
+                    <td className="border border-gray-300 p-3">N/A</td>
+                  </tr>
+                  <tr className="bg-gray-50">
+                    <td className="border border-gray-300 p-3">
+                      After booking completed or no-show
+                    </td>
+                    <td className="border border-gray-300 p-3">No refund</td>
+                    <td className="border border-gray-300 p-3">N/A</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <p>
               Refunds are calculated on the amount you actually paid for the
               booking. Any payment-gateway charge that is non-refundable to
@@ -140,7 +171,7 @@ export default function RefundPolicy() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="refund-processing" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               3. Refund Processing
             </h2>
@@ -201,7 +232,7 @@ export default function RefundPolicy() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="disputes-chargebacks" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               4. Payment Disputes &amp; Chargebacks
             </h2>
@@ -235,6 +266,15 @@ export default function RefundPolicy() {
                 disputes team
               </li>
             </ol>
+            <p className="mt-3">
+              <strong>A note on refund scams:</strong> PowerMySport will never
+              call or message you asking for your OTP, CVV, card number, or
+              net-banking password to &quot;process&quot; or
+              &quot;verify&quot; a refund. We also never ask you to make a
+              payment or share a QR code to receive a refund. If anyone
+              contacts you this way claiming to represent PowerMySport,
+              disengage and report it to teams@powermysport.com immediately.
+            </p>
 
             <h3 className="text-xl font-semibold mt-6 mb-3">
               4.2 Dispute Investigation Timeline
@@ -297,83 +337,85 @@ export default function RefundPolicy() {
             <h3 className="text-xl font-semibold mt-6 mb-3">
               4.4 Common Dispute Reasons &amp; Resolution
             </h3>
-            <table className="w-full border-collapse border border-gray-300 mt-4 mb-4">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="border border-gray-300 p-3 text-left">
-                    Dispute Type
-                  </th>
-                  <th className="border border-gray-300 p-3 text-left">
-                    Eligible for Refund?
-                  </th>
-                  <th className="border border-gray-300 p-3 text-left">
-                    Required Evidence
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="border border-gray-300 p-3">
-                    Coach/Venue no-show
-                  </td>
-                  <td className="border border-gray-300 p-3">
-                    100% refund, subject to verification
-                  </td>
-                  <td className="border border-gray-300 p-3">
-                    Check-in photo/timestamp, communications
-                  </td>
-                </tr>
-                <tr className="bg-gray-50">
-                  <td className="border border-gray-300 p-3">
-                    Service not matching description
-                  </td>
-                  <td className="border border-gray-300 p-3">
-                    Refundable once the mismatch is verified, consistent with
-                    the Consumer Protection (E-Commerce) Rules, 2020
-                  </td>
-                  <td className="border border-gray-300 p-3">
-                    Photos, testimonies, booking details
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-300 p-3">
-                    Booking made in error (duplicate charge)
-                  </td>
-                  <td className="border border-gray-300 p-3">
-                    100% refund, less processing fee
-                  </td>
-                  <td className="border border-gray-300 p-3">
-                    Booking IDs, transaction timestamps
-                  </td>
-                </tr>
-                <tr className="bg-gray-50">
-                  <td className="border border-gray-300 p-3">
-                    Unauthorized transaction
-                  </td>
-                  <td className="border border-gray-300 p-3">
-                    100% refund upon confirmed investigation
-                  </td>
-                  <td className="border border-gray-300 p-3">
-                    Account security details, device info
-                  </td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-300 p-3">
-                    Technical error (platform malfunction)
-                  </td>
-                  <td className="border border-gray-300 p-3">
-                    100% refund; further compensation, if any, solely at
-                    PowerMySport&apos;s discretion
-                  </td>
-                  <td className="border border-gray-300 p-3">
-                    Error screenshots, logs
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300 mt-4 mb-4">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="border border-gray-300 p-3 text-left">
+                      Dispute Type
+                    </th>
+                    <th className="border border-gray-300 p-3 text-left">
+                      Eligible for Refund?
+                    </th>
+                    <th className="border border-gray-300 p-3 text-left">
+                      Required Evidence
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="border border-gray-300 p-3">
+                      Coach/Venue no-show
+                    </td>
+                    <td className="border border-gray-300 p-3">
+                      100% refund, subject to verification
+                    </td>
+                    <td className="border border-gray-300 p-3">
+                      Check-in photo/timestamp, communications
+                    </td>
+                  </tr>
+                  <tr className="bg-gray-50">
+                    <td className="border border-gray-300 p-3">
+                      Service not matching description
+                    </td>
+                    <td className="border border-gray-300 p-3">
+                      Refundable once the mismatch is verified, consistent with
+                      the Consumer Protection (E-Commerce) Rules, 2020
+                    </td>
+                    <td className="border border-gray-300 p-3">
+                      Photos, testimonies, booking details
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="border border-gray-300 p-3">
+                      Booking made in error (duplicate charge)
+                    </td>
+                    <td className="border border-gray-300 p-3">
+                      100% refund, less processing fee
+                    </td>
+                    <td className="border border-gray-300 p-3">
+                      Booking IDs, transaction timestamps
+                    </td>
+                  </tr>
+                  <tr className="bg-gray-50">
+                    <td className="border border-gray-300 p-3">
+                      Unauthorized transaction
+                    </td>
+                    <td className="border border-gray-300 p-3">
+                      100% refund upon confirmed investigation
+                    </td>
+                    <td className="border border-gray-300 p-3">
+                      Account security details, device info
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="border border-gray-300 p-3">
+                      Technical error (platform malfunction)
+                    </td>
+                    <td className="border border-gray-300 p-3">
+                      100% refund; further compensation, if any, solely at
+                      PowerMySport&apos;s discretion
+                    </td>
+                    <td className="border border-gray-300 p-3">
+                      Error screenshots, logs
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </section>
 
-          <section className="mb-8">
+          <section id="special-cases" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               5. Special Cases
             </h2>
@@ -438,7 +480,7 @@ export default function RefundPolicy() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="coach-venue-refunds" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               6. Coach &amp; Venue Refunds
             </h2>
@@ -480,7 +522,7 @@ export default function RefundPolicy() {
             </ul>
           </section>
 
-          <section className="mb-8">
+          <section id="escalation-appeals" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               7. Escalation &amp; Appeals
             </h2>
@@ -522,7 +564,7 @@ export default function RefundPolicy() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="contact-support" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               8. Contact &amp; Support
             </h2>
@@ -553,7 +595,7 @@ export default function RefundPolicy() {
             </div>
           </section>
 
-          <section className="mb-8">
+          <section id="statutory-rights" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               9. Your Statutory Rights
             </h2>
@@ -579,8 +621,9 @@ export default function RefundPolicy() {
               subject always to Section 9 above.
             </p>
           </section>
-        </article>
+          </Card>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

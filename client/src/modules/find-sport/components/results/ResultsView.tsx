@@ -194,7 +194,7 @@ export function ResultsView({
           Your Child&apos;s Personalised Sports Roadmap
         </h1>
         <p className="text-sm text-slate-500">
-          Three different picks, not a ranking — a safe best-fit, a stretch worth trying, and a cheap way to start.
+          Three different picks, not a ranking — a safe best-fit, a stretch worth trying, and a economical way to start.
         </p>
       </div>
 

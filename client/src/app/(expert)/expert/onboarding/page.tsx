@@ -3,8 +3,16 @@
 import { authApi } from "@/modules/auth/services/auth";
 import { expertApi, type ExpertAvailabilityWindow } from "@/modules/expert/services/expert";
 import { ExpertPhotoUpload } from "@/modules/expert/components/ExpertPhotoUpload";
+import {
+  TaxPayoutInfoStep,
+  EMPTY_TAX_PAYOUT_INFO,
+  validateTaxPayoutInfo,
+  buildPayoutMethodPayload,
+  type TaxPayoutInfoValue,
+} from "@/modules/expert/components/TaxPayoutInfoStep";
 import ExpertiseMultiSelect from "@/modules/shared/components/ExpertiseMultiSelect";
 import LanguagesMultiSelect from "@/modules/shared/components/LanguagesMultiSelect";
+import { payoutApi } from "@/modules/shared/services/payout";
 import { Button } from "@/modules/shared/ui/Button";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
@@ -13,6 +21,7 @@ import {
   AlertCircle,
   ArrowLeft,
   Award,
+  BadgeIndianRupee,
   CalendarOff,
   CheckCircle2,
   ChevronRight,
@@ -43,6 +52,7 @@ const STEPS = [
   { id: 2, title: "Expertise", icon: Award },
   { id: 3, title: "Session Setup", icon: Zap },
   { id: 4, title: "Availability", icon: Clock },
+  { id: 5, title: "Tax & Payout", icon: BadgeIndianRupee },
 ];
 
 function SectionHeading({
@@ -109,6 +119,9 @@ export default function ExpertOnboardingPage() {
   const [blackout, setBlackout] = useState<string[]>([]);
   const [newBlackout, setNewBlackout] = useState("");
 
+  // Step 5 — Tax & Payout
+  const [taxPayout, setTaxPayout] = useState<TaxPayoutInfoValue>(EMPTY_TAX_PAYOUT_INFO);
+
   // The auth store hydrates from localStorage asynchronously (see
   // HydrationBoundary), so `user` can still be null on the render where this
   // component's `name` state initializer runs. Sync once it arrives.
@@ -145,6 +158,19 @@ export default function ExpertOnboardingPage() {
         setSessionDurationMinutes(String(p.sessionDurationMinutes || 60));
         setWindows(p.weeklyAvailability || []);
         setBlackout(p.blackoutDates || []);
+        const primaryPayout =
+          p.payoutMethods?.find((m) => m.isDefault) || p.payoutMethods?.[0];
+        setTaxPayout({
+          panNumber: p.panNumber || "",
+          gstNumber: p.gstNumber || "",
+          payoutType: primaryPayout?.type || "BANK_TRANSFER",
+          accountHolderName: primaryPayout?.accountHolderName || "",
+          accountNumber: primaryPayout?.accountNumber || "",
+          confirmAccountNumber: primaryPayout?.accountNumber || "",
+          ifscCode: primaryPayout?.ifscCode || "",
+          bankName: primaryPayout?.bankName || "",
+          upiId: primaryPayout?.upiId || "",
+        });
         // If rejected, show rejection reason
         if (p.verificationStatus === "REJECTED") {
           setStep(1);
@@ -230,6 +256,15 @@ export default function ExpertOnboardingPage() {
         sessionDurationMinutes: Number(sessionDurationMinutes) || 60,
       });
     }
+    if (step === 4) {
+      for (const w of windows) {
+        if (w.start >= w.end) {
+          toast.error(`Availability window on ${DAYS[w.dayOfWeek]} has an invalid time range`);
+          return;
+        }
+      }
+      await saveDraft({ weeklyAvailability: windows, blackoutDates: blackout });
+    }
     setStep((s) => s + 1);
   };
 
@@ -238,18 +273,25 @@ export default function ExpertOnboardingPage() {
   // ── Final submission ─────────────────────────────────────────────────────
 
   const handleSubmit = async () => {
-    for (const w of windows) {
-      if (w.start >= w.end) {
-        toast.error(`Availability window on ${DAYS[w.dayOfWeek]} has an invalid time range`);
-        return;
-      }
+    const taxPayoutError = validateTaxPayoutInfo(taxPayout);
+    if (taxPayoutError) {
+      toast.error(taxPayoutError);
+      return;
     }
     setSubmitting(true);
     try {
       await expertApi.updateMyProfile({
-        weeklyAvailability: windows,
-        blackoutDates: blackout,
+        panNumber: taxPayout.panNumber.trim().toUpperCase(),
+        gstNumber: taxPayout.gstNumber.trim().toUpperCase(),
       });
+      const payoutRes = await payoutApi.upsertExpertPayoutMethod(
+        buildPayoutMethodPayload(taxPayout),
+      );
+      if (!payoutRes.success) {
+        toast.error(payoutRes.message || "Failed to save payout method");
+        setSubmitting(false);
+        return;
+      }
       const res = await expertApi.submitForReview();
       if (res.success) {
         setSubmitted(true);
@@ -648,7 +690,17 @@ export default function ExpertOnboardingPage() {
               )}
             </div>
 
-            <div className="flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+          </SlideUp>
+        )}
+
+        {/* Step 5 — Tax & Payout */}
+        {step === 5 && (
+          <SlideUp key={5}>
+            <TaxPayoutInfoStep
+              value={taxPayout}
+              onChange={(patch) => setTaxPayout((v) => ({ ...v, ...patch }))}
+            />
+            <div className="mt-5 flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
                 <AlertCircle className="h-4 w-4" />
               </div>
@@ -684,19 +736,6 @@ export default function ExpertOnboardingPage() {
           )}
         </div>
 
-        {step === 4 && (
-          <p className="mt-3 text-center text-xs text-slate-400">
-            You can skip availability for now and set it from your dashboard after approval.{" "}
-            <button
-              type="button"
-              className="font-semibold text-power-orange hover:underline"
-              onClick={handleSubmit}
-              disabled={submitting}
-            >
-              Skip &amp; submit anyway
-            </button>
-          </p>
-        )}
     </div>
   );
 }

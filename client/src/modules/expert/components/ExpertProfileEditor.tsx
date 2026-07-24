@@ -15,6 +15,7 @@ import {
     Award,
     BadgeIndianRupee,
     CalendarClock,
+    FileText,
     MapPin,
     Plus,
     Star,
@@ -27,6 +28,10 @@ import { toast } from "sonner";
 import { ExpertPhotoUpload } from "./ExpertPhotoUpload";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// Kept identical to the regexes enforced during onboarding
+// (TaxPayoutInfoStep.tsx) and server-side (ExpertsService.ts).
+const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 const field =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20";
 const fieldLabel =
@@ -83,6 +88,8 @@ export function ExpertProfileEditor({
   const [expertise, setExpertise] = useState<string[]>(profile.expertise || []);
   const [languages, setLanguages] = useState<string[]>(profile.languages || []);
   const [city, setCity] = useState(profile.city || "");
+  const [panNumber, setPanNumber] = useState(profile.panNumber || "");
+  const [gstNumber, setGstNumber] = useState(profile.gstNumber || "");
   const [inPersonAddress, setInPersonAddress] = useState(
     profile.inPersonAddress || "",
   );
@@ -156,6 +163,16 @@ export function ExpertProfileEditor({
         return;
       }
     }
+    const pan = panNumber.trim().toUpperCase();
+    if (!pan || !PAN_REGEX.test(pan)) {
+      toast.error("Enter a valid PAN number (e.g. ABCDE1234F).");
+      return;
+    }
+    const gst = gstNumber.trim().toUpperCase();
+    if (gst && !GST_REGEX.test(gst)) {
+      toast.error("Enter a valid GST number, or leave it blank.");
+      return;
+    }
     setSaving(true);
     try {
       if (name.trim() !== profile.name) {
@@ -181,6 +198,8 @@ export function ExpertProfileEditor({
         photoKey: photoKey || undefined,
         weeklyAvailability: windows,
         blackoutDates: blackout,
+        panNumber: pan,
+        gstNumber: gst,
       });
       if (res.success && res.data) {
         onSaved({ ...res.data, name: name.trim() });
@@ -430,6 +449,44 @@ export function ExpertProfileEditor({
                 </div>
               )}
             </div>
+          </Card>
+
+          <Card className="border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
+            <SectionHeader
+              icon={FileText}
+              iconClassName="bg-indigo-50 text-indigo-600"
+              title="Tax details"
+              subtitle="Used for session-fee payouts and tax reporting"
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={fieldLabel}>PAN number</label>
+                <input
+                  className={field}
+                  placeholder="e.g. ABCDE1234F"
+                  value={panNumber}
+                  maxLength={10}
+                  onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
+                />
+              </div>
+              <div>
+                <label className={fieldLabel}>GST number (optional)</label>
+                <input
+                  className={field}
+                  placeholder="e.g. 22AAAAA0000A1Z5"
+                  value={gstNumber}
+                  maxLength={15}
+                  onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                />
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-slate-500">
+              Manage your bank account or UPI payout method from{" "}
+              <Link href="/expert/payouts" className="font-semibold text-power-orange hover:underline">
+                Payouts
+              </Link>
+              .
+            </p>
           </Card>
         </div>
 
