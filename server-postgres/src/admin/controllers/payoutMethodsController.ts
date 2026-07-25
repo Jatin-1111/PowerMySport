@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import type { PayoutMethodType } from "@prisma/client";
 import prisma from "../../lib/prisma";
+import {
+  encryptPayoutFields,
+  decryptPayoutMethods,
+} from "../../shared/utils/payoutEncryption";
 
 /**
  * Builds the scalar column data for a payout method row from a request body.
@@ -113,17 +117,24 @@ const ensureVenueDefault = async (venueId: string): Promise<void> => {
   });
 };
 
-const listCoachMethods = (coachId: string) =>
-  prisma.coachPayoutMethod.findMany({
-    where: { coachId },
-    orderBy: { addedAt: "asc" },
-  });
+// The list helpers below are the single read path back to the caller for every
+// response in this controller, so payout methods are decrypted here — mirroring
+// the Mongo models' decrypt-on-read field getters.
+const listCoachMethods = async (coachId: string) =>
+  decryptPayoutMethods(
+    await prisma.coachPayoutMethod.findMany({
+      where: { coachId },
+      orderBy: { addedAt: "asc" },
+    }),
+  );
 
-const listVenueMethods = (venueId: string) =>
-  prisma.venuePayoutMethod.findMany({
-    where: { venueId },
-    orderBy: { addedAt: "asc" },
-  });
+const listVenueMethods = async (venueId: string) =>
+  decryptPayoutMethods(
+    await prisma.venuePayoutMethod.findMany({
+      where: { venueId },
+      orderBy: { addedAt: "asc" },
+    }),
+  );
 
 /** Payout methods of the caller's primary (oldest) venue. */
 const primaryVenueMethods = async (userId: string) => {
@@ -132,7 +143,7 @@ const primaryVenueMethods = async (userId: string) => {
     orderBy: { createdAt: "asc" },
     select: { payoutMethods: { orderBy: { addedAt: "asc" } } },
   });
-  return venue?.payoutMethods || [];
+  return decryptPayoutMethods(venue?.payoutMethods);
 };
 
 export const listCoachPayoutMethods = async (
@@ -150,7 +161,7 @@ export const listCoachPayoutMethods = async (
       where: { userId },
       select: { payoutMethods: { orderBy: { addedAt: "asc" } } },
     });
-    res.json({ success: true, data: coach?.payoutMethods || [] });
+    res.json({ success: true, data: decryptPayoutMethods(coach?.payoutMethods) });
   } catch (error) {
     res
       .status(500)
@@ -194,7 +205,7 @@ export const addCoachPayoutMethod = async (
     const isDefault = (coach.payoutMethods || []).length === 0;
 
     await prisma.coachPayoutMethod.create({
-      data: { ...data, coachId: coach.id, isDefault },
+      data: { ...encryptPayoutFields(data), coachId: coach.id, isDefault },
     });
     await ensureCoachDefault(coach.id);
 
@@ -253,7 +264,7 @@ export const updateCoachPayoutMethod = async (
     const data = buildMethodData(req.body as Record<string, unknown>);
     await prisma.coachPayoutMethod.update({
       where: { id: String(methodId) },
-      data,
+      data: encryptPayoutFields(data),
     });
     await ensureCoachDefault(coach.id);
 
@@ -405,7 +416,7 @@ export const addVenuePayoutMethod = async (
 
     for (const venue of venues) {
       await prisma.venuePayoutMethod.create({
-        data: { ...data, venueId: venue.id, isDefault },
+        data: { ...encryptPayoutFields(data), venueId: venue.id, isDefault },
       });
       await ensureVenueDefault(venue.id);
     }
@@ -463,7 +474,7 @@ export const updateVenuePayoutMethod = async (
       const data = buildMethodData(req.body as Record<string, unknown>);
       await prisma.venuePayoutMethod.update({
         where: { id: String(methodId) },
-        data,
+        data: encryptPayoutFields(data),
       });
       await ensureVenueDefault(venue.id);
     }

@@ -3,6 +3,7 @@ import type { PaymentUserType } from "@prisma/client";
 import prisma from "../../lib/prisma";
 import { markSessionPayoutDone } from "../../client/services/ExpertsService";
 import { sendPayoutProcessedEmail } from "../../utils/email";
+import { decryptPayoutMethod } from "../../shared/utils/payoutEncryption";
 
 /**
  * Returns the default payout method (or the first one) from a list of payout
@@ -145,6 +146,10 @@ export const listPendingPayouts = async (
           });
           payoutMethod = getPrimaryPayoutMethod(expert?.payoutMethods);
         }
+
+        // Prisma stores these fields encrypted at rest — decrypt here so the
+        // admin gets the real, usable value to actually process the payout.
+        if (payoutMethod) payoutMethod = decryptPayoutMethod(payoutMethod);
 
         return {
           ...payout,

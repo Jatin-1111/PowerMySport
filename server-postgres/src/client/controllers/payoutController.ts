@@ -5,6 +5,11 @@ import type {
   ExpertPayoutMethod,
 } from "@prisma/client";
 import prisma from "../../lib/prisma";
+import {
+  encryptPayoutFields,
+  decryptPayoutMethod,
+  decryptPayoutMethods,
+} from "../../shared/utils/payoutEncryption";
 
 type AnyPayoutMethod =
   | CoachPayoutMethod
@@ -94,11 +99,12 @@ export const getCoachPayoutMethod = async (
       return;
     }
 
+    const primary = getPrimaryPayoutMethod(coach.payoutMethods);
     res.json({
       success: true,
       message: "Payout method retrieved",
       data: {
-        payoutMethod: getPrimaryPayoutMethod(coach.payoutMethods),
+        payoutMethod: primary ? decryptPayoutMethod(primary) : null,
       },
     });
   } catch (error) {
@@ -138,7 +144,7 @@ export const getCoachPayoutMethods = async (
     res.json({
       success: true,
       message: "Payout methods retrieved",
-      data: { payoutMethods: coach.payoutMethods || [] },
+      data: { payoutMethods: decryptPayoutMethods(coach.payoutMethods) },
     });
   } catch (error) {
     console.error("getCoachPayoutMethods error:", error);
@@ -263,14 +269,14 @@ export const upsertCoachPayoutMethod = async (
       // addedAt is preserved automatically (we do not touch it on update).
       await prisma.coachPayoutMethod.update({
         where: { id },
-        data: fields,
+        data: encryptPayoutFields(fields),
       });
     } else {
       // Add new method — first method is default.
       await prisma.coachPayoutMethod.create({
         data: {
           coachId: coach.id,
-          ...fields,
+          ...encryptPayoutFields(fields),
           isDefault: coach.payoutMethods.length === 0,
         },
       });
@@ -284,7 +290,7 @@ export const upsertCoachPayoutMethod = async (
     res.json({
       success: true,
       message: "Payout method saved successfully",
-      data: { payoutMethods },
+      data: { payoutMethods: decryptPayoutMethods(payoutMethods) },
     });
   } catch (error) {
     console.error("upsertCoachPayoutMethod error:", error);
@@ -362,7 +368,7 @@ export const deleteCoachPayoutMethod = async (
     res.json({
       success: true,
       message: "Payout method removed",
-      data: { payoutMethods },
+      data: { payoutMethods: decryptPayoutMethods(payoutMethods) },
     });
   } catch (error) {
     console.error("deleteCoachPayoutMethod error:", error);
@@ -428,7 +434,7 @@ export const setCoachDefaultPayoutMethod = async (
     res.json({
       success: true,
       message: "Default payout method updated",
-      data: { payoutMethods },
+      data: { payoutMethods: decryptPayoutMethods(payoutMethods) },
     });
   } catch (error) {
     console.error("setCoachDefaultPayoutMethod error:", error);
@@ -470,11 +476,12 @@ export const getVenuePayoutMethod = async (
       return;
     }
 
+    const primary = getPrimaryPayoutMethod(venue.payoutMethods);
     res.json({
       success: true,
       message: "Payout method retrieved",
       data: {
-        payoutMethod: getPrimaryPayoutMethod(venue.payoutMethods),
+        payoutMethod: primary ? decryptPayoutMethod(primary) : null,
         venueName: venue.name,
       },
     });
@@ -606,7 +613,7 @@ export const upsertVenuePayoutMethod = async (
         if (existing) {
           await prisma.venuePayoutMethod.update({
             where: { id },
-            data: { ...fields, isDefault },
+            data: { ...encryptPayoutFields(fields), isDefault },
           });
         }
       }
@@ -619,7 +626,7 @@ export const upsertVenuePayoutMethod = async (
       await prisma.venuePayoutMethod.createMany({
         data: venues.map((venue) => ({
           venueId: venue.id,
-          ...fields,
+          ...encryptPayoutFields(fields),
           isDefault,
         })),
       });
@@ -634,7 +641,7 @@ export const upsertVenuePayoutMethod = async (
     res.json({
       success: true,
       message: "Payout method saved successfully for all your venues",
-      data: { payoutMethods: updatedVenue?.payoutMethods || [] },
+      data: { payoutMethods: decryptPayoutMethods(updatedVenue?.payoutMethods) },
     });
   } catch (error) {
     console.error("upsertVenuePayoutMethod error:", error);
@@ -700,7 +707,7 @@ export const deleteVenuePayoutMethod = async (
       res.json({
         success: true,
         message: "Payout method removed from all your venues",
-        data: { payoutMethods: updatedVenue?.payoutMethods || [] },
+        data: { payoutMethods: decryptPayoutMethods(updatedVenue?.payoutMethods) },
       });
     } else {
       // Delete all methods from all venues
@@ -797,7 +804,7 @@ export const setVenueDefaultPayoutMethod = async (
     res.json({
       success: true,
       message: "Default payout method updated for all your venues",
-      data: { payoutMethods: updatedVenue?.payoutMethods || [] },
+      data: { payoutMethods: decryptPayoutMethods(updatedVenue?.payoutMethods) },
     });
   } catch (error) {
     console.error("setVenueDefaultPayoutMethod error:", error);
@@ -837,11 +844,12 @@ export const getExpertPayoutMethod = async (
       return;
     }
 
+    const primary = getPrimaryPayoutMethod(expert.payoutMethods);
     res.json({
       success: true,
       message: "Payout method retrieved",
       data: {
-        payoutMethod: getPrimaryPayoutMethod(expert.payoutMethods),
+        payoutMethod: primary ? decryptPayoutMethod(primary) : null,
       },
     });
   } catch (error) {
@@ -881,7 +889,7 @@ export const getExpertPayoutMethods = async (
     res.json({
       success: true,
       message: "Payout methods retrieved",
-      data: { payoutMethods: expert.payoutMethods || [] },
+      data: { payoutMethods: decryptPayoutMethods(expert.payoutMethods) },
     });
   } catch (error) {
     console.error("getExpertPayoutMethods error:", error);
@@ -1005,14 +1013,14 @@ export const upsertExpertPayoutMethod = async (
       }
       await prisma.expertPayoutMethod.update({
         where: { id },
-        data: fields,
+        data: encryptPayoutFields(fields),
       });
     } else {
       // Add new method — first method is default.
       await prisma.expertPayoutMethod.create({
         data: {
           expertId: expert.id,
-          ...fields,
+          ...encryptPayoutFields(fields),
           isDefault: expert.payoutMethods.length === 0,
         },
       });
@@ -1026,7 +1034,7 @@ export const upsertExpertPayoutMethod = async (
     res.json({
       success: true,
       message: "Payout method saved successfully",
-      data: { payoutMethods },
+      data: { payoutMethods: decryptPayoutMethods(payoutMethods) },
     });
   } catch (error) {
     console.error("upsertExpertPayoutMethod error:", error);
@@ -1106,7 +1114,7 @@ export const deleteExpertPayoutMethod = async (
     res.json({
       success: true,
       message: "Payout method removed",
-      data: { payoutMethods },
+      data: { payoutMethods: decryptPayoutMethods(payoutMethods) },
     });
   } catch (error) {
     console.error("deleteExpertPayoutMethod error:", error);
@@ -1172,7 +1180,7 @@ export const setExpertDefaultPayoutMethod = async (
     res.json({
       success: true,
       message: "Default payout method updated",
-      data: { payoutMethods },
+      data: { payoutMethods: decryptPayoutMethods(payoutMethods) },
     });
   } catch (error) {
     console.error("setExpertDefaultPayoutMethod error:", error);

@@ -207,7 +207,7 @@ export const registerUser = async (
 
 export const loginUser = async (
   payload: LoginPayload,
-): Promise<UserWithRelations> => {
+): Promise<{ user: UserWithRelations; deletionCancelled: boolean }> => {
   const user = await prisma.user.findFirst({
     where: { email: payload.email },
     include: USER_INCLUDE,
@@ -223,7 +223,31 @@ export const loginUser = async (
     throw new Error("Invalid email or password");
   }
 
-  return user;
+  // A successful login within the grace period cancels a pending
+  // self-deletion and restores full access — the standard pattern big
+  // platforms use, rather than requiring a separate "undo" action.
+  let deletionCancelled = false;
+  if (
+    user.pendingDeletion &&
+    user.deletionRequestedAt &&
+    Date.now() - user.deletionRequestedAt.getTime() <
+      ACCOUNT_DELETION_GRACE_PERIOD_MS
+  ) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isActive: true,
+        pendingDeletion: false,
+        deletionRequestedAt: null,
+        deactivatedAt: null,
+      },
+    });
+    user.isActive = true;
+    user.pendingDeletion = false;
+    deletionCancelled = true;
+  }
+
+  return { user, deletionCancelled };
 };
 
 export const getUserById = async (
@@ -364,16 +388,26 @@ export const changePassword = async (
 };
 
 /**
- * Deletes (soft) an account. A hard delete would orphan or corrupt
- * historical Booking/Payment/Player/Review documents that reference this
- * user, and financial records need to survive for tax/dispute purposes —
- * so instead this deactivates the account (isActive=false, already
- * enforced by authMiddleware on every request, so the user is immediately
- * locked out) and anonymizes personally-identifying fields on the User
- * document itself. Player/Booking/Payment history is intentionally left
- * untouched.
+ * Grace period (in ms) between a self-service deletion request and the
+ * scheduled job actually finalizing it. Overridable for testing.
  */
-export const deleteAccount = async (
+export const ACCOUNT_DELETION_GRACE_PERIOD_MS =
+  (Number(process.env.ACCOUNT_DELETION_GRACE_PERIOD_DAYS) || 30) *
+  24 *
+  60 *
+  60 *
+  1000;
+
+/**
+ * Step 1 of account deletion: verify the password and immediately lock the
+ * account out (isActive=false, already enforced by authMiddleware on every
+ * request) — but do NOT touch any PII yet. The user has a grace period
+ * (ACCOUNT_DELETION_GRACE_PERIOD_MS) during which logging back in cancels
+ * the pending deletion (see `loginUser` above). Only once
+ * `finalizeAccountDeletion` runs, after the grace period elapses with no
+ * recovery, does the account actually get anonymized/cascade-cleaned.
+ */
+export const requestAccountDeletion = async (
   userId: string,
   currentPassword: string,
 ): Promise<void> => {
@@ -389,13 +423,46 @@ export const deleteAccount = async (
     }
   }
 
+  const now = new Date();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      isActive: false,
+      pendingDeletion: true,
+      deletionRequestedAt: now,
+      deactivatedAt: now,
+    },
+  });
+};
+
+/**
+ * Step 2 of account deletion: called by the scheduled job
+ * (`finalizePendingAccountDeletions` in scheduledJobs.ts) once the grace
+ * period has elapsed with no recovery login. A hard delete of the User
+ * row would orphan or corrupt historical Booking/Payment/Review records
+ * that reference it, and financial records need to survive for tax/dispute
+ * purposes — so this anonymizes personally-identifying fields on the User
+ * row itself (Booking/Payment history is intentionally left untouched),
+ * then cascade-deletes the data that has no legal/financial retention need
+ * (calendar events, friend requests, AI guidance chat history, a parent's
+ * children's Player profiles, etc).
+ *
+ * The embedded arrays are now child tables — clearing them means deleting
+ * the child rows (deleteMany). Nullable Json columns are set to SQL NULL
+ * via Prisma.JsonNull; nullable scalars to null. defaultAddressId is
+ * cleared since every address is being removed.
+ */
+export const finalizeAccountDeletion = async (
+  userId: string,
+): Promise<void> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true },
+  });
+  if (!user) return;
+
   const anonymizedTag = `deleted-${user.id}`;
 
-  // The embedded arrays are now child tables — clearing them means deleting the
-  // child rows (deleteMany). shippingAddress is a nullable Json column, so it is
-  // set to SQL NULL via Prisma.JsonNull. defaultAddressId is cleared too since
-  // every address is being removed (the old code left it dangling, but here the
-  // pointer must not reference a now-deleted address).
   await prisma.user.update({
     where: { id: user.id },
     data: {
@@ -406,17 +473,174 @@ export const deleteAccount = async (
       googleId: null,
       photoUrl: null,
       photoS3Key: null,
+      dob: null,
+      city: null,
+      defaultAddressId: null,
       shippingAddress: Prisma.JsonNull,
+      legalConsents: Prisma.JsonNull,
+      notificationPreferences: Prisma.JsonNull,
+      reminderPreferences: Prisma.JsonNull,
+      parentProfile: Prisma.JsonNull,
       resetPasswordToken: null,
       resetPasswordExpires: null,
-      defaultAddressId: null,
       isActive: false,
+      pendingDeletion: false,
       deactivatedAt: new Date(),
+      deletionRequestedAt: null,
       addresses: { deleteMany: {} },
       refundMethods: { deleteMany: {} },
       pushSubscriptions: { deleteMany: {} },
     },
   });
+
+  // Cascade-delete data with no legal/financial retention need. Each is
+  // independently try/caught so one failure doesn't block the rest —
+  // matching the defensive style already used in runScheduledCleanup().
+  // (CartItem/WishlistItem/chat messages FK-cascade from their parents.)
+  const cascades: Array<[string, () => Promise<unknown>]> = [
+    [
+      "UserCalendarEvent",
+      () => prisma.userCalendarEvent.deleteMany({ where: { userId } }),
+    ],
+    [
+      "FriendConnection",
+      () =>
+        prisma.friendConnection.deleteMany({
+          where: {
+            OR: [{ requesterId: userId }, { recipientId: userId }],
+          },
+        }),
+    ],
+    [
+      "BookingWaitlist",
+      () => prisma.bookingWaitlist.deleteMany({ where: { userId } }),
+    ],
+    [
+      "GuidanceSubmission",
+      () => prisma.guidanceSubmission.deleteMany({ where: { userId } }),
+    ],
+    [
+      "GuidanceChatSession",
+      () => prisma.guidanceChatSession.deleteMany({ where: { userId } }),
+    ],
+    [
+      "RoadmapChatSession",
+      () => prisma.roadmapChatSession.deleteMany({ where: { userId } }),
+    ],
+    ["PlanCheckIn", () => prisma.planCheckIn.deleteMany({ where: { userId } })],
+    [
+      "UserPathwayProfile",
+      () => prisma.userPathwayProfile.deleteMany({ where: { userId } }),
+    ],
+    ["Player", () => prisma.player.deleteMany({ where: { userId } })],
+    ["Cart", () => prisma.cart.deleteMany({ where: { userId } })],
+    ["Wishlist", () => prisma.wishlist.deleteMany({ where: { userId } })],
+    [
+      "CommunityReputation",
+      () => prisma.communityReputation.deleteMany({ where: { userId } }),
+    ],
+    [
+      "CommunityVote",
+      () => prisma.communityVote.deleteMany({ where: { userId } }),
+    ],
+    ["BlogLike", () => prisma.blogLike.deleteMany({ where: { userId } })],
+    [
+      "Notification",
+      () => prisma.notification.deleteMany({ where: { userId } }),
+    ],
+    [
+      "ScheduledNotification (pending)",
+      () =>
+        prisma.scheduledNotification.deleteMany({
+          where: { userId, status: "PENDING" },
+        }),
+    ],
+  ];
+
+  for (const [label, run] of cascades) {
+    try {
+      await run();
+    } catch (error) {
+      console.error(
+        `finalizeAccountDeletion: failed to clean up ${label} for user ${userId}:`,
+        error,
+      );
+    }
+  }
+
+  // ConciergeRequest also has uploaded documents in S3 — remove those before
+  // dropping the Postgres records that reference them (the document rows
+  // themselves FK-cascade when the ConciergeRequest is deleted).
+  try {
+    const requests = await prisma.conciergeRequest.findMany({
+      where: { userId },
+      select: { documents: { select: { s3Key: true } } },
+    });
+    const s3Service = new S3Service();
+    for (const request of requests) {
+      for (const doc of request.documents) {
+        if (!doc.s3Key) continue;
+        try {
+          await s3Service.deleteFile(doc.s3Key, "documents");
+        } catch (error) {
+          console.error(
+            `finalizeAccountDeletion: failed to delete S3 document ${doc.s3Key} for user ${userId}:`,
+            error,
+          );
+        }
+      }
+    }
+    await prisma.conciergeRequest.deleteMany({ where: { userId } });
+  } catch (error) {
+    console.error(
+      `finalizeAccountDeletion: failed to clean up ConciergeRequest for user ${userId}:`,
+      error,
+    );
+  }
+
+  // AnalyticsEvent is retained for aggregate value (it already supports a
+  // pseudonymous guestId) — just strip the PII link, don't delete the event.
+  try {
+    await prisma.analyticsEvent.updateMany({
+      where: { userId },
+      data: { userId: null },
+    });
+  } catch (error) {
+    console.error(
+      `finalizeAccountDeletion: failed to strip userId from AnalyticsEvent for user ${userId}:`,
+      error,
+    );
+  }
+};
+
+/**
+ * Scheduled-job entry point (called from scheduledJobs.ts's
+ * runScheduledCleanup, following the same shape as ExpertsService's
+ * expireUnpaidExpertHolds): finalizes any account whose grace period has
+ * elapsed with no recovery login. Returns the count finalized.
+ */
+export const finalizePendingAccountDeletions = async (): Promise<number> => {
+  const cutoff = new Date(Date.now() - ACCOUNT_DELETION_GRACE_PERIOD_MS);
+  const candidates = await prisma.user.findMany({
+    where: {
+      pendingDeletion: true,
+      deletionRequestedAt: { lte: cutoff },
+    },
+    select: { id: true },
+  });
+
+  for (const candidate of candidates) {
+    try {
+      await finalizeAccountDeletion(candidate.id);
+    } catch (error) {
+      console.error(
+        `finalizePendingAccountDeletions: failed to finalize user ${candidate.id}:`,
+        error,
+      );
+    }
+  }
+
+  return candidates.length;
 };
 
 export interface GoogleLoginPayload {

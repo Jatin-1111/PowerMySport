@@ -5,7 +5,7 @@ import {
   addDependent,
   changePassword,
   confirmProfilePictureUpload,
-  deleteAccount,
+  requestAccountDeletion,
   deleteAddress,
   deleteDependent,
   getPlayersByUserId,
@@ -81,7 +81,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
-    const user = await loginUser(req.body);
+    const { user, deletionCancelled } = await loginUser(req.body);
 
     const token = generateToken({
       id: user.id,
@@ -97,6 +97,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       message: "Login successful",
       data: {
         token,
+        deletionCancelled,
         user: {
           id: user.id,
           name: user.name,
@@ -406,7 +407,7 @@ export const deleteAccountHandler = async (
     }
 
     const { password } = req.body;
-    await deleteAccount(req.user.id, password || "");
+    await requestAccountDeletion(req.user.id, password || "");
 
     const token =
       req.cookies?.token || req.headers.authorization?.slice(7).trim();
@@ -417,7 +418,8 @@ export const deleteAccountHandler = async (
 
     res.status(200).json({
       success: true,
-      message: "Account deleted successfully",
+      message:
+        "Your account has been deactivated and is scheduled for permanent deletion in 30 days. Log back in before then to cancel.",
     });
   } catch (error) {
     res.status(400).json({

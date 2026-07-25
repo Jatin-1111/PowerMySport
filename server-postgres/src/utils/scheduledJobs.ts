@@ -280,6 +280,21 @@ export const runScheduledCleanup = async (): Promise<void> => {
       console.error("❌ Expert session maintenance failed:", expertErr);
     }
 
+    // ── Pending account deletions ────────────────────────────────────────────
+    try {
+      const { finalizePendingAccountDeletions } = await import(
+        "../shared/services/AuthService"
+      );
+      const finalized = await finalizePendingAccountDeletions();
+      if (finalized > 0)
+        console.log(`✅ Finalized ${finalized} pending account deletion(s)`);
+    } catch (deletionErr) {
+      console.error(
+        "❌ Pending account deletion finalization failed:",
+        deletionErr,
+      );
+    }
+
     console.log("✅ Scheduled cleanup completed successfully");
   } catch (error) {
     console.error("❌ Error during scheduled cleanup:", error);

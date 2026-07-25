@@ -526,3 +526,108 @@ export const getCuratedTournaments = async (
     fail(res, error, 500);
   }
 };
+
+/**
+ * GET /api/pathways/personal-notes
+ * Layer-2 personalization: per-level notes for an ANONYMIZED child signature.
+ */
+export const getPersonalNotes = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { sport, state, age, tier, ambition, budget, hours } = req.query;
+
+    if (!sport || typeof sport !== "string" || sport.trim().length < 2) {
+      res.status(400).json({
+        success: false,
+        message: "Please provide a sport name (at least 2 characters).",
+      });
+      return;
+    }
+
+    if (
+      !state ||
+      typeof state !== "string" ||
+      !INDIAN_STATES_AND_UTS.includes(state as any)
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "Please provide a valid Indian state or UT.",
+      });
+      return;
+    }
+
+    // Collapse exact age to a band — better cache sharing, no precise PII.
+    const ageNum = age ? parseInt(String(age), 10) : NaN;
+    const ageBand =
+      isNaN(ageNum) || ageNum < 1 || ageNum > 30
+        ? undefined
+        : ageNum <= 4
+          ? ("under-5" as const)
+          : ageNum <= 7
+            ? ("5-7" as const)
+            : ageNum <= 10
+              ? ("8-10" as const)
+              : ageNum <= 13
+                ? ("11-13" as const)
+                : ageNum <= 16
+                  ? ("14-16" as const)
+                  : ("17-plus" as const);
+
+    const tierNum = tier ? parseInt(String(tier), 10) : NaN;
+    const standingTier =
+      !isNaN(tierNum) && tierNum >= 1 && tierNum <= 5 ? tierNum : undefined;
+
+    const AMBITIONS = ["fun", "competitive", "national", "professional"];
+    const BUDGETS = ["under-3k", "3k-7k", "7k-15k", "15k-plus"];
+    const HOURS = ["1-3", "4-7", "8-12", "13-plus"];
+    const ambitionVal = AMBITIONS.includes(String(ambition))
+      ? (String(ambition) as any)
+      : undefined;
+    const budgetVal = BUDGETS.includes(String(budget))
+      ? (String(budget) as any)
+      : undefined;
+    const hoursVal = HOURS.includes(String(hours))
+      ? (String(hours) as any)
+      : undefined;
+
+    // A signature with zero known facts would generate a generic note —
+    // that's what the shared pathway copy already is. Refuse instead.
+    if (!ageBand && !standingTier && !ambitionVal && !budgetVal && !hoursVal) {
+      res.status(400).json({
+        success: false,
+        message:
+          "Provide at least one profile field (age, tier, ambition, budget, hours).",
+      });
+      return;
+    }
+
+    const notes = await pathwayService.getOrGeneratePersonalNotes(
+      sport.trim(),
+      state,
+      {
+        ageBand,
+        standingTier,
+        ambition: ambitionVal,
+        budgetRange: budgetVal,
+        weeklyHours: hoursVal,
+      },
+    );
+
+    if (!notes) {
+      res.status(503).json({
+        success: false,
+        message: "Personal notes could not be generated right now.",
+      });
+      return;
+    }
+
+    res.json({ success: true, data: notes });
+  } catch (error) {
+    console.error("Error generating personal notes:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to generate personal notes." });
+  }
+};

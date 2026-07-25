@@ -680,6 +680,11 @@ model User {
   suspendedAt   DateTime?
   suspendedBy   String? // -> Admin.id
   deactivatedAt DateTime?
+  // Self-service account deletion (grace-period soft delete). Set on request;
+  // cleared if the user logs back in within the grace window, or once
+  // finalizeAccountDeletion has run. Swept by finalizePendingAccountDeletions.
+  pendingDeletion     Boolean   @default(false)
+  deletionRequestedAt DateTime?
   defaultAddressId String?
 
   // legal consents + notification/reminder prefs kept as structured Json config
@@ -2960,6 +2965,22 @@ model SportPathway {
   @@index([sportSlug])
   @@index([cacheKey])
   @@map("sport_pathways")
+}
+
+// Layer-2 personalization: one short AI note per raw pathway level (1–5),
+// keyed by an anonymized child signature. Notes are a Json array of
+// { level, note }. Mongo used a 30-day TTL index on createdAt; in Postgres
+// these are swept by the TTL cron (see src/scripts/ttlSweeper.ts).
+model PathwayPersonalNote {
+  id        String   @id @default(cuid())
+  cacheKey  String   @unique
+  sportSlug String
+  state     String
+  notes     Json     @default("[]")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("pathway_personal_notes")
 }
 
 model SportBasePath {

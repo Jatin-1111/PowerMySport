@@ -13,6 +13,7 @@ import {
   deletePathwayExpertVerify,
   getCuratedTournamentBySlug,
   getCuratedTournaments,
+  getPersonalNotes,
 } from "../controller/pathwayController";
 import { authMiddleware } from "../../middleware/auth";
 
@@ -49,6 +50,10 @@ router.get("/", pathwayRateLimiter, getPathway);
 // Fetches only tournaments/scholarships/universities — waits for scraper if needed.
 // The client calls this in parallel with the main pathway request.
 router.get("/entities", pathwayRateLimiter, getPathwayEntities);
+
+// GET /api/pathways/personal-notes?sport=&state=&age=&tier=&ambition=&budget=&hours=
+// Layer-2 personalization: per-level notes for an anonymized child signature.
+router.get("/personal-notes", pathwayRateLimiter, getPersonalNotes);
 
 // ── Expert verification routes ────────────────────────────────────────────────
 // Verification is keyed by sportSlug, not a specific pathway document id —
