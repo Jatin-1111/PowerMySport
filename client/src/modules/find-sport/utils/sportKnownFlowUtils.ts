@@ -141,3 +141,65 @@ export function buildGoalChips(form: KnownSportForm): string[] {
     BUDGET_DISPLAY[form.budgetRange ?? ""] ?? null,
   ].filter((v): v is string => v !== null);
 }
+
+// ─── Key findings summary ─────────────────────────────────────────────────────
+// A short, deterministic readout of the profile just built — distinct from the
+// chip groups below it, which list raw answers rather than narrate them.
+
+export function buildKeyFindings(form: KnownSportForm): string[] {
+  const name = form.childName || "Your child";
+  const findings: string[] = [];
+
+  const standingLadder = form.sport ? getCurrentStandingLadder(form.sport) : [];
+  const standingLabel =
+    form.currentStandingTier != null
+      ? standingLadder.find((t) => t.value === form.currentStandingTier)?.label ?? null
+      : null;
+
+  if (form.yearsPlaying !== null && standingLabel) {
+    findings.push(
+      `${form.yearsPlaying} year${form.yearsPlaying === 1 ? "" : "s"} into ${form.sport}, ${name} is currently at a "${standingLabel}" level — that's the baseline every next step is scaled to.`,
+    );
+  } else if (standingLabel) {
+    findings.push(`${name} is currently at a "${standingLabel}" level in ${form.sport}.`);
+  }
+
+  if (form.trainingType === "self") {
+    findings.push(
+      `Training is currently self-directed, with no club, academy, or private coach involved — structured coaching is the biggest lever still unused.`,
+    );
+  } else if (form.trainingType && form.sessionsPerWeek !== null) {
+    const setup = TRAINING_TYPE_DISPLAY[form.trainingType]?.toLowerCase() ?? form.trainingType;
+    const academy = form.academyName.trim() ? ` at ${form.academyName.trim()}` : "";
+    findings.push(
+      `Training ${form.sessionsPerWeek}x/week through ${setup}${academy} — a fairly structured routine is already in place.`,
+    );
+  }
+
+  if (form.ambition && form.weeklyHours) {
+    const ambitionOptions = form.sport ? getAmbitionOptions(form.sport) : [];
+    const ambitionLabel = ambitionOptions.find((o) => o.value === form.ambition)?.label;
+    if (ambitionLabel) {
+      findings.push(
+        `With "${ambitionLabel}" as the goal and ${HOURS_DISPLAY[form.weeklyHours]?.toLowerCase() ?? form.weeklyHours} available, that time commitment is what every recommendation below is built around.`,
+      );
+    }
+  }
+
+  const bestResultLadder = form.sport ? getBestResultLadder(form.sport) : [];
+  const bestResultLabel =
+    form.bestResultTier != null
+      ? bestResultLadder.find((t) => t.value === form.bestResultTier)?.label ?? null
+      : null;
+  if (bestResultLabel) {
+    findings.push(`Best result so far: ${bestResultLabel}.`);
+  }
+
+  if (form.injuryNotes.trim()) {
+    findings.push(
+      `A physical note was flagged during setup — worth raising with any coach or physio before increasing training load.`,
+    );
+  }
+
+  return findings.slice(0, 5);
+}

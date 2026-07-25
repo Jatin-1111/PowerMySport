@@ -2,6 +2,7 @@
 
 import type { IPayoutMethod, PayoutMethodType } from "@/types";
 import { CreditCard, FileText, Landmark, Smartphone } from "lucide-react";
+import { useRef } from "react";
 
 export interface TaxPayoutInfoValue {
   panNumber: string;
@@ -120,6 +121,8 @@ function SectionHeading({
   );
 }
 
+const PAYOUT_TYPES = ["BANK_TRANSFER", "UPI"] as const;
+
 export function TaxPayoutInfoStep({
   value,
   onChange,
@@ -127,6 +130,8 @@ export function TaxPayoutInfoStep({
   value: TaxPayoutInfoValue;
   onChange: (patch: Partial<TaxPayoutInfoValue>) => void;
 }) {
+  const payoutTypeRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
   return (
     <div className="space-y-5">
       <div className={card}>
@@ -138,10 +143,13 @@ export function TaxPayoutInfoStep({
         />
         <div className="space-y-4">
           <div>
-            <label className={label}>
+            <label htmlFor="tax-pan" className={label}>
               PAN Number <span className="text-red-500">*</span>
             </label>
             <input
+              id="tax-pan"
+              autoCapitalize="characters"
+              autoComplete="off"
               className={field}
               placeholder="e.g. ABCDE1234F"
               value={value.panNumber}
@@ -152,8 +160,11 @@ export function TaxPayoutInfoStep({
             />
           </div>
           <div>
-            <label className={label}>GST Number (optional)</label>
+            <label htmlFor="tax-gst" className={label}>GST Number (optional)</label>
             <input
+              id="tax-gst"
+              autoCapitalize="characters"
+              autoComplete="off"
               className={field}
               placeholder="e.g. 22AAAAA0000A1Z5"
               value={value.gstNumber}
@@ -178,22 +189,40 @@ export function TaxPayoutInfoStep({
           subtitle="Where your session earnings will be sent"
         />
 
-        <div className="mb-4 grid grid-cols-2 gap-2">
-          {(["BANK_TRANSFER", "UPI"] as const).map((type) => (
+        <div
+          role="radiogroup"
+          aria-label="Payout method type"
+          className="mb-4 grid grid-cols-2 gap-2"
+        >
+          {PAYOUT_TYPES.map((type, idx) => (
             <button
               key={type}
               type="button"
+              role="radio"
+              aria-checked={value.payoutType === type}
+              tabIndex={value.payoutType === type ? 0 : -1}
+              ref={(el) => {
+                payoutTypeRefs.current[idx] = el;
+              }}
               onClick={() => onChange({ payoutType: type })}
-              className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all ${
+              onKeyDown={(e) => {
+                if (["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(e.key)) {
+                  e.preventDefault();
+                  const next = (idx + 1) % PAYOUT_TYPES.length;
+                  onChange({ payoutType: PAYOUT_TYPES[next] });
+                  payoutTypeRefs.current[next]?.focus();
+                }
+              }}
+              className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 ${
                 value.payoutType === type
                   ? "border-power-orange bg-power-orange/10 text-power-orange"
                   : "border-slate-200 bg-slate-50 text-slate-600 hover:border-power-orange/50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
               }`}
             >
               {type === "BANK_TRANSFER" ? (
-                <CreditCard className="h-4 w-4" />
+                <CreditCard className="h-4 w-4" aria-hidden="true" />
               ) : (
-                <Smartphone className="h-4 w-4" />
+                <Smartphone className="h-4 w-4" aria-hidden="true" />
               )}
               {type === "BANK_TRANSFER" ? "Bank Transfer" : "UPI"}
             </button>
@@ -203,10 +232,12 @@ export function TaxPayoutInfoStep({
         {value.payoutType === "BANK_TRANSFER" ? (
           <div className="space-y-4">
             <div>
-              <label className={label}>
+              <label htmlFor="payout-holder-name" className={label}>
                 Account Holder Name <span className="text-red-500">*</span>
               </label>
               <input
+                id="payout-holder-name"
+                autoComplete="name"
                 className={field}
                 placeholder="As per bank records"
                 value={value.accountHolderName}
@@ -215,20 +246,26 @@ export function TaxPayoutInfoStep({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={label}>
+                <label htmlFor="payout-account-number" className={label}>
                   Account Number <span className="text-red-500">*</span>
                 </label>
                 <input
+                  id="payout-account-number"
+                  inputMode="numeric"
+                  autoComplete="off"
                   className={field}
                   value={value.accountNumber}
                   onChange={(e) => onChange({ accountNumber: e.target.value })}
                 />
               </div>
               <div>
-                <label className={label}>
+                <label htmlFor="payout-confirm-account" className={label}>
                   Confirm Account Number <span className="text-red-500">*</span>
                 </label>
                 <input
+                  id="payout-confirm-account"
+                  inputMode="numeric"
+                  autoComplete="off"
                   className={field}
                   value={value.confirmAccountNumber}
                   onChange={(e) =>
@@ -239,10 +276,13 @@ export function TaxPayoutInfoStep({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={label}>
+                <label htmlFor="payout-ifsc" className={label}>
                   IFSC Code <span className="text-red-500">*</span>
                 </label>
                 <input
+                  id="payout-ifsc"
+                  autoCapitalize="characters"
+                  autoComplete="off"
                   className={field}
                   placeholder="e.g. SBIN0001234"
                   value={value.ifscCode}
@@ -252,10 +292,11 @@ export function TaxPayoutInfoStep({
                 />
               </div>
               <div>
-                <label className={label}>
+                <label htmlFor="payout-bank-name" className={label}>
                   Bank Name <span className="text-red-500">*</span>
                 </label>
                 <input
+                  id="payout-bank-name"
                   className={field}
                   value={value.bankName}
                   onChange={(e) => onChange({ bankName: e.target.value })}
@@ -265,10 +306,12 @@ export function TaxPayoutInfoStep({
           </div>
         ) : (
           <div>
-            <label className={label}>
+            <label htmlFor="payout-upi" className={label}>
               UPI ID <span className="text-red-500">*</span>
             </label>
             <input
+              id="payout-upi"
+              autoComplete="off"
               className={field}
               placeholder="e.g. yourname@okaxis"
               value={value.upiId}

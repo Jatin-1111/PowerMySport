@@ -3,12 +3,17 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
+  ArrowRight,
   CheckCircle2,
   ChevronRight,
+  ListChecks,
   Map,
   MessageCircle,
   RotateCcw,
   Sparkles,
+  Target,
+  Trophy,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -23,6 +28,7 @@ import {
   EMPTY_FORM,
   buildAchievementChips,
   buildGoalChips,
+  buildKeyFindings,
   buildProfileChips,
   isAnswered,
 } from "../utils/sportKnownFlowUtils";
@@ -505,11 +511,60 @@ function QuestionInput({
 
 // ─── Chip ─────────────────────────────────────────────────────────────────────
 
-function Chip({ label }: { label: string }) {
+const CHIP_VARIANTS = {
+  slate: "bg-slate-100 text-slate-600",
+  amber: "bg-amber-50 text-amber-700",
+  indigo: "bg-indigo-50 text-indigo-600",
+} as const;
+
+function Chip({ label, variant = "slate" }: { label: string; variant?: keyof typeof CHIP_VARIANTS }) {
   return (
-    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${CHIP_VARIANTS[variant]}`}>
       {label}
     </span>
+  );
+}
+
+// ─── Profile group card ───────────────────────────────────────────────────────
+
+function ProfileGroupCard({
+  icon: Icon,
+  iconBg,
+  iconColor,
+  title,
+  chips,
+  variant,
+  delay = 0,
+}: {
+  icon: typeof User;
+  iconBg: string;
+  iconColor: string;
+  title: string;
+  chips: string[];
+  variant: keyof typeof CHIP_VARIANTS;
+  delay?: number;
+}) {
+  if (chips.length === 0) return null;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.35 }}
+      whileHover={{ y: -3 }}
+      className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <div className={`w-7 h-7 rounded-lg ${iconBg} flex items-center justify-center flex-shrink-0`}>
+          <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
+        </div>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{title}</p>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {chips.map((c) => (
+          <Chip key={c} label={c} variant={variant} />
+        ))}
+      </div>
+    </motion.div>
   );
 }
 
@@ -520,13 +575,14 @@ function ResultsView({ form, onReset }: { form: KnownSportForm; onReset: () => v
   const profileChips = buildProfileChips(form);
   const achievementChips = buildAchievementChips(form);
   const goalChips = buildGoalChips(form);
+  const keyFindings = buildKeyFindings(form);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="relative min-h-screen flex items-center justify-center px-4 py-16"
+      className="relative min-h-screen px-4 py-16 sm:py-20"
     >
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/40 via-white to-slate-50" />
@@ -534,91 +590,120 @@ function ResultsView({ form, onReset }: { form: KnownSportForm; onReset: () => v
         <div className="absolute right-0 top-40 h-72 w-72 rounded-full bg-orange-200/15 blur-3xl" />
       </div>
 
-      <div className="w-full max-w-md">
-        <div className="flex justify-center mb-5">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest text-emerald-600">
+      <div className="mx-auto w-full max-w-3xl">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest text-emerald-600 mb-5">
             <CheckCircle2 className="h-3.5 w-3.5" />
             Profile ready
           </div>
-        </div>
-
-        <div className="text-center mb-7">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-50 text-5xl">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-orange-50 to-amber-50 text-4xl ring-4 ring-white shadow-[0_8px_24px_-8px_rgba(233,115,22,0.35)]">
             {sportEmoji}
           </div>
-          <h2 className="font-title text-2xl font-bold text-slate-900">
+          <h2 className="font-title text-2xl sm:text-3xl font-bold text-slate-900">
             {form.childName ? `${form.childName}'s ` : "Your child's "}
             <span className="text-power-orange">{form.sport}</span> profile
           </h2>
-          <p className="text-sm text-slate-500 mt-1 leading-relaxed">
+          <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">
             Based on your answers — here&apos;s what we&apos;ve built.
           </p>
         </div>
 
-        <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_10px_40px_-18px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/[0.03] mb-4">
-          {profileChips.length > 0 && (
-            <div className="mb-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                Child profile
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {profileChips.map((c) => (
-                  <Chip key={c} label={c} />
-                ))}
+        {/* Key findings */}
+        {keyFindings.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="rounded-2xl border border-slate-200/70 border-l-4 border-l-emerald-400 bg-white p-5 sm:p-6 shadow-sm mb-5"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                <ListChecks className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="font-title text-base font-bold text-slate-900 leading-tight">
+                  Key Findings
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  What shaped {form.childName || "your child"}&apos;s profile
+                </p>
               </div>
             </div>
-          )}
-          {achievementChips.length > 0 && (
-            <div className="mb-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                Track record
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {achievementChips.map((c) => (
-                  <Chip key={c} label={c} />
-                ))}
-              </div>
-            </div>
-          )}
-          {goalChips.length > 0 && (
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                Goals & availability
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {goalChips.map((c) => (
-                  <Chip key={c} label={c} />
-                ))}
-              </div>
-            </div>
-          )}
+            <ul className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-2.5">
+              {keyFindings.map((finding, i) => (
+                <li key={i} className="flex gap-2.5 items-start">
+                  <div className="w-4 h-4 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                  </div>
+                  <p className="text-sm text-slate-600 leading-relaxed">{finding}</p>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        )}
+
+        {/* Profile summary — grouped by category */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          <ProfileGroupCard
+            icon={User}
+            iconBg="bg-slate-100"
+            iconColor="text-slate-500"
+            title="Child profile"
+            chips={profileChips}
+            variant="slate"
+            delay={0.08}
+          />
+          <ProfileGroupCard
+            icon={Trophy}
+            iconBg="bg-amber-50"
+            iconColor="text-amber-600"
+            title="Track record"
+            chips={achievementChips}
+            variant="amber"
+            delay={0.15}
+          />
+          <ProfileGroupCard
+            icon={Target}
+            iconBg="bg-indigo-50"
+            iconColor="text-indigo-500"
+            title="Goals & availability"
+            chips={goalChips}
+            variant="indigo"
+            delay={0.22}
+          />
         </div>
 
-        <div className="space-y-3">
+        {/* Next steps */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Link
             href={`/roadmap?sport=${encodeURIComponent(form.sport)}${form.state ? `&state=${encodeURIComponent(form.state)}` : ""}`}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-power-orange px-5 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98]"
+            className="group/cta flex w-full items-center justify-center gap-2 rounded-2xl bg-power-orange px-5 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98]"
           >
             <Map className="h-4 w-4" />
             View {form.sport} Roadmap
+            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/cta:translate-x-0.5" />
           </Link>
           <Link
             href={`/guidance?sport=${encodeURIComponent(form.sport)}`}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 active:scale-[0.98]"
+            className="group/cta flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 active:scale-[0.98]"
           >
             <MessageCircle className="h-4 w-4" />
             Get Expert Help
+            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/cta:translate-x-0.5" />
           </Link>
         </div>
 
-        <button
-          type="button"
-          onClick={onReset}
-          className="mt-4 flex w-full items-center justify-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 transition-colors"
-        >
-          <RotateCcw className="h-3 w-3" />
-          Start over
-        </button>
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={onReset}
+            className="mt-5 inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Start over
+          </button>
+        </div>
       </div>
     </motion.div>
   );

@@ -9,6 +9,7 @@ import {
 } from "@/modules/shared/components/dashboard/DashboardShell";
 import {
     BadgeIndianRupee,
+    CalendarCheck,
     LayoutDashboard,
     Settings,
     ShieldCheck,
@@ -62,11 +63,10 @@ export default function ExpertLayout({
     ? []
     : [
         { href: "/expert/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/expert/sessions", label: "My Sessions", icon: CalendarCheck },
         { href: "/expert/profile", label: "Profile & Availability", icon: UserCog },
         { href: "/expert/pathways", label: "Verify Pathways", icon: ShieldCheck },
         { href: "/expert/payouts", label: "Payouts", icon: BadgeIndianRupee },
-        // Future route that can be uncommented as it is built:
-        // { href: "/expert/sessions", label: "My Sessions", icon: CalendarCheck },
         { href: "/expert/settings", label: "Settings", icon: Settings },
       ];
 

@@ -76,6 +76,9 @@ function LoginContent() {
         setToken(response.data.token);
         setUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
+        if (response.data.deletionCancelled) {
+          toast.success("Welcome back — we've cancelled your pending account deletion.");
+        }
         goToRedirect(redirectTo || getDefaultRedirect(response.data.user.role));
       } else {
         toast.error(response.message || "Login failed");

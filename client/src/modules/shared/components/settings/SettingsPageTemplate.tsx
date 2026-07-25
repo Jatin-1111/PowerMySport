@@ -260,7 +260,10 @@ export function SettingsPageTemplate({
     try {
       const response = await authApi.deleteAccount("");
       if (response.success) {
-        toast.success("Your account has been deleted");
+        toast.success(
+          response.message ||
+            "Your account has been deactivated and is scheduled for deletion.",
+        );
         logout();
         router.push("/");
       } else {
@@ -578,8 +581,8 @@ export function SettingsPageTemplate({
                       Delete Account
                     </h3>
                     <p className="mt-1 max-w-md text-sm text-slate-600">
-                      Permanently deactivate your account and remove your
-                      personal information. This cannot be undone.
+                      Deactivate your account immediately, then permanently
+                      delete it in 30 days. Log back in before then to cancel.
                     </p>
                   </div>
                 </div>
@@ -615,11 +618,16 @@ export function SettingsPageTemplate({
             <AlertTriangle size={26} />
           </div>
           <p className="text-sm leading-relaxed text-slate-700">
-            This will deactivate your account and permanently remove your name,
-            email, and phone number from PowerMySport. Bookings and payment
-            records are kept for legal and accounting purposes.{" "}
+            Your account will be deactivated immediately. It will be{" "}
             <span className="font-semibold text-rose-600">
-              This action cannot be undone.
+              permanently deleted in 30 days
+            </span>{" "}
+            — your name, email, and phone number will be removed, along with
+            personal content like calendar events and AI guidance history.
+            Bookings and payment records are kept for legal and accounting
+            purposes.{" "}
+            <span className="font-semibold text-rose-600">
+              Log back in before the 30 days are up to cancel.
             </span>
           </p>
         </div>

@@ -151,6 +151,8 @@ export interface AuthResponse {
   data?: {
     token: string;
     user: User;
+    /** True when this login cancelled a pending self-deletion (grace period). */
+    deletionCancelled?: boolean;
   };
 }
 

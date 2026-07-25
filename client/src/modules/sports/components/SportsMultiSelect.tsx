@@ -29,6 +29,8 @@ export default function SportsMultiSelect({
   const [customSportError, setCustomSportError] = useState("");
   const [fuse, setFuse] = useState<Fuse<Sport> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -110,6 +112,23 @@ export default function SportsMultiSelect({
     }
     setSearchQuery("");
     setIsOpen(true); // Keep dropdown open for multiple selections
+    // The picked option becomes disabled, which would silently drop focus —
+    // hand it back to the search box so keyboard flow continues.
+    inputRef.current?.focus();
+  };
+
+  // Move focus between the search input and the (non-disabled) options
+  const focusOption = (from: number, dir: 1 | -1) => {
+    const opts = optionRefs.current;
+    for (let i = from + dir; i >= 0 && i < opts.length; i += dir) {
+      // isConnected guards against stale refs left over after the filtered
+      // list shrank
+      if (opts[i] && opts[i]!.isConnected && !opts[i]!.disabled) {
+        opts[i]!.focus();
+        return;
+      }
+    }
+    if (dir === -1) inputRef.current?.focus();
   };
 
   // Handle sport removal
@@ -185,9 +204,10 @@ export default function SportsMultiSelect({
               type="button"
               onClick={() => handleRemoveSport(sport.name)}
               disabled={disabled}
-              className="text-indigo-500 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label={`Remove ${sport.name}`}
+              className="rounded text-indigo-500 hover:text-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         ))}
@@ -197,7 +217,13 @@ export default function SportsMultiSelect({
       <div className="relative">
         <div className="relative">
           <input
+            ref={inputRef}
             type="text"
+            role="combobox"
+            aria-expanded={isOpen && !disabled}
+            aria-controls="sports-multiselect-listbox"
+            aria-autocomplete="list"
+            aria-label="Search or add sports"
             placeholder="Search or add sports..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
@@ -205,6 +231,13 @@ export default function SportsMultiSelect({
             onKeyDown={(e) => {
               if (e.key === "Escape") {
                 setIsOpen(false);
+              } else if (e.key === "ArrowDown") {
+                e.preventDefault();
+                if (!isOpen) setIsOpen(true);
+                focusOption(-1, 1);
+              } else if (e.key === "Enter") {
+                // Don't submit the surrounding form from the search box
+                e.preventDefault();
               }
             }}
             disabled={disabled || isLoading}
@@ -227,7 +260,10 @@ export default function SportsMultiSelect({
 
         {/* Dropdown */}
         {isOpen && !disabled && (
-          <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+          <div
+            id="sports-multiselect-listbox"
+            className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg"
+          >
             {isLoading ? (
               <div className="flex items-center justify-center px-4 py-6">
                 <Loader size={20} className="animate-spin text-indigo-500" />
@@ -237,19 +273,35 @@ export default function SportsMultiSelect({
                 {/* Sports List */}
                 {filteredSports.length > 0 && (
                   <div>
-                    {filteredSports.map((sport) => {
+                    {filteredSports.map((sport, i) => {
                       const isSelected = value.includes(sport.name);
                       return (
                         <button
                           key={sport.name}
                           type="button"
+                          ref={(el) => {
+                            optionRefs.current[i] = el;
+                          }}
                           onClick={() => handleSelectSport(sport.name)}
+                          onKeyDown={(e) => {
+                            if (e.key === "ArrowDown") {
+                              e.preventDefault();
+                              focusOption(i, 1);
+                            } else if (e.key === "ArrowUp") {
+                              e.preventDefault();
+                              focusOption(i, -1);
+                            } else if (e.key === "Escape") {
+                              e.preventDefault();
+                              setIsOpen(false);
+                              inputRef.current?.focus();
+                            }
+                          }}
                           disabled={isSelected}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-indigo-50 disabled:cursor-default disabled:bg-indigo-50 disabled:text-slate-600 focus:outline-none"
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-indigo-50 disabled:cursor-default disabled:bg-indigo-50 disabled:text-slate-600 focus:outline-none focus-visible:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500"
                         >
                           <div className="flex items-center gap-2">
                             {isSelected && (
-                              <div className="h-4 w-4 rounded bg-blue-500" />
+                              <div className="h-4 w-4 rounded bg-blue-500" aria-hidden="true" />
                             )}
                             <span className={isSelected ? "font-semibold" : ""}>
                               {sport.name}

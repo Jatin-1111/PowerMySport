@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Check,
   CheckCircle,
+  ListChecks,
   RotateCcw,
   Target,
   TrendingUp,
@@ -97,6 +98,69 @@ function buildPortfolio(
   return out;
 }
 
+// ─── Key findings summary ─────────────────────────────────────────────────────
+// A short, deterministic readout of the assessment answers themselves (distinct
+// from the per-sport `reasons`, which explain why a specific sport was picked).
+// Surfaced once, above the three cards, so parents see what shaped every pick
+// before reading the individual justifications.
+
+const BUDGET_LABEL: Record<NonNullable<WizardAnswers["budget"]>, string> = {
+  "under-3k": "under ₹3k/month",
+  "3k-7k": "₹3-7k/month",
+  "7k-15k": "₹7-15k/month",
+  "15k-plus": "₹15k+/month",
+};
+
+const HOURS_LABEL: Record<NonNullable<WizardAnswers["weeklyHours"]>, string> = {
+  "1-3": "1-3 hours a week",
+  "4-7": "4-7 hours a week",
+  "8-12": "8-12 hours a week",
+  "13-plus": "13+ hours a week",
+};
+
+function buildKeyFindings(answers: WizardAnswers): string[] {
+  const name = answers.childName || "Your child";
+  const findings: string[] = [];
+
+  if (answers.energyType === "explosive") {
+    findings.push(`${name} shows explosive, fast-twitch energy — a better fit for sports built around short bursts of power than sustained endurance.`);
+  } else if (answers.energyType === "endurance") {
+    findings.push(`${name} shows strong endurance — comfortable sustaining effort over time rather than relying on short bursts.`);
+  }
+
+  if (answers.teamIndividual !== null) {
+    if (answers.teamIndividual >= 4) {
+      findings.push(`A clear preference for individual competition, where the result rests entirely on their own performance.`);
+    } else if (answers.teamIndividual <= 2) {
+      findings.push(`A clear preference for team environments — responds well to shared effort and collective momentum.`);
+    }
+  }
+
+  if (answers.pressureResponse === "thrives") {
+    findings.push(`${name} thrives under pressure — competitive, high-stakes moments tend to bring out their best.`);
+  } else if (answers.pressureResponse === "avoids") {
+    findings.push(`${name} is more comfortable in lower-pressure settings than in high-stakes, competitive moments.`);
+  }
+
+  if (answers.agility === "high") {
+    findings.push(`High agility and flexibility stood out — a real advantage in sports that demand quick footwork and range of motion.`);
+  } else if (answers.agility === "low") {
+    findings.push(`Agility scored lower than other traits — strength, strategy, and consistency will count for more than raw quickness.`);
+  }
+
+  if (answers.decisionStyle === "react") {
+    findings.push(`${name} reacts fast and trusts their instincts — well suited to sports that leave little time to overthink.`);
+  } else if (answers.decisionStyle === "strategic") {
+    findings.push(`${name} leans strategic, thinking ahead rather than reacting — suited to sports that reward planning.`);
+  }
+
+  if (answers.budget && answers.weeklyHours) {
+    findings.push(`A budget of ${BUDGET_LABEL[answers.budget]} and ${HOURS_LABEL[answers.weeklyHours]} of available time shaped which sports made the cut below.`);
+  }
+
+  return findings.slice(0, 5);
+}
+
 function SportCard({
   result,
   answers,
@@ -178,6 +242,7 @@ export function ResultsView({
   const name = answers.childName || "Your child";
   const topResults = results.slice(0, 3);
   const portfolio = buildPortfolio(topResults);
+  const keyFindings = buildKeyFindings(answers);
   const isUnderTen = answers.age !== null && answers.age <= 10;
   const isPlural = answers.gender !== "boy" && answers.gender !== "girl";
   const pn = answers.gender === "boy" ? "he" : answers.gender === "girl" ? "she" : "they";
@@ -224,6 +289,35 @@ export function ResultsView({
       {savedStatus === "error" && (
         <div className="text-sm text-amber-700 bg-amber-50 px-4 py-2.5 rounded-xl mb-6">
           Couldn&apos;t save automatically — your results are still shown below.
+        </div>
+      )}
+
+      {/* Key findings from the assessment */}
+      {keyFindings.length > 0 && (
+        <div className="rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 mb-8 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
+              <ListChecks className="w-4 h-4 text-indigo-500" />
+            </div>
+            <div>
+              <h3 className="font-title text-base font-bold text-slate-900 leading-tight">
+                Key Findings from the Assessment
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                What shaped {name}&apos;s recommendations below
+              </p>
+            </div>
+          </div>
+          <ul className="space-y-2.5">
+            {keyFindings.map((finding, i) => (
+              <li key={i} className="flex gap-2.5 items-start">
+                <div className="w-4 h-4 rounded-full bg-indigo-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Check className="w-2.5 h-2.5 text-indigo-500" />
+                </div>
+                <p className="text-sm text-slate-600 leading-relaxed">{finding}</p>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

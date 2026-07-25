@@ -35,10 +35,11 @@ import {
   Zap,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const SESSION_MODES = ["ONLINE", "IN_PERSON", "BOTH"] as const;
 
 const field =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-100";
@@ -122,6 +123,20 @@ export default function ExpertOnboardingPage() {
   // Step 5 — Tax & Payout
   const [taxPayout, setTaxPayout] = useState<TaxPayoutInfoValue>(EMPTY_TAX_PAYOUT_INFO);
 
+  const stepAnnouncerRef = useRef<HTMLParagraphElement>(null);
+  const prevStepRef = useRef(step);
+  const modeRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // On step change, scroll back to the top and move focus to the
+  // "Step X of Y" announcer so keyboard/screen-reader users land at the
+  // start of the new step instead of on whatever button they last pressed.
+  useEffect(() => {
+    if (prevStepRef.current === step) return;
+    prevStepRef.current = step;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    stepAnnouncerRef.current?.focus({ preventScroll: true });
+  }, [step]);
+
   // The auth store hydrates from localStorage asynchronously (see
   // HydrationBoundary), so `user` can still be null on the render where this
   // component's `name` state initializer runs. Sync once it arrives.
@@ -192,7 +207,7 @@ export default function ExpertOnboardingPage() {
 
   const addBlackout = () => {
     if (!newBlackout) return;
-    setBlackout((b) => [...b, newBlackout]);
+    setBlackout((b) => (b.includes(newBlackout) ? b : [...b, newBlackout].sort()));
     setNewBlackout("");
   };
 
@@ -332,16 +347,21 @@ export default function ExpertOnboardingPage() {
           </p>
           <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-300">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
-            While you wait, you can log in to update your profile or set
-            your availability from the dashboard.
+            {/* The dashboard and payout method are both locked while a
+                profile is PENDING (server-side 403 on every action, and
+                ExpertLayout redirects any non-APPROVED expert straight back
+                here) — don't promise access this screen can't deliver. */}
+            Your profile is locked for editing until this review finishes —
+            there&apos;s nothing else to do right now except wait for our
+            email.
           </div>
           <Button
-            variant="primary"
+            variant="secondary"
             fullWidth
             className="mt-6"
-            onClick={() => router.push("/expert/dashboard")}
+            onClick={() => router.push("/")}
           >
-            Go to Dashboard
+            Back to Home
           </Button>
         </div>
       </div>
@@ -358,25 +378,38 @@ export default function ExpertOnboardingPage() {
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
             Set Up Your Expert Profile
           </h1>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          <p
+            ref={stepAnnouncerRef}
+            tabIndex={-1}
+            className="mt-2 text-sm text-slate-500 outline-none dark:text-slate-400"
+          >
             Step {step} of {STEPS.length} — complete your profile to submit for review
           </p>
         </div>
 
-        {/* Step indicators */}
-        <div className="mb-8 flex items-center justify-between">
+        {/* Step indicators — completed steps are clickable to jump back */}
+        <nav aria-label="Onboarding steps" className="mb-8 flex items-center justify-between">
           {STEPS.map((s, i) => (
             <div key={s.id} className="flex flex-1 items-center">
-              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all ${
-                step > s.id
-                  ? "bg-emerald-500 text-white"
-                  : step === s.id
-                    ? "bg-power-orange text-white shadow-lg shadow-power-orange/30"
-                    : "bg-white text-slate-400 shadow-[0_2px_8px_rgb(0,0,0,0.05)] dark:bg-slate-800"
-              }`}>
-                {step > s.id ? <CheckCircle2 className="h-5 w-5" /> : s.id}
-              </div>
-              <p className={`ml-2 hidden text-xs font-semibold sm:block ${
+              <button
+                type="button"
+                onClick={() => step > s.id && setStep(s.id)}
+                disabled={s.id >= step}
+                aria-current={step === s.id ? "step" : undefined}
+                aria-label={`Step ${s.id}: ${s.title}${
+                  step > s.id ? " (completed — go back to this step)" : step === s.id ? " (current)" : ""
+                }`}
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 ${
+                  step > s.id
+                    ? "cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600"
+                    : step === s.id
+                      ? "bg-power-orange text-white shadow-lg shadow-power-orange/30"
+                      : "bg-white text-slate-400 shadow-[0_2px_8px_rgb(0,0,0,0.05)] dark:bg-slate-800"
+                }`}
+              >
+                {step > s.id ? <CheckCircle2 className="h-5 w-5" aria-hidden="true" /> : s.id}
+              </button>
+              <p aria-hidden="true" className={`ml-2 hidden text-xs font-semibold sm:block ${
                 step === s.id ? "text-power-orange" : "text-slate-400"
               }`}>
                 {s.title}
@@ -386,7 +419,21 @@ export default function ExpertOnboardingPage() {
               )}
             </div>
           ))}
-        </div>
+        </nav>
+
+        {/* Single form wrapper so pressing Enter in any field advances the
+            wizard (or submits on the last step) like a native form. */}
+        <form
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (step < STEPS.length) {
+              goNext();
+            } else {
+              handleSubmit();
+            }
+          }}
+        >
 
         {/* Step 1 — Identity */}
         {step === 1 && (
@@ -411,10 +458,12 @@ export default function ExpertOnboardingPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className={label}>
+                  <label htmlFor="expert-name" className={label}>
                     Name <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="expert-name"
+                    autoComplete="name"
                     className={field}
                     placeholder="Your full name"
                     value={name}
@@ -423,10 +472,11 @@ export default function ExpertOnboardingPage() {
                 </div>
 
                 <div>
-                  <label className={label}>
+                  <label htmlFor="expert-bio" className={label}>
                     Bio <span className="text-red-500">*</span>
                   </label>
                   <textarea
+                    id="expert-bio"
                     rows={4}
                     className={field}
                     placeholder="Tell clients about your background, experience, and what makes you unique as an expert..."
@@ -438,10 +488,11 @@ export default function ExpertOnboardingPage() {
                 </div>
 
                 <div>
-                  <label className={label}>
+                  <label htmlFor="expert-achievements" className={label}>
                     Achievements <span className="text-red-500">*</span>
                   </label>
                   <textarea
+                    id="expert-achievements"
                     rows={3}
                     className={field}
                     placeholder="e.g. National champion 2018, Represented India U23, State gold medallist 2020..."
@@ -455,8 +506,10 @@ export default function ExpertOnboardingPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className={label}>City</label>
+                    <label htmlFor="expert-city" className={label}>City</label>
                     <input
+                      id="expert-city"
+                      autoComplete="address-level2"
                       className={field}
                       placeholder="e.g. Mumbai"
                       value={city}
@@ -464,8 +517,8 @@ export default function ExpertOnboardingPage() {
                     />
                   </div>
                   <div>
-                    <label className={label}>Languages</label>
-                    <LanguagesMultiSelect value={languages} onChange={setLanguages} />
+                    <label htmlFor="expert-languages" className={label}>Languages</label>
+                    <LanguagesMultiSelect id="expert-languages" value={languages} onChange={setLanguages} />
                   </div>
                 </div>
               </div>
@@ -491,10 +544,10 @@ export default function ExpertOnboardingPage() {
                 <SportsMultiSelect value={sports} onChange={setSports} />
               </div>
               <div>
-                <label className={label}>
+                <label htmlFor="expert-expertise" className={label}>
                   Expertise / Specialisations <span className="text-red-500">*</span>
                 </label>
-                <ExpertiseMultiSelect value={expertise} onChange={setExpertise} />
+                <ExpertiseMultiSelect id="expert-expertise" value={expertise} onChange={setExpertise} />
                 <p className="mt-1 text-xs text-slate-500">
                   e.g. Batting technique, Penalty kicks, Serve & return, Mental conditioning…
                 </p>
@@ -516,12 +569,14 @@ export default function ExpertOnboardingPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={label}>
+                  <label htmlFor="expert-session-fee" className={label}>
                     Session Fee (₹) <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="expert-session-fee"
                     type="number"
                     min={0}
+                    inputMode="numeric"
                     className={field}
                     placeholder="e.g. 1500"
                     value={sessionFee}
@@ -529,8 +584,9 @@ export default function ExpertOnboardingPage() {
                   />
                 </div>
                 <div>
-                  <label className={label}>Session Length</label>
+                  <label htmlFor="expert-session-length" className={label}>Session Length</label>
                   <select
+                    id="expert-session-length"
                     className={field}
                     value={sessionDurationMinutes}
                     onChange={(e) => setSessionDurationMinutes(e.target.value)}
@@ -543,16 +599,37 @@ export default function ExpertOnboardingPage() {
               </div>
 
               <div>
-                <label className={label}>
+                <span id="session-mode-label" className={label}>
                   Session Mode <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(["ONLINE", "IN_PERSON", "BOTH"] as const).map((mode) => (
+                </span>
+                {/* Native-radio keyboard behaviour: one tab stop, arrows move
+                    and select. */}
+                <div role="radiogroup" aria-labelledby="session-mode-label" className="grid grid-cols-3 gap-2">
+                  {SESSION_MODES.map((mode, idx) => (
                     <button
                       key={mode}
                       type="button"
+                      role="radio"
+                      aria-checked={sessionMode === mode}
+                      tabIndex={sessionMode === mode ? 0 : -1}
+                      ref={(el) => {
+                        modeRefs.current[idx] = el;
+                      }}
                       onClick={() => setSessionMode(mode)}
-                      className={`rounded-xl border py-3 text-sm font-semibold transition-all ${
+                      onKeyDown={(e) => {
+                        let next = -1;
+                        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                          next = (idx + 1) % SESSION_MODES.length;
+                        } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                          next = (idx - 1 + SESSION_MODES.length) % SESSION_MODES.length;
+                        }
+                        if (next >= 0) {
+                          e.preventDefault();
+                          setSessionMode(SESSION_MODES[next]);
+                          modeRefs.current[next]?.focus();
+                        }
+                      }}
+                      className={`rounded-xl border py-3 text-sm font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 ${
                         sessionMode === mode
                           ? "border-power-orange bg-power-orange/10 text-power-orange"
                           : "border-slate-200 bg-slate-50 text-slate-600 hover:border-power-orange/50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
@@ -566,10 +643,12 @@ export default function ExpertOnboardingPage() {
 
               {(sessionMode === "IN_PERSON" || sessionMode === "BOTH") && (
                 <div>
-                  <label className={label}>
+                  <label htmlFor="expert-address" className={label}>
                     In-person Location <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="expert-address"
+                    autoComplete="street-address"
                     className={field}
                     placeholder="e.g. 2nd Floor, ABC Sports Complex, Sector 15, Chandigarh"
                     value={inPersonAddress}
@@ -618,35 +697,38 @@ export default function ExpertOnboardingPage() {
                       <button
                         type="button"
                         onClick={() => addWindow(dayIdx)}
-                        className="flex items-center gap-1 text-xs font-semibold text-power-orange hover:text-orange-600"
+                        aria-label={`Add availability slot for ${day}`}
+                        className="flex items-center gap-1 rounded text-xs font-semibold text-power-orange hover:text-orange-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange"
                       >
-                        <Plus className="h-3 w-3" /> Add slot
+                        <Plus className="h-3 w-3" aria-hidden="true" /> Add slot
                       </button>
                     </div>
                     {dayWindows.length > 0 && (
                       <div className="mt-2 space-y-2">
-                        {dayWindows.map(({ w, i }) => (
+                        {dayWindows.map(({ w, i }, slotIdx) => (
                           <div key={i} className="flex items-center gap-2">
                             <input
                               type="time"
-                              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800"
+                              aria-label={`${day} slot ${slotIdx + 1} start time`}
+                              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange/40 dark:border-slate-700 dark:bg-slate-800"
                               value={w.start}
                               onChange={(e) => updateWindow(i, "start", e.target.value)}
                             />
-                            <span className="text-slate-400">–</span>
+                            <span className="text-slate-400" aria-hidden="true">–</span>
                             <input
                               type="time"
-                              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800"
+                              aria-label={`${day} slot ${slotIdx + 1} end time`}
+                              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange/40 dark:border-slate-700 dark:bg-slate-800"
                               value={w.end}
                               onChange={(e) => updateWindow(i, "end", e.target.value)}
                             />
                             <button
                               type="button"
                               onClick={() => removeWindow(i)}
-                              className="ml-auto rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
-                              title="Remove"
+                              className="ml-auto rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                              aria-label={`Remove ${day} slot ${slotIdx + 1}`}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" aria-hidden="true" />
                             </button>
                           </div>
                         ))}
@@ -667,11 +749,19 @@ export default function ExpertOnboardingPage() {
               <div className="flex gap-2">
                 <input
                   type="date"
+                  aria-label="Blackout date"
                   className={field}
                   value={newBlackout}
                   onChange={(e) => setNewBlackout(e.target.value)}
+                  onKeyDown={(e) => {
+                    // Enter adds the date instead of advancing the wizard
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addBlackout();
+                    }
+                  }}
                 />
-                <Button variant="secondary" onClick={addBlackout}>Add</Button>
+                <Button type="button" variant="secondary" onClick={addBlackout}>Add</Button>
               </div>
               {blackout.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -681,8 +771,13 @@ export default function ExpertOnboardingPage() {
                       className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                     >
                       {d}
-                      <button type="button" onClick={() => setBlackout((b) => b.filter((x) => x !== d))}>
-                        <Trash2 className="h-3 w-3 text-slate-400 hover:text-red-500" />
+                      <button
+                        type="button"
+                        onClick={() => setBlackout((b) => b.filter((x) => x !== d))}
+                        aria-label={`Remove blackout date ${d}`}
+                        className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      >
+                        <Trash2 className="h-3 w-3 text-slate-400 hover:text-red-500" aria-hidden="true" />
                       </button>
                     </span>
                   ))}
@@ -714,7 +809,7 @@ export default function ExpertOnboardingPage() {
         {/* Navigation */}
         <div className="mt-6 flex items-center justify-between">
           {step > 1 ? (
-            <Button variant="secondary" onClick={goBack} icon={<ArrowLeft className="h-4 w-4" />}>
+            <Button type="button" variant="secondary" onClick={goBack} icon={<ArrowLeft className="h-4 w-4" />}>
               Back
             </Button>
           ) : (
@@ -722,19 +817,21 @@ export default function ExpertOnboardingPage() {
           )}
 
           {step < STEPS.length ? (
-            <Button variant="primary" onClick={goNext}>
-              Continue <ChevronRight className="ml-1 h-4 w-4" />
+            <Button type="submit" variant="primary">
+              Continue <ChevronRight className="ml-1 h-4 w-4" aria-hidden="true" />
             </Button>
           ) : (
             <Button
+              type="submit"
               variant="primary"
-              onClick={handleSubmit}
               disabled={submitting}
             >
               {submitting ? "Submitting…" : "Submit for Review"}
             </Button>
           )}
         </div>
+
+        </form>
 
     </div>
   );
