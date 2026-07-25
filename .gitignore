@@ -20,3 +20,5 @@ README.md
 *.txt
 
 asset
+logs
+docs

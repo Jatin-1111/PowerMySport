@@ -23,6 +23,8 @@ export interface DependentCompletionProfile {
   ambition?: string;
   weeklyHoursCategory?: string;
   wizardCompletedAt?: string;
+  currentStandingTier?: number;
+  bestResultTier?: number;
 }
 
 export const DEPENDENT_COMPLETION_FIELDS: Array<{
@@ -69,9 +71,12 @@ export const DEPENDENT_COMPLETION_FIELDS: Array<{
   },
   {
     field: "assessment",
-    label: "Sport match results",
+    label: "Current standing",
     weight: 20,
-    isFilled: (p) => !!p.wizardCompletedAt,
+    // Satisfied by either path: the Discover wizard's sport-match assessment,
+    // or the "I know my sport" flow's standing/best-result tiers — both mean
+    // "we know where this child currently stands."
+    isFilled: (p) => !!p.wizardCompletedAt || (!!p.currentStandingTier && !!p.bestResultTier),
   },
 ];
 
@@ -101,4 +106,15 @@ export function calculateDependentCompletion(
     percent: totalWeight > 0 ? Math.round((filledWeight / totalWeight) * 100) : 100,
     missing,
   };
+}
+
+const ARCHETYPE_TRAIT_FIELDS = ["physical", "personality", "comfort"];
+
+/** True when the physical/personality/comfort trait buckets aren't all filled —
+ * i.e. this profile only ever went through a sport-known flow, never the
+ * Discover wizard's archetype questions. Used to gate cross-flow nudges that
+ * offer to fill those traits in (guidance, expert booking). */
+export function isMissingArchetypeTraits(profile: DependentCompletionProfile | null | undefined): boolean {
+  const { missing } = calculateDependentCompletion(profile);
+  return missing.some((m) => ARCHETYPE_TRAIT_FIELDS.includes(m.field));
 }

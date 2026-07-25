@@ -256,7 +256,10 @@ export const DashboardShell = ({
           </div>
         </aside>
 
-        <main className="flex-1 overflow-x-hidden pb-[max(env(safe-area-inset-bottom),0px)]">
+        {/* overflow-x-clip (not -hidden): hidden computes overflow-y to
+            `auto`, making <main> a second scroll container nested inside the
+            page scroller; clip just clips without creating one. */}
+        <main className="flex-1 overflow-x-clip pb-[max(env(safe-area-inset-bottom),0px)]">
           <div className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
             {children}
           </div>

@@ -31,6 +31,9 @@ export interface NavProps {
   sticky?: boolean;
 }
 
+const isShopLive = process.env.NEXT_PUBLIC_SHOP_IS_LIVE !== "false";
+const isBookingLive = process.env.NEXT_PUBLIC_BOOKING_IS_LIVE !== "false";
+
 const servicesItems = [
   {
     href: "/experts",
@@ -38,31 +41,35 @@ const servicesItems = [
     description: "Guidance for your sports plan",
     icon: Users,
   },
-  {
-    href: "/shop",
-    label: "Shop",
-    description: "Sports gear and equipment",
-    icon: ShoppingBag,
-  },
+  ...(isShopLive
+    ? [
+        {
+          href: "/shop",
+          label: "Shop",
+          description: "Sports gear and equipment",
+          icon: ShoppingBag,
+        },
+      ]
+    : []),
 ];
 
 const exploreItems = [
   {
     href: "/assessment",
-    label: "Find Your Sport",
-    description: "Sport recommendation for your child",
+    label: "Get Started",
+    description: "Know the sport, or need help deciding — start here",
     icon: Star,
   },
   {
     href: "/roadmap",
-    label: "My Roadmap",
+    label: "Sports Pathways",
     description: "Explore the journey ahead for your child's sport",
     icon: Map,
   },
   {
     href: "/guidance",
-    label: "Get Expert Help",
-    description: "Problem-solving & expert consultation",
+    label: "Problem Solver",
+    description: "AI-powered plan for any sports challenge",
     icon: BrainCircuit,
   },
 ];
@@ -322,52 +329,56 @@ export const Navigation: React.FC<NavProps> = ({
 
                     <div className="py-2">
                       {/* Book entry */}
-                      <motion.div
-                        initial={{ opacity: 0, x: -6 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{
-                          delay: 0,
-                          duration: 0.15,
-                          ease: "easeOut",
-                        }}
-                      >
-                        <Link
-                          href="/booking"
-                          onClick={() => setServicesDropdownOpen(false)}
-                          className={cn(
-                            "flex items-center gap-3 px-4 py-3 group transition-colors hover:bg-orange-50",
-                            isBookingActive && "bg-orange-50",
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "flex items-center justify-center w-8 h-8 rounded-lg transition-colors",
-                              isBookingActive
-                                ? "bg-power-orange text-white"
-                                : "bg-slate-100 text-slate-500 group-hover:bg-power-orange/10 group-hover:text-power-orange",
-                            )}
+                      {isBookingLive && (
+                        <>
+                          <motion.div
+                            initial={{ opacity: 0, x: -6 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{
+                              delay: 0,
+                              duration: 0.15,
+                              ease: "easeOut",
+                            }}
                           >
-                            <CalendarCheck className="w-4 h-4" />
-                          </span>
-                          <div>
-                            <p
+                            <Link
+                              href="/booking"
+                              onClick={() => setServicesDropdownOpen(false)}
                               className={cn(
-                                "text-sm font-medium leading-none mb-0.5",
-                                isBookingActive
-                                  ? "text-power-orange"
-                                  : "text-slate-800 group-hover:text-power-orange",
+                                "flex items-center gap-3 px-4 py-3 group transition-colors hover:bg-orange-50",
+                                isBookingActive && "bg-orange-50",
                               )}
                             >
-                              Book
-                            </p>
-                            <p className="text-xs text-slate-400">
-                              Venues · Coaches · Academies
-                            </p>
-                          </div>
-                        </Link>
-                      </motion.div>
+                              <span
+                                className={cn(
+                                  "flex items-center justify-center w-8 h-8 rounded-lg transition-colors",
+                                  isBookingActive
+                                    ? "bg-power-orange text-white"
+                                    : "bg-slate-100 text-slate-500 group-hover:bg-power-orange/10 group-hover:text-power-orange",
+                                )}
+                              >
+                                <CalendarCheck className="w-4 h-4" />
+                              </span>
+                              <div>
+                                <p
+                                  className={cn(
+                                    "text-sm font-medium leading-none mb-0.5",
+                                    isBookingActive
+                                      ? "text-power-orange"
+                                      : "text-slate-800 group-hover:text-power-orange",
+                                  )}
+                                >
+                                  Book
+                                </p>
+                                <p className="text-xs text-slate-400">
+                                  Venues · Coaches · Academies
+                                </p>
+                              </div>
+                            </Link>
+                          </motion.div>
 
-                      <div className="mx-3 mb-1 border-t border-slate-100" />
+                          <div className="mx-3 mb-1 border-t border-slate-100" />
+                        </>
+                      )}
 
                       {servicesItems.map((item, index) => {
                         const Icon = item.icon;
@@ -684,22 +695,24 @@ export const Navigation: React.FC<NavProps> = ({
                     >
                       <div className="ml-3 mt-1 space-y-1 border-l-2 border-orange-100 pl-3">
                         {/* Book link */}
-                        <Link
-                          href="/booking"
-                          onClick={() => {
-                            setMobileServicesOpen(false);
-                            setMobileMenuOpen(false);
-                          }}
-                          className={cn(
-                            "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                            isBookingActive
-                              ? "text-power-orange bg-orange-50"
-                              : "text-slate-600 hover:bg-orange-50 hover:text-power-orange",
-                          )}
-                        >
-                          <CalendarCheck className="w-4 h-4 shrink-0" />
-                          Book
-                        </Link>
+                        {isBookingLive && (
+                          <Link
+                            href="/booking"
+                            onClick={() => {
+                              setMobileServicesOpen(false);
+                              setMobileMenuOpen(false);
+                            }}
+                            className={cn(
+                              "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                              isBookingActive
+                                ? "text-power-orange bg-orange-50"
+                                : "text-slate-600 hover:bg-orange-50 hover:text-power-orange",
+                            )}
+                          >
+                            <CalendarCheck className="w-4 h-4 shrink-0" />
+                            Book
+                          </Link>
+                        )}
 
                         {servicesItems.map((item) => {
                           const Icon = item.icon;

@@ -1,10 +1,10 @@
 "use client";
 
+import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
 import { motion } from "framer-motion";
 import {
     Bookmark,
     Briefcase,
-    ExternalLink,
     Landmark,
     Trophy,
     Wallet,
@@ -20,11 +20,12 @@ import {
 export function SavedTab({
   savedItems,
   onUnsave,
-  onOpenModal,
+  onGetHelp,
 }: {
   savedItems: SavedItem[];
   onUnsave: (id: string) => void;
-  onOpenModal: (item: any, type: any) => void;
+  /** Opens a WhatsApp chat prefilled to ask a human for help with this item. */
+  onGetHelp: (item: any, type: any) => void;
 }) {
   const grouped = {
     tournament: savedItems.filter((s) => s.type === "tournament"),
@@ -156,10 +157,11 @@ export function SavedTab({
                       </p>
                       {type !== "career" && (
                         <button
-                          onClick={() => onOpenModal(saved.data, type)}
+                          onClick={() => onGetHelp(saved.data, type)}
                           className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition"
                         >
-                          <ExternalLink className="h-3.5 w-3.5" /> Open Guide
+                          <WhatsAppIcon className="h-3.5 w-3.5 text-[#25D366]" />
+                          Get Help via WhatsApp
                         </button>
                       )}
                     </div>

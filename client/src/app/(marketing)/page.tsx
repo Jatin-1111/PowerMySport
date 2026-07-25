@@ -6,10 +6,11 @@ import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { TrustMarquee } from "@/modules/marketing/components/marketing/TrustMarquee";
 import {
+  Activity,
   ArrowRight,
-  BrainCircuit,
   Building2,
   Check,
+  CheckCircle2,
   Clock,
   Compass,
   HelpCircle,
@@ -104,8 +105,33 @@ export default function HomePage() {
     },
   ];
 
-  // ── Why Parents Choose Us: the 3-step journey ──
-  const features = [
+  // ── Why Parents Choose Us: two journeys, depending on where you're starting from ──
+  const pathwaysStep = {
+    label: "Where do we start?",
+    title: "Discover Pathways",
+    description:
+      "Get a clear, personalised roadmap for that sport—what to focus on now, the milestones that matter, and exactly what comes next.",
+    icon: <Map className="h-6 w-6" />,
+    stat: "Built in 2 minutes",
+  };
+  const expertStep = {
+    label: "Still have questions?",
+    title: "Consult an Expert",
+    description:
+      "Talk to a real sports expert, or reach out to our team directly for hands-on assistance—free, no hard sell.",
+    icon: <MessageCircle className="h-6 w-6" />,
+    stat: "Free, no commitment",
+  };
+  const screeningStep = {
+    label: "Ready for the next step?",
+    title: "Book a Physical Screening",
+    description:
+      "Bring your child in for a hands-on session with a certified coach—we validate the online result against real movement, strength, and coordination.",
+    icon: <Activity className="h-6 w-6" />,
+    stat: "Book anytime after your results",
+  };
+
+  const discoverFeatures = [
     {
       label: "Not sure which sport?",
       title: "Do the Profile Assessment",
@@ -114,22 +140,22 @@ export default function HomePage() {
       icon: <Sparkles className="h-6 w-6" />,
       stat: "Takes about 5 minutes",
     },
+    screeningStep,
+    pathwaysStep,
+    expertStep,
+  ];
+
+  const knownSportFeatures = [
     {
-      label: "Where do we start?",
-      title: "Discover Pathways",
+      label: "Already know it?",
+      title: "Build the Sport Profile",
       description:
-        "Get a clear, personalised roadmap for that sport—what to focus on now, the milestones that matter, and exactly what comes next.",
-      icon: <Map className="h-6 w-6" />,
-      stat: "Built in 2 minutes",
+        "Tell us your child's sport, age, and experience level—we personalise everything downstream around exactly where they are today.",
+      icon: <CheckCircle2 className="h-6 w-6" />,
+      stat: "Takes about 5 minutes",
     },
-    {
-      label: "Still have questions?",
-      title: "Consult an Expert",
-      description:
-        "Talk to a real sports expert, or reach out to our team directly for hands-on assistance—free, no hard sell.",
-      icon: <MessageCircle className="h-6 w-6" />,
-      stat: "Free, no commitment",
-    },
+    pathwaysStep,
+    expertStep,
   ];
 
   return (
@@ -148,18 +174,24 @@ export default function HomePage() {
       {/* ── Hero ── */}
       <Hero
         variant="home"
-        title="Discover the Right Sport for your child"
-        titleHighlight="Right Sport"
+        title="Guiding Your Child's Sporting Journey"
+        titleHighlight="Sporting Journey"
         description="AI-powered guidance, trusted experts and a community that helps parents make better sports decisions."
+        ctaPrompt={
+          user?.role === "VenueLister"
+            ? undefined
+            : "Does your child already play a sport?"
+        }
         primaryCTA={
           user?.role === "VenueLister"
             ? { label: "Manage Venues", href: "/venue-lister/inventory" }
-            : { label: "Start Assessment", href: "/assessment" }
+            : { label: "Yes, build their profile", href: "/sport-profile" }
         }
-        secondaryCTA={{
-          label: "Sports Pathways",
-          href: "/roadmap",
-        }}
+        secondaryCTA={
+          user?.role === "VenueLister"
+            ? undefined
+            : { label: "Not yet, help me find one", href: "/assessment/discover" }
+        }
       />
 
       {/* ── The Problem ── */}
@@ -235,8 +267,11 @@ export default function HomePage() {
       <FeaturesShowcase
         title="From Guesswork to a Clear Plan"
         subtitle="Why Parents Choose Us"
-        description="Three simple steps take you from not knowing where to start, to a clear plan for your child's sports journey."
-        features={features}
+        description="Whether you're still deciding or already know the sport, here's exactly what happens next."
+        tracks={[
+          { key: "discover", label: "Not sure which sport?", features: discoverFeatures },
+          { key: "known", label: "Already know the sport?", features: knownSportFeatures },
+        ]}
       />
 
       {/* ── Available Now: Explore (Roadmap + Guidance) ── */}
@@ -254,38 +289,37 @@ export default function HomePage() {
               viewport={{ once: true, margin: "-100px" }}
             >
               <motion.div variants={itemVariants} className="mb-3">
-                <SectionLabel label="Available Now" color="green" />
+                <SectionLabel label="Knowledge Centre" color="green" />
               </motion.div>
               <motion.h2
                 variants={itemVariants}
                 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
               >
-                Start with a clear plan—today
+                Know more before you decide
               </motion.h2>
               <motion.p
                 variants={itemVariants}
                 className="mb-8 text-lg text-slate-600"
               >
-                Two simple tools, free to use right now. Get your child&apos;s
-                personalised roadmap and expert guidance before you commit to
-                anything.
+                Free resources to explore right now—no commitment, no account
+                needed.
               </motion.p>
 
               <motion.div variants={sectionVariants} className="space-y-4">
                 {[
                   {
                     icon: <Map size={22} />,
-                    title: "Sports Roadmap",
-                    desc: "A step-by-step plan for your child's sport—what to learn, when, and what to aim for.",
+                    title: "Understand Sports Pathways",
+                    desc: "See the step-by-step roadmap for any sport—milestones, timelines, and what it takes to go further.",
                     color: "bg-orange-50 text-power-orange ring-1 ring-orange-200/60",
-                    cta: { label: "Build a Sports Plan", href: "/roadmap" },
+                    cta: { label: "Explore", href: "/roadmap" },
                   },
                   {
-                    icon: <BrainCircuit size={22} />,
-                    title: "Expert Guidance",
-                    desc: "Answers to your toughest questions from sports experts and our AI guide—on call, whenever you need.",
+                    icon: <Users2 size={22} />,
+                    title: "Learn from Other Parents",
+                    desc: "Real questions, real experiences—see how other families navigated the same decisions.",
                     color: "bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200/60",
-                    cta: { label: "Chat on WhatsApp", href: "https://wa.me/918968582443?text=Hi%21%20I%20found%20PowerMySport%20and%20would%20like%20to%20know%20more%20about%20sports%20guidance%20for%20my%20child." },
+                    cta: { label: "Community", href: "/community" },
                   },
                 ].map((item) => (
                   <motion.div
@@ -373,10 +407,10 @@ export default function HomePage() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-white">
-                        One plan, every step
+                        Learn before you decide
                       </p>
                       <p className="text-[11px] text-white/60">
-                        Roadmap · Guidance · Experts
+                        Pathways · Community
                       </p>
                     </div>
                   </div>
@@ -396,22 +430,10 @@ export default function HomePage() {
 
       {/* ── Final CTA ── */}
       <CTA
-        title={
-          user
-            ? user.userType === "Parent"
-              ? "Ready for Your Child's Next Step?"
-              : "Ready for Your Next Step?"
-            : "Ready to Build Your Sports Plan?"
-        }
-        description={
-          user
-            ? user.userType === "Parent"
-              ? "Jump back into your child's roadmap and get guidance on what comes next."
-              : "Jump back into your roadmap and get guidance on what comes next."
-            : "Get a clear, personalised roadmap and expert guidance—free, in just a few minutes."
-        }
+        title="All Set to Play?"
+        description="From booking a trial class to finding the right academy—our team can help with any sports service your child needs, every step of the way."
         primaryCTA={{
-          label: user ? "Go to Roadmap" : "Build a Sports Plan",
+          label: user ? "Go to Roadmap" : "Explore Your Roadmap",
           href: "/roadmap",
         }}
         secondaryCTA={{ label: "Chat on WhatsApp", href: "https://wa.me/918968582443?text=Hi%21%20I%20found%20PowerMySport%20and%20would%20like%20to%20know%20more%20about%20sports%20guidance%20for%20my%20child." }}

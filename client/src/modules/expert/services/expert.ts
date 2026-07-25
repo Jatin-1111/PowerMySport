@@ -1,5 +1,5 @@
 import axiosInstance from "@/lib/api/axios";
-import { ApiResponse, PaginationMetadata } from "@/types";
+import { ApiResponse, IPayoutMethod, PaginationMetadata } from "@/types";
 
 export type ExpertSessionMode = "ONLINE" | "IN_PERSON";
 
@@ -40,6 +40,9 @@ export interface Expert {
   // Owner/admin-only (via /experts/me or admin endpoints)
   weeklyAvailability?: ExpertAvailabilityWindow[];
   blackoutDates?: string[];
+  panNumber?: string;
+  gstNumber?: string;
+  payoutMethods?: IPayoutMethod[];
 }
 
 export interface OpenSlot {
@@ -401,6 +404,8 @@ export const expertApi = {
         | "inPersonAddress"
         | "weeklyAvailability"
         | "blackoutDates"
+        | "panNumber"
+        | "gstNumber"
       >
     >,
   ): Promise<ApiResponse<Expert>> => {

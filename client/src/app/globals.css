@@ -155,10 +155,13 @@
   }
 
   html {
-    /* Reserve the scrollbar's width permanently so content never reflows
-       (shifting horizontally, and any wrapped text vertically) when a page
-       transitions between not-scrollable and scrollable. */
-    scrollbar-gutter: stable;
+    /* Always show the scrollbar so content never reflows (shifting
+       horizontally, and any wrapped text vertically) when a page transitions
+       between not-scrollable and scrollable. Deliberately NOT
+       `scrollbar-gutter: stable` — Chromium on Windows (fluent scrollbars)
+       paints the reserved gutter as a second scrollbar track next to the
+       real one, so the page appears to have two scrollbars. */
+    overflow-y: scroll;
   }
 
   body {
@@ -218,5 +221,11 @@
   .hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* Anchor targets inside legal documents sit under the sticky site nav
+     (h-16) — offset so a jumped-to heading isn't flush against it. */
+  .legal-content section[id] {
+    scroll-margin-top: 6rem;
   }
 }

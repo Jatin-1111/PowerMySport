@@ -64,16 +64,20 @@ export default function ExpertPayoutsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-6 py-8 sm:space-y-8">
       {/* ── Page header ── */}
-      <div className="rounded-xl border border-slate-200 bg-linear-to-br from-blue-50 to-indigo-50 p-4 shadow-sm sm:p-6">
-        <div className="flex flex-col items-start gap-4 sm:flex-row">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-power-orange/15 shrink-0">
-            <BadgeIndianRupee size={24} className="text-power-orange" />
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
+        <div className="pointer-events-none absolute -right-16 -top-12 h-40 w-40 rounded-full bg-power-orange/20 blur-3xl" />
+        <div className="relative flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10">
+            <BadgeIndianRupee size={22} className="text-power-orange" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
+            <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
+              Expert
+            </span>
+            <h1 className="mt-3 text-2xl font-bold sm:text-3xl">
               Payout Settings
             </h1>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 max-w-xl text-sm text-slate-200">
               Manage how you receive earnings from your expert sessions. Your
               payout method is used when a completed session's payment is
               released to you.
@@ -124,7 +128,7 @@ function InfoCard({
   description: string;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6">
+    <div className="rounded-xl border-0 bg-white p-5 shadow-[0_2px_16px_rgb(0,0,0,0.06)] transition-shadow hover:shadow-[0_8px_24px_rgb(0,0,0,0.1)] sm:p-6">
       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-power-orange/15 mb-3">
         <Icon size={20} className="text-power-orange" />
       </div>

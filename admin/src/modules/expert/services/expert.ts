@@ -7,6 +7,17 @@ export interface AdminExpertAvailabilityWindow {
   end: string;
 }
 
+export interface AdminExpertPayoutMethod {
+  id?: string;
+  type: "BANK_TRANSFER" | "UPI";
+  accountHolderName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  bankName?: string;
+  upiId?: string;
+  isDefault?: boolean;
+}
+
 export type AdminExpertVerificationStatus = "UNVERIFIED" | "PENDING" | "APPROVED" | "REJECTED";
 
 export interface AdminExpert {
@@ -37,6 +48,9 @@ export interface AdminExpert {
   rating: number;
   reviewCount: number;
   createdAt?: string;
+  panNumber?: string;
+  gstNumber?: string;
+  payoutMethods?: AdminExpertPayoutMethod[];
 }
 
 export interface CreateExpertPayload {

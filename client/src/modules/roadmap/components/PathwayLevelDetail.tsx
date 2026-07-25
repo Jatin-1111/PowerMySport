@@ -4,8 +4,7 @@ import { getCommunityAppUrl } from "@/lib/community/url";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
 import {
-
-    FUNNEL_AND_EXIT_VALUE,
+    getFeeBounds,
     MacroLevel,
     mergeAgeRanges,
 } from "@/modules/sports/config/macroLevels";
@@ -60,6 +59,13 @@ import {
 import {
     buildDiscoveryUrl
 } from '../utils';
+import {
+    ambitionTargetRawLevel,
+    BUDGET_RANGE_DISPLAY,
+    getAgeFit,
+    getBudgetFit,
+    RoadmapPersona,
+} from '../utils/persona';
 
 // ─── Dynamic pathway detail ────────────────────────────────────────────────────
 
@@ -79,11 +85,18 @@ export function PathwayLevelDetail({
   sportName,
   state,
   nextMacroLevel,
+  persona,
+  personalNotes,
+  personalNotesLoading,
 }: {
   macroLevel: MacroLevel;
   sportName?: string;
   state?: string;
   nextMacroLevel?: MacroLevel;
+  persona?: RoadmapPersona | null;
+  /** Layer-2: raw level (1–5) → AI note tailored to this child's signature. */
+  personalNotes?: Record<number, string> | null;
+  personalNotesLoading?: boolean;
 }) {
   const sName = sportName && sportName !== "General" ? sportName : "";
   const communityUrl = getCommunityAppUrl();
@@ -198,6 +211,22 @@ export function PathwayLevelDetail({
   // ── At-a-glance strip ──
   const leadLevel = displayLevels[displayLevels.length - 1];
   const ageRangeLabel = mergeAgeRanges(displayLevels.map((l) => l.ageRange));
+
+  // ── Persona fit (Layer-1 personalization — pure data, no AI) ──
+  const personaFirst = persona?.name;
+  const ageFit = getAgeFit(ageRangeLabel, persona?.age);
+  const budgetFit = getBudgetFit(
+    getFeeBounds(displayLevels.map((l) => l.level)),
+    persona?.budgetRange,
+  );
+  const goalRaw = ambitionTargetRawLevel(persona?.ambition);
+  const isGoalStage =
+    goalRaw !== null && displayLevels.some((l) => l.level === goalRaw);
+
+  // Layer-2 note for the displayed stage — keyed by its lead raw level, so
+  // the Competitive fork (National vs International) gets distinct notes.
+  const personalNote = leadLevel ? personalNotes?.[leadLevel.level] : undefined;
+  const showPersonalCard = !!persona && (personalNotesLoading || !!personalNote);
   const guidanceHref = sName
     ? `/guidance?sport=${encodeURIComponent(sName)}&level=${representativeLevel}&mode=level-plan&levelLabel=${encodeURIComponent(lLabel)}${state ? `&state=${encodeURIComponent(state)}` : ""}`
     : "";
@@ -255,6 +284,51 @@ export function PathwayLevelDetail({
             {ageRangeLabel}
           </div>
         )}
+
+        {/* ── Persona fit chips — deterministic, from the child's profile ── */}
+        {ageFit && (
+          <div
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${
+              ageFit.fit === "within"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-amber-200 bg-amber-50 text-amber-700"
+            }`}
+          >
+            <UserCheck className="h-3.5 w-3.5" />
+            {personaFirst ? `${personaFirst} is ${persona!.age}` : `Age ${persona!.age}`}
+            {ageFit.fit === "within"
+              ? " — fits this stage"
+              : ageFit.fit === "younger"
+                ? " — a little young for this stage"
+                : " — past the typical window"}
+          </div>
+        )}
+        {budgetFit && persona?.budgetRange && (
+          <div
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${
+              budgetFit === "within"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : budgetFit === "stretch"
+                  ? "border-amber-200 bg-amber-50 text-amber-700"
+                  : "border-rose-200 bg-rose-50 text-rose-700"
+            }`}
+          >
+            <Wallet className="h-3.5 w-3.5" />
+            {budgetFit === "within"
+              ? `Fits the ${BUDGET_RANGE_DISPLAY[persona.budgetRange]} budget you set`
+              : budgetFit === "stretch"
+                ? `Entry fits your ${BUDGET_RANGE_DISPLAY[persona.budgetRange]} budget — the top end costs more`
+                : `Costs more than your ${BUDGET_RANGE_DISPLAY[persona.budgetRange]} budget — scholarships can bridge it`}
+          </div>
+        )}
+        {isGoalStage && (
+          <div className="flex items-center gap-1.5 rounded-lg border border-power-orange/30 bg-orange-50 px-2.5 py-1.5 text-[11px] font-semibold text-power-orange">
+            <Target className="h-3.5 w-3.5" />
+            {personaFirst
+              ? `The goal you set for ${personaFirst}`
+              : "The goal you set"}
+          </div>
+        )}
       </div>
 
       {/* ── Inner tab navigation ── */}
@@ -293,22 +367,53 @@ export function PathwayLevelDetail({
         {/* ── What to Expect ── */}
         {innerTab === "expect" && (
           <div className="space-y-5">
-            {/* Straight talk — honest about the pyramid narrowing, and what
-                reaching or stopping at this tier is genuinely worth. General
-                truths about competitive pyramids, not sport-specific stats
-                we don't have real data for. */}
+            {/* Layer-2: AI note stitching this child's profile to this stage's
+                facts. Generated from an anonymized signature (no name reaches
+                the server) — the name label below is rendered client-side. */}
+            {showPersonalCard && (
+              <div className="rounded-2xl border border-power-orange/25 bg-gradient-to-br from-orange-50/80 to-white p-4 sm:p-5 shadow-sm">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-power-orange">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {personaFirst ? `For ${personaFirst}` : "For your child"}
+                  </p>
+                  <span className="text-[9px] font-medium text-slate-400">
+                    From the profile you shared
+                  </span>
+                </div>
+                {personalNote ? (
+                  <p className="text-sm leading-relaxed text-slate-700">
+                    {personaFirst
+                      ? personalNote.replaceAll("your child", personaFirst).replaceAll("Your child", personaFirst)
+                      : personalNote}
+                  </p>
+                ) : (
+                  <div className="animate-pulse space-y-2 py-0.5">
+                    <div className="h-3.5 w-full rounded bg-orange-100/80" />
+                    <div className="h-3.5 w-11/12 rounded bg-orange-100/80" />
+                    <div className="h-3.5 w-2/3 rounded bg-orange-100/80" />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Straight talk — honest about how this stage narrows, and what
+                reaching or stopping at it is genuinely worth. The copy lives
+                on the archetype skeleton's stage config, so a ranking-circuit
+                sport talks about tournaments, a rating sport about ratings,
+                a standards sport about qualifying marks. */}
             <div className={`rounded-2xl border bg-white/90 p-4 sm:p-5 ${colors.border} shadow-sm space-y-3`}>
               <div className="flex items-start gap-2.5">
                 <BarChart3 className={`h-4 w-4 shrink-0 mt-0.5 ${colors.text}`} />
                 <p className="text-xs leading-relaxed text-slate-600">
-                  {FUNNEL_AND_EXIT_VALUE[macroLevel.id].funnelNote}
+                  {macroLevel.funnelNote}
                 </p>
               </div>
               <div className="flex items-start gap-2.5 pt-3 border-t border-slate-100">
                 <Star className={`h-4 w-4 shrink-0 mt-0.5 ${colors.text}`} />
                 <p className="text-xs leading-relaxed text-slate-600">
                   <span className="font-semibold text-slate-700">What this is worth: </span>
-                  {FUNNEL_AND_EXIT_VALUE[macroLevel.id].exitValueNote}
+                  {macroLevel.exitValueNote}
                 </p>
               </div>
             </div>

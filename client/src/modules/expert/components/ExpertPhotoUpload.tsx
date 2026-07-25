@@ -75,7 +75,7 @@ export function ExpertPhotoUpload({
   return (
     <div className="relative shrink-0">
       <label
-        className={`group relative flex ${SIZE_CLASSES[size]} cursor-pointer items-center justify-center overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-md ring-1 ring-slate-200`}
+        className={`group relative flex ${SIZE_CLASSES[size]} cursor-pointer items-center justify-center overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-md ring-1 ring-slate-200 focus-within:ring-4 focus-within:ring-power-orange/60`}
       >
         {previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -96,10 +96,14 @@ export function ExpertPhotoUpload({
             <Camera className="h-6 w-6 text-white" />
           )}
         </div>
+        {/* sr-only (not `hidden`): keeps the input focusable so keyboard
+            users can Tab to it and press Enter/Space to open the picker;
+            the label shows the focus ring via focus-within. */}
         <input
           type="file"
           accept="image/*"
-          className="hidden"
+          aria-label="Upload profile photo"
+          className="sr-only"
           disabled={uploading}
           onChange={(e) =>
             e.target.files?.[0] && handleFileSelect(e.target.files[0])

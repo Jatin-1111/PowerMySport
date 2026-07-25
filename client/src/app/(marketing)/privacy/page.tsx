@@ -1,39 +1,61 @@
 "use client";
 
+import { LegalPageHeader } from "@/components/legal/LegalPageHeader";
+import {
+  LegalTableOfContents,
+  type LegalTocItem,
+} from "@/components/legal/LegalTableOfContents";
 import { Card } from "@/modules/shared/ui/Card";
-import { Mail, Shield } from "lucide-react";
+import {
+  Building2,
+  Clock,
+  Compass,
+  Cookie,
+  FileText,
+  Fingerprint,
+  Handshake,
+  ListChecks,
+  Lock,
+  Mail,
+  Megaphone,
+  ScrollText,
+  Settings2,
+  Shield,
+  Users,
+} from "lucide-react";
+
+const PRIVACY_TOC: LegalTocItem[] = [
+  { id: "introduction", label: "Introduction", icon: ScrollText },
+  { id: "information-collected", label: "Information We Collect", icon: Fingerprint },
+  { id: "how-we-use-information", label: "How We Use Your Information", icon: Settings2 },
+  { id: "information-sharing", label: "Information Sharing and Disclosure", icon: Handshake },
+  { id: "data-retention", label: "Data Retention", icon: Clock },
+  { id: "data-security", label: "Data Security", icon: Lock },
+  { id: "your-rights", label: "Your Rights", icon: ListChecks },
+  { id: "cookies", label: "Cookies and Tracking", icon: Cookie },
+  { id: "international-transfers", label: "International Data Transfers", icon: Compass },
+  { id: "childrens-privacy", label: "Children's Privacy", icon: Users },
+  { id: "third-party-links", label: "Third-Party Links", icon: Building2 },
+  { id: "changes", label: "Changes to This Policy", icon: FileText },
+  { id: "grievance-contact", label: "Grievance Officer & Contact", icon: Megaphone },
+];
 
 export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header Section */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-2">
-                <Shield size={32} className="text-power-orange" />
-                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
-                  Legal
-                </span>
-              </div>
-              <h1 className="text-3xl sm:text-4xl font-bold mb-3">
-                Privacy Policy
-              </h1>
-              <p className="text-slate-200 text-base sm:text-lg max-w-2xl">
-                Last updated: July 9, 2026 | Effective: July 9, 2026
-              </p>
-            </div>
-            <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-power-orange/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-turf-green/20 blur-3xl" />
-          </div>
-        </div>
-      </div>
+      <LegalPageHeader
+        icon={Shield}
+        title="Privacy Policy"
+        lastUpdated="July 24, 2026"
+        effective="July 24, 2026"
+      />
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="bg-white p-8 prose prose-slate max-w-none">
-          <section className="mb-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-10">
+          <LegalTableOfContents items={PRIVACY_TOC} />
+          <Card className="legal-content bg-white p-8 prose prose-slate max-w-none lg:col-start-2">
+          <section id="introduction" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Introduction
             </h2>
@@ -58,7 +80,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="information-collected" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Information We Collect
             </h2>
@@ -105,7 +127,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="how-we-use-information" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               How We Use Your Information
             </h2>
@@ -132,7 +154,7 @@ export default function PrivacyPolicyPage() {
             </ul>
           </section>
 
-          <section className="mb-8">
+          <section id="information-sharing" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Information Sharing and Disclosure
             </h2>
@@ -189,7 +211,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="data-retention" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Data Retention
             </h2>
@@ -205,7 +227,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="data-security" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Data Security
             </h2>
@@ -239,7 +261,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="your-rights" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Your Rights
             </h2>
@@ -259,8 +281,15 @@ export default function PrivacyPolicyPage() {
                 information
               </li>
               <li>
-                <strong>Deletion:</strong> Request deletion of your account
-                and associated personal data
+                <strong>Deletion:</strong> Delete your account yourself at
+                any time from Settings &rarr; Delete Account (type DELETE to
+                confirm), or request deletion by writing to our Grievance
+                Officer. Deleting your account deactivates it immediately and
+                replaces your name, email, phone number, photo, and saved
+                addresses with anonymized values. Booking, payment, and
+                review records tied to your account are retained, as
+                permitted by law, for accounting, tax, fraud-prevention, and
+                dispute-resolution purposes
               </li>
               <li>
                 <strong>Data Portability:</strong> Request a copy of the data
@@ -281,7 +310,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="cookies" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Cookies and Tracking
             </h2>
@@ -295,7 +324,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="international-transfers" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               International Data Transfers
             </h2>
@@ -311,7 +340,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="childrens-privacy" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Children&apos;s Privacy
             </h2>
@@ -337,7 +366,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="third-party-links" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Third-Party Links
             </h2>
@@ -350,7 +379,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="changes" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Changes to This Policy
             </h2>
@@ -364,7 +393,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="grievance-contact" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Grievance Officer &amp; Contact
             </h2>
@@ -379,6 +408,11 @@ export default function PrivacyPolicyPage() {
               month) of receipt.
             </p>
             <div className="bg-slate-50 p-4 rounded-lg">
+              <p className="text-slate-700 mb-2">
+                <strong>Legal Entity:</strong> Powermysport Private Limited
+                {" — "}
+                <strong>CIN:</strong> U93120PB2026PTC067587
+              </p>
               <p className="text-slate-700 flex items-center gap-2 mb-2">
                 <Mail size={18} className="text-power-orange" />
                 <strong>Grievance Officer Email:</strong> teams@powermysport.com
@@ -387,7 +421,7 @@ export default function PrivacyPolicyPage() {
                 <strong>Phone:</strong> +91 89685 82443
               </p>
               <p className="text-slate-700">
-                <strong>Address:</strong> Mullanpur, Punjab.
+                <strong>Registered Office:</strong> Mullanpur, Punjab.
               </p>
             </div>
             <p className="text-slate-600 leading-relaxed mt-4">
@@ -397,7 +431,8 @@ export default function PrivacyPolicyPage() {
               Data Protection Board of India after first raising it with us.
             </p>
           </section>
-        </Card>
+          </Card>
+        </div>
       </div>
     </div>
   );

@@ -14,6 +14,7 @@ import {
   getCuratedTournamentBySlug,
   getCuratedTournaments,
   getProgressionPlan,
+  getPersonalNotes,
 } from "../controller/pathwayController";
 import { authMiddleware } from "../../middleware/auth";
 
@@ -39,6 +40,10 @@ router.get("/search", pathwayRateLimiter, searchPathways);
 // Returns (or lazily generates) the transition plan from one macro-level to the next.
 router.get("/progression", pathwayRateLimiter, getProgressionPlan);
 
+// GET /api/pathways/personal-notes?sport=&state=&age=&tier=&ambition=&budget=&hours=
+// Layer-2 personalization: per-level notes for an anonymized child signature.
+router.get("/personal-notes", pathwayRateLimiter, getPersonalNotes);
+
 // GET /api/pathways/stories?sport=cricket&level=2
 router.get("/stories", pathwayRateLimiter, getPathwayStories);
 
@@ -60,11 +65,17 @@ router.get("/entities", pathwayRateLimiter, getPathwayEntities);
 // pathways are cached per-state, but an expert's credit applies sport-wide.
 
 // GET /api/pathways/expert/mine — sports matching the logged-in expert's own profile
-router.get("/expert/mine", authMiddleware, getPathwaysForExpertVerification);
+router.get(
+  "/expert/mine",
+  pathwayRateLimiter,
+  authMiddleware,
+  getPathwaysForExpertVerification,
+);
 
 // POST /api/pathways/expert/:sportSlug/verify — add/update this expert's verification credit
 router.post(
   "/expert/:sportSlug/verify",
+  pathwayRateLimiter,
   authMiddleware,
   postPathwayExpertVerify,
 );
@@ -72,6 +83,7 @@ router.post(
 // DELETE /api/pathways/expert/:sportSlug/verify — remove this expert's own verification credit
 router.delete(
   "/expert/:sportSlug/verify",
+  pathwayRateLimiter,
   authMiddleware,
   deletePathwayExpertVerify,
 );

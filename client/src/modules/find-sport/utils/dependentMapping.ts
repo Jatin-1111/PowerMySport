@@ -95,6 +95,7 @@ export function buildDependentPayload(
     contactComfort: answers.contactComfort ?? undefined,
     environment: answers.environment ?? undefined,
     waterComfort: answers.waterComfort ?? undefined,
+    medicalConditions: answers.medicalConditions.length ? answers.medicalConditions : undefined,
     eyesight: answers.eyesight ?? undefined,
     agility: answers.agility ?? undefined,
     budgetRange: answers.budget ?? undefined,
@@ -138,6 +139,7 @@ export interface WizardSourceProfile {
   contactComfort?: "loves" | "neutral" | "avoids";
   environment?: "outdoor" | "indoor" | "no-preference";
   waterComfort?: "comfortable" | "neutral" | "uncomfortable";
+  medicalConditions?: string[];
   budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
   budgetTier?: "Budget" | "Moderate" | "Premium";
   ambition?: "fun" | "competitive" | "national" | "professional";
@@ -179,6 +181,7 @@ export function prefillFromPlayer(player: WizardSourceProfile): Partial<WizardAn
   if (player.contactComfort) out.contactComfort = player.contactComfort;
   if (player.environment) out.environment = player.environment;
   if (player.waterComfort) out.waterComfort = player.waterComfort;
+  if (player.medicalConditions?.length) out.medicalConditions = player.medicalConditions;
   // Wizard practical
   if (player.budgetRange) {
     out.budget = player.budgetRange;
@@ -249,6 +252,7 @@ export function dependentToWizardAnswers(
     contactComfort: dep.contactComfort ?? null,
     environment: dep.environment ?? null,
     waterComfort: dep.waterComfort ?? null,
+    medicalConditions: dep.medicalConditions ?? [],
     budget: dep.budgetRange ?? null,
     ambition: dep.ambition ?? null,
     futureFlexibility: dep.futureFlexibility ?? null,

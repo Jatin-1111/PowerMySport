@@ -1,5 +1,6 @@
 import type { FitLabel, SportProfile, SportResult, WizardAnswers } from "../types";
 import { SPORT_PROFILES } from "../data/sportProfiles";
+import { getStateInfraTier } from "../data/stateInfraTier";
 
 // ─── Answer → Dimension value maps (1–5 scale) ───────────────────────────────
 
@@ -57,6 +58,7 @@ const WEIGHTS = {
     environment: 0.09,
     age: 0.03,
     timeMatch: 0.03,
+    infrastructure: 0.05,
   },
   competitive: {
     individual: 0.12,
@@ -74,6 +76,7 @@ const WEIGHTS = {
     environment: 0.03,
     age: 0.08,
     timeMatch: 0.05,
+    infrastructure: 0.04,
   },
   national: {
     individual: 0.09,
@@ -91,6 +94,7 @@ const WEIGHTS = {
     environment: 0.01,
     age: 0.10,
     timeMatch: 0.07,
+    infrastructure: 0.03,
   },
   professional: {
     individual: 0.06,
@@ -108,6 +112,7 @@ const WEIGHTS = {
     environment: 0.00,
     age: 0.10,
     timeMatch: 0.08,
+    infrastructure: 0.02,
   },
 } as const;
 
@@ -162,6 +167,15 @@ function physicalMatch(child: ReturnType<typeof getChildDimensions>, sport: Spor
 function envMatch(childPref: WizardAnswers["environment"], sportPref: SportProfile["environmentPreference"]): number {
   if (!childPref || childPref === "no-preference" || sportPref === "either") return 1;
   return childPref === sportPref ? 1 : 0.3;
+}
+
+// ─── Infrastructure availability match ───────────────────────────────────────
+// Soft penalty (not a hard gate) for sports whose minCityTier requirement
+// exceeds what the parent's state generally offers — having MORE than needed
+// is neutral, same shape as capMatch, just on a 1-3 scale instead of 1-5.
+function infraMatch(stateTier: number, sportMinCityTier: SportProfile["minCityTier"]): number {
+  if (stateTier >= sportMinCityTier) return 1;
+  return Math.max(0.3, 1 - (sportMinCityTier - stateTier) * 0.35);
 }
 
 // ─── Time availability match ─────────────────────────────────────────────────
@@ -621,6 +635,7 @@ export function scoreSports(answers: WizardAnswers): SportResult[] {
 
   const weights = WEIGHTS[ambitionKey];
   const child = getChildDimensions(answers);
+  const stateInfraTier = getStateInfraTier(answers.state);
 
   const scored = SPORT_PROFILES.filter((sport) => passesHardGates(answers, sport)).map((sport) => {
     const dims =
@@ -640,6 +655,7 @@ export function scoreSports(answers: WizardAnswers): SportResult[] {
     const envScore = weights.environment * envMatch(answers.environment, sport.environmentPreference);
     const ageScore = weights.age * ageMatch(answers.age, sport, answers.ambition);
     const timeScore = weights.timeMatch * timeMatch(answers.weeklyHours, sport);
+    const infraScore = weights.infrastructure * infraMatch(stateInfraTier, sport.minCityTier);
     const synergyScore = computeSynergyBonus(child, sport);
     const priorScore = computePriorSportBonus(answers.priorSports, sport);
     const familyScore = computeFamilySportBonus(answers.sportsInFamily, sport);
@@ -647,7 +663,7 @@ export function scoreSports(answers: WizardAnswers): SportResult[] {
     const informalScore = computeInformalExposureBonus(answers.informalSports, answers.informalReaction, sport);
     const flexibilityScore = computeFutureFlexibilityPenalty(answers.ambition, answers.futureFlexibility, sport);
 
-    const total = dims + physScore + envScore + ageScore + timeScore + synergyScore + priorScore
+    const total = dims + physScore + envScore + ageScore + timeScore + infraScore + synergyScore + priorScore
       + familyScore + peerScore + informalScore + flexibilityScore;
 
     return { sport, rawScore: total };

@@ -1,6 +1,42 @@
 "use client";
 
+import { LegalPageHeader } from "@/components/legal/LegalPageHeader";
+import {
+  LegalTableOfContents,
+  type LegalTocItem,
+} from "@/components/legal/LegalTableOfContents";
+import { Card } from "@/modules/shared/ui/Card";
+import {
+  Ban,
+  Camera,
+  Copyright,
+  Flag,
+  Gavel,
+  Layers,
+  ListChecks,
+  Mail,
+  MessageCircle,
+  MessageSquarePlus,
+  ScrollText,
+  ShieldAlert,
+  ShieldCheck,
+} from "lucide-react";
 import { useEffect } from "react";
+
+const CONTENT_POLICY_TOC: LegalTocItem[] = [
+  { id: "overview", label: "Overview", icon: ScrollText },
+  { id: "content-types", label: "Types of User-Generated Content", icon: Layers },
+  { id: "acceptable-content", label: "Acceptable Content Guidelines", icon: ListChecks },
+  { id: "prohibited-content", label: "Prohibited Content", icon: Ban },
+  { id: "review-rules", label: "Review & Rating Specific Rules", icon: MessageSquarePlus },
+  { id: "photo-video", label: "Photo & Video Guidelines", icon: Camera },
+  { id: "messages", label: "Private Messages & Communication", icon: MessageCircle },
+  { id: "moderation-process", label: "Content Moderation Process", icon: ShieldCheck },
+  { id: "appeals", label: "Appeals & Disputes", icon: Gavel },
+  { id: "account-consequences", label: "Account Consequences", icon: ShieldAlert },
+  { id: "ip-rights", label: "Intellectual Property Rights", icon: Copyright },
+  { id: "contact-support", label: "Contact & Support", icon: Mail },
+];
 
 export default function ContentPolicy() {
   useEffect(() => {
@@ -8,20 +44,20 @@ export default function ContentPolicy() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-white">
-      <div className="container mx-auto max-w-4xl px-4 py-16 md:py-24">
-        <article className="prose prose-lg max-w-none">
-          <h1 className="text-4xl font-bold mb-4">
-            User Generated Content & Moderation Policy
-          </h1>
+    <div className="min-h-screen bg-slate-50">
+      <LegalPageHeader
+        icon={Flag}
+        title="User Generated Content & Moderation Policy"
+        lastUpdated="July 24, 2026"
+        effective="July 24, 2026"
+      />
 
-          <p className="text-gray-600 text-sm mb-8">
-            <strong>Last Updated:</strong> February 18, 2026 |{" "}
-            <strong>Effective Date:</strong> February 18, 2026
-          </p>
-
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mt-8 mb-4">1. Overview</h2>
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-10">
+          <LegalTableOfContents items={CONTENT_POLICY_TOC} />
+          <Card className="legal-content bg-white p-8 prose prose-lg max-w-none lg:col-start-2">
+          <section id="overview" className="mb-8">
+            <h2 className="text-2xl font-semibold mt-2 mb-4">1. Overview</h2>
             <p>
               PowerMySport provides a platform where users can share reviews,
               ratings, photos, videos, and messages. This policy outlines what
@@ -31,7 +67,7 @@ export default function ContentPolicy() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="content-types" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               2. Types of User-Generated Content
             </h2>
@@ -66,7 +102,7 @@ export default function ContentPolicy() {
             </ul>
           </section>
 
-          <section className="mb-8">
+          <section id="acceptable-content" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               3. Acceptable Content Guidelines
             </h2>
@@ -109,7 +145,7 @@ export default function ContentPolicy() {
             </ul>
           </section>
 
-          <section className="mb-8">
+          <section id="prohibited-content" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               4. Prohibited Content
             </h2>
@@ -224,7 +260,7 @@ export default function ContentPolicy() {
             </ul>
           </section>
 
-          <section className="mb-8">
+          <section id="review-rules" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               5. Review & Rating Specific Rules
             </h2>
@@ -277,7 +313,7 @@ export default function ContentPolicy() {
             </p>
           </section>
 
-          <section className="mb-8">
+          <section id="photo-video" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               6. Photo & Video Guidelines
             </h2>
@@ -325,9 +361,30 @@ export default function ContentPolicy() {
               <li>Are not actually related to the activity</li>
               <li>Violate others' privacy or are shared without consent</li>
             </ul>
+
+            <h3 className="text-xl font-semibold mt-6 mb-3">
+              6.4 AI-Generated & Synthetic Content
+            </h3>
+            <p>
+              If a photo, video, or audio clip you upload is fully or
+              partially AI-generated, synthetically altered, or a deepfake —
+              for example, an AI-generated profile photo or an artificially
+              altered achievement video — you must clearly disclose this at
+              the time of upload. Undisclosed synthetic content presented as
+              a genuine photo, video, achievement, or credential is treated
+              as misleading content under Section 4.3 and is grounds for
+              removal and account action. We may apply a visible label to
+              content we have verified as synthetic, and where synthetic
+              content is unlawful — for example, it depicts a real person in
+              a way likely to deceive, or involves a minor — we may disclose
+              the uploader&apos;s identity to an affected party or law
+              enforcement as required by applicable law, including the
+              Digital Personal Data Protection Act, 2023 and the Bharatiya
+              Nyaya Sanhita, 2023.
+            </p>
           </section>
 
-          <section className="mb-8">
+          <section id="messages" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               7. Private Messages & Communication
             </h2>
@@ -377,7 +434,7 @@ export default function ContentPolicy() {
             </ul>
           </section>
 
-          <section className="mb-8">
+          <section id="moderation-process" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               8. Content Moderation Process
             </h2>
@@ -475,7 +532,7 @@ export default function ContentPolicy() {
             </ul>
           </section>
 
-          <section className="mb-8">
+          <section id="appeals" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               9. Appeals & Disputes
             </h2>
@@ -526,7 +583,7 @@ export default function ContentPolicy() {
             </ul>
           </section>
 
-          <section className="mb-8">
+          <section id="account-consequences" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               10. Account Consequences
             </h2>
@@ -593,7 +650,7 @@ export default function ContentPolicy() {
             </ul>
           </section>
 
-          <section className="mb-8">
+          <section id="ip-rights" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               11. Intellectual Property Rights
             </h2>
@@ -636,7 +693,38 @@ export default function ContentPolicy() {
             </p>
 
             <h3 className="text-xl font-semibold mt-6 mb-3">
-              11.3 Trademark & Brand Rights
+              11.3 Copyright Counter-Notice
+            </h3>
+            <p>
+              If your content is removed because of a copyright complaint and
+              you believe it was removed in error or that you have the right
+              to post it, you may submit a counter-notice by emailing
+              teams@powermysport.com with:
+            </p>
+            <ol className="list-decimal pl-6 space-y-2 mt-3">
+              <li>
+                Identification of the content removed and its location prior
+                to removal
+              </li>
+              <li>
+                A statement, made in good faith, that you believe the content
+                was removed as a result of mistake or misidentification
+              </li>
+              <li>Your name, address, and phone number</li>
+              <li>
+                Your consent to the jurisdiction of the courts referenced in
+                our Terms of Service
+              </li>
+            </ol>
+            <p className="mt-3">
+              On receiving a valid counter-notice, we may restore the content
+              unless the original complainant informs us that they have filed
+              a court action seeking to restrain you from the conduct at
+              issue.
+            </p>
+
+            <h3 className="text-xl font-semibold mt-6 mb-3">
+              11.4 Trademark & Brand Rights
             </h3>
             <p>Users must not:</p>
             <ul className="list-disc pl-6 space-y-2 mt-3">
@@ -651,7 +739,7 @@ export default function ContentPolicy() {
             </ul>
           </section>
 
-          <section className="mb-8">
+          <section id="contact-support" className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">
               12. Contact & Support
             </h2>
@@ -683,8 +771,9 @@ export default function ContentPolicy() {
               will be communicated 30 days in advance.
             </p>
           </section>
-        </article>
+          </Card>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

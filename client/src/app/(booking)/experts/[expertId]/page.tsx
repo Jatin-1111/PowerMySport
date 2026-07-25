@@ -9,6 +9,7 @@ import {
     type ExpertReview,
     type ExpertSessionMode,
 } from "@/modules/expert/services/expert";
+import { CompleteProfileNudge, shouldShowTraitsNudge } from "@/modules/player/components/CompleteProfileNudge";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
@@ -67,12 +68,12 @@ function ExpertHeroAvatar({ expert }: { expert: Expert }) {
 
 function DetailSkeleton() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#F4F3F0]">
       <div className="mx-auto max-w-5xl px-6 py-8">
         <Skeleton className="mb-6 h-5 w-32" />
         <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
           <div className="space-y-6">
-            <Card className="overflow-hidden border border-slate-200 bg-white p-0 shadow-sm">
+            <Card className="overflow-hidden border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
               <Skeleton className="h-40 w-full rounded-none" />
               <div className="space-y-3 p-6">
                 <Skeleton className="h-6 w-1/2" />
@@ -81,7 +82,7 @@ function DetailSkeleton() {
               </div>
             </Card>
           </div>
-          <Card className="border border-slate-200 bg-white shadow-sm">
+          <Card className="border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
             <Skeleton className="h-6 w-1/2" />
             <Skeleton className="mt-4 h-32 w-full" />
             <Skeleton className="mt-4 h-11 w-full" />
@@ -108,6 +109,7 @@ export default function ExpertDetailPage() {
   const [slot, setSlot] = useState<string | null>(null);
   const [dependents, setDependents] = useState<DependentOption[]>([]);
   const [selectedDependentId, setSelectedDependentId] = useState<string | null>(null);
+  const [traitsNudgeOpen, setTraitsNudgeOpen] = useState(false);
 
   // Fetch the parent's children so they can optionally attach one to this
   // booking — auto-select when there's exactly one, same rule as the wizard.
@@ -150,19 +152,13 @@ export default function ExpertDetailPage() {
     if (expertId) load();
   }, [expertId, load]);
 
-  const handleConnect = async () => {
-    if (!user) {
-      router.push(`/login?redirect=/experts/${expertId}`);
-      return;
-    }
-    if (!slot) {
-      toast.error("Please pick a session time first.");
-      return;
-    }
+  const selectedDependent = dependents.find((d) => d._id === selectedDependentId);
+
+  const proceedToPayment = async () => {
     setConnecting(true);
     try {
       const res = await expertApi.initiateSession(expertId, {
-        scheduledAt: slot,
+        scheduledAt: slot!,
         mode: expert?.sessionMode === "BOTH" ? mode : undefined,
         clientNote: note.trim() || undefined,
         playerId: selectedDependentId || undefined,
@@ -181,6 +177,22 @@ export default function ExpertDetailPage() {
       toast.error(msg);
       setConnecting(false);
     }
+  };
+
+  const handleConnect = () => {
+    if (!user) {
+      router.push(`/login?redirect=/experts/${expertId}`);
+      return;
+    }
+    if (!slot) {
+      toast.error("Please pick a session time first.");
+      return;
+    }
+    if (shouldShowTraitsNudge(selectedDependent)) {
+      setTraitsNudgeOpen(true);
+      return;
+    }
+    proceedToPayment();
   };
 
   if (loading) return <DetailSkeleton />;
@@ -207,7 +219,7 @@ export default function ExpertDetailPage() {
         : "In-person";
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#F4F3F0]">
       <div className="mx-auto max-w-5xl px-6 py-8">
         <div className="mb-6 flex items-center justify-between">
           <Link
@@ -228,7 +240,7 @@ export default function ExpertDetailPage() {
           {/* Profile */}
           <div className="space-y-6">
             <SlideUp>
-              <Card className="overflow-hidden border border-slate-200 bg-white p-0 shadow-sm">
+              <Card className="overflow-hidden border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
                 {/* Dark hero strip */}
                 <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 px-6 py-8 text-white sm:px-8">
                   <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-power-orange/20 blur-3xl" />
@@ -314,7 +326,7 @@ export default function ExpertDetailPage() {
 
             {/* Reviews */}
             <FadeIn delay={0.1}>
-              <Card className="border border-slate-200 bg-white shadow-sm">
+              <Card className="border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
                 <div className="mb-4 flex items-center gap-3 border-b border-slate-100 pb-4">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
                     <Star className="h-5 w-5" />
@@ -371,7 +383,7 @@ export default function ExpertDetailPage() {
           {/* Connect / pay card */}
           <div className="lg:sticky lg:top-6">
             <FadeIn delay={0.15}>
-              <Card className="border border-slate-200 bg-white shadow-lg">
+              <Card className="border-0 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.1)]">
                 <p className="text-sm text-slate-500">Session fee</p>
                 <div className="flex items-baseline gap-2">
                   <p className="text-3xl font-extrabold text-slate-900">
@@ -487,6 +499,18 @@ export default function ExpertDetailPage() {
           </div>
         </div>
       </div>
+
+      {selectedDependent && (
+        <CompleteProfileNudge
+          isOpen={traitsNudgeOpen}
+          dependentId={selectedDependent._id}
+          dependentName={selectedDependent.name}
+          onProceed={() => {
+            setTraitsNudgeOpen(false);
+            proceedToPayment();
+          }}
+        />
+      )}
     </div>
   );
 }

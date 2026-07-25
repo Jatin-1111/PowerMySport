@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { BackToRoadmapLink } from "@/components/BackToRoadmapLink";
+import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { FederationDetail } from "./page";
 import type { Tournament } from "@/modules/sports/services/pathway";
@@ -401,13 +403,17 @@ export function FederationDetailClient({
                   <p className="text-xs text-white/45 leading-relaxed mb-4">
                     Federation IDs, documents, form submissions — our team takes care of everything at no cost.
                   </p>
-                  <Link
-                    href={`/roadmap?sport=${encodeURIComponent(sportLabel)}`}
+                  <a
+                    href={buildWhatsAppUrl(
+                      `Hi! I'd like help with ${fed.acronym} registration for ${sportLabel} — found via PowerMySport.`,
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 w-full rounded-xl bg-power-orange py-2.5 text-sm font-bold text-white hover:bg-orange-500 transition"
                   >
-                    Get Concierge Help
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
+                    <WhatsAppIcon className="h-4 w-4 text-white" />
+                    Get Help via WhatsApp
+                  </a>
                 </div>
               </div>
             </aside>
@@ -741,13 +747,17 @@ export function FederationDetailClient({
                       </li>
                     ))}
                   </ul>
-                  <Link
-                    href={`/roadmap?sport=${encodeURIComponent(sportLabel)}`}
+                  <a
+                    href={buildWhatsAppUrl(
+                      `Hi! I'd like help with ${fed.acronym} registration for ${sportLabel} — found via PowerMySport.`,
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 w-full rounded-xl bg-power-orange py-3 text-sm font-bold text-white hover:bg-orange-500 transition shadow-lg shadow-orange-900/30"
                   >
-                    Get Concierge Help
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
+                    <WhatsAppIcon className="h-4 w-4 text-white" />
+                    Get Help via WhatsApp
+                  </a>
                   {fed.website && (
                     <a
                       href={fed.website}

@@ -15,6 +15,8 @@ export interface HeroProps {
   titleHighlight?: string;
   subtitle?: string;
   description?: string;
+  /** Short question shown above the CTA row — use to frame two CTAs as a self-segmenting fork */
+  ctaPrompt?: string;
   primaryCTA?: { label: string; href: string };
   secondaryCTA?: { label: string; href: string };
   imageSrc?: string;
@@ -75,6 +77,7 @@ function HomeHero({
   titleHighlight,
   subtitle,
   description,
+  ctaPrompt,
   primaryCTA,
   secondaryCTA,
   stats,
@@ -255,6 +258,16 @@ function HomeHero({
               className="mb-8 max-w-lg text-sm leading-relaxed text-slate-200/90 sm:mb-10 sm:text-base sm:text-slate-200/95 lg:max-w-xl lg:text-lg"
             >
               {description}
+            </motion.p>
+          )}
+
+          {/* ── CTA prompt ── */}
+          {ctaPrompt && (
+            <motion.p
+              variants={itemVariants}
+              className="mb-3 text-sm font-semibold text-white/90 sm:text-base"
+            >
+              {ctaPrompt}
             </motion.p>
           )}
 

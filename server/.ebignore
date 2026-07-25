@@ -1,4 +1,4 @@
-# ── Never needed by EB ────────────────────────────────────────────────
+x`# ── Never needed by EB ────────────────────────────────────────────────
 node_modules/
 dist/
 coverage/
@@ -9,6 +9,12 @@ npm-debug.log*
 .env
 .env.*
 *.env
+
+# ── Local Docker / dev only — EB uses Dockerfile directly ─────────────
+# Keeping docker-compose.yml out of the bundle prevents EB from switching
+# to compose mode, which would require .env.docker (stripped above) and
+# break the deployment. Use docker-compose locally as normal.
+docker-compose.yml
 
 # ── Dev / OS junk ─────────────────────────────────────────────────────
 .DS_Store

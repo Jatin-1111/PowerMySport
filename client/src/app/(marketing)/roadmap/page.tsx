@@ -31,8 +31,8 @@ export default function PathwaysPage() {
     },
     {
       icon: <TrendingUp className="h-6 w-6" />,
-      value: "3 Levels",
-      label: "Beginner to Elite",
+      value: "4 Journey Types",
+      label: "Matched to How Your Sport Works",
       color: "bg-indigo-100 text-indigo-600",
     },
     {

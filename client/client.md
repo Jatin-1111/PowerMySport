@@ -14,6 +14,7 @@ The `client` project is the main consumer-facing web application of the PowerMyS
 - `NEXT_PUBLIC_GOOGLE_CLIENT_ID`: Required for Google OAuth login on the frontend.
 - `NEXT_PUBLIC_VAPID_PUBLIC_KEY`: Required for push notifications.
 - `NEXT_PUBLIC_SHOP_IS_LIVE`: Feature flag to enable/disable the e-commerce shop.
+- `NEXT_PUBLIC_BOOKING_IS_LIVE`: Feature flag to show/hide the "Book" (venues/coaches/academies) nav entry.
 
 ## Module Reference
 

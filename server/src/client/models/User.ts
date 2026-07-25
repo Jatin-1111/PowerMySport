@@ -34,6 +34,10 @@ export interface UserDocument extends Document {
   suspendedAt?: Date;
   suspendedBy?: mongoose.Types.ObjectId;
   deactivatedAt?: Date;
+  /** Set when the user requests self-deletion; cleared if they log back in
+   *  within the grace period, or once `finalizeAccountDeletion` has run. */
+  pendingDeletion?: boolean;
+  deletionRequestedAt?: Date;
   refundMethods?: Array<{
     id?: string;
     type: "ORIGINAL_CARD" | "BANK_ACCOUNT" | "STORE_CREDIT";
@@ -202,6 +206,8 @@ const userSchema = new Schema<UserDocument>(
     suspendedAt: { type: Date, default: null },
     suspendedBy: { type: Schema.Types.ObjectId, ref: "Admin", default: null },
     deactivatedAt: { type: Date, default: null },
+    pendingDeletion: { type: Boolean, default: false, index: true },
+    deletionRequestedAt: { type: Date, default: null },
     refundMethods: [
       {
         type: {

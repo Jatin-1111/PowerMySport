@@ -1,66 +1,93 @@
 "use client";
 
+import { LegalPageHeader } from "@/components/legal/LegalPageHeader";
+import {
+  LegalTableOfContents,
+  type LegalTocItem,
+} from "@/components/legal/LegalTableOfContents";
 import { Card } from "@/modules/shared/ui/Card";
-import { FileText, Mail } from "lucide-react";
+import {
+  BadgeCheck,
+  Ban,
+  CalendarCheck,
+  CloudLightning,
+  Copyright,
+  FileText,
+  Gavel,
+  HandCoins,
+  Handshake,
+  Landmark,
+  Layers,
+  ListChecks,
+  ListOrdered,
+  Mail,
+  Megaphone,
+  MessageSquarePlus,
+  Percent,
+  Scale,
+  ScrollText,
+  Settings2,
+  ShieldAlert,
+  ShieldOff,
+  UserPlus,
+  Video,
+  XCircle,
+} from "lucide-react";
+
+const TERMS_TOC: LegalTocItem[] = [
+  { id: "agreement", label: "Agreement to Terms", icon: ScrollText },
+  { id: "services", label: "Description of Services", icon: Layers },
+  { id: "account", label: "Account Registration", icon: UserPlus },
+  {
+    id: "fraud-prevention",
+    label: "Fraud Prevention & Account Security",
+    icon: ShieldAlert,
+  },
+  { id: "responsibilities", label: "User Responsibilities", icon: ListChecks },
+  {
+    id: "expert-verification",
+    label: "Expert Verification & Onboarding",
+    icon: BadgeCheck,
+  },
+  { id: "booking", label: "Booking and Payments", icon: CalendarCheck },
+  { id: "expert-sessions", label: "Expert Sessions", icon: Video },
+  {
+    id: "ranking",
+    label: "Search Results, Rankings & Recommendations",
+    icon: ListOrdered,
+  },
+  { id: "commission", label: "Commission and Fees", icon: Percent },
+  { id: "ip", label: "Intellectual Property", icon: Copyright },
+  { id: "feedback", label: "Feedback and Suggestions", icon: MessageSquarePlus },
+  { id: "prohibited", label: "Prohibited Activities", icon: Ban },
+  { id: "warranties", label: "Disclaimer of Warranties", icon: ShieldOff },
+  { id: "liability", label: "Limitation of Liability", icon: Scale },
+  { id: "indemnification", label: "Indemnification", icon: HandCoins },
+  { id: "dispute", label: "Dispute Resolution and Arbitration", icon: Gavel },
+  { id: "grievance", label: "Grievance Redressal", icon: Megaphone },
+  { id: "termination", label: "Termination", icon: XCircle },
+  { id: "relationship", label: "Relationship of Parties", icon: Handshake },
+  { id: "force-majeure", label: "Force Majeure", icon: CloudLightning },
+  { id: "general", label: "General Provisions", icon: Settings2 },
+  { id: "governing-law", label: "Governing Law", icon: Landmark },
+  { id: "contact", label: "Contact Information", icon: Mail },
+];
 
 export default function TermsOfServicePage() {
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header Section */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-2">
-                <FileText size={32} className="text-power-orange" />
-                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
-                  Legal
-                </span>
-              </div>
-              <h1 className="text-3xl sm:text-4xl font-bold mb-3">
-                Terms of Service
-              </h1>
-              <p className="text-slate-200 text-base sm:text-lg max-w-2xl">
-                Last updated: July 11, 2026 | Effective: July 11, 2026
-              </p>
-            </div>
-            <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-power-orange/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-turf-green/20 blur-3xl" />
-          </div>
-        </div>
-      </div>
+      <LegalPageHeader
+        icon={FileText}
+        title="Terms of Service"
+        lastUpdated="July 24, 2026"
+        effective="July 24, 2026"
+      />
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="bg-white p-8 prose prose-slate max-w-none">
-
-          {/* Table of Contents */}
-          <section className="mb-8 bg-slate-50 rounded-xl p-6 border border-slate-200 not-prose">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Table of Contents</h2>
-            <ol className="list-decimal pl-5 text-slate-600 space-y-1 text-sm sm:columns-2">
-              <li><a href="#agreement" className="text-power-orange hover:underline">Agreement to Terms</a></li>
-              <li><a href="#services" className="text-power-orange hover:underline">Description of Services</a></li>
-              <li><a href="#account" className="text-power-orange hover:underline">Account Registration</a></li>
-              <li><a href="#responsibilities" className="text-power-orange hover:underline">User Responsibilities</a></li>
-              <li><a href="#expert-verification" className="text-power-orange hover:underline">Expert Verification &amp; Onboarding</a></li>
-              <li><a href="#booking" className="text-power-orange hover:underline">Booking and Payments</a></li>
-              <li><a href="#expert-sessions" className="text-power-orange hover:underline">Expert Sessions</a></li>
-              <li><a href="#commission" className="text-power-orange hover:underline">Commission and Fees</a></li>
-              <li><a href="#ip" className="text-power-orange hover:underline">Intellectual Property</a></li>
-              <li><a href="#prohibited" className="text-power-orange hover:underline">Prohibited Activities</a></li>
-              <li><a href="#warranties" className="text-power-orange hover:underline">Disclaimer of Warranties</a></li>
-              <li><a href="#liability" className="text-power-orange hover:underline">Limitation of Liability</a></li>
-              <li><a href="#indemnification" className="text-power-orange hover:underline">Indemnification</a></li>
-              <li><a href="#dispute" className="text-power-orange hover:underline">Dispute Resolution and Arbitration</a></li>
-              <li><a href="#grievance" className="text-power-orange hover:underline">Grievance Redressal</a></li>
-              <li><a href="#termination" className="text-power-orange hover:underline">Termination</a></li>
-              <li><a href="#relationship" className="text-power-orange hover:underline">Relationship of Parties</a></li>
-              <li><a href="#force-majeure" className="text-power-orange hover:underline">Force Majeure</a></li>
-              <li><a href="#general" className="text-power-orange hover:underline">General Provisions</a></li>
-              <li><a href="#governing-law" className="text-power-orange hover:underline">Governing Law</a></li>
-              <li><a href="#contact" className="text-power-orange hover:underline">Contact Information</a></li>
-            </ol>
-          </section>
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-10">
+          <LegalTableOfContents items={TERMS_TOC} />
+          <Card className="legal-content bg-white p-8 prose prose-slate max-w-none lg:col-start-2">
 
           <section id="agreement" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
@@ -196,6 +223,29 @@ export default function TermsOfServicePage() {
               terminate any account without notice or liability, for any
               reason, including suspected fraud, misrepresentation, or breach
               of these Terms.
+            </p>
+          </section>
+
+          <section id="fraud-prevention" className="mb-8">
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">
+              Fraud Prevention &amp; Account Security
+            </h2>
+            <p className="text-slate-600 leading-relaxed mb-4">
+              PowerMySport, its employees, and its representatives will never
+              call, message, or email you asking for your account password,
+              one-time password (OTP), card CVV, full card number, or any
+              other credential, and will never ask you to transfer money to a
+              personal or individual bank account. Legitimate payments to
+              PowerMySport only ever happen through the in-app checkout flow
+              to our authorized payment partners.
+            </p>
+            <p className="text-slate-600 leading-relaxed">
+              If you receive a call, message, or email claiming to be from
+              PowerMySport that asks for any of this information, do not
+              share it — report it immediately to teams@powermysport.com. We
+              are not liable for any loss you incur by sharing your password,
+              OTP, CVV, or other account credentials with any third party,
+              including someone impersonating PowerMySport.
             </p>
           </section>
 
@@ -603,6 +653,22 @@ export default function TermsOfServicePage() {
               discretion in accordance with that policy and are never
               guaranteed as a matter of right.
             </p>
+
+            <h3 className="text-xl font-semibold text-slate-900 mb-3">
+              Right to Refuse Service
+            </h3>
+            <p className="text-slate-600 leading-relaxed">
+              A venue lister, coach, or expert may decline to provide a
+              service to a specific player for reasons including safety,
+              capacity, or behavioral concerns, or any other good-faith
+              reason not prohibited by applicable law. Where a confirmed
+              booking is declined at the point of service for such a reason,
+              refund treatment is governed by our Cancellation, Refund &amp;
+              Dispute Policy in the same way as any other provider-initiated
+              cancellation. PowerMySport is not liable for a venue
+              lister&apos;s, coach&apos;s, or expert&apos;s decision to
+              decline service to a specific player.
+            </p>
           </section>
 
           <section id="expert-sessions" className="mb-8">
@@ -761,6 +827,29 @@ export default function TermsOfServicePage() {
             </ul>
           </section>
 
+          <section id="ranking" className="mb-8">
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">
+              Search Results, Rankings &amp; Recommendations
+            </h2>
+            <p className="text-slate-600 leading-relaxed mb-4">
+              When you search for or browse venues, coaches, or experts on
+              the Platform, the order in which listings appear is determined
+              by factors that include: verification or approval status (only
+              verified venues, verified coaches, and APPROVED experts are
+              shown at all), average rating, number of reviews, proximity to
+              your selected location where relevant, and how recently a
+              listing has been active or updated. These factors may change
+              from time to time as we improve the Platform.
+            </p>
+            <p className="text-slate-600 leading-relaxed">
+              PowerMySport does not currently offer any paid or sponsored
+              placement that would move a listing higher in search results
+              independent of the factors above. If we introduce paid or
+              sponsored placement in the future, any such listing will be
+              clearly and separately labeled as sponsored or promoted.
+            </p>
+          </section>
+
           <section id="commission" className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
               Commission and Fees
@@ -837,6 +926,23 @@ export default function TermsOfServicePage() {
               promoting, or improving the Platform, and you represent and
               warrant that you own or have the necessary rights to grant this
               license.
+            </p>
+          </section>
+
+          <section id="feedback" className="mb-8">
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">
+              Feedback and Suggestions
+            </h2>
+            <p className="text-slate-600 leading-relaxed">
+              If you send PowerMySport any feedback, ideas, or suggestions
+              about the Platform or its features (&quot;Feedback&quot;), you
+              agree that: (a) Feedback is given voluntarily and we are under
+              no obligation of confidentiality with respect to it; (b) we may
+              already be considering, or may independently develop, something
+              similar; and (c) we may use, modify, and implement your
+              Feedback for any purpose, without payment or attribution to
+              you, and you waive any claim that a feature we build or ship is
+              based on your Feedback.
             </p>
           </section>
 
@@ -1105,6 +1211,15 @@ export default function TermsOfServicePage() {
               subject to our right to retain information as required for legal,
               accounting, fraud-prevention, or dispute-resolution purposes.
             </p>
+            <p className="text-slate-600 leading-relaxed mt-4">
+              A venue lister, coach, or expert whose account is suspended or
+              terminated may request reconsideration by writing to
+              teams@powermysport.com within fifteen (15) days of the action,
+              explaining why the action should be reversed. We will review
+              the request and respond within a reasonable time. Requesting
+              reconsideration does not suspend the original action, and our
+              decision on reconsideration is final.
+            </p>
           </section>
 
           <section id="relationship" className="mb-8">
@@ -1171,6 +1286,16 @@ export default function TermsOfServicePage() {
                 Policy, constitute the entire agreement between you and
                 PowerMySport regarding the Platform
               </li>
+              <li>
+                <strong>Time to Bring Claims:</strong> Any claim or cause of
+                action you may have against PowerMySport arising out of or
+                relating to these Terms or the Platform must be commenced
+                within one (1) year after the claim or cause of action
+                arises, or it is permanently barred, regardless of any longer
+                statutory limitation period that would otherwise apply,
+                except where such a time limit cannot lawfully be shortened
+                under applicable Indian law
+              </li>
             </ul>
           </section>
 
@@ -1200,6 +1325,12 @@ export default function TermsOfServicePage() {
               For questions about these Terms of Service, please contact us:
             </p>
             <div className="bg-slate-50 p-4 rounded-lg not-prose">
+              <p className="text-slate-700 mb-2">
+                <strong>Legal Entity:</strong> Powermysport Private Limited
+              </p>
+              <p className="text-slate-700 mb-2">
+                <strong>CIN:</strong> U93120PB2026PTC067587
+              </p>
               <p className="text-slate-700 flex items-center gap-2 mb-2">
                 <Mail size={18} className="text-power-orange" />
                 <strong>Email:</strong> teams@powermysport.com
@@ -1208,11 +1339,12 @@ export default function TermsOfServicePage() {
                 <strong>Phone:</strong> +91 89685 82443
               </p>
               <p className="text-slate-700">
-                <strong>Address:</strong> Mullanpur, Punjab.
+                <strong>Registered Office:</strong> Mullanpur, Punjab.
               </p>
             </div>
           </section>
-        </Card>
+          </Card>
+        </div>
       </div>
     </div>
   );
