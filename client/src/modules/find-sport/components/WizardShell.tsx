@@ -96,6 +96,17 @@ const STEPS: Step[] = [
 const QUESTION_STEPS = STEPS.filter((s) => s.kind === "question");
 const TOTAL_QUESTIONS = QUESTION_STEPS.length;
 
+// informalReaction is only meaningful if informalSports had at least one
+// selection — skip over it (in either direction) otherwise, so Back never
+// lands on a question that would just bounce forward again.
+function isStepSkippable(step: Step, answers: WizardAnswers): boolean {
+  return (
+    step.kind === "question" &&
+    step.questionKey === "informalReaction" &&
+    answers.informalSports.length === 0
+  );
+}
+
 // ─── Left sidebar metadata ────────────────────────────────────────────────────
 
 const SECTION_META: Record<string, { icon: React.ReactNode; title: string; desc: string }> = {
@@ -999,12 +1010,24 @@ export function WizardShell() {
 
   const goNext = () => {
     setDirection(1);
-    setStepIndex((i) => Math.min(i + 1, STEPS.length - 1));
+    setStepIndex((i) => {
+      let next = Math.min(i + 1, STEPS.length - 1);
+      while (next < STEPS.length - 1 && isStepSkippable(STEPS[next], answers)) {
+        next += 1;
+      }
+      return next;
+    });
   };
 
   const goBack = () => {
     setDirection(-1);
-    setStepIndex((i) => Math.max(i - 1, 0));
+    setStepIndex((i) => {
+      let prev = Math.max(i - 1, 0);
+      while (prev > 0 && isStepSkippable(STEPS[prev], answers)) {
+        prev -= 1;
+      }
+      return prev;
+    });
   };
 
   const setAnswer = <K extends keyof WizardAnswers>(key: K, value: WizardAnswers[K]) => {
@@ -1019,12 +1042,8 @@ export function WizardShell() {
     setStepIndex(0);
   };
 
-  // Auto-advance transitions after 1.5s; run scoring on processing screen
+  // Run scoring on the processing screen, then auto-advance to results.
   useEffect(() => {
-    if (currentStep.kind === "transition") {
-      const timer = setTimeout(goNext, 1500);
-      return () => clearTimeout(timer);
-    }
     if (currentStep.kind === "processing") {
       const timer = setTimeout(async () => {
         const scored = scoreSports(answers);
@@ -1083,19 +1102,6 @@ export function WizardShell() {
   // Focus name input when on name screen
   useEffect(() => {
     if (currentStep.kind === "name") nameRef.current?.focus();
-  }, [stepIndex]);
-
-  // informalReaction is only meaningful if informalSports had at least one
-  // selection — auto-skip it otherwise, same idiom as the transition auto-advance.
-  useEffect(() => {
-    if (
-      currentStep.kind === "question" &&
-      currentStep.questionKey === "informalReaction" &&
-      answers.informalSports.length === 0
-    ) {
-      goNext();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepIndex]);
 
   const transitionText = (text: string) =>
@@ -1471,6 +1477,7 @@ export function WizardShell() {
               <SectionTransition
                 text={transitionText(currentStep.text)}
                 sub={transitionText(currentStep.sub)}
+                onContinue={goNext}
               />
             )}
 
