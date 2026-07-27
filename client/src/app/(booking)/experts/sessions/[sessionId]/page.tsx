@@ -18,6 +18,8 @@ import {
     CalendarClock,
     CheckCircle2,
     Clock,
+    Download,
+    FileText,
     MapPin,
     MessageSquareText,
     RefreshCcw,
@@ -189,6 +191,22 @@ export default function ExpertSessionPage() {
     }
   };
 
+  const handleDownloadInvoice = async () => {
+    try {
+      const blob = await expertApi.downloadSessionInvoicePdf(sessionId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `invoice-${sessionId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Unable to download invoice");
+    }
+  };
+
   const handleReview = async () => {
     if (rating < 1) {
       toast.error("Please select a rating.");
@@ -236,6 +254,14 @@ export default function ExpertSessionPage() {
   const expertName = session.expert?.name || "your expert";
   const canManage = ["PAID", "SCHEDULED"].includes(session.status);
   const cancelled = session.status === "CANCELLED";
+  // Once the session's scheduled time has passed, it can no longer be
+  // cancelled server-side (it already happened) — matches completeExpertSession's mirror check.
+  const sessionEnded = Boolean(
+    session.scheduledAt &&
+      new Date(session.scheduledAt).getTime() +
+        (session.durationMinutes || 60) * 60_000 <
+        Date.now(),
+  );
 
   const statusBanner = cancelled
     ? {
@@ -351,6 +377,16 @@ export default function ExpertSessionPage() {
                     Retry payment
                   </Button>
                 )}
+                {paid && (
+                  <Button
+                    onClick={handleDownloadInvoice}
+                    size="sm"
+                    variant="secondary"
+                    icon={<Download className="h-3.5 w-3.5" />}
+                  >
+                    Download invoice
+                  </Button>
+                )}
               </div>
 
               {/* Expert confirmation status */}
@@ -461,6 +497,25 @@ export default function ExpertSessionPage() {
                 </FadeIn>
               )}
 
+              {/* Minutes of meeting — the expert's session notes */}
+              {session.momNotes && (
+                <FadeIn delay={0.12}>
+                  <div className="mt-3 rounded-xl bg-slate-50 p-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-power-orange/10">
+                        <FileText className="h-4 w-4 text-power-orange" />
+                      </div>
+                      <p className="text-sm font-bold text-slate-900">
+                        Session notes
+                      </p>
+                    </div>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                      {session.momNotes}
+                    </p>
+                  </div>
+                </FadeIn>
+              )}
+
               {/* Reschedule + cancel */}
               {canManage && (
                 <div className="mt-6 border-t border-slate-100 pt-6">
@@ -472,13 +527,15 @@ export default function ExpertSessionPage() {
                       >
                         {session.scheduledAt ? "Reschedule" : "Pick a time"}
                       </button>
-                      <button
-                        onClick={() => setShowCancel(true)}
-                        disabled={saving}
-                        className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
-                      >
-                        Cancel session
-                      </button>
+                      {!sessionEnded && (
+                        <button
+                          onClick={() => setShowCancel(true)}
+                          disabled={saving}
+                          className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
+                        >
+                          Cancel session
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div>

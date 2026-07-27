@@ -125,7 +125,7 @@ export default function PlayerDetailsModal({
                       )}
                       <div className="mt-2 flex items-center gap-2">
                         <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 border border-slate-200 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                          {profile.userType === "Parent"
+                          {profile.role === "Parent"
                             ? "PARENT"
                             : profile.role === "Coach"
                               ? "Coach"

@@ -4,6 +4,8 @@ export type ScreeningStatus = "requested" | "scheduled" | "completed" | "cancell
 
 export interface ScreeningRequestDocument extends Document {
   parentId?: mongoose.Types.ObjectId;
+  /** The specific child (Player, type DEPENDENT) this request is for, when known — lets the journey UI check for a real booking against a specific profile rather than just a name string. */
+  dependentId?: mongoose.Types.ObjectId;
   dependentName: string;
   sport?: string;
   phone: string;
@@ -17,7 +19,8 @@ export interface ScreeningRequestDocument extends Document {
 
 const ScreeningRequestSchema = new Schema<ScreeningRequestDocument>(
   {
-    parentId: { type: Schema.Types.ObjectId, ref: "Player", index: true },
+    parentId: { type: Schema.Types.ObjectId, ref: "User", index: true },
+    dependentId: { type: Schema.Types.ObjectId, ref: "Player", index: true },
     dependentName: { type: String, required: true, trim: true },
     sport: { type: String, trim: true },
     phone: { type: String, required: true, trim: true },

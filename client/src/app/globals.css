@@ -73,7 +73,7 @@
 
   /* Fonts */
   --font-sans: var(--font-space-grotesk);
-  --font-title: var(--font-syne);
+  --font-title: var(--font-space-grotesk);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);

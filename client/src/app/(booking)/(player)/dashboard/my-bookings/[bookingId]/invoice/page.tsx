@@ -6,7 +6,7 @@ import { bookingApi } from "@/modules/booking/services/booking";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Booking, Coach, Venue } from "@/types";
+import { AcademyRef, Booking, Coach, Venue } from "@/types";
 import { formatDate, formatTime } from "@/utils/format";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -33,6 +33,19 @@ const asCoach = (value: Booking["coachId"]): Coach | null => {
     return value as Coach;
   }
   return null;
+};
+
+const asAcademy = (value: Booking["academyId"]): AcademyRef | null => {
+  if (value && typeof value === "object") {
+    return value as AcademyRef;
+  }
+  return null;
+};
+
+const coachName = (coach: Coach | null): string | undefined => {
+  if (!coach) return undefined;
+  const user = coach.userId;
+  return user && typeof user === "object" ? user.name : undefined;
 };
 
 const asUser = (
@@ -83,6 +96,10 @@ export default function BookingInvoicePage() {
 
   const venue = useMemo(() => asVenue(booking?.venueId), [booking?.venueId]);
   const coach = useMemo(() => asCoach(booking?.coachId), [booking?.coachId]);
+  const academy = useMemo(
+    () => asAcademy(booking?.academyId),
+    [booking?.academyId],
+  );
   const customer = useMemo(() => asUser(booking?.userId), [booking?.userId]);
 
   const invoiceNumber = useMemo(() => {
@@ -136,11 +153,22 @@ export default function BookingInvoicePage() {
 
   const providerName =
     venue?.name ||
-    (coach ? `${coach.sports?.[0] || "Coach"} Coach` : "Provider");
+    academy?.name ||
+    (coach
+      ? `${coachName(coach) || "Coach"} · ${coach.sports?.[0] || booking.sport}`
+      : "Provider");
   const providerAddress =
-    venue?.address || coach?.ownVenueDetails?.address || "-";
+    venue?.address ||
+    coach?.ownVenueDetails?.address ||
+    [academy?.address, academy?.city, academy?.state, academy?.pincode]
+      .filter(Boolean)
+      .join(", ") ||
+    "-";
   const providerGst =
-    (venue as any)?.gstNumber || (coach as any)?.gstNumber || "-";
+    (venue as any)?.gstNumber ||
+    (coach as any)?.gstNumber ||
+    academy?.gstNumber ||
+    "-";
   const isInvoiceAvailable = canViewInvoice(booking.status);
 
   if (!isInvoiceAvailable) {

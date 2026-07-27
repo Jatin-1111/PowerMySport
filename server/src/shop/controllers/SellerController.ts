@@ -118,7 +118,7 @@ export class SellerController {
         },
       ];
 
-      const userTypeMap: Record<string, string> = {
+      const roleToSellerTypeMap: Record<string, string> = {
         Parent: "PARENT",
         Player: "Player",
         Coach: "Coach",
@@ -127,7 +127,7 @@ export class SellerController {
         Admin: "SYSTEM",
       };
 
-      const finalSellerType = userTypeMap[user.userType] || "Player";
+      const finalSellerType = roleToSellerTypeMap[user.role] || "Player";
 
       const productData = {
         sku: finalSku,

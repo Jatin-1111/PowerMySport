@@ -42,17 +42,15 @@ const authCookieOptions = {
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const user = await registerUser({
-      ...req.body,
-      role: req.body.role || "Player",
-      userType: req.body.userType || "Player",
-    });
+    // role always arrives already defaulted here — registerSchema (applied by
+    // the validateRequest middleware ahead of this handler) guarantees it's
+    // present and valid before req.body reaches this point.
+    const user = await registerUser({ ...req.body });
 
     const token = generateToken({
       id: user._id.toString(),
       email: user.email,
       role: user.role,
-      userType: user.userType,
     });
 
     res.cookie("token", token, authCookieOptions);
@@ -67,7 +65,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           name: user.name,
           email: user.email,
           role: user.role,
-          userType: user.userType,
         },
       },
     });
@@ -87,7 +84,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       id: user._id.toString(),
       email: user.email,
       role: user.role,
-      userType: user.userType,
     });
 
     res.cookie("token", token, authCookieOptions);
@@ -103,7 +99,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           name: user.name,
           email: user.email,
           role: user.role,
-          userType: user.userType,
         },
       },
     });
@@ -223,7 +218,7 @@ export const getProfile = async (
       : undefined;
 
     const parentProfile =
-      user.userType === "Parent"
+      user.role === "Parent"
         ? {
             bio: (user as any).bio ?? undefined,
             sportInterests: (user as any).sportInterests ?? [],
@@ -240,7 +235,6 @@ export const getProfile = async (
         email: user.email,
         phone: user.phone,
         role: user.role,
-        userType: user.userType,
         dob: user.dob,
         photoUrl: user.photoUrl,
         photoS3Key: user.photoS3Key,
@@ -290,7 +284,6 @@ export const getAuthBridge = async (
       data: {
         id: user._id,
         role: user.role,
-        userType: user.userType,
         name: user.name,
         email: user.email,
       },
@@ -331,7 +324,7 @@ export const updateProfileHandler = async (
     });
 
     const updatedParentProfile =
-      updatedUser.userType === "Parent"
+      updatedUser.role === "Parent"
         ? {
             bio: (updatedUser as any).bio ?? undefined,
             sportInterests: (updatedUser as any).sportInterests ?? [],
@@ -348,7 +341,6 @@ export const updateProfileHandler = async (
         email: updatedUser.email,
         phone: updatedUser.phone,
         role: updatedUser.role,
-        userType: updatedUser.userType,
         dob: updatedUser.dob,
         photoUrl: updatedUser.photoUrl,
         photoS3Key: updatedUser.photoS3Key,
@@ -494,7 +486,6 @@ export const googleAuth = async (
     const {
       credential,
       role,
-      userType,
       action,
       acceptedTerms,
       acceptedPrivacy,
@@ -510,7 +501,6 @@ export const googleAuth = async (
       name: identity.name || identity.email.split("@")[0] || "User",
       ...(identity.photoUrl ? { photoUrl: identity.photoUrl } : {}),
       role,
-      userType,
       action,
       acceptedTerms,
       acceptedPrivacy,
@@ -520,7 +510,6 @@ export const googleAuth = async (
       id: user._id.toString(),
       email: user.email,
       role: user.role,
-      userType: user.userType,
     });
 
     res.cookie("token", token, authCookieOptions);
@@ -535,7 +524,6 @@ export const googleAuth = async (
           name: user.name,
           email: user.email,
           role: user.role,
-          userType: user.userType,
           photoUrl: user.photoUrl,
         },
       },
@@ -614,7 +602,6 @@ export const graduateDependentHandler = async (
           email: newUser.email,
           phone: newUser.phone,
           role: newUser.role,
-          userType: newUser.userType,
         },
       },
     });
@@ -1154,7 +1141,6 @@ export const linkGoogleHandler = async (req: Request, res: Response): Promise<vo
           name: user.name,
           email: user.email,
           role: user.role,
-          userType: user.userType,
           googleId: user.googleId,
           photoUrl: user.photoUrl,
         }

@@ -13,10 +13,7 @@ export default function NotFound() {
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-power-orange">
           Error 404
         </p>
-        <h1
-          className="text-6xl font-extrabold text-slate-900"
-          style={{ fontFamily: "var(--font-syne)" }}
-        >
+        <h1 className="font-title text-6xl font-extrabold text-slate-900">
           404
         </h1>
         <h2 className="mt-3 text-xl font-bold text-slate-900">

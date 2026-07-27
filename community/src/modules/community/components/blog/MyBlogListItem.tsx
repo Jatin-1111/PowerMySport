@@ -63,6 +63,11 @@ export default function MyBlogListItem({
         ) : null}
 
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
+          {blog.status === "DRAFT" ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+              Draft
+            </span>
+          ) : null}
           <span
             className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${topic.accent}`}
           >

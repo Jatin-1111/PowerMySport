@@ -60,7 +60,9 @@ export const canJoinGroupAudience = (
   }
 
   if (audience === "PLAYERS_ONLY") {
-    return role === "Player";
+    // Parent counts as a Player here too, preserving existing behavior from
+    // when both shared role:"Player".
+    return role === "Player" || role === "Parent";
   }
 
   return role === "Coach";

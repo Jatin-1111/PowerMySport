@@ -11,10 +11,11 @@ import {
     StaggerContainer,
     StaggerItem,
 } from "@/modules/shared/ui/motion/StaggerContainer";
-import { Booking, Venue } from "@/types";
+import { AcademyRef, Booking, Venue } from "@/types";
 import { formatDate, formatTime } from "@/utils/format";
 import { getOwnVenueLocationDisplay } from "@/utils/location";
 import {
+    Building2,
     Calendar,
     ChevronLeft,
     ChevronRight,
@@ -298,6 +299,32 @@ export default function CoachBookingsPage() {
                                 </p>
                               )}
                             </>
+                          ) : typeof booking.academyId === "object" &&
+                            booking.academyId !== null ? (
+                            (() => {
+                              const academy = booking.academyId as AcademyRef;
+                              const academyAddress = [
+                                academy.address,
+                                academy.city,
+                                academy.state,
+                                academy.pincode,
+                              ]
+                                .filter(Boolean)
+                                .join(", ");
+                              return (
+                                <>
+                                  <p className="inline-flex items-center gap-2 font-semibold text-slate-900">
+                                    <Building2 className="h-4 w-4 text-slate-400" />
+                                    {academy.name || "Academy"}
+                                  </p>
+                                  {academyAddress && (
+                                    <p className="mt-1 text-sm text-slate-600">
+                                      {academyAddress}
+                                    </p>
+                                  )}
+                                </>
+                              );
+                            })()
                           ) : currentCoach?.ownVenueDetails ? (
                             (() => {
                               const venueLocation = getOwnVenueLocationDisplay(

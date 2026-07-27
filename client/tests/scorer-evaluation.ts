@@ -58,6 +58,7 @@ function scoreFor(a: WizardAnswers, sport: string): number {
 // ─── Base profile (neutral, age 10 boy, Maharashtra, 7k-15k budget) ───────────
 const BASE: WizardAnswers = {
   childName: "TestChild",
+  dob: null,
   age: 10, gender: "boy", state: "Maharashtra", priorSports: [],
   sportsInFamily: [], peerSports: [], informalSports: [], informalReaction: null,
   height: 140, weight: 32,
@@ -123,48 +124,45 @@ console.log(`${D}Does the model recommend the right sport for each archetype?${X
     ambition: "fun", weeklyHours: "4-7", budget: "under-3k",
   };
   const top = top3names(a);
-  const teamSports = ["Football", "Basketball", "Volleyball", "Kabaddi"];
+  const teamSports = ["Football", "Basketball", "Volleyball", "Hockey"];
   test("R", "R4 Team player → team sport in top 3", top.some(s => teamSports.includes(s)), `got: ${top.join(", ")}`);
 }
 
-// R5: Shooter — strategic, sustained focus, sharp vision, big budget, individual
+// R5: Basketball athlete — tall, explosive, team-oriented, indoor
 {
   const a: WizardAnswers = { ...BASE,
-    age: 12, energyType: "endurance", agility: "low",
-    teamIndividual: 5, focusStyle: "sustained", decisionStyle: "strategic",
-    eyesight: "sharp", visualTracking: "strong",
-    pressureResponse: "thrives", repetitionTolerance: "high",
-    contactComfort: "avoids", environment: "indoor",
-    budget: "15k-plus", weeklyHours: "8-12", ambition: "national",
+    age: 12, height: 158, weight: 42, energyType: "explosive",
+    agility: "high", teamIndividual: 2, decisionStyle: "react",
+    visualTracking: "strong", pressureResponse: "manages",
+    environment: "indoor", budget: "under-3k", weeklyHours: "8-12",
   };
   const top = top3names(a);
-  test("R", "R5 Shooter profile → Shooting in top 3", inTop3(a, "Shooting"), `got: ${top.join(", ")}`);
+  test("R", "R5 Tall explosive team player → Basketball in top 3", inTop3(a, "Basketball"), `got: ${top.join(", ")}`);
 }
 
-// R6: Contact/wrestler — loves contact, stocky build, individual
+// R6: Contact-tolerant explosive team athlete — loves contact, outdoor, moderate build
 {
   const a: WizardAnswers = { ...BASE,
-    energyType: "explosive", agility: "moderate", teamIndividual: 5,
-    contactComfort: "loves", height: 132, weight: 45,
-    pressureResponse: "thrives", environment: "indoor",
-    budget: "under-3k", weeklyHours: "8-12",
+    energyType: "explosive", agility: "moderate", teamIndividual: 1,
+    contactComfort: "loves", environment: "outdoor",
+    pressureResponse: "manages", budget: "under-3k", weeklyHours: "8-12",
   };
   const top = top3names(a);
-  test("R", "R6 Contact athlete → Wrestling or Kabaddi in top 3",
-    inTop3(a, "Wrestling") || inTop3(a, "Kabaddi"),
+  test("R", "R6 Contact-tolerant team athlete → Football or Hockey in top 3",
+    inTop3(a, "Football") || inTop3(a, "Hockey"),
     `got: ${top.join(", ")}`);
 }
 
-// R7: Track athlete — endurance, outdoor, lean, consistent, moderate team
+// R7: Hockey specialist — outdoor, explosive, visual tracking, moderate team
 {
   const a: WizardAnswers = { ...BASE,
-    energyType: "endurance", agility: "moderate", teamIndividual: 4,
-    repetitionTolerance: "high", environment: "outdoor",
-    contactComfort: "avoids", focusStyle: "sustained",
-    ambition: "competitive", weeklyHours: "8-12", budget: "3k-7k",
+    energyType: "explosive", agility: "moderate", teamIndividual: 1,
+    visualTracking: "strong", environment: "outdoor",
+    contactComfort: "neutral", focusStyle: "bursts",
+    ambition: "competitive", weeklyHours: "8-12", budget: "under-3k",
   };
   const top = top3names(a);
-  test("R", "R7 Track athlete → Athletics in top 3", inTop3(a, "Athletics"), `got: ${top.join(", ")}`);
+  test("R", "R7 Hockey specialist → Hockey in top 3", inTop3(a, "Hockey"), `got: ${top.join(", ")}`);
 }
 
 // R8: Table Tennis specialist — explosive, sharp vision, under-3k budget, indoor
@@ -196,17 +194,17 @@ console.log(`${D}Does the model recommend the right sport for each archetype?${X
   test("R", "R9 Cricket profile → Cricket in top 3", inTop3(a, "Cricket"), `got: ${top.join(", ")}`);
 }
 
-// R10: Gymnastics — very young (7), highly agile, individual, indoor, lean
+// R10: Volleyball — tall, explosive, team-oriented, either environment
 {
   const a: WizardAnswers = { ...BASE,
-    age: 7, height: 116, weight: 22, energyType: "explosive",
-    agility: "high", teamIndividual: 5, repetitionTolerance: "high",
-    focusStyle: "sustained", environment: "indoor",
-    contactComfort: "avoids", budget: "15k-plus",
-    weeklyHours: "13-plus", pressureResponse: "thrives",
+    age: 10, height: 150, weight: 38, energyType: "explosive",
+    agility: "moderate", teamIndividual: 2, repetitionTolerance: "high",
+    focusStyle: "bursts", environment: "no-preference",
+    contactComfort: "neutral", budget: "under-3k",
+    weeklyHours: "4-7", pressureResponse: "manages",
   };
   const top = top3names(a);
-  test("R", "R10 Gymnastics profile (age 7) → Gymnastics in top 3", inTop3(a, "Gymnastics"), `got: ${top.join(", ")}`);
+  test("R", "R10 Tall team-oriented profile (age 10) → Volleyball in top 3", inTop3(a, "Volleyball"), `got: ${top.join(", ")}`);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -216,40 +214,18 @@ console.log(`${D}Does the model recommend the right sport for each archetype?${X
 console.log(`\n${B}${C}━━━ EFFICIENCY TESTS (Gate filtering) ━━━${X}`);
 console.log(`${D}Hard gates must eliminate sports when real constraints fire.${X}\n`);
 
-// E1: Limited vision → Shooting absent at all ambition levels
-{
-  // Build a near-perfect shooter profile to prove the gate — not just low score
-  const a: WizardAnswers = { ...BASE,
-    eyesight: "limited", agility: "low", energyType: "endurance",
-    teamIndividual: 5, focusStyle: "sustained", decisionStyle: "strategic",
-    repetitionTolerance: "high", contactComfort: "avoids",
-    budget: "15k-plus", weeklyHours: "8-12",
-  };
-  test("E", "E1 Limited vision → Shooting hard-gated (all ambition levels)",
-    absent(a, "Shooting"), `top 3: ${top3names(a).join(", ")}`);
-}
-
-// E2: Water discomfort → Swimming absent even for endurance/repetition swimmer profile
+// E1: Water discomfort → Swimming absent even for endurance/repetition swimmer profile
 {
   const a: WizardAnswers = { ...BASE,
     waterComfort: "uncomfortable", energyType: "endurance",
     repetitionTolerance: "high", teamIndividual: 4,
     focusStyle: "sustained", budget: "7k-15k",
   };
-  test("E", "E2 Water discomfort → Swimming hard-gated",
+  test("E", "E1 Water discomfort → Swimming hard-gated",
     absent(a, "Swimming"), `top 3: ${top3names(a).join(", ")}`);
 }
 
-// E3: Contact avoidance → Kabaddi AND Wrestling absent
-{
-  const a: WizardAnswers = { ...BASE, contactComfort: "avoids" };
-  const top = top3names(a);
-  test("E", "E3 Contact avoidance → Kabaddi + Wrestling absent",
-    !top.includes("Kabaddi") && !top.includes("Wrestling"),
-    `top 3: ${top.join(", ")}`);
-}
-
-// E4: Budget under-3k → Tennis absent (minBudgetTier = 7k-15k)
+// E2: Budget under-3k → Tennis absent (minBudgetTier = 7k-15k)
 {
   // Make a tennis-leaning profile to prove the budget gate
   const a: WizardAnswers = { ...BASE,
@@ -257,80 +233,40 @@ console.log(`${D}Hard gates must eliminate sports when real constraints fire.${X
     teamIndividual: 5, environment: "outdoor", eyesight: "sharp",
     visualTracking: "strong", repetitionTolerance: "high",
   };
-  test("E", "E4 Budget under-3k → Tennis hard-gated",
+  test("E", "E2 Budget under-3k → Tennis hard-gated",
     absent(a, "Tennis"), `top 3: ${top3names(a).join(", ")}`);
 }
 
-// E5: 155cm boy, national ambition, age 14 → Volleyball absent (minH boy = 172)
+// E3: 155cm boy, national ambition, age 14 → Volleyball absent (minH boy = 172)
 {
   const a: WizardAnswers = { ...BASE,
     age: 14, gender: "boy", height: 155, ambition: "national",
     teamIndividual: 2, energyType: "explosive", environment: "indoor",
   };
-  test("E", "E5 155cm boy + national volleyball → height gate fires",
+  test("E", "E3 155cm boy + national volleyball → height gate fires",
     absent(a, "Volleyball"), `top 3: ${top3names(a).join(", ")}`);
 }
 
-// E6: 156cm girl, national ambition, age 14 → Basketball absent (minH girl = 160)
+// E4: 156cm girl, national ambition, age 14 → Basketball absent (minH girl = 160)
 {
   const a: WizardAnswers = { ...BASE,
     age: 14, gender: "girl", height: 156, ambition: "national",
     teamIndividual: 2, energyType: "explosive",
   };
-  test("E", "E6 156cm girl + national basketball → height gate fires",
+  test("E", "E4 156cm girl + national basketball → height gate fires",
     absent(a, "Basketball"), `top 3: ${top3names(a).join(", ")}`);
 }
 
-// E7: 172cm child, competitive, age 13 → Gymnastics absent (height > 168 upper gate)
+// E5: Swimming professional, age 16 (> ageWindowCutoff 13) → absent
+// (generic age-cutoff hard gate — applies to every sport, not just Swimming)
 {
   const a: WizardAnswers = { ...BASE,
-    age: 13, height: 172, weight: 52, ambition: "competitive",
-    agility: "high", energyType: "explosive", teamIndividual: 5,
-    budget: "15k-plus",
+    age: 16, ambition: "professional", waterComfort: "comfortable",
+    energyType: "endurance", teamIndividual: 4, repetitionTolerance: "high",
+    focusStyle: "sustained", budget: "7k-15k",
   };
-  test("E", "E7 172cm + competitive gymnastics + age 13 → height upper gate fires",
-    absent(a, "Gymnastics"), `top 3: ${top3names(a).join(", ")}`);
-}
-
-// E8: BMI 24, competitive, age 13 → Gymnastics absent (BMI > 22 build gate)
-{
-  // height 150, weight 54 → BMI = 54/(1.5²) = 24
-  const a: WizardAnswers = { ...BASE,
-    age: 13, height: 150, weight: 54, ambition: "competitive",
-    agility: "high", teamIndividual: 5, budget: "15k-plus",
-  };
-  test("E", "E8 BMI 24 + competitive gymnastics + age 13 → build gate fires",
-    absent(a, "Gymnastics"), `top 3: ${top3names(a).join(", ")}`);
-}
-
-// E9: Gymnastics professional, age 11 (> ageWindowCutoff 10) → absent
-{
-  const a: WizardAnswers = { ...BASE,
-    age: 11, ambition: "professional",
-    agility: "high", teamIndividual: 5, budget: "15k-plus",
-    energyType: "explosive", height: 135, weight: 28,
-  };
-  test("E", "E9 Age 11 + professional gymnastics → age cutoff gate fires (cutoff=10)",
-    absent(a, "Gymnastics"), `top 3: ${top3names(a).join(", ")}`);
-}
-
-// E10: Corrected vision → Shooting NOT hard-gated (only "limited" is disqualified)
-{
-  // Build a shooter profile with corrected vision
-  const a: WizardAnswers = { ...BASE,
-    eyesight: "corrected", agility: "low", energyType: "endurance",
-    teamIndividual: 5, focusStyle: "sustained", decisionStyle: "strategic",
-    repetitionTolerance: "high", contactComfort: "avoids",
-    budget: "15k-plus", weeklyHours: "8-12",
-  };
-  // scoreSports doesn't expose the full pool, but we can verify no hard gate fires
-  // by confirming the scorer returns 3 results (pool not empty) and we can check
-  // that the limited-vision gate logic only uses eyesight === "limited"
-  let noError = true;
-  try { scoreSports(a); } catch { noError = false; }
-  // Since we can't inspect filtered pool, we validate by code review + no crash
-  test("E", "E10 Corrected vision → scorer runs without error (Shooting not hard-gated)",
-    noError, `corrected vision should pass gate; only "limited" is disqualified`);
+  test("E", "E5 Age 16 + professional swimming → age cutoff gate fires (cutoff=13)",
+    absent(a, "Swimming"), `top 3: ${top3names(a).join(", ")}`);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -341,8 +277,8 @@ console.log(`\n${B}${C}━━━ ACCURACY TESTS (Calibration & mechanics) ━━
 console.log(`${D}Scores, differentials, and bonus mechanics must work correctly.${X}\n`);
 
 // A1: Perfect badminton profile → score ≥ 90/100
-// (threshold under absolute scoring, calibrated against the 50-sport catalog —
-// see the fitLabel comment in scorer.ts for the empirical basis)
+// (threshold under absolute scoring — see the fitLabel comment in scorer.ts
+// for the empirical basis)
 {
   const a: WizardAnswers = { ...BASE,
     age: 9, energyType: "explosive", agility: "high", eyesight: "sharp",
@@ -402,27 +338,22 @@ console.log(`${D}Scores, differentials, and bonus mechanics must work correctly.
     retakeTop === "Badminton", `priorSports=["Badminton"]; adjacent test: TT prior → ${adjacentTop} (TT retake +0.05 > adj +0.025)`);
 }
 
-// A5: Critical age sensitivity — gymnastics is a strong top-3 pick at 7 (ideal
-//     window) but drops out of top-3 entirely by 12 (past ageWindowCutoff=10,
-//     ageMatch collapses to 0.4 under non-elite ambition). With a 50-sport
-//     catalog, "still scores higher" isn't guaranteed to keep it visible at all
-//     once the critical window has closed — disappearing from top-3 is itself
-//     the correct, stronger signal that the age mechanic is working.
+// A5: Moderate age sensitivity — a badminton-shaped profile scores lower once
+//     past the sport's ideal window (ageWindowIdeal=[5,10]) even before it
+//     hits the hard cutoff (14) — soft degradation, not a cliff.
 {
-  const gymBase: WizardAnswers = { ...BASE,
-    agility: "high", energyType: "explosive", teamIndividual: 5,
-    repetitionTolerance: "high", focusStyle: "sustained",
-    environment: "indoor", contactComfort: "avoids",
-    budget: "15k-plus", weeklyHours: "13-plus", ambition: "competitive",
-    height: 130, weight: 28, // identical physical — isolates age effect
+  const badBase: WizardAnswers = { ...BASE,
+    energyType: "explosive", agility: "high", eyesight: "sharp",
+    visualTracking: "strong", teamIndividual: 4, decisionStyle: "react",
+    environment: "indoor", budget: "3k-7k", ambition: "competitive",
   };
-  const at7  = { ...gymBase, age: 7 };
-  const at12 = { ...gymBase, age: 12 };
-  const in7 = inTop3(at7, "Gymnastics");
-  const in12 = inTop3(at12, "Gymnastics");
-  test("A", `A5 Critical age: Gymnastics in top-3 at 7yo (${in7}), gone by 12yo (${!in12})`,
-    in7 && !in12,
-    `age7: ${top3names(at7).join(", ")} | age12: ${top3names(at12).join(", ")}`);
+  const at9  = { ...badBase, age: 9 };
+  const at13 = { ...badBase, age: 13 };
+  const score9 = scoreFor(at9, "Badminton");
+  const score13 = scoreFor(at13, "Badminton");
+  test("A", `A5 Moderate age sensitivity: Badminton score drops past ideal window (age9=${score9} > age13=${score13})`,
+    score9 > score13,
+    `age9: ${top3names(at9).join(", ")} | age13: ${top3names(at13).join(", ")}`);
 }
 
 // A6: Flexible age sensitivity — a 16yo already playing Cricket, going
@@ -430,7 +361,7 @@ console.log(`${D}Scores, differentials, and bonus mechanics must work correctly.
 //     overshoot=2, flexible(0.4), professional(0.12) → ageMatch≈0.904 — the
 //     retake bonus (priorSports) reflects the realistic framing that a family
 //     asking about a professional pathway at 16 has almost certainly already
-//     been playing, and is what keeps Cricket visible against 49 other
+//     been playing, and is what keeps Cricket visible against the 9 other
 //     sports (agility "moderate" also avoids the inherited BASE "high" value,
 //     which is a badminton-flavoured default, not a cricket one).
 {
@@ -475,7 +406,7 @@ console.log(`${D}Scores, differentials, and bonus mechanics must work correctly.
 // A9: Null/sparse profile doesn't crash and returns results
 {
   const sparse: WizardAnswers = {
-    childName: "", age: null, gender: null, state: null, priorSports: [],
+    childName: "", dob: null, age: null, gender: null, state: null, priorSports: [],
     sportsInFamily: [], peerSports: [], informalSports: [], informalReaction: null,
     height: null, weight: null, energyType: null, motorType: null,
     visualTracking: null, eyesight: null, agility: null,
@@ -523,29 +454,29 @@ console.log(`${D}Today's new scoring signals — bonuses, penalties, and ordinal
 // penalty and the ratio can round back to an unchanged display value. Direct
 // unit tests sidestep both — F5/F6/F10 remain full-pipeline integration tests.
 
-const kabaddi = SPORT_PROFILES.find(s => s.name === "Kabaddi")!;
-const gymnastics = SPORT_PROFILES.find(s => s.name === "Gymnastics")!;
+const hockey = SPORT_PROFILES.find(s => s.name === "Hockey")!;
+const swimming = SPORT_PROFILES.find(s => s.name === "Swimming")!;
 
 // F1: Family bonus is a fixed small positive value on an exact sport-name match, zero otherwise
 {
-  const match = computeFamilySportBonus(["Kabaddi"], kabaddi);
-  const noMatch = computeFamilySportBonus(["Chess"], kabaddi);
+  const match = computeFamilySportBonus(["Hockey"], hockey);
+  const noMatch = computeFamilySportBonus(["Chess"], hockey);
   test("F", "F1 Family sport bonus fires on match only", match === 0.02 && noMatch === 0,
     `match=${match}, noMatch=${noMatch}`);
 }
 
 // F2: Peer bonus fires on match, and is strictly stronger than family (agreed ordinal tiering)
 {
-  const peer = computePeerSportBonus(["Kabaddi"], kabaddi);
-  const family = computeFamilySportBonus(["Kabaddi"], kabaddi);
+  const peer = computePeerSportBonus(["Hockey"], hockey);
+  const family = computeFamilySportBonus(["Hockey"], hockey);
   test("F", "F2 Peer bonus > family bonus (agreed tiering)", peer === 0.03 && peer > family,
     `family=${family}, peer=${peer}`);
 }
 
 // F3: Informal exposure + "kept asking" is the strongest signal — beats peer
 {
-  const peer = computePeerSportBonus(["Kabaddi"], kabaddi);
-  const informalPositive = computeInformalExposureBonus(["Kabaddi"], "kept-asking", kabaddi);
+  const peer = computePeerSportBonus(["Hockey"], hockey);
+  const informalPositive = computeInformalExposureBonus(["Hockey"], "kept-asking", hockey);
   test("F", "F3 Informal exposure (kept asking) > peer bonus (strongest tier)",
     informalPositive === 0.05 && informalPositive > peer, `peer=${peer}, informal-positive=${informalPositive}`);
 }
@@ -588,24 +519,24 @@ const gymnastics = SPORT_PROFILES.find(s => s.name === "Gymnastics")!;
     `Cricket(family)=${cricket}, Tennis(peer)=${tennis}, TableTennis(informal+)=${tableTennis}`);
 }
 
-// F7: stay-local + national ambition penalizes a high-specialization sport (Gymnastics)
+// F7: stay-local + national ambition penalizes a high-specialization sport (Swimming)
 {
-  const control = computeFutureFlexibilityPenalty("national", null, gymnastics);
-  const stayLocal = computeFutureFlexibilityPenalty("national", "stay-local", gymnastics);
+  const control = computeFutureFlexibilityPenalty("national", null, swimming);
+  const stayLocal = computeFutureFlexibilityPenalty("national", "stay-local", swimming);
   test("F", "F7 stay-local + national ambition penalizes high-specialization sport",
     control === 0 && stayLocal === -0.04, `control=${control}, stay-local=${stayLocal}`);
 }
 
 // F8: The penalty must NOT apply outside national/professional ambition
 {
-  const funTier = computeFutureFlexibilityPenalty("fun", "stay-local", gymnastics);
+  const funTier = computeFutureFlexibilityPenalty("fun", "stay-local", swimming);
   test("F", "F8 stay-local does NOT penalize under 'fun' ambition", funTier === 0, `got=${funTier}`);
 }
 
 // F9: The penalty must only fire for "stay-local", not "all-in" or "maybe"
 {
-  const allIn = computeFutureFlexibilityPenalty("national", "all-in", gymnastics);
-  const maybe = computeFutureFlexibilityPenalty("national", "maybe", gymnastics);
+  const allIn = computeFutureFlexibilityPenalty("national", "all-in", swimming);
+  const maybe = computeFutureFlexibilityPenalty("national", "maybe", swimming);
   test("F", "F9 'all-in'/'maybe' do NOT penalize under national ambition",
     allIn === 0 && maybe === 0, `all-in=${allIn}, maybe=${maybe}`);
 }
@@ -659,7 +590,7 @@ probe("P2 Individual explosive, under-3k budget", {
 });
 
 // P3: Perfect endurance profile, outdoor, team (3), no water
-probe("P3 Endurance outdoor balanced — Football vs Athletics", {
+probe("P3 Endurance outdoor balanced — Football vs Hockey vs Cricket", {
   ...BASE, energyType: "endurance", teamIndividual: 3,
   environment: "outdoor", repetitionTolerance: "high",
   focusStyle: "sustained", budget: "under-3k",

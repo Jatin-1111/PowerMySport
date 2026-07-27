@@ -116,8 +116,8 @@ export default function DiscoverPageClient() {
           }
         } else {
           let filters = {};
-          if (activeTab === "PARENTS") filters = { userType: "Parent" };
-          if (activeTab === "PLAYERS") filters = { userType: "Player" };
+          if (activeTab === "PARENTS") filters = { role: "Parent" };
+          if (activeTab === "PLAYERS") filters = { role: "Player" };
           if (activeTab === "COACHES") filters = { role: "Coach" };
 
           const playersData = await communityService.searchPlayers(
@@ -235,9 +235,9 @@ export default function DiscoverPageClient() {
 
   const filteredPlayers = players.filter((p) => {
     if (activeTab === "PARENTS") {
-      if (p.userType !== "Parent") return false;
+      if (p.role !== "Parent") return false;
     } else if (activeTab === "PLAYERS") {
-      if (p.userType !== "Player") return false;
+      if (p.role !== "Player") return false;
     } else if (activeTab === "COACHES") {
       if (p.role !== "Coach") return false;
     } else return false;
@@ -690,7 +690,7 @@ export default function DiscoverPageClient() {
                               className="discover-badge"
                               style={{ marginTop: 4, color: '#475569', borderColor: '#e2e8f0', background: '#f8fafc' }}
                             >
-                              {player.userType === "Parent" ? "Parent" : player.role === "Coach" ? "Coach" : "Player"}
+                              {player.role === "Parent" ? "Parent" : player.role === "Coach" ? "Coach" : "Player"}
                             </span>
 
                             <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 min-h-[24px]">

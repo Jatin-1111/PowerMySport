@@ -390,7 +390,7 @@ function SubscriptionCheckoutContent() {
             </div>
           </div>
 
-          {user?.userType === "Parent" &&
+          {user?.role === "Parent" &&
             user?.dependents &&
             user.dependents.length > 0 && (
               <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">

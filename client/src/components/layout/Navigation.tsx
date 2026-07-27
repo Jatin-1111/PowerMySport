@@ -484,7 +484,7 @@ export const Navigation: React.FC<NavProps> = ({
                             {user.email}
                           </p>
                           <p className="text-[10px] font-semibold uppercase tracking-wider text-power-orange mt-1.5">
-                            {user.userType || user.role.replace("_", " ")}
+                            {user.role.replace("_", " ")}
                           </p>
                         </div>
 
@@ -771,7 +771,7 @@ export const Navigation: React.FC<NavProps> = ({
                         {user.email}
                       </p>
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-power-orange mt-1.5">
-                        {user.userType || user.role.replace("_", " ")}
+                        {user.role.replace("_", " ")}
                       </p>
                     </div>
 

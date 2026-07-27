@@ -12,6 +12,7 @@ export const venueApi = {
     description?: string;
     images?: string[];
     openingHours?: string;
+    gstNumber?: string;
   }): Promise<ApiResponse<Venue>> => {
     const response = await axiosInstance.post("/venues", data);
     return response.data;

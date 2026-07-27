@@ -1,6 +1,6 @@
 export type MessagePrivacy = "EVERYONE" | "REQUEST_ONLY" | "NONE";
 export type ConversationType = "DM" | "GROUP";
-export type CommunityUserRole = "Player" | "Coach";
+export type CommunityUserRole = "Player" | "Coach" | "Parent";
 export type CommunityGroupAudience = "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
 
 export interface CommunityProfile {
@@ -70,7 +70,6 @@ export interface CommunityUserSearchResult {
   displayName: string;
   isIdentityPublic: boolean;
   role?: CommunityUserRole;
-  userType?: string;
   photoUrl?: string | null;
   city?: string | null;
   age?: number | null;
@@ -80,7 +79,6 @@ export interface CommunityUserSearchResult {
 export interface CommunityMemberProfile {
   id: string;
   role: CommunityUserRole;
-  userType?: string;
   displayName: string;
   alias: string;
   isIdentityPublic: boolean;
@@ -256,6 +254,7 @@ export interface BlogListItem {
   coverImageUrl: string | null;
   topic: string;
   tags: string[];
+  status: "PUBLISHED" | "DRAFT";
   likeCount: number;
   commentCount: number;
   viewCount: number;

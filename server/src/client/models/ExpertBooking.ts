@@ -3,9 +3,12 @@ import mongoose, { Document, Schema } from "mongoose";
 /**
  * A paid 1:1 session between a client (User) and an Expert.
  * Flow: PENDING_PAYMENT (slot held) → (PhonePe) SCHEDULED (slot confirmed) →
- * COMPLETED → client can leave a rating/review (stored on this document).
- * Unpaid holds expire (→ CANCELLED) so the slot frees up; scheduled sessions
- * auto-complete once their end time passes.
+ * COMPLETED (only once the expert adds minutes of meeting) → client can leave
+ * a rating/review (stored on this document).
+ * Unpaid holds expire (→ CANCELLED) so the slot frees up. There is no
+ * time-based auto-complete — a SCHEDULED session whose end time has passed
+ * stays SCHEDULED until the expert submits MOM; the expert gets reminded
+ * periodically in the meantime (see momReminderSentAt).
  * (File is named ExpertBooking.ts; the Mongoose model name is "ExpertSession".)
  */
 export type ExpertSessionStatus =
@@ -31,6 +34,8 @@ export interface ExpertSessionDocument extends Document {
   paymentStatus: "PENDING" | "COMPLETED" | "FAILED";
   merchantOrderId: string;
   phonepeOrderId?: string;
+  /** Set once when paymentStatus first flips to COMPLETED — the invoice's "paid on" timestamp. */
+  paidAt?: Date;
   scheduledAt?: Date;
   durationMinutes: number;
   holdExpiresAt?: Date; // while PENDING_PAYMENT, the slot hold expiry
@@ -51,10 +56,18 @@ export interface ExpertSessionDocument extends Document {
   // Expert confirmation of the booked time
   expertAcceptance: ExpertAcceptance;
   expertRespondedAt?: Date;
-  // Set when status transitions to COMPLETED (manual or auto) — the anchor for
-  // the 24h payout-release window (deliberately NOT `updatedAt`, which a later
-  // review submission would otherwise bump).
+  // Set when status transitions to COMPLETED — the anchor for the 24h
+  // payout-release window (deliberately NOT `updatedAt`, which a later review
+  // submission would otherwise bump).
   completedAt?: Date;
+  // Minutes of meeting — the expert's session notes. Required to mark a
+  // session COMPLETED; editable by the expert afterwards (momAddedAt keeps
+  // the original submission time even if momNotes is later revised).
+  momNotes?: string;
+  momAddedAt?: Date;
+  // Dedup/repeat-cadence timestamp for the "add your session notes" nudge
+  // sent to the expert once a SCHEDULED session's end time has passed.
+  momReminderSentAt?: Date;
   payoutStatus: ExpertPayoutStatus;
   payoutPaidAt?: Date;
   // Review
@@ -113,6 +126,7 @@ const expertSessionSchema = new Schema<ExpertSessionDocument>(
       index: true,
     },
     phonepeOrderId: { type: String },
+    paidAt: { type: Date },
     scheduledAt: { type: Date, index: true },
     durationMinutes: { type: Number, default: 60, min: 15, max: 480 },
     holdExpiresAt: { type: Date },
@@ -142,6 +156,9 @@ const expertSessionSchema = new Schema<ExpertSessionDocument>(
     },
     expertRespondedAt: { type: Date },
     completedAt: { type: Date },
+    momNotes: { type: String, trim: true, maxlength: 4000 },
+    momAddedAt: { type: Date },
+    momReminderSentAt: { type: Date },
     payoutStatus: {
       type: String,
       enum: ["PENDING", "PAID"],

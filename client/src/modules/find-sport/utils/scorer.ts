@@ -246,59 +246,20 @@ function computeSynergyBonus(
 // ─── Prior sport skill-transfer bonus ────────────────────────────────────────
 // Skills from sports a child has already played transfer meaningfully to
 // adjacent sports. Map is keyed by the sport being scored; values are prior
-// sports whose practice builds transferable skills.
+// sports whose practice builds transferable skills. Both keys and values are
+// restricted to PRIOR_SPORTS_OPTIONS (the only sports the wizard lets a
+// parent pick as "already played") — a value outside that list could never
+// be selected, so it would just be dead weight.
 
 const PRIOR_SPORT_TRANSFERS: Record<string, string[]> = {
-  "Badminton":    ["Table Tennis", "Tennis", "Squash", "Padel"],
-  "Table Tennis": ["Badminton", "Tennis", "Squash", "Padel"],
-  "Tennis":       ["Badminton", "Table Tennis", "Squash", "Padel"],
-  "Basketball":   ["Volleyball", "Football", "Cricket", "Handball", "Netball", "Ultimate Frisbee"],
-  "Volleyball":   ["Basketball", "Football", "Handball"],
-  "Football":     ["Basketball", "Kabaddi", "Athletics", "Cricket", "Hockey", "Rugby", "Ultimate Frisbee", "Handball"],
-  "Cricket":      ["Athletics", "Football", "Volleyball", "Baseball", "Softball"],
-  "Athletics":    ["Football", "Swimming", "Cricket", "Gymnastics", "Cycling", "Skating", "Rowing", "Triathlon", "Marathon/Distance Running"],
-  "Swimming":     ["Athletics", "Gymnastics", "Cycling", "Water Polo", "Diving", "Rowing", "Triathlon", "Surfing"],
-  "Gymnastics":   ["Athletics", "Swimming", "Skating", "Mallakhamb", "Diving", "Sport Climbing", "Yoga"],
-  "Kabaddi":      ["Football", "Wrestling", "Boxing", "Kho-Kho", "Rugby"],
-  "Wrestling":    ["Kabaddi", "Boxing", "Judo", "Weightlifting", "Powerlifting"],
-  "Chess":        ["Snooker/Billiards", "Carrom"],
-  "Shooting":     ["Archery"],
-  "Hockey":       ["Football", "Athletics", "Kho-Kho"],
-  "Boxing":       ["Wrestling", "Kabaddi", "Taekwondo", "Karate", "Judo"],
-  "Cycling":      ["Athletics", "Swimming", "Triathlon", "Skateboarding", "Marathon/Distance Running"],
-  "Skating":      ["Athletics", "Gymnastics", "Skateboarding", "Surfing"],
-  "Kho-Kho":      ["Kabaddi", "Athletics", "Hockey"],
-  "Mallakhamb":   ["Gymnastics", "Yoga"],
-  "Judo":         ["Wrestling", "Karate", "Taekwondo", "Boxing"],
-  "Taekwondo":    ["Karate", "Boxing", "Judo"],
-  "Karate":       ["Taekwondo", "Boxing", "Judo"],
-  "Fencing":      [],
-  "Archery":      ["Shooting", "Golf"],
-  "Weightlifting":["Powerlifting", "Wrestling"],
-  "Powerlifting": ["Weightlifting", "Wrestling"],
-  "Squash":       ["Badminton", "Table Tennis", "Tennis", "Padel"],
-  "Handball":     ["Basketball", "Volleyball", "Football"],
-  "Netball":      ["Basketball"],
-  "Rugby":        ["Football", "Kabaddi"],
-  "Water Polo":   ["Swimming"],
-  "Diving":       ["Gymnastics", "Swimming"],
-  "Rowing":       ["Swimming", "Athletics"],
-  "Sailing":      [],
-  "Golf":         ["Archery"],
-  "Equestrian":   [],
-  "Skateboarding":["Gymnastics", "Cycling", "Skating"],
-  "Sport Climbing":["Gymnastics"],
-  "Triathlon":    ["Swimming", "Cycling", "Athletics", "Marathon/Distance Running"],
-  "Snooker/Billiards": ["Chess", "Carrom"],
-  "Carrom":       ["Chess", "Snooker/Billiards"],
-  "Baseball":     ["Cricket", "Softball"],
-  "Softball":     ["Cricket", "Baseball"],
-  "Ultimate Frisbee": ["Football", "Basketball"],
-  "Ten-pin Bowling": ["Cricket"],
-  "Yoga":         ["Gymnastics", "Mallakhamb"],
-  "Surfing":      ["Swimming", "Skateboarding"],
-  "Marathon/Distance Running": ["Athletics", "Cycling", "Swimming", "Triathlon"],
-  "Padel":        ["Tennis", "Badminton", "Table Tennis", "Squash"],
+  "Badminton":    ["Table Tennis", "Tennis"],
+  "Table Tennis": ["Badminton", "Tennis"],
+  "Tennis":       ["Badminton", "Table Tennis"],
+  "Basketball":   ["Volleyball", "Football", "Cricket"],
+  "Volleyball":   ["Basketball", "Football"],
+  "Football":     ["Basketball", "Cricket", "Hockey"],
+  "Cricket":      ["Football", "Volleyball"],
+  "Hockey":       ["Football"],
 };
 
 function computePriorSportBonus(priorSports: string[], sport: SportProfile): number {
@@ -576,9 +537,6 @@ function passesHardGates(answers: WizardAnswers, sport: SportProfile): boolean {
   ) return false;
 
   // ── Biological gates ──────────────────────────────────────────────────────
-  // Shooting: limited vision is a federation disqualifier at all levels
-  if (sport.name === "Shooting" && answers.eyesight === "limited") return false;
-
   // Basketball: height lower bound — national/professional + age 13+
   if (
     sport.name === "Basketball" &&
@@ -597,25 +555,6 @@ function passesHardGates(answers: WizardAnswers, sport: SportProfile): boolean {
   ) {
     const minH = answers.gender === "girl" ? 162 : 172;
     if (answers.height < minH) return false;
-  }
-
-  // Gymnastics: height upper bound — competitive+ + age 13+
-  if (
-    sport.name === "Gymnastics" &&
-    answers.ambition !== "fun" &&
-    answers.age && answers.age >= 13 && answers.height &&
-    answers.height > 168
-  ) return false;
-
-  // Gymnastics: heavy build — competitive+ + age 13+
-  if (
-    sport.name === "Gymnastics" &&
-    answers.ambition !== "fun" &&
-    answers.age && answers.age >= 13 &&
-    answers.height && answers.weight
-  ) {
-    const bmi = answers.weight / ((answers.height / 100) ** 2);
-    if (bmi > 22) return false;
   }
 
   return true;
@@ -695,8 +634,9 @@ export function scoreSports(answers: WizardAnswers): SportResult[] {
 
   const top3 = [...top2, ...(third ? [third] : [])].slice(0, 3);
 
-  // Thresholds calibrated empirically against the 50-sport catalog under
-  // absolute scoring: well-matched archetypal profiles land 83-100, weak-signal
+  // Thresholds calibrated empirically under absolute scoring (each sport is
+  // scored independently against a fixed ceiling, so this holds regardless of
+  // catalog size): well-matched archetypal profiles land 83-100, weak-signal
   // (sparse/contradictory answers) profiles land 78-81, and genuinely poor
   // wildcard picks dip into the 60s. 80/60 (carried over from max-normalization,
   // where the #1 pick was always ~100) called almost everything "Strong fit".

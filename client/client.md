@@ -93,4 +93,4 @@ The `client` application communicates exclusively with the `server` project's RE
 - **PhonePe Redirection**: The checkout flow relies on external redirects. If testing locally, PhonePe sandbox callbacks might not reach your local machine without a tunnel (like ngrok).
 
 ## 404 / Not Found
-A custom `src/app/not-found.tsx` renders for unmatched routes, styled to match the client marketing/brand look (Syne heading, power-orange CTAs) with "Back to home" and "Explore venues & coaches" links.
+A custom `src/app/not-found.tsx` renders for unmatched routes, styled to match the client marketing/brand look (font-title heading, power-orange CTAs) with "Back to home" and "Explore venues & coaches" links.

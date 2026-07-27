@@ -199,7 +199,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <PlayerPageHeader
         badge={
-          user?.userType === "Parent" ? "Parent Dashboard" : "Player Dashboard"
+          user?.role === "Parent" ? "Parent Dashboard" : "Player Dashboard"
         }
         title="Dashboard"
         subtitle="Welcome back! Here's what's happening with your activities."

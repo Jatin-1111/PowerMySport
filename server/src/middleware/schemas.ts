@@ -11,18 +11,18 @@ export const registerSchema = z.object({
   acceptedPrivacy: z
     .boolean()
     .refine((value) => value === true, "Privacy Policy must be accepted"),
+  // NOTE: "Player" is a self-registering athlete — a distinct role from
+  // "Parent" (Parent is its own first-class role, not a Player variant).
+  // Both are self-serve — immediately active, no admin review. "Admin" is
+  // intentionally NOT accepted at self-registration — privileged roles must
+  // be provisioned through the admin/verification flows, never self-selected.
+  // EXPERT is self-selectable but goes through an async admin review before
+  // becoming active; Coach/VenueLister self-registration similarly sits
+  // pending until an admin approves.
   role: z
     .enum(["Parent", "Player", "VenueLister", "Coach", "EXPERT"])
     .optional()
-    .default("Player"),
-  // NOTE: "Admin" is intentionally NOT accepted at self-registration. Privileged
-  // roles/types must be provisioned through the admin/verification flows, never
-  // self-selected by the registrant. EXPERT is self-selectable but goes through
-  // an async admin review before becoming active.
-  userType: z
-    .enum(["Parent", "Player", "Coach", "Academy", "VenueLister"])
-    .optional()
-    .default("Player"),
+    .default("Parent"),
 });
 
 export const loginSchema = z.object({

@@ -105,6 +105,7 @@ const getBusyIntervals = async (
   from: Date,
   to: Date,
   excludeSessionId?: string,
+  dbSession?: mongoose.ClientSession,
 ): Promise<Interval[]> => {
   const now = new Date();
   const query: Record<string, unknown> = {
@@ -122,9 +123,11 @@ const getBusyIntervals = async (
   if (excludeSessionId && mongoose.isValidObjectId(excludeSessionId)) {
     query._id = { $ne: new mongoose.Types.ObjectId(excludeSessionId) };
   }
-  const sessions = await ExpertSession.find(query)
-    .select("scheduledAt durationMinutes")
-    .lean();
+  const findQuery = ExpertSession.find(query).select(
+    "scheduledAt durationMinutes",
+  );
+  if (dbSession) findQuery.session(dbSession);
+  const sessions = await findQuery.lean();
   return sessions
     .filter((s) => s.scheduledAt)
     .map((s) => {
@@ -223,6 +226,7 @@ export const assertSlotBookable = async (
   expert: ExpertDocument,
   scheduledAt: Date,
   excludeSessionId?: string,
+  dbSession?: mongoose.ClientSession,
 ): Promise<void> => {
   if (isNaN(scheduledAt.getTime())) throw new Error("Invalid date/time");
   const now = new Date();
@@ -281,6 +285,7 @@ export const assertSlotBookable = async (
     scheduledAt,
     slotEnd,
     excludeSessionId,
+    dbSession,
   );
   if (overlaps(scheduledAt.getTime(), slotEnd.getTime(), busy)) {
     throw new Error("That slot has just been taken — please pick another time");

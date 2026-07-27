@@ -27,6 +27,10 @@ import { useEffect, useRef, useState } from "react";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
+// Kept identical to the GST_REGEX enforced server-side (ExpertsService.ts /
+// Coach model) so a value valid here stays valid there.
+const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
 const DAYS: Array<{ value: number; label: string }> = [
   { value: 0, label: "Sunday" },
   { value: 1, label: "Monday" },
@@ -96,6 +100,11 @@ export default function CoachProfilePage() {
   const [isSavingAbout, setIsSavingAbout] = useState(false);
   const [aboutForm, setAboutForm] = useState({
     bio: "",
+  });
+  const [isEditingTax, setIsEditingTax] = useState(false);
+  const [isSavingTax, setIsSavingTax] = useState(false);
+  const [taxForm, setTaxForm] = useState({
+    gstNumber: "",
   });
   const [isEditingCoaching, setIsEditingCoaching] = useState(false);
   const [isSavingCoaching, setIsSavingCoaching] = useState(false);
@@ -351,6 +360,59 @@ export default function CoachProfilePage() {
       );
     } finally {
       setIsSavingAbout(false);
+    }
+  };
+
+  const handleEditTaxClick = () => {
+    if (!coachProfile) return;
+    setTaxForm({
+      gstNumber: coachProfile.gstNumber || "",
+    });
+    setIsEditingTax(true);
+  };
+
+  const handleSaveTax = async () => {
+    if (!coachProfile) {
+      toast.error("Coach profile not found.");
+      return;
+    }
+
+    const coachId = coachProfile.id || coachProfile._id;
+    if (!coachId) {
+      toast.error("Coach profile id is missing.");
+      return;
+    }
+
+    const nextGst = taxForm.gstNumber.trim().toUpperCase();
+    if (nextGst && !GST_REGEX.test(nextGst)) {
+      toast.error("Enter a valid GST number, or leave it blank.");
+      return;
+    }
+
+    if (nextGst === (coachProfile.gstNumber || "")) {
+      toast.info("No tax detail changes to save.");
+      setIsEditingTax(false);
+      return;
+    }
+
+    try {
+      setIsSavingTax(true);
+      const response = await coachApi.updateProfile(coachId, {
+        gstNumber: nextGst,
+      });
+      if (!response.success || !response.data) {
+        throw new Error(response.message || "Failed to update tax details");
+      }
+
+      setCoachProfile(response.data);
+      setIsEditingTax(false);
+      toast.success("Tax details updated.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update tax details",
+      );
+    } finally {
+      setIsSavingTax(false);
     }
   };
 
@@ -1087,6 +1149,74 @@ export default function CoachProfilePage() {
               ) : (
                 <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
                   {coachProfile.bio || "No bio added yet"}
+                </p>
+              )}
+            </Card>
+
+            <Card className="border border-slate-200 bg-white shadow-sm">
+              <div className="mb-4 flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Tax Details
+                </h3>
+                {!isEditingTax && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleEditTaxClick}
+                    className="w-full sm:w-auto"
+                  >
+                    Edit Tax Details
+                  </Button>
+                )}
+              </div>
+              {isEditingTax ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      GST Number (optional)
+                    </label>
+                    <input
+                      autoCapitalize="characters"
+                      autoComplete="off"
+                      value={taxForm.gstNumber}
+                      maxLength={15}
+                      onChange={(e) =>
+                        setTaxForm({ gstNumber: e.target.value.toUpperCase() })
+                      }
+                      placeholder="e.g. 22AAAAA0000A1Z5"
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">
+                      Only if you&apos;re GST-registered — shown on your
+                      booking invoices.
+                    </p>
+                  </div>
+                  <div className="grid gap-2 sm:flex">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleSaveTax}
+                      loading={isSavingTax}
+                      className="w-full sm:w-auto"
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsEditingTax(false)}
+                      disabled={isSavingTax}
+                      className="w-full sm:w-auto"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-slate-700">
+                  {coachProfile.gstNumber || "No GST number added yet"}
                 </p>
               )}
             </Card>

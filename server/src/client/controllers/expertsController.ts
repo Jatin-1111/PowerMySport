@@ -10,6 +10,7 @@ import {
   reconcileExpertSession,
   scheduleExpertSession,
   completeExpertSession,
+  updateExpertSessionMom,
   reviewExpertSession,
   cancelExpertSession,
   respondToExpertSession,
@@ -36,6 +37,15 @@ import {
 } from "../../utils/email";
 import { Expert } from "../models/ExpertProfile";
 import { User } from "../models/User";
+import { ExpertSession } from "../models/ExpertBooking";
+import {
+  renderInvoicePdf,
+  formatInvoiceDate,
+  type InvoiceData,
+  type InvoiceDetailField,
+} from "../../shared/services/InvoiceService";
+import { guessPlaceOfSupply } from "../../shared/utils/invoiceGst";
+import { extractPhonePePaymentMethodLabel } from "../../shared/utils/paymentMethod";
 
 const fail = (res: Response, error: unknown, code = 400) =>
   res.status(code).json({
@@ -266,6 +276,149 @@ export const getSessionPlayerDetail = async (
   }
 };
 
+/**
+ * Download expert session invoice PDF
+ * GET /experts/sessions/:sessionId/invoice/pdf
+ */
+export const downloadSessionInvoicePdf = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const sessionId = req.params.sessionId as string;
+    const session = await ExpertSession.findById(sessionId);
+    if (!session) {
+      res.status(404).json({ success: false, message: "Session not found" });
+      return;
+    }
+
+    const expert = await Expert.findById(session.expertId).populate(
+      "userId",
+      "name email phone",
+    );
+    const expertUser = expert?.userId as unknown as
+      | { _id: unknown; name?: string }
+      | undefined;
+
+    const isClient = session.userId.toString() === userId;
+    const isExpert = expertUser?._id?.toString() === userId;
+    const isAdmin = req.user?.role === "Admin";
+    if (!isClient && !isExpert && !isAdmin) {
+      res.status(403).json({ success: false, message: "Forbidden" });
+      return;
+    }
+
+    if (session.paymentStatus !== "COMPLETED") {
+      res.status(409).json({
+        success: false,
+        message: "Invoice will be available once payment is confirmed.",
+      });
+      return;
+    }
+
+    const client = await User.findById(session.userId).select(
+      "name email phone",
+    );
+
+    const bookingDate = session.scheduledAt
+      ? new Date(session.scheduledAt)
+      : session.createdAt;
+    const invoiceNumber = `INV-${bookingDate
+      .toISOString()
+      .slice(0, 10)
+      .replace(/-/g, "")}-${session.id.slice(-6).toUpperCase()}`;
+    const sessionRefId = `EXP-${session.id.slice(-6).toUpperCase()}`;
+
+    let dateLabel = "-";
+    let timeLabel = "-";
+    if (session.scheduledAt) {
+      const start = new Date(session.scheduledAt);
+      const end = new Date(
+        start.getTime() + session.durationMinutes * 60000,
+      );
+      const fmtTime = (d: Date) =>
+        d.toLocaleTimeString("en-IN", {
+          timeZone: "Asia/Kolkata",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+      dateLabel = formatInvoiceDate(start);
+      timeLabel = `${fmtTime(start)} — ${fmtTime(end)}`;
+    }
+
+    const sport = expert?.sports?.[0];
+    const expertName = expertUser?.name || "Expert";
+
+    const detailFields: InvoiceDetailField[] = [
+      { label: "Expert", value: expertName },
+      { label: "Sport", value: sport || "-" },
+      {
+        label: "Session mode",
+        value:
+          session.mode === "ONLINE"
+            ? "Online — Video call"
+            : session.mode === "IN_PERSON"
+              ? "In-person"
+              : "-",
+      },
+      { label: "Date", value: dateLabel },
+      { label: "Time (IST)", value: timeLabel },
+      { label: "Session ID", value: sessionRefId, mono: true },
+    ];
+
+    const invoiceData: InvoiceData = {
+      invoiceNumber,
+      issueDate: new Date(),
+      subtitle: "Tax Invoice",
+      billedTo: {
+        name: client?.name || "Customer",
+        email: client?.email || "-",
+        phone: client?.phone || "-",
+      },
+      placeOfSupply:
+        session.mode === "IN_PERSON"
+          ? guessPlaceOfSupply(expert?.inPersonAddress)
+          : "-",
+      detailsSectionTitle: "Session details",
+      detailsBadge: session.status === "COMPLETED" ? "Completed" : "Scheduled",
+      detailFields,
+      lineItems: [
+        {
+          description: `1:1 Expert Guidance Session${sport ? ` — ${sport}` : ""}`,
+          note: `${session.durationMinutes} minutes with ${expertName} · SAC 999293`,
+          qty: 1,
+          rate: session.amount,
+        },
+      ],
+      payment: {
+        method: extractPhonePePaymentMethodLabel(session),
+        merchantOrderId: session.merchantOrderId,
+        transactionId: session.phonepeOrderId,
+        paidAt: session.paidAt,
+      },
+      discountAmount: 0,
+      gstRatePercent: 0,
+      gstAmount: 0,
+      totalAmount: session.amount,
+    };
+
+    const pdfBuffer = await renderInvoicePdf(invoiceData);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${invoiceNumber}.pdf"`,
+    );
+    res.status(200).send(pdfBuffer);
+  } catch (e) {
+    fail(res, e, 500);
+  }
+};
+
 export const scheduleSession = async (
   req: Request,
   res: Response,
@@ -302,8 +455,28 @@ export const completeSession = async (
       sessionId: req.params.sessionId as string,
       actorUserId: userId,
       isAdmin: req.user?.role === "Admin",
+      momNotes: req.body?.momNotes,
     });
     res.json({ success: true, message: "Session completed", data: session });
+  } catch (e) {
+    fail(res, e);
+  }
+};
+
+export const updateSessionMom = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+    const session = await updateExpertSessionMom({
+      sessionId: req.params.sessionId as string,
+      actorUserId: userId,
+      isAdmin: req.user?.role === "Admin",
+      momNotes: req.body?.momNotes,
+    });
+    res.json({ success: true, message: "Notes updated", data: session });
   } catch (e) {
     fail(res, e);
   }

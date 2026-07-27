@@ -70,6 +70,7 @@ export function buildDependentPayload(
     : undefined;
   return {
     ...(name ? { name } : {}),
+    dob: answers.dob ?? undefined,
     age: answers.age ?? undefined,
     gender: genderMap,
     location: answers.state ?? undefined,
@@ -117,6 +118,7 @@ export function buildDependentPayload(
 // without casting.
 export interface WizardSourceProfile {
   age?: number;
+  dob?: string | Date;
   gender?: "MALE" | "FEMALE" | "OTHER";
   location?: string;
   sportsFocus?: string[];
@@ -151,6 +153,7 @@ export interface WizardSourceProfile {
 
 export function prefillFromPlayer(player: WizardSourceProfile): Partial<WizardAnswers> {
   const out: Partial<WizardAnswers> = {};
+  if (player.dob) out.dob = new Date(player.dob).toISOString().slice(0, 10);
   if (player.age) out.age = player.age;
   if (player.gender === "MALE") out.gender = "boy";
   else if (player.gender === "FEMALE") out.gender = "girl";
@@ -228,6 +231,7 @@ export function dependentToWizardAnswers(
   return {
     ...EMPTY_ANSWERS,
     childName,
+    dob: dep.dob ? new Date(dep.dob).toISOString().slice(0, 10) : null,
     age,
     gender: genderMap,
     state: dep.location ?? null,

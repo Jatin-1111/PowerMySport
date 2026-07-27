@@ -1235,7 +1235,14 @@ export const getUserBookings = async (
   const total = await Booking.countDocuments(query);
   const bookings = await Booking.find(query)
     .select("+checkInCode")
-    .populate("venueId coachId")
+    .populate([
+      { path: "venueId" },
+      {
+        path: "coachId",
+        populate: { path: "userId", select: "name email phone" },
+      },
+      { path: "academyId" },
+    ])
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -1348,7 +1355,15 @@ export const getVenueListerBookings = async (
   // Find all bookings for these venues
   const total = await Booking.countDocuments(query);
   const bookings = await Booking.find(query)
-    .populate("userId venueId coachId")
+    .populate([
+      { path: "userId" },
+      { path: "venueId" },
+      {
+        path: "coachId",
+        populate: { path: "userId", select: "name email phone" },
+      },
+      { path: "academyId" },
+    ])
     .sort({ date: -1 })
     .skip(skip)
     .limit(limit);
@@ -1391,7 +1406,15 @@ export const getCoachBookings = async (
 
   const total = await Booking.countDocuments(query);
   const bookings = await Booking.find(query)
-    .populate("userId venueId coachId")
+    .populate([
+      { path: "userId" },
+      { path: "venueId" },
+      {
+        path: "coachId",
+        populate: { path: "userId", select: "name email phone" },
+      },
+      { path: "academyId" },
+    ])
     .sort({ date: -1 })
     .skip(skip)
     .limit(limit);
@@ -2612,10 +2635,11 @@ export const initiateGroupBooking = async (
       }
     }
 
-    // Fetch invitee details
+    // Fetch invitee details (Parent counts as a Player here too, preserving
+    // existing behavior from when both shared role:"Player")
     const invitees = await User.find({
       _id: { $in: payload.invitedFriendIds },
-      role: "Player",
+      role: { $in: ["Player", "Parent"] },
     });
 
     if (invitees.length !== payload.invitedFriendIds.length) {

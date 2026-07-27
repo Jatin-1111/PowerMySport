@@ -127,8 +127,6 @@ export interface User {
   isIdentityPublic?: boolean;
   dob?: string;
   role: UserRole;
-  userType?:
-    "Parent" | "Player" | "Coach" | "VenueLister" | "Admin" | "Academy";
   photoUrl?: string;
   photoS3Key?: string; // S3 key for profile picture
   googleId?: string;
@@ -289,6 +287,8 @@ export interface Coach {
   isVerified?: boolean;
   rating: number;
   reviewCount: number;
+  /** GST number — optional; not every individual coach is GST-registered. */
+  gstNumber?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -324,6 +324,8 @@ export interface Venue {
   allowExternalCoaches: boolean;
   rating?: number;
   reviewCount?: number;
+  /** GST number — optional; not every venue lister is GST-registered. */
+  gstNumber?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -352,12 +354,23 @@ export interface BookingParticipant {
   respondedAt?: string;
 }
 
+export interface AcademyRef {
+  id: string;
+  name: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  gstNumber?: string;
+}
+
 export interface Booking {
   id: string;
   userId: string | User;
   venueId?: string | Venue; // Can be populated
   venue?: Venue; // Populated venue data
   coachId?: string | Coach; // Can be populated
+  academyId?: string | AcademyRef; // Can be populated
   coach?: Coach; // Populated coach data
   sport: string; // Required in backend
   date: string;

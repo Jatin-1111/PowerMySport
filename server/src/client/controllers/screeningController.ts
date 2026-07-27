@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { ScreeningRequest, ScreeningStatus } from "../models/ScreeningRequest";
 
 export async function createScreeningRequest(req: Request, res: Response): Promise<void> {
-  const { dependentName, sport, phone, preferredTime, city } = req.body;
+  const { dependentName, dependentId, sport, phone, preferredTime, city } = req.body;
 
   if (!dependentName || !phone) {
     res.status(400).json({ success: false, message: "Child name and phone number are required." });
@@ -14,6 +15,7 @@ export async function createScreeningRequest(req: Request, res: Response): Promi
     phone: phone.trim(),
   };
   if (req.user?.id) payload.parentId = req.user.id;
+  if (dependentId && mongoose.isValidObjectId(dependentId)) payload.dependentId = dependentId;
   if (sport) payload.sport = sport.trim();
   if (preferredTime) payload.preferredTime = preferredTime.trim();
   if (city) payload.city = city.trim();
@@ -21,6 +23,24 @@ export async function createScreeningRequest(req: Request, res: Response): Promi
   const request = await ScreeningRequest.create(payload);
 
   res.status(201).json({ success: true, data: { id: (request as any)._id } });
+}
+
+/** The logged-in parent's own screening requests — lets the journey UI check for a real booking against a specific child instead of relying only on the "skip" toggle. */
+export async function getMyScreeningRequests(req: Request, res: Response): Promise<void> {
+  if (!req.user?.id) {
+    res.status(401).json({ success: false, message: "Login required." });
+    return;
+  }
+
+  const { dependentId } = req.query;
+  const filter: Record<string, unknown> = { parentId: req.user.id };
+  if (dependentId && mongoose.isValidObjectId(dependentId as string)) {
+    filter.dependentId = dependentId;
+  }
+
+  const requests = await ScreeningRequest.find(filter).sort({ createdAt: -1 }).lean();
+
+  res.json({ success: true, data: { requests } });
 }
 
 export async function getScreeningRequests(req: Request, res: Response): Promise<void> {

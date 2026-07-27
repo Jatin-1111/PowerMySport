@@ -242,7 +242,7 @@ export const runScheduledCleanup = async (): Promise<void> => {
     try {
       const {
         expireUnpaidExpertHolds,
-        autoCompleteExpertSessions,
+        sendExpertMomReminders,
         sendExpertReviewReminders,
         releaseExpertSessionPayouts,
         sendExpertMeetingLinkNudges,
@@ -251,9 +251,9 @@ export const runScheduledCleanup = async (): Promise<void> => {
       const expiredHolds = await expireUnpaidExpertHolds();
       if (expiredHolds > 0)
         console.log(`✅ Expired ${expiredHolds} unpaid expert hold(s)`);
-      const autoCompleted = await autoCompleteExpertSessions();
-      if (autoCompleted > 0)
-        console.log(`✅ Auto-completed ${autoCompleted} expert session(s)`);
+      const momReminders = await sendExpertMomReminders();
+      if (momReminders > 0)
+        console.log(`✅ Sent ${momReminders} session-notes reminder(s)`);
       const reminded = await sendExpertReviewReminders();
       if (reminded > 0)
         console.log(`✅ Sent ${reminded} expert review reminder(s)`);

@@ -75,8 +75,7 @@ export interface RegisterPayload {
   email: string;
   phone: string;
   password: string;
-  role: "Player" | "VenueLister" | "Coach" | "EXPERT";
-  userType?: "Parent" | "Player" | "Coach" | "Academy" | "Admin";
+  role: "Parent" | "Player" | "VenueLister" | "Coach" | "EXPERT";
   acceptedTerms: boolean;
   acceptedPrivacy: boolean;
 }
@@ -596,8 +595,7 @@ export interface GoogleLoginPayload {
   email: string;
   name: string;
   photoUrl?: string;
-  role?: "Player" | "VenueLister" | "Coach";
-  userType?: "Parent" | "Player" | "Coach" | "Academy" | "Admin";
+  role?: "Parent" | "Player" | "VenueLister" | "Coach";
   action?: "login" | "register";
   acceptedTerms?: boolean;
   acceptedPrivacy?: boolean;
@@ -644,8 +642,7 @@ export const googleLogin = async (
         googleId: payload.googleId,
         photoUrl: payload.photoUrl,
         phone: uniquePhoneId, // Unique ID instead of fake phone number
-        role: payload.role || "Player",
-        userType: payload.userType || "Player",
+        role: payload.role || "Parent",
         legalConsents: {
           terms: {
             accepted: true,
@@ -745,7 +742,6 @@ export const graduateDependent = async (
       phone: payload.phone,
       password: payload.password,
       role: "Player",
-      userType: "Player",
     });
     await newUser.save({ session });
 
@@ -868,7 +864,7 @@ export const addDependent = async (
     throw new Error("User not found");
   }
 
-  if (user.role === "Player" && user.userType !== "Parent") {
+  if (user.role === "Player") {
     throw new Error(
       "Only Parent profiles can add dependents. Please upgrade your profile first.",
     );
@@ -1078,8 +1074,6 @@ export interface UpdateProfilePayload {
   email?: string;
   phone?: string;
   dob?: string | Date;
-  userType?:
-    "Parent" | "Player" | "Coach" | "Academy" | "VenueLister" | "Admin";
   parentProfile?: {
     bio?: string;
     sportInterests?: string[];
@@ -1144,17 +1138,12 @@ export const updateProfile = async (
   if (payload.dob) user.dob = new Date(payload.dob);
 
   // Update parent-specific fields
-  if (payload.parentProfile && user.userType === "Parent") {
+  if (payload.parentProfile && user.role === "Parent") {
     const p = payload.parentProfile;
     const parentDoc = user as any;
     if (p.bio !== undefined) parentDoc.bio = p.bio;
     if (p.sportInterests !== undefined) parentDoc.sportInterests = p.sportInterests;
     if (p.involvementYears !== undefined) parentDoc.involvementYears = p.involvementYears;
-  }
-
-  let userTypeToUpdate: any = undefined;
-  if (payload.userType && payload.userType !== user.userType) {
-    userTypeToUpdate = payload.userType;
   }
 
   // Update player profile if provided
@@ -1214,15 +1203,6 @@ export const updateProfile = async (
   }
 
   await user.save();
-
-  if (userTypeToUpdate) {
-    await mongoose.connection
-      .collection("users")
-      .updateOne({ _id: user._id }, { $set: { userType: userTypeToUpdate } });
-    const updatedUser = await User.findById(userId);
-    if (!updatedUser) throw new Error("Failed to refetch updated user");
-    return updatedUser;
-  }
 
   return user;
 };

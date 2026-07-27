@@ -423,7 +423,7 @@ function ProfilePageContent() {
           location: playerProfileForm.location || undefined,
         },
       };
-      if (user?.userType === "Parent") {
+      if (user?.role === "Parent") {
         updatePayload.parentProfile = {
           bio: playerProfileForm.bio.trim() || undefined,
           sportInterests: playerProfileForm.sportInterests,
@@ -486,7 +486,7 @@ function ProfilePageContent() {
     );
   }
 
-  const isParent = user.userType === "Parent";
+  const isParent = user.role === "Parent";
   const sportsCount = user.playerProfile?.sportsFocus?.length ?? 0;
   const dependentsCount = user.dependents?.length ?? 0;
   const userAge = user.dob ? getDependentAge(user.dob) : null;
@@ -501,7 +501,7 @@ function ProfilePageContent() {
       />
 
       <PlayerPageHeader
-        badge={user.userType || "Player"}
+        badge={isParent ? "Parent" : "Player"}
         title="My Profile"
         subtitle="Manage your account details, sports preferences, and family dependents in one place."
       />
@@ -528,7 +528,7 @@ function ProfilePageContent() {
             Account
           </p>
           <p className="mt-1 text-lg font-bold capitalize text-slate-900">
-            {user.userType || user.role.toLowerCase().replace("_", " ")}
+            {user.role.toLowerCase().replace("_", " ")}
           </p>
         </div>
       </div>
@@ -565,7 +565,7 @@ function ProfilePageContent() {
                   {isEditingProfile ? profileForm.name || user.name : user.name}
                 </p>
                 <Badge className="mt-2 border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-50">
-                  {user.userType || user.role.replace("_", " ")}
+                  {user.role.replace("_", " ")}
                 </Badge>
               </div>
             </div>
@@ -661,7 +661,7 @@ function ProfilePageContent() {
                     <div className="sm:col-span-2">
                       <ProfileInfoField label="Account Type">
                         <span className="capitalize">
-                          {user.userType === "Parent"
+                          {isParent
                             ? "Parent"
                             : user.role.toLowerCase().replace("_", " ")}
                         </span>
@@ -1108,7 +1108,7 @@ function ProfilePageContent() {
         </CardContent>
       </Card>
 
-      {(user.userType === "Parent" ||
+      {(isParent ||
         (user.dependents && user.dependents.length > 0)) && (
         <Card className="shop-surface premium-shadow overflow-hidden p-0">
           <ProfileSectionHeader
@@ -1116,7 +1116,7 @@ function ProfilePageContent() {
             title="My Dependents"
             description="Manage children or wards whose bookings you handle."
             action={
-              user.userType === "Parent" ? (
+              isParent ? (
                 <Button
                   onClick={handleAddDependent}
                   size="sm"
@@ -1431,12 +1431,8 @@ function ProfilePageContent() {
                 icon={Users}
                 title="No dependents yet"
                 description="Add a child or ward to manage their bookings, sports, and player profile from your account."
-                actionLabel={
-                  user.userType === "Parent" ? "Add Dependent" : undefined
-                }
-                onAction={
-                  user.userType === "Parent" ? handleAddDependent : undefined
-                }
+                actionLabel={isParent ? "Add Dependent" : undefined}
+                onAction={isParent ? handleAddDependent : undefined}
               />
             )}
           </CardContent>

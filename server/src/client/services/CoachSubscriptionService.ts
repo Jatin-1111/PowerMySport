@@ -259,7 +259,7 @@ export const cancelCoachSubscriptionByUser = async (params: {
   if (params.userId) {
     const userRole = typeof params.userRole === "string" ? params.userRole : "";
 
-    if (userRole === "Player") {
+    if (userRole === "Player" || userRole === "Parent") {
       if (subscription.userId.toString() !== params.userId) {
         throw new Error("You are not authorized to cancel this subscription");
       }
@@ -270,6 +270,13 @@ export const cancelCoachSubscriptionByUser = async (params: {
       if (!coach || coach._id.toString() !== subscription.coachId.toString()) {
         throw new Error("You are not authorized to cancel this subscription");
       }
+    } else {
+      // Any role outside the two ownership shapes we know how to verify
+      // (e.g. VenueLister, Academy, Admin acting without going through the
+      // admin surface) has no legitimate claim to this subscription — the
+      // absence of a matching branch above must never mean "unauthorized
+      // checks skipped", it must mean "deny by default".
+      throw new Error("You are not authorized to cancel this subscription");
     }
   }
 

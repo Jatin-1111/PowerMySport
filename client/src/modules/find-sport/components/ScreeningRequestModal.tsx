@@ -8,10 +8,12 @@ interface Props {
   childName: string;
   sport?: string;
   city?: string;
+  dependentId?: string;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function ScreeningRequestModal({ childName, sport, city, onClose }: Props) {
+export function ScreeningRequestModal({ childName, sport, city, dependentId, onClose, onSuccess }: Props) {
   const [phone, setPhone] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,12 +28,14 @@ export function ScreeningRequestModal({ childName, sport, city, onClose }: Props
     try {
       await api.post("/screenings", {
         dependentName: childName,
+        dependentId,
         sport,
         phone: phone.trim(),
         preferredTime: preferredTime.trim() || undefined,
         city: city || undefined,
       });
       setDone(true);
+      onSuccess?.();
     } catch {
       setError("Something went wrong. Please try WhatsApp instead.");
     } finally {

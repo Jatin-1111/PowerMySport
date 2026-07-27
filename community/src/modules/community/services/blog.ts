@@ -55,6 +55,7 @@ export const blogService = {
     topic?: string;
     tags?: string[];
     content?: string;
+    status?: "DRAFT" | "PUBLISHED";
   }): Promise<BlogDetail> {
     const response = await axiosInstance.post<ApiResponse<BlogDetail>>(
       "/community/blog/posts",
@@ -72,6 +73,7 @@ export const blogService = {
       topic?: string;
       tags?: string[];
       content?: string;
+      status?: "DRAFT" | "PUBLISHED";
     },
   ): Promise<BlogDetail> {
     const response = await axiosInstance.patch<ApiResponse<BlogDetail>>(

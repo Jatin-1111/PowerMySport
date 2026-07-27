@@ -139,12 +139,16 @@ export default function CommunityTopNav() {
           {/* Left section: Back button & Logo */}
           <div className="flex items-center flex-shrink-0">
             {/* ── Logo ──────────────────────────────────────────────────────── */}
-            <a href="/" className="flex flex-col items-start justify-center">
-              <span className="font-title inline-block origin-left scale-x-[0.92] text-[1.1rem] font-extrabold leading-none tracking-tighter lg:text-[1.25rem]">
-                <span className="text-power-orange">Power</span>
-                <span className="text-slate-900">MySport</span>
+            <a
+              href="/"
+              className="inline-flex h-full flex-col items-start justify-center"
+            >
+              <span className="font-title text-2xl font-extrabold tracking-tight leading-none">
+                <span className="text-slate-900">Power</span>
+                <span className="text-power-orange">My</span>
+                <span className="text-slate-900">Sport</span>
               </span>
-              <span className="mt-0.5 pl-[1px] text-[9px] font-black uppercase tracking-[0.3em] text-slate-400/80 leading-none">
+              <span className="mt-1.5 text-[9px] font-medium uppercase leading-none tracking-wider text-slate-400">
                 Community
               </span>
             </a>
@@ -152,10 +156,7 @@ export default function CommunityTopNav() {
 
           {/* ── Desktop Center Nav ────────────────────────────────────────── */}
           <div className="hidden xl:flex flex-1 items-center justify-center gap-0.5 mx-2">
-            <Link
-              href="/"
-              className={navLinkCls(pathname === "/")}
-            >
+            <Link href="/" className={navLinkCls(pathname === "/")}>
               <House size={16} />
               Home
             </Link>
@@ -270,7 +271,6 @@ export default function CommunityTopNav() {
                 )}
               </AnimatePresence>
             </div>
-
           </div>
 
           {/* ── Mobile hamburger ──────────────────────────────────────────── */}

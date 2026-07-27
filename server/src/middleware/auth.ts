@@ -75,6 +75,7 @@ export const authMiddleware = async (
 
     const userRolesNeedingStatusCheck: Array<IUserPayload["role"]> = [
       "Player",
+      "Parent",
       "Coach",
       "VenueLister",
       "Academy",

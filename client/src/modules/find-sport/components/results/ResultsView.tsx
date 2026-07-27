@@ -123,39 +123,39 @@ function buildKeyFindings(answers: WizardAnswers): string[] {
   const findings: string[] = [];
 
   if (answers.energyType === "explosive") {
-    findings.push(`${name} shows explosive, fast-twitch energy — a better fit for sports built around short bursts of power than sustained endurance.`);
+    findings.push(`${name} has explosive, fast-twitch energy — built for short bursts of power, not long grinding effort.`);
   } else if (answers.energyType === "endurance") {
-    findings.push(`${name} shows strong endurance — comfortable sustaining effort over time rather than relying on short bursts.`);
+    findings.push(`${name} has real endurance — built to keep going, not for short bursts.`);
   }
 
   if (answers.teamIndividual !== null) {
     if (answers.teamIndividual >= 4) {
-      findings.push(`A clear preference for individual competition, where the result rests entirely on their own performance.`);
+      findings.push(`Prefers individual competition — wants the result to rest on their own performance alone.`);
     } else if (answers.teamIndividual <= 2) {
-      findings.push(`A clear preference for team environments — responds well to shared effort and collective momentum.`);
+      findings.push(`Prefers team environments — plays better with shared effort and shared momentum.`);
     }
   }
 
   if (answers.pressureResponse === "thrives") {
-    findings.push(`${name} thrives under pressure — competitive, high-stakes moments tend to bring out their best.`);
+    findings.push(`${name} gets better under pressure — big moments bring out their best, not their worst.`);
   } else if (answers.pressureResponse === "avoids") {
-    findings.push(`${name} is more comfortable in lower-pressure settings than in high-stakes, competitive moments.`);
+    findings.push(`${name} plays better without pressure — high-stakes moments work against them, not for them.`);
   }
 
   if (answers.agility === "high") {
-    findings.push(`High agility and flexibility stood out — a real advantage in sports that demand quick footwork and range of motion.`);
+    findings.push(`High agility and flexibility — a real edge in any sport built on quick footwork.`);
   } else if (answers.agility === "low") {
-    findings.push(`Agility scored lower than other traits — strength, strategy, and consistency will count for more than raw quickness.`);
+    findings.push(`Agility isn't the strength here — strategy and consistency matter more than raw speed.`);
   }
 
   if (answers.decisionStyle === "react") {
-    findings.push(`${name} reacts fast and trusts their instincts — well suited to sports that leave little time to overthink.`);
+    findings.push(`${name} reacts fast and trusts instinct — built for sports with no time to think.`);
   } else if (answers.decisionStyle === "strategic") {
-    findings.push(`${name} leans strategic, thinking ahead rather than reacting — suited to sports that reward planning.`);
+    findings.push(`${name} thinks ahead instead of reacting — built for sports that reward planning.`);
   }
 
   if (answers.budget && answers.weeklyHours) {
-    findings.push(`A budget of ${BUDGET_LABEL[answers.budget]} and ${HOURS_LABEL[answers.weeklyHours]} of available time shaped which sports made the cut below.`);
+    findings.push(`${BUDGET_LABEL[answers.budget]} and ${HOURS_LABEL[answers.weeklyHours]} set the real limit on what's realistic below.`);
   }
 
   return findings.slice(0, 5);
@@ -231,6 +231,7 @@ export function ResultsView({
   savedStatus = "idle",
   isLoggedIn = false,
   savedForName,
+  dependentId,
 }: {
   results: SportResult[];
   answers: WizardAnswers;
@@ -238,6 +239,7 @@ export function ResultsView({
   savedStatus?: "idle" | "saving" | "saved" | "error";
   isLoggedIn?: boolean;
   savedForName?: string;
+  dependentId?: string;
 }) {
   const name = answers.childName || "Your child";
   const topResults = results.slice(0, 3);
@@ -332,6 +334,8 @@ export function ResultsView({
       <JourneyPipeline
         childName={name}
         topSport={topResults[0]?.sport.name}
+        dependentId={dependentId}
+        onRetake={onRetake}
       />
 
       {/* What's next — unified dark panel */}

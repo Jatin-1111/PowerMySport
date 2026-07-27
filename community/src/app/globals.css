@@ -34,7 +34,7 @@
     --color-border: var(--border);
     --color-ring: var(--ring);
     --font-sans: var(--font-space-grotesk);
-    --font-title: var(--font-syne);
+    --font-title: var(--font-space-grotesk);
     --font-mono: var(--font-geist-mono);
 }
 
@@ -140,7 +140,7 @@
 
 @layer utilities {
     .font-title {
-        font-family: var(--font-syne), sans-serif;
+        font-family: var(--font-title), sans-serif;
     }
 
     .bg-app {

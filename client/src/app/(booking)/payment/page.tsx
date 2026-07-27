@@ -10,11 +10,38 @@ import { coachApi } from "@/modules/coach/services/coach";
 import { CommunityInsightsCard } from "@/modules/community/components/CommunityInsightsCard";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Booking, CoachSubscriptionPackage } from "@/types";
+import { AcademyRef, Booking, Coach, CoachSubscriptionPackage, Venue } from "@/types";
 import { formatCurrency } from "@/utils/format";
 import { CheckCircle, Clock, XCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+
+const asVenue = (value: Booking["venueId"]): Venue | null => {
+  if (value && typeof value === "object") {
+    return value as Venue;
+  }
+  return null;
+};
+
+const asCoach = (value: Booking["coachId"]): Coach | null => {
+  if (value && typeof value === "object") {
+    return value as Coach;
+  }
+  return null;
+};
+
+const asAcademy = (value: Booking["academyId"]): AcademyRef | null => {
+  if (value && typeof value === "object") {
+    return value as AcademyRef;
+  }
+  return null;
+};
+
+const bookingCoachName = (coach: Coach | null): string | undefined => {
+  if (!coach) return undefined;
+  const user = coach.userId;
+  return user && typeof user === "object" ? user.name : undefined;
+};
 
 function PaymentPageContent() {
   const router = useRouter();
@@ -37,12 +64,14 @@ function PaymentPageContent() {
     useState<CoachSubscriptionPackage | null>(null);
   const [loading, setLoading] = useState(!!bookingId || isSubscriptionPayment);
   const [resolvedStatus, setResolvedStatus] = useState(status);
+  const providerTypeLabel =
+    type === "coach" ? "coach" : type === "academy" ? "academy" : "venue";
+  const providerTypeLabelPlural =
+    type === "coach" ? "coaches" : type === "academy" ? "academies" : "venues";
   const communityUrl = getCommunityAppUrl({
     path: "q",
     searchParams: {
-      q:
-        `${booking?.sport || ""} ${type === "coach" ? "coach" : "venue"}`.trim() ||
-        undefined,
+      q: `${booking?.sport || ""} ${providerTypeLabel}`.trim() || undefined,
       sport: booking?.sport || undefined,
     },
   });
@@ -409,18 +438,40 @@ function PaymentPageContent() {
                     )}
                   </div>
                 )}
-                <div>
-                  <p className="text-xs text-slate-500 uppercase font-semibold">
-                    {type === "coach" ? "Coach" : "Venue"}
-                  </p>
-                  <p className="text-sm font-semibold text-slate-900 mt-1">
-                    {type === "coach"
-                      ? booking.coach?.sports?.[0]
-                        ? `${booking.coach.sports[0]} Coach`
-                        : "Coach"
-                      : booking.venue?.name || "Venue"}
-                  </p>
-                </div>
+                {(() => {
+                  const venue = asVenue(booking.venueId);
+                  const coach = asCoach(booking.coachId);
+                  const academy = asAcademy(booking.academyId);
+                  const label = academy
+                    ? "Academy"
+                    : coach
+                      ? "Coach"
+                      : venue
+                        ? "Venue"
+                        : type === "academy"
+                          ? "Academy"
+                          : type === "coach"
+                            ? "Coach"
+                            : "Venue";
+                  const value = academy
+                    ? academy.name || "Academy"
+                    : coach
+                      ? bookingCoachName(coach) ||
+                        (coach.sports?.[0]
+                          ? `${coach.sports[0]} Coach`
+                          : "Coach")
+                      : venue?.name || label;
+                  return (
+                    <div>
+                      <p className="text-xs text-slate-500 uppercase font-semibold">
+                        {label}
+                      </p>
+                      <p className="text-sm font-semibold text-slate-900 mt-1">
+                        {value}
+                      </p>
+                    </div>
+                  );
+                })()}
                 <div className="border-t border-slate-200"></div>
                 {booking.date && (
                   <div>
@@ -590,7 +641,7 @@ function PaymentPageContent() {
               <CommunityInsightsCard
                 title="Share or ask in community"
                 description="Get tips, find partners, and discuss your upcoming session with local players and coaches."
-                q={`${booking?.sport || ""} ${type === "coach" ? "coach" : "venue"}`}
+                q={`${booking?.sport || ""} ${providerTypeLabel}`}
                 sport={booking?.sport || ""}
                 ctaUrl={communityUrl}
                 enabled
@@ -606,10 +657,10 @@ function PaymentPageContent() {
               <Button
                 variant="outline"
                 onClick={() =>
-                  router.push(type === "coach" ? "/booking?tab=coaches" : "/booking?tab=venues")
+                  router.push(`/booking?tab=${providerTypeLabelPlural}`)
                 }
               >
-                Browse {type === "coach" ? "coaches" : "venues"}
+                Browse {providerTypeLabelPlural}
               </Button>
             </div>
           </Card>

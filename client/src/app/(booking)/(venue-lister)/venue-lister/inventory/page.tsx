@@ -66,6 +66,10 @@ const isValidPhone = (value: string) => {
   return digits.length >= 8 && digits.length <= 15;
 };
 
+// Kept identical to the GST_REGEX enforced server-side (ExpertsService.ts /
+// Venue model) so a value valid here stays valid there.
+const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
 const formatSportLabel = (value: string) =>
   value.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 
@@ -445,6 +449,7 @@ export default function VenueInventoryPage() {
     pricePerHour: "",
     amenities: "",
     description: "",
+    gstNumber: "",
     openingHours: {
       monday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
       tuesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
@@ -765,6 +770,13 @@ export default function VenueInventoryPage() {
         return;
       }
 
+      const gstNumber = formData.gstNumber.trim().toUpperCase();
+      if (gstNumber && !GST_REGEX.test(gstNumber)) {
+        toast.error("Enter a valid GST number, or leave it blank.");
+        setIsSubmitting(false);
+        return;
+      }
+
       if (samePriceForAll) {
         if (basePricePerHour <= 0) {
           toast.error("Please enter a valid base price");
@@ -810,6 +822,7 @@ export default function VenueInventoryPage() {
           : [],
         description: formData.description,
         openingHours: formData.openingHours,
+        gstNumber,
       };
 
       if (formData.location) {
@@ -908,6 +921,7 @@ export default function VenueInventoryPage() {
       pricePerHour: "",
       amenities: "",
       description: "",
+      gstNumber: "",
       openingHours: {
         monday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
         tuesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
@@ -1006,6 +1020,7 @@ export default function VenueInventoryPage() {
       pricePerHour: venue.pricePerHour.toString(),
       amenities: venue.amenities?.join(", ") || "",
       description: venue.description || "",
+      gstNumber: venue.gstNumber || "",
       openingHours: defaultOpeningHours,
     });
     const imageGroups = getVenueImageGroups(venue);
@@ -1359,6 +1374,31 @@ export default function VenueInventoryPage() {
                     </p>
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">
+                      GST Number (optional)
+                    </label>
+                    <input
+                      type="text"
+                      autoCapitalize="characters"
+                      autoComplete="off"
+                      value={formData.gstNumber}
+                      maxLength={15}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          gstNumber: e.target.value.toUpperCase(),
+                        }))
+                      }
+                      placeholder="e.g. 22AAAAA0000A1Z5"
+                      className={getInputClassName(false)}
+                    />
+                    <p className="text-slate-600 text-xs mt-1">
+                      Only if you&apos;re GST-registered — shown on booking
+                      invoices for this venue.
+                    </p>
+                  </div>
+
                   <div className="relative">
                     <label className="block text-sm font-semibold text-slate-900 mb-2">
                       Address <span className="text-red-500">*</span>
@@ -1544,6 +1584,7 @@ export default function VenueInventoryPage() {
                       pricePerHour: prev.pricePerHour,
                       amenities: prev.amenities,
                       description: prev.description,
+                      gstNumber: prev.gstNumber,
                       openingHours: validatedHours,
                     }));
                   }}

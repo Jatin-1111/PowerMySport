@@ -90,8 +90,8 @@ describe("C1 — Google login refuses unverifiable / client-supplied identity", 
   });
 });
 
-// ───────────────────────────── H2: registration role/type ──────────────────
-describe("H2 — registration cannot self-assign privileged role/type", () => {
+// ───────────────────────────── H2: registration role ────────────────────────
+describe("H2 — registration cannot self-assign a privileged role", () => {
   const base = {
     name: "Test User",
     email: "test@example.com",
@@ -101,18 +101,12 @@ describe("H2 — registration cannot self-assign privileged role/type", () => {
     acceptedPrivacy: true,
   };
 
-  it("defaults to PLAYER / Player", () => {
+  it("defaults to Parent", () => {
     const r = registerSchema.safeParse({ ...base });
     assert.equal(r.success, true);
     if (r.success) {
-      assert.equal(r.data.role, "Player");
-      assert.equal(r.data.userType, "Player");
+      assert.equal(r.data.role, "Parent");
     }
-  });
-
-  it('rejects userType "Admin"', () => {
-    const r = registerSchema.safeParse({ ...base, userType: "Admin" });
-    assert.equal(r.success, false);
   });
 
   it('rejects role "Admin"', () => {

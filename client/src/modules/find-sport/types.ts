@@ -3,7 +3,8 @@
 export type WizardAnswers = {
   childName: string;
   // Section A — The Child
-  age: number | null;
+  dob: string | null; // ISO date string (YYYY-MM-DD)
+  age: number | null; // derived from dob — do not collect directly
   gender: "boy" | "girl" | "prefer-not" | null;
   state: string | null;
   priorSports: string[];
@@ -40,6 +41,7 @@ export type WizardAnswers = {
 
 export const EMPTY_ANSWERS: WizardAnswers = {
   childName: "",
+  dob: null,
   age: null,
   gender: null,
   state: null,

@@ -12,6 +12,10 @@ import {
 
 export type PayoutMethodType = "BANK_TRANSFER" | "UPI";
 
+// Matches the GST_REGEX used in ExpertsService.ts / Academy's Step3Legal.tsx —
+// enforces the literal checksum-style "Z" in the 14th character.
+const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
 export interface IPayoutMethod {
   id?: string; // MongoDB ObjectId string for individual payout method
   type: PayoutMethodType;
@@ -76,6 +80,8 @@ export interface CoachDocument extends Document {
    */
   payoutMethods?: IPayoutMethod[];
   blockedDates?: IBlockedDate[];
+  /** GST number — optional; not every individual coach is GST-registered. */
+  gstNumber?: string;
   rating: number;
   reviewCount: number;
   createdAt: Date;
@@ -384,6 +390,20 @@ const coachSchema = new Schema<CoachDocument>(
         updatedAt: { type: Date, default: Date.now },
       },
     ],
+    // GST — not encrypted: a business-registration number, semi-public by
+    // nature, unlike bank details. Matches Expert/Academy's own precedent.
+    gstNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      validate: {
+        validator(v: string) {
+          if (!v) return true; // Optional field
+          return GST_REGEX.test(v);
+        },
+        message: "Invalid GST number format",
+      },
+    },
   },
   {
     timestamps: true,

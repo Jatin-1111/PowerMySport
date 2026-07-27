@@ -7,6 +7,10 @@ import {
   decryptValue,
 } from "../../shared/utils/encryption";
 
+// Matches the GST_REGEX used in ExpertsService.ts / Academy's Step3Legal.tsx —
+// enforces the literal checksum-style "Z" in the 14th character.
+const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
 export interface VenueCoach {
   name: string;
   sport: string;
@@ -55,6 +59,8 @@ export interface VenueDocument extends Document {
    * MIGRATION NOTE: Changed from single payoutMethod to payoutMethods array
    */
   payoutMethods?: IPayoutMethod[];
+  /** GST number — optional; not every venue lister is GST-registered. */
+  gstNumber?: string;
   createdAt: Date;
   updatedAt: Date;
 
@@ -449,6 +455,20 @@ const venueSchema = new Schema<VenueDocument>(
         updatedAt: { type: Date, default: Date.now },
       },
     ],
+    // GST — not encrypted: a business-registration number, semi-public by
+    // nature, unlike bank details. Matches Expert/Academy's own precedent.
+    gstNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      validate: {
+        validator(v: string) {
+          if (!v) return true; // Optional field
+          return GST_REGEX.test(v);
+        },
+        message: "Invalid GST number format",
+      },
+    },
   },
   { timestamps: true },
 );

@@ -140,7 +140,19 @@ export const sendWelcomeEmail = async (
       </ul>
     </div>
     `
-        : options.role === "Coach"
+        : options.role === "Parent"
+          ? `
+    <div class="feature-box">
+      <h3>🧑‍🤝‍🧑 As a Parent, you can:</h3>
+      <ul>
+        <li>Take the sport assessment to find your child's best-fit sports</li>
+        <li>Get a personalised roadmap and expert guidance</li>
+        <li>Book 1:1 sessions with sports experts</li>
+        <li>Track your child's sporting journey over time</li>
+      </ul>
+    </div>
+    `
+          : options.role === "Coach"
           ? `
     <div class="feature-box">
       <h3>🏆 As a Coach, you can:</h3>

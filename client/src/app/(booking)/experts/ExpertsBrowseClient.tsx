@@ -77,7 +77,7 @@ function ExpertAvatar({
 function ExpertCardSkeleton() {
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgb(0,0,0,0.04)]">
-      <Skeleton className="aspect-3/4 w-full rounded-none" />
+      <Skeleton className="aspect-[4/3] w-full rounded-none" />
       <div className="space-y-3 p-5">
         <Skeleton className="h-5 w-2/3" />
         <Skeleton className="h-4 w-1/3" />
@@ -480,7 +480,7 @@ export function ExpertsBrowseClient({
                       aria-label={`View expert profile for ${expert.name || "expert"}`}
                       className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgb(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgb(0,0,0,0.08)]"
                     >
-                      <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
+                      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
                         <ExpertAvatar
                           expert={expert}
                           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -491,74 +491,46 @@ export function ExpertsBrowseClient({
                         </span>
                       </div>
 
-                      <div className="flex flex-1 flex-col p-5">
-                        <h3 className="text-lg font-bold tracking-tight text-slate-900">
+                      <div className="flex flex-1 flex-col p-4">
+                        <h3 className="text-base font-bold tracking-tight text-slate-900">
                           {expert.name || "Sports Expert"}
                         </h3>
 
                         {expert.city && (
-                          <p className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-500">
-                            <MapPin
-                              size={14}
-                              className="shrink-0 text-slate-400"
-                            />
+                          <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+                            <MapPin size={12} className="shrink-0 text-slate-400" />
                             <span className="line-clamp-1">{expert.city}</span>
                           </p>
                         )}
 
-                        <div className="mt-4 flex flex-wrap items-center gap-1.5">
+                        <div className="mt-3 flex flex-wrap items-center gap-1.5">
                           {expert.reviewCount > 0 && (
-                            <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700">
-                              <Star
-                                size={12}
-                                className="fill-amber-400 text-amber-400"
-                              />
+                            <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-bold text-slate-700">
+                              <Star size={11} className="fill-amber-400 text-amber-400" />
                               {expert.rating.toFixed(1)}
-                              <span className="font-normal text-slate-400">
-                                ({expert.reviewCount})
-                              </span>
+                              <span className="font-normal text-slate-400">({expert.reviewCount})</span>
                             </span>
                           )}
-                          <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-power-orange">
+                          <span className="rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-power-orange">
                             {primarySport}
                           </span>
                           {expert.languages && expert.languages.length > 0 && (
-                            <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
-                              <Languages size={11} />
+                            <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600">
+                              <Languages size={10} />
                               {expert.languages[0]}
                             </span>
                           )}
                         </div>
 
-                        <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-500">
-                          {expert.bio?.trim() ||
-                            `Experienced ${primarySport.toLowerCase()} expert available for focused 1:1 guidance sessions.`}
-                        </p>
-
-                        {tags.length > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-1">
-                            {tags.map((t) => (
-                              <span
-                                key={t}
-                                className="rounded-md bg-slate-50 px-1.5 py-0.5 text-[11px] font-medium text-slate-500"
-                              >
-                                {t}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="mt-auto flex items-center justify-between border-t border-slate-50 pt-5">
+                        <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-3">
                           <div className="flex items-baseline gap-1">
-                            <span className="text-xl font-black text-slate-900">
+                            <span className="text-lg font-black text-slate-900">
                               {formatInr(expert.sessionFee)}
                             </span>
-                            <span className="text-sm font-medium text-slate-500">
-                              /session
-                            </span>
+                            <span className="text-xs font-medium text-slate-500">/session</span>
                           </div>
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-600 transition-all group-hover:-rotate-45 group-hover:bg-power-orange group-hover:text-white">
-                            <ArrowRight size={17} strokeWidth={2.5} />
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 text-slate-600 transition-all group-hover:-rotate-45 group-hover:bg-power-orange group-hover:text-white">
+                            <ArrowRight size={16} strokeWidth={2.5} />
                           </div>
                         </div>
                       </div>

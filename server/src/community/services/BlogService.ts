@@ -38,6 +38,7 @@ export interface BlogListItem {
   coverImageUrl: string | null;
   topic: string;
   tags: string[];
+  status: "PUBLISHED" | "DRAFT";
   likeCount: number;
   commentCount: number;
   viewCount: number;
@@ -438,6 +439,9 @@ export const BlogService = {
 
     if (filters?.mine) {
       query.authorId = toObjectId(userId, "user id");
+      // Only the owner's own list includes drafts — never shown to anyone
+      // browsing someone else's posts.
+      query.status = { $in: ["PUBLISHED", "DRAFT"] };
     } else if (filters?.authorId) {
       query.authorId = toObjectId(filters.authorId, "author id");
     }
@@ -486,6 +490,7 @@ export const BlogService = {
       coverImageUrl: coverUrls[index] ?? null,
       topic: post.topic || "General",
       tags: post.tags || [],
+      status: post.status,
       likeCount: post.likeCount || 0,
       commentCount: post.commentCount || 0,
       viewCount: post.viewCount || 0,
@@ -529,8 +534,19 @@ export const BlogService = {
       throw new Error("Blog not found");
     }
 
-    // Fire-and-forget view increment (don't block the read).
-    BlogPost.updateOne({ _id: id }, { $inc: { viewCount: 1 } }).catch(() => {});
+    const isMine = String(post.authorId) === userId;
+    // A draft is only visible to its author — hide its existence entirely
+    // from anyone else rather than leaking a 403 (which would confirm the id
+    // is real).
+    if (post.status === "DRAFT" && !isMine) {
+      throw new Error("Blog not found");
+    }
+
+    // Fire-and-forget view increment (don't block the read) — skip for the
+    // author viewing their own draft, no point counting those.
+    if (!(post.status === "DRAFT" && isMine)) {
+      BlogPost.updateOne({ _id: id }, { $inc: { viewCount: 1 } }).catch(() => {});
+    }
 
     const { buildAuthor } = await buildAuthorMaps([post.authorId]);
     const likedSet = await this.buildLikedSet(userId, "BLOG", [
@@ -548,14 +564,15 @@ export const BlogService = {
       coverImageUrl,
       topic: post.topic || "General",
       tags: post.tags || [],
+      status: post.status,
       likeCount: post.likeCount || 0,
       commentCount: post.commentCount || 0,
-      viewCount: (post.viewCount || 0) + 1,
+      viewCount: (post.viewCount || 0) + (post.status === "DRAFT" && isMine ? 0 : 1),
       likedByMe: likedSet.has(String(post._id)),
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
       content,
-      isMine: String(post.authorId) === userId,
+      isMine,
       author: buildAuthor(String(post.authorId)),
     };
   },
@@ -569,6 +586,7 @@ export const BlogService = {
       topic?: string;
       tags?: string[];
       content?: string;
+      status?: "DRAFT" | "PUBLISHED";
     },
   ): Promise<BlogDetail> {
     await ensureBlogProfile(userId);
@@ -582,7 +600,7 @@ export const BlogService = {
       topic: (payload.topic || "General").trim() || "General",
       tags: normalizeTags(payload.tags),
       content,
-      status: "PUBLISHED",
+      status: payload.status === "DRAFT" ? "DRAFT" : "PUBLISHED",
     });
 
     return this.getBlog(userId, String(post._id));
@@ -598,6 +616,7 @@ export const BlogService = {
       topic?: string;
       tags?: string[];
       content?: string;
+      status?: "DRAFT" | "PUBLISHED";
     },
   ): Promise<BlogDetail> {
     const id = toObjectId(blogId, "blog id");
@@ -627,6 +646,12 @@ export const BlogService = {
       post.excerpt = deriveExcerpt(payload.excerpt, cleaned);
     } else if (typeof payload.excerpt === "string") {
       post.excerpt = payload.excerpt.trim().slice(0, 300);
+    }
+    // Only change status when explicitly given — omitted means "keep as is"
+    // (e.g. a periodic autosave on an already-published post must not
+    // silently pull it back to draft).
+    if (payload.status === "DRAFT" || payload.status === "PUBLISHED") {
+      post.status = payload.status;
     }
 
     await post.save();

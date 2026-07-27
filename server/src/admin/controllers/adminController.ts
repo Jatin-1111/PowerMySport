@@ -2457,7 +2457,10 @@ export const updateVenueAdminHandler = async (
       if (existingUser) {
         if (existingUser.role === "VenueLister") {
           ownerUser = existingUser._id;
-        } else if (existingUser.role === "Player") {
+        } else if (
+          existingUser.role === "Player" ||
+          existingUser.role === "Parent"
+        ) {
           if (!convertExistingUser) {
             res.status(409).json({
               success: false,
@@ -2624,7 +2627,7 @@ export const createCoachAdminHandler = async (
           });
           return;
         }
-      } else if (user.role === "Player") {
+      } else if (user.role === "Player" || user.role === "Parent") {
         if (!convertExistingUser) {
           res.status(409).json({
             success: false,

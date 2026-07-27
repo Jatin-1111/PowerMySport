@@ -1,9 +1,21 @@
 import { Request, Response } from "express";
-import PDFDocument from "pdfkit";
 import { Booking } from "../models/Booking";
 import { Venue } from "../models/Venue";
 import { User } from "../models/User";
+import Academy from "../../admin/models/Academy";
 import { BookingPaymentTransaction } from "../models/BookingPayment";
+import {
+  renderInvoicePdf,
+  formatInvoiceDate as formatInvoiceDateDisplay,
+  type InvoiceData,
+  type InvoiceDetailField,
+  type InvoiceLineItem,
+} from "../../shared/services/InvoiceService";
+import {
+  formatStateWithGstCode,
+  guessPlaceOfSupply,
+} from "../../shared/utils/invoiceGst";
+import { extractPhonePePaymentMethodLabel } from "../../shared/utils/paymentMethod";
 import { WalletService } from "../services/WalletService";
 import {
   cancelBooking,
@@ -178,7 +190,16 @@ export const getBookingById = async (
 
     const booking = await Booking.findById(bookingId)
       .select("+checkInCode")
-      .populate("userId venueId coachId participantId");
+      .populate([
+        { path: "userId" },
+        { path: "venueId" },
+        {
+          path: "coachId",
+          populate: { path: "userId", select: "name email phone" },
+        },
+        { path: "academyId" },
+        { path: "participantId" },
+      ]);
 
     if (!booking) {
       res.status(404).json({
@@ -232,28 +253,14 @@ export const getBookingById = async (
   }
 };
 
-const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(value);
-};
-
-const formatInvoiceDate = (date: Date): string => {
-  return date.toLocaleDateString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-};
-
 const buildInvoiceNumber = (bookingId: string, bookingDate: Date): string => {
   const datePart = bookingDate.toISOString().slice(0, 10).replace(/-/g, "");
   const suffix = bookingId.slice(-6).toUpperCase();
   return `INV-${datePart}-${suffix}`;
 };
+
+const buildRefId = (prefix: string, bookingId: string): string =>
+  `${prefix}-${bookingId.slice(-6).toUpperCase()}`;
 
 const getReferenceId = (value: unknown): string | null => {
   if (!value || typeof value !== "object") return null;
@@ -268,25 +275,7 @@ const formatStatusLabel = (value: string): string =>
     .toLowerCase()
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-const getStatusPalette = (status: string): { fill: string; text: string } => {
-  switch (status) {
-    case "COMPLETED":
-      return { fill: "#DCFCE7", text: "#166534" };
-    case "CONFIRMED":
-      return { fill: "#E0F2FE", text: "#075985" };
-    case "IN_PROGRESS":
-      return { fill: "#FEF3C7", text: "#92400E" };
-    case "CANCELLED":
-    case "NO_SHOW":
-      return { fill: "#FEE2E2", text: "#991B1B" };
-    case "PENDING_INVITES":
-    case "PENDING_CONFIRMATION":
-    default:
-      return { fill: "#FFEDD5", text: "#C2410C" };
-  }
-};
-
-const formatPaymentLabel = (value: string): string =>
+const formatPaymentTypeLabel = (value: string): string =>
   value === "SPLIT" ? "Split payment" : "Single payment";
 
 const formatBookingTypeLabel = (value: string): string =>
@@ -296,22 +285,14 @@ const canGenerateInvoiceForStatus = (status: string): boolean => {
   return ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"].includes(status);
 };
 
-const collectPdfBuffer = async (
-  doc: InstanceType<typeof PDFDocument>,
-): Promise<Buffer> => {
-  const chunks: Buffer[] = [];
-  return new Promise((resolve, reject) => {
-    doc.on("data", (chunk: Buffer | string) =>
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)),
-    );
-    doc.on("end", () => resolve(Buffer.concat(chunks)));
-    doc.on("error", reject);
-    doc.end();
-  });
+const diffMinutes = (startTime: string, endTime: string): number => {
+  const [sh = 0, sm = 0] = startTime.split(":").map(Number);
+  const [eh = 0, em = 0] = endTime.split(":").map(Number);
+  return eh * 60 + em - (sh * 60 + sm);
 };
 
 /**
- * Download booking invoice PDF
+ * Download booking invoice PDF (venue / coach / academy bookings)
  * GET /api/bookings/:bookingId/invoice/pdf
  */
 export const downloadBookingInvoicePdf = async (
@@ -329,7 +310,16 @@ export const downloadBookingInvoicePdf = async (
 
     const booking = await Booking.findById(bookingId)
       .select("+checkInCode")
-      .populate("userId venueId coachId participantId");
+      .populate([
+        { path: "userId" },
+        { path: "venueId" },
+        {
+          path: "coachId",
+          populate: { path: "userId", select: "name email phone" },
+        },
+        { path: "academyId" },
+        { path: "participantId" },
+      ]);
 
     if (!booking) {
       res.status(404).json({ success: false, message: "Booking not found" });
@@ -365,345 +355,171 @@ export const downloadBookingInvoicePdf = async (
 
     const bookingDate = new Date(booking.date);
     const invoiceNumber = buildInvoiceNumber(booking.id, bookingDate);
-    const issueDate = formatInvoiceDate(new Date());
 
     const user = booking.userId as any;
     const venue = booking.venueId as any;
     const coach = booking.coachId as any;
+    const academy = booking.academyId as any;
 
-    const providerName =
-      venue?.name ||
-      (coach ? `${coach.sports?.[0] || "Coach"} Coach` : "Provider");
-    const providerAddress =
-      venue?.address || coach?.ownVenueDetails?.address || "-";
-    const providerGst = venue?.gstNumber || coach?.gstNumber || "-";
+    const kind: "VENUE" | "COACH" | "ACADEMY" = academy
+      ? "ACADEMY"
+      : coach
+        ? "COACH"
+        : "VENUE";
 
     const serviceFee = booking.serviceFee || 0;
     const taxAmount = booking.taxAmount || 0;
     const discountAmount = booking.discountAmount || 0;
-    const subtotal =
+    const baseAmount =
       booking.totalAmount - serviceFee - taxAmount + discountAmount;
-    const discountLabel =
-      discountAmount > 0
-        ? `-${formatCurrency(discountAmount)}`
-        : formatCurrency(0);
+    const subtotalForGst = baseAmount + serviceFee - discountAmount;
+    const gstRatePercent =
+      subtotalForGst > 0 && taxAmount > 0
+        ? Math.round((taxAmount / subtotalForGst) * 100)
+        : 0;
 
-    const doc = new PDFDocument({ size: "A4", margin: 48 });
-    const brand = {
-      slate: "#0F172A",
-      orange: "#E97316",
-      line: "#E2E8F0",
-      text: "#0F172A",
-      muted: "#64748B",
-      soft: "#F8FAFC",
-      white: "#FFFFFF",
-    };
-    const pageLeft = doc.page.margins.left;
-    const pageTop = doc.page.margins.top;
-    const pageWidth =
-      doc.page.width - doc.page.margins.left - doc.page.margins.right;
-    const halfWidth = (pageWidth - 12) / 2;
-    const startY = pageTop;
-    let currentY = startY;
+    const durationMinutes = diffMinutes(booking.startTime, booking.endTime);
 
-    const drawSectionCard = (
-      x: number,
-      y: number,
-      width: number,
-      height: number,
-      title: string,
-    ): void => {
-      doc.save();
-      doc
-        .roundedRect(x, y, width, height, 16)
-        .fillAndStroke(brand.white, brand.line);
-      doc.restore();
-      doc
-        .fillColor(brand.muted)
-        .font("Helvetica-Bold")
-        .fontSize(9)
-        .text(title.toUpperCase(), x + 16, y + 14, {
-          width: width - 32,
-          characterSpacing: 0.8,
-        });
-    };
+    let providerName = "Provider";
+    let providerAddressLines: string[] = [];
+    let providerGst: string | undefined;
+    let placeOfSupply = "-";
+    let itemDescription = "";
+    let itemNote = "";
+    let subtitle = "Tax Invoice";
+    let detailsSectionTitle = "Booking details";
+    let refIdLabel = "Booking ID";
+    let refId = buildRefId("BK", booking.id);
+    let detailLabel = "Venue";
+    let detailValue = "-";
 
-    const drawKeyValue = (
-      x: number,
-      y: number,
-      label: string,
-      value: string,
-      width: number,
-    ): number => {
-      doc
-        .fillColor(brand.muted)
-        .font("Helvetica")
-        .fontSize(8)
-        .text(label, x, y, { width });
-      const valueY = y + 13;
-      doc
-        .fillColor(brand.text)
-        .font("Helvetica-Bold")
-        .fontSize(10)
-        .text(value, x, valueY, { width });
-      return valueY + Math.max(18, doc.heightOfString(value, { width }) + 4);
-    };
+    if (kind === "VENUE") {
+      providerName = venue?.name || "Venue";
+      providerAddressLines = venue?.address ? [venue.address] : [];
+      providerGst = venue?.gstNumber;
+      placeOfSupply = guessPlaceOfSupply(venue?.address);
+      itemDescription = `Court rental — ${venue?.name || "Venue"}`;
+      itemNote = `${durationMinutes} minutes · SAC 999652`;
+      subtitle = "Tax Invoice · Venue booking";
+      detailLabel = "Venue";
+      detailValue = providerName;
+    } else if (kind === "COACH") {
+      const coachUser = coach?.userId as any;
+      const coachName = coachUser?.name || "Coach";
+      providerName = `${coachName} · ${booking.sport}`;
+      const coachAddress = coach?.ownVenueDetails?.address;
+      providerAddressLines = coachAddress ? [coachAddress] : [];
+      providerGst = coach?.gstNumber;
+      placeOfSupply = guessPlaceOfSupply(coachAddress);
+      itemDescription = `Personal coaching session — ${booking.sport}`;
+      itemNote = `${durationMinutes} minutes with ${coachName} · SAC 999293`;
+      subtitle = "Tax Invoice · Coach booking";
+      detailLabel = "Coach";
+      detailValue = coachName;
+    } else {
+      providerName = academy?.name || "Academy";
+      providerAddressLines = [
+        academy?.address,
+        [academy?.city, academy?.state, academy?.pincode]
+          .filter(Boolean)
+          .join(", "),
+      ].filter((line): line is string => Boolean(line));
+      providerGst = academy?.gstNumber;
+      placeOfSupply = academy?.state
+        ? formatStateWithGstCode(academy.state)
+        : guessPlaceOfSupply(academy?.address);
+      itemDescription = `Academy session — ${booking.sport}`;
+      itemNote = `${durationMinutes} minutes · SAC 999293`;
+      subtitle = "Tax Invoice · Academy enrolment";
+      detailsSectionTitle = "Enrolment details";
+      refIdLabel = "Enrolment ID";
+      refId = buildRefId("AC", booking.id);
+      detailLabel = "Academy";
+      detailValue = providerName;
+    }
 
-    const headerHeight = 120;
-    doc.save();
-    doc
-      .roundedRect(pageLeft, currentY, pageWidth, headerHeight, 20)
-      .fill(brand.slate);
-    doc.restore();
-    doc.save();
-    doc.roundedRect(pageLeft, currentY, pageWidth, 10, 20).fill(brand.orange);
-    doc.restore();
-
-    doc
-      .fillColor(brand.white)
-      .font("Helvetica-Bold")
-      .fontSize(24)
-      .text("PowerMySport", pageLeft + 20, currentY + 24, {
-        width: pageWidth - 240,
-      });
-    doc
-      .fillColor("#E2E8F0")
-      .font("Helvetica")
-      .fontSize(10)
-      .text("Booking invoice", pageLeft + 20, currentY + 56);
-    doc
-      .fillColor("#CBD5E1")
-      .font("Helvetica")
-      .fontSize(9)
-      .text(
-        "Premium sports bookings, designed for a clean and reliable checkout experience.",
-        pageLeft + 20,
-        currentY + 72,
-        { width: pageWidth - 260 },
-      );
-
-    const statusPalette = getStatusPalette(booking.status);
-    const statusText = formatStatusLabel(booking.status);
-    const statusChipX = pageLeft + pageWidth - 176;
-
-    doc.save();
-    doc
-      .roundedRect(statusChipX, currentY + 24, 132, 26, 13)
-      .fill(statusPalette.fill);
-    doc.restore();
-    doc
-      .fillColor(statusPalette.text)
-      .font("Helvetica-Bold")
-      .fontSize(9)
-      .text(statusText, statusChipX, currentY + 32, {
-        width: 132,
-        align: "center",
-      });
-
-    doc
-      .fillColor("#CBD5E1")
-      .font("Helvetica")
-      .fontSize(8)
-      .text("Invoice number", statusChipX, currentY + 60, {
-        width: 132,
-        align: "center",
-      });
-    doc
-      .fillColor(brand.white)
-      .font("Helvetica-Bold")
-      .fontSize(10)
-      .text(invoiceNumber, statusChipX, currentY + 73, {
-        width: 132,
-        align: "center",
-      });
-
-    currentY += headerHeight + 16;
-
-    const infoCardHeight = 128;
-    drawSectionCard(pageLeft, currentY, halfWidth, infoCardHeight, "Billed To");
-    drawSectionCard(
-      pageLeft + halfWidth + 12,
-      currentY,
-      halfWidth,
-      infoCardHeight,
-      "Provider",
-    );
-
-    let leftValueY = drawKeyValue(
-      pageLeft + 16,
-      currentY + 32,
-      "Customer",
-      user?.name || "Customer",
-      halfWidth - 32,
-    );
-    leftValueY = drawKeyValue(
-      pageLeft + 16,
-      leftValueY + 6,
-      "Email",
-      user?.email || "-",
-      halfWidth - 32,
-    );
-    drawKeyValue(
-      pageLeft + 16,
-      leftValueY + 6,
-      "Phone",
-      user?.phone || "-",
-      halfWidth - 32,
-    );
-
-    let rightValueY = drawKeyValue(
-      pageLeft + halfWidth + 28,
-      currentY + 32,
-      "Venue / Coach",
-      providerName,
-      halfWidth - 32,
-    );
-    rightValueY = drawKeyValue(
-      pageLeft + halfWidth + 28,
-      rightValueY + 6,
-      "Address",
-      providerAddress,
-      halfWidth - 32,
-    );
-    drawKeyValue(
-      pageLeft + halfWidth + 28,
-      rightValueY + 6,
-      "GST",
-      providerGst,
-      halfWidth - 32,
-    );
-
-    currentY += infoCardHeight + 16;
-
-    const summaryHeight = 164;
-    drawSectionCard(
-      pageLeft,
-      currentY,
-      pageWidth,
-      summaryHeight,
-      "Booking Summary",
-    );
-
-    const summaryItems = [
+    const lineItems: InvoiceLineItem[] = [
       {
-        label: "Date",
-        value: formatInvoiceDate(bookingDate),
+        description: itemDescription,
+        note: itemNote,
+        qty: 1,
+        rate: baseAmount,
+      },
+    ];
+    if (serviceFee > 0) {
+      lineItems.push({
+        description: "Platform convenience fee",
+        note: "Booking engine & payment processing",
+        qty: 1,
+        rate: serviceFee,
+      });
+    }
+
+    const detailFields: InvoiceDetailField[] = [
+      { label: detailLabel, value: detailValue },
+      { label: "Sport", value: booking.sport },
+      { label: "Date", value: formatInvoiceDateDisplay(bookingDate) },
+      {
+        label: "Time (IST)",
+        value: `${booking.startTime} — ${booking.endTime}`,
+      },
+      { label: refIdLabel, value: refId },
+      {
+        label: "Booking type",
+        value: formatBookingTypeLabel(booking.bookingType),
       },
       {
-        label: "Time",
-        value: `${booking.startTime} - ${booking.endTime}`,
-      },
-      {
-        label: "Sport",
-        value: booking.sport,
+        label: "Payment type",
+        value: formatPaymentTypeLabel(booking.paymentType),
       },
       {
         label: "Participant",
         value: booking.participantName || user?.name || "-",
       },
-      {
-        label: "Booking Type",
-        value: formatBookingTypeLabel(booking.bookingType),
-      },
-      {
-        label: "Payment Type",
-        value: formatPaymentLabel(booking.paymentType),
-      },
     ];
 
-    const summaryColWidth = (pageWidth - 48) / 3;
-    summaryItems.forEach((item, index) => {
-      const column = index % 3;
-      const row = Math.floor(index / 3);
-      const x = pageLeft + 16 + column * (summaryColWidth + 8);
-      const y = currentY + 34 + row * 48;
-      doc
-        .fillColor(brand.muted)
-        .font("Helvetica")
-        .fontSize(8)
-        .text(item.label, x, y, { width: summaryColWidth - 8 });
-      doc
-        .fillColor(brand.text)
-        .font("Helvetica-Bold")
-        .fontSize(10)
-        .text(item.value, x, y + 13, { width: summaryColWidth - 8 });
-    });
+    const transaction = await BookingPaymentTransaction.findOne({
+      bookingId: booking._id,
+      status: "COMPLETED",
+    }).sort({ updatedAt: -1 });
 
-    currentY += summaryHeight + 16;
+    const paidAt = transaction?.updatedAt || booking.paymentConfirmedAt;
 
-    const pricingHeight = 150;
-    drawSectionCard(pageLeft, currentY, pageWidth, pricingHeight, "Pricing");
+    const invoiceData: InvoiceData = {
+      invoiceNumber,
+      issueDate: new Date(),
+      subtitle,
+      billedTo: {
+        name: user?.name || "Customer",
+        email: user?.email || "-",
+        phone: user?.phone || "-",
+      },
+      placeOfSupply,
+      serviceProvider: {
+        name: providerName,
+        addressLines: providerAddressLines.length
+          ? providerAddressLines
+          : ["-"],
+        gstin: providerGst,
+      },
+      detailsSectionTitle,
+      detailsBadge: formatStatusLabel(booking.status),
+      detailFields,
+      lineItems,
+      payment: {
+        method: extractPhonePePaymentMethodLabel(transaction),
+        merchantOrderId: transaction?.merchantOrderId || "-",
+        transactionId: transaction?.phonepeOrderId,
+        paidAt,
+      },
+      discountLabel: booking.promoCode,
+      discountAmount,
+      gstRatePercent,
+      gstAmount: taxAmount,
+      totalAmount: booking.totalAmount,
+    };
 
-    const pricingRows = [
-      { label: "Subtotal", value: formatCurrency(subtotal), muted: true },
-      { label: "Platform Fee", value: formatCurrency(serviceFee), muted: true },
-      { label: "Taxes", value: formatCurrency(taxAmount), muted: true },
-      { label: "Discount", value: discountLabel, muted: true },
-    ];
-
-    let pricingY = currentY + 36;
-    pricingRows.forEach((row) => {
-      doc
-        .fillColor(row.muted ? brand.muted : brand.text)
-        .font("Helvetica")
-        .fontSize(9)
-        .text(row.label, pageLeft + 16, pricingY, { width: pageWidth - 120 });
-      doc
-        .fillColor(brand.text)
-        .font(
-          row.label === "Discount" && discountAmount > 0
-            ? "Helvetica-Bold"
-            : "Helvetica",
-        )
-        .fontSize(9)
-        .text(row.value, pageLeft + 16, pricingY, {
-          width: pageWidth - 32,
-          align: "right",
-        });
-      pricingY += 22;
-    });
-
-    doc
-      .moveTo(pageLeft + 16, currentY + 122)
-      .lineTo(pageLeft + pageWidth - 16, currentY + 122)
-      .lineWidth(1)
-      .stroke(brand.line);
-
-    doc
-      .fillColor(brand.text)
-      .font("Helvetica-Bold")
-      .fontSize(11)
-      .text("Total Paid", pageLeft + 16, currentY + 130, {
-        width: pageWidth - 120,
-      });
-    doc
-      .fillColor(brand.orange)
-      .font("Helvetica-Bold")
-      .fontSize(15)
-      .text(
-        formatCurrency(booking.totalAmount),
-        pageLeft + 16,
-        currentY + 126,
-        {
-          width: pageWidth - 32,
-          align: "right",
-        },
-      );
-
-    currentY += pricingHeight + 16;
-
-    doc
-      .fillColor(brand.muted)
-      .font("Helvetica")
-      .fontSize(8)
-      .text(
-        "This is a system generated invoice. For support, reach out to the PowerMySport team.",
-        pageLeft,
-        currentY,
-        { width: pageWidth },
-      );
-
-    const pdfBuffer = await collectPdfBuffer(doc);
+    const pdfBuffer = await renderInvoicePdf(invoiceData);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(

@@ -4,7 +4,7 @@ import { HydrationBoundary } from "@/components/layout/HydrationBoundary";
 import { NumericInputGuard } from "@/components/layout/NumericInputGuard";
 import { FriendSocketProvider } from "@/hooks/useFriendSocket";
 import type { Metadata } from "next";
-import { Geist_Mono, Space_Grotesk, Syne } from "next/font/google";
+import { Geist_Mono, Space_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -14,11 +14,6 @@ const siteDescription =
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
-  subsets: ["latin"],
-});
-
-const syne = Syne({
-  variable: "--font-syne",
   subsets: ["latin"],
 });
 
@@ -110,7 +105,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${spaceGrotesk.variable} ${syne.variable} ${geistMono.variable} antialiased`}
+        className={`${spaceGrotesk.variable} ${geistMono.variable} antialiased`}
       >
         <NumericInputGuard />
         <GuestAnalyticsTracker />

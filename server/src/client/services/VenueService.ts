@@ -3,6 +3,9 @@ import { Venue, VenueDocument } from "../models/Venue";
 import { IGeoLocation } from "../../types/index";
 import { buildSafeSearchRegexSource } from "../../utils/regex";
 
+// Matches the GST_REGEX used in ExpertsService.ts / Venue's own schema validator.
+const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
 const toRadians = (value: number): number => (value * Math.PI) / 180;
@@ -124,6 +127,7 @@ export interface CreateVenuePayload {
   images?: string[];
   allowExternalCoaches?: boolean;
   approvalStatus?: string;
+  gstNumber?: string;
 }
 
 export const createVenue = async (
@@ -348,6 +352,16 @@ export const updateVenue = async (
   for (const field of VENUE_PROTECTED_FIELDS) {
     delete sanitized[field];
   }
+  if (sanitized.gstNumber != null && String(sanitized.gstNumber).trim() !== "") {
+    const gst = String(sanitized.gstNumber).trim().toUpperCase();
+    if (!GST_REGEX.test(gst)) {
+      throw new Error("Invalid GST number format");
+    }
+    sanitized.gstNumber = gst;
+  } else if (sanitized.gstNumber != null) {
+    sanitized.gstNumber = "";
+  }
+
   return Venue.findOneAndUpdate({ _id: id, ownerId }, sanitized, { new: true });
 };
 

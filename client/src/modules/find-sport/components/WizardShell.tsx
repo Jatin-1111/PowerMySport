@@ -10,7 +10,7 @@ import { PRIOR_SPORTS_OPTIONS } from "../data/sportProfiles";
 import type { WizardAnswers } from "../types";
 import { EMPTY_ANSWERS } from "../types";
 import { scoreSports } from "../utils/scorer";
-import { AgeGrid } from "./inputs/AgeGrid";
+import { getDependentAge } from "@/modules/player/utils/dependentAge";
 import { BinaryCards } from "./inputs/BinaryCards";
 import { StateSelector } from "./inputs/StateSelector";
 import { FourContextCards } from "./inputs/FourContextCards";
@@ -26,6 +26,15 @@ import {
   cmToFeetInches,
   prefillFromPlayer,
 } from "../utils/dependentMapping";
+
+// ─── Date-of-birth bounds — mirrors the wizard's supported 4–18 age range ─────
+
+const DOB_BOUNDS = (() => {
+  const today = new Date();
+  const min = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+  const max = new Date(today.getFullYear() - 4, today.getMonth(), today.getDate());
+  return { min: min.toISOString().slice(0, 10), max: max.toISOString().slice(0, 10) };
+})();
 
 // ─── Step sequence definition ─────────────────────────────────────────────────
 
@@ -48,7 +57,7 @@ type Step =
 const STEPS: Step[] = [
   { kind: "welcome" },
   { kind: "name" },
-  { kind: "question", questionKey: "age" },
+  { kind: "question", questionKey: "dob" },
   { kind: "question", questionKey: "gender" },
   { kind: "question", questionKey: "state" },
   { kind: "question", questionKey: "priorSports" },
@@ -220,7 +229,7 @@ function QuestionScreen({
   };
 
   const section: Record<string, string> = {
-    age: "Child", gender: "Child", state: "Child", priorSports: "Child",
+    dob: "Child", gender: "Child", state: "Child", priorSports: "Child",
     sportsInFamily: "Child", peerSports: "Child", informalSports: "Child", informalReaction: "Child",
     height: "Physical", weight: "Physical", energyType: "Physical",
     motorType: "Physical", visualTracking: "Physical",
@@ -234,12 +243,27 @@ function QuestionScreen({
 
   const renderInput = () => {
     switch (questionKey) {
-      case "age":
+      case "dob":
         return (
-          <AgeGrid
-            value={answers.age}
-            onChange={(v) => { onAnswer("age", v); setTimeout(onNext, 200); }}
-          />
+          <div className="space-y-3">
+            <input
+              type="date"
+              value={answers.dob ?? ""}
+              min={DOB_BOUNDS.min}
+              max={DOB_BOUNDS.max}
+              onChange={(e) => {
+                const val = e.target.value || null;
+                onAnswer("dob", val);
+                onAnswer("age", getDependentAge(val));
+              }}
+              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-base focus:outline-none focus:border-power-orange focus:ring-2 focus:ring-power-orange/15"
+            />
+            {answers.dob && answers.age !== null && (
+              <p className="text-sm text-slate-400">
+                That makes {cap} {answers.age} years old.
+              </p>
+            )}
+          </div>
         );
 
       case "gender":
@@ -461,7 +485,7 @@ function QuestionScreen({
             leftLabel="Just me"
             rightLabel="Team, always"
             leftExamples="Tennis, Badminton, Chess"
-            rightExamples="Football, Cricket, Kabaddi"
+            rightExamples="Football, Cricket, Hockey"
           />
         );
 
@@ -662,10 +686,10 @@ function QuestionScreen({
         return (
           <FourContextCards
             options={[
-              { value: "under-3k", label: "Under ₹3,000/month", context: "Covers: chess, kabaddi, athletics, football" },
-              { value: "3k-7k", label: "₹3,000 – ₹7,000/month", context: "Covers: badminton, table tennis, basketball, cricket" },
-              { value: "7k-15k", label: "₹7,000 – ₹15,000/month", context: "Covers: tennis, swimming, gymnastics basics" },
-              { value: "15k-plus", label: "₹15,000+/month", context: "Covers: shooting, top academies, high-performance coaching" },
+              { value: "under-3k", label: "Under ₹3,000/month", context: "Covers: cricket, football, chess, hockey" },
+              { value: "3k-7k", label: "₹3,000 – ₹7,000/month", context: "Covers: badminton, swimming, plus everything above" },
+              { value: "7k-15k", label: "₹7,000 – ₹15,000/month", context: "Covers: tennis — every sport in our list" },
+              { value: "15k-plus", label: "₹15,000+/month", context: "Every sport covered — room for premium academies and coaching" },
             ]}
             value={answers.budget}
             onChange={(v) => { onAnswer("budget", v as WizardAnswers["budget"]); setTimeout(onNext, 200); }}
@@ -719,7 +743,7 @@ function QuestionScreen({
   };
 
   const questions: Partial<Record<string, string>> = {
-    age: `How old is ${name}?`,
+    dob: `What is ${name}'s date of birth?`,
     gender: `Is ${name} a boy or a girl?`,
     state: "Which state are you based in?",
     priorSports: `Has ${name} tried any sport formally before?`,
@@ -751,6 +775,7 @@ function QuestionScreen({
   };
 
   const needsNextButton =
+    questionKey === "dob" ||
     questionKey === "state" ||
     questionKey === "height" ||
     questionKey === "weight" ||
@@ -762,6 +787,7 @@ function QuestionScreen({
     questionKey === "teamIndividual";
 
   const canAdvance = () => {
+    if (questionKey === "dob") return !!answers.dob && answers.age !== null;
     if (questionKey === "priorSports") return true;
     if (questionKey === "sportsInFamily") return true;
     if (questionKey === "peerSports") return true;
@@ -945,7 +971,7 @@ export function WizardShell() {
   const currentSection: string = (() => {
     if (currentStep.kind === "question") {
       const sectionMap: Record<string, string> = {
-        age: "Child", gender: "Child", state: "Child", priorSports: "Child",
+        dob: "Child", gender: "Child", state: "Child", priorSports: "Child",
         sportsInFamily: "Child", peerSports: "Child", informalSports: "Child", informalReaction: "Child",
         height: "Physical", weight: "Physical", energyType: "Physical",
         motorType: "Physical", visualTracking: "Physical", eyesight: "Physical", agility: "Physical",
@@ -1433,9 +1459,10 @@ export function WizardShell() {
                     setAnswer("childName", nameInput.trim());
                     goNext();
                   }}
-                  className="w-full bg-power-orange text-white rounded-xl py-3 text-sm font-semibold hover:bg-power-orange/90 transition-colors"
+                  disabled={!nameInput.trim()}
+                  className="w-full bg-power-orange text-white rounded-xl py-3 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-power-orange/90 transition-colors"
                 >
-                  {nameInput.trim() ? `Continue with ${nameInput.trim()}` : "Skip"}
+                  {nameInput.trim() ? `Continue with ${nameInput.trim()}` : "Enter a name to continue"}
                 </button>
               </div>
             )}
@@ -1468,6 +1495,7 @@ export function WizardShell() {
                 savedStatus={savedStatus}
                 isLoggedIn={!!token}
                 savedForName={savedForName}
+                dependentId={selectedDependentId ?? undefined}
               />
             )}
           </div>

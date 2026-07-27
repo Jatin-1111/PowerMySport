@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Geist_Mono, Space_Grotesk, Syne } from "next/font/google";
+import { Geist_Mono, Space_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
 import CommunityNotificationToastListener from "@/modules/community/components/layout/CommunityNotificationToastListener";
 import CommunityTopNav from "@/modules/community/components/layout/CommunityTopNav";
@@ -8,11 +8,6 @@ import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
-  subsets: ["latin"],
-});
-
-const syne = Syne({
-  variable: "--font-syne",
   subsets: ["latin"],
 });
 
@@ -38,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body
-        className={`${spaceGrotesk.variable} ${syne.variable} ${geistMono.variable} antialiased bg-app text-slate-900 overflow-hidden`}
+        className={`${spaceGrotesk.variable} ${geistMono.variable} antialiased bg-app text-slate-900 overflow-hidden`}
       >
         <div className="flex h-dvh flex-col">
           <Suspense

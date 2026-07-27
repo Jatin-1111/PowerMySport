@@ -8,7 +8,6 @@ export interface UserDocument extends Document {
   email: string;
   phone: string;
   role: UserRole;
-  userType: "Parent" | "Player" | "Coach" | "Academy" | "VenueLister" | "Admin" | "Expert";
   password?: string;
   googleId?: string;
   photoUrl?: string;
@@ -16,6 +15,12 @@ export interface UserDocument extends Document {
   city?: string;
   lastActiveAt?: Date;
   dob?: Date;
+  // Parent-only profile fields — previously lived on the (now-removed)
+  // ParentUser discriminator sub-schema; moved onto the base model since
+  // discriminators were dropped along with userType.
+  bio?: string;
+  sportInterests?: string[];
+  involvementYears?: number;
   legalConsents?: {
     terms?: { accepted: boolean; acceptedAt?: Date; version?: string };
     privacy?: { accepted: boolean; acceptedAt?: Date; version?: string };
@@ -109,11 +114,6 @@ const userSchema = new Schema<UserDocument>(
       ],
       default: "Player",
     },
-    userType: {
-      type: String,
-      enum: ["Parent", "Player", "Coach", "Academy", "VenueLister", "Admin", "Expert"],
-      default: "Player",
-    },
     password: {
       type: String,
       required: function (this: UserDocument) {
@@ -128,6 +128,9 @@ const userSchema = new Schema<UserDocument>(
     city: { type: String, trim: true },
     lastActiveAt: { type: Date, default: Date.now, index: true },
     dob: { type: Date },
+    bio: { type: String, maxlength: 300 },
+    sportInterests: { type: [String], default: [] },
+    involvementYears: { type: Number, min: 0, max: 40 },
     legalConsents: {
       terms: {
         accepted: { type: Boolean, default: false },
@@ -253,7 +256,7 @@ const userSchema = new Schema<UserDocument>(
       country: { type: String, trim: true, default: "IN" },
     },
   },
-  { timestamps: true, discriminatorKey: "userType" },
+  { timestamps: true },
 );
 
 userSchema.pre<UserDocument>("save", async function () {
@@ -292,34 +295,3 @@ userSchema.index({ role: 1, createdAt: -1 });
 userSchema.index({ role: 1, isActive: 1 });
 
 export const User = mongoose.model<UserDocument>("User", userSchema);
-
-// Discriminators for Hierarchical User Collection
-export const ParentUser = User.discriminator(
-  "ParentUser",
-  new Schema({
-    bio: { type: String, maxlength: 300 },
-    sportInterests: { type: [String], default: [] },
-    involvementYears: { type: Number, min: 0, max: 40 },
-  }),
-  "Parent",
-);
-export const PlayerUser = User.discriminator(
-  "PlayerUser",
-  new mongoose.Schema({}),
-  "Player",
-);
-export const CoachUser = User.discriminator(
-  "CoachUser",
-  new Schema({}),
-  "Coach",
-);
-export const AcademyOwnerUser = User.discriminator(
-  "AcademyOwnerUser",
-  new Schema({}),
-  "Academy",
-);
-export const VenueListerUser = User.discriminator(
-  "VenueListerUser",
-  new Schema({}),
-  "VenueLister",
-);

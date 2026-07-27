@@ -7,7 +7,7 @@ export const authApi = {
     email: string;
     phone: string;
     password: string;
-    role: "Player" | "VenueLister" | "Coach" | "Academy";
+    role: "Parent" | "Player" | "VenueLister" | "Coach" | "Academy" | "EXPERT";
     serviceMode?: "OWN_VENUE" | "FREELANCE" | "HYBRID";
     acceptedTerms: boolean;
     acceptedPrivacy: boolean;
@@ -39,7 +39,6 @@ export const authApi = {
     email?: string;
     phone?: string;
     dob?: string | Date;
-    userType?: string;
     parentProfile?: {
       bio?: string;
       sportInterests?: string[];
@@ -100,8 +99,7 @@ export const authApi = {
     // The server verifies this and derives identity from it — we no longer
     // send client-decoded googleId/email (those were forgeable).
     credential: string;
-    role?: "Player" | "VenueLister" | "Coach" | "Academy";
-    userType?: string;
+    role?: "Parent" | "Player" | "VenueLister" | "Coach" | "Academy" | "EXPERT";
     action?: "login" | "register";
     acceptedTerms?: boolean;
     acceptedPrivacy?: boolean;

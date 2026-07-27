@@ -102,6 +102,11 @@ router.get(
   authMiddleware,
   expert.getSessionPlayerDetail,
 );
+router.get(
+  "/sessions/:sessionId/invoice/pdf",
+  authMiddleware,
+  expert.downloadSessionInvoicePdf,
+);
 router.patch(
   "/sessions/:sessionId/schedule",
   expertMutationRateLimiter,
@@ -119,6 +124,12 @@ router.post(
   expertMutationRateLimiter,
   authMiddleware,
   expert.completeSession,
+);
+router.patch(
+  "/sessions/:sessionId/mom",
+  expertMutationRateLimiter,
+  authMiddleware,
+  expert.updateSessionMom,
 );
 router.post(
   "/sessions/:sessionId/respond",

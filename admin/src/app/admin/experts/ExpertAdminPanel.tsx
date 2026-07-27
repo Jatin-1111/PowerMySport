@@ -585,6 +585,11 @@ export function ExpertAdminPanel({
                 value={String(sessions.summary.completed)}
               />
               <SummaryStat
+                label="Awaiting MOM"
+                value={String(sessions.summary.awaitingMom)}
+                warn={sessions.summary.awaitingMom > 0}
+              />
+              <SummaryStat
                 label="Gross earnings"
                 value={formatInr(sessions.summary.grossEarnings)}
               />
@@ -612,6 +617,20 @@ export function ExpertAdminPanel({
                       {formatInr(s.amount)} · {s.status.replace(/_/g, " ")}
                     </span>
                   </div>
+                  {s.awaitingMom && (
+                    <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-amber-700">
+                      <AlertCircle className="h-3 w-3" />
+                      Session ended — awaiting the expert&apos;s notes (MOM)
+                    </p>
+                  )}
+                  {s.momNotes && (
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      <span className="font-semibold text-slate-600">
+                        MOM:
+                      </span>{" "}
+                      {s.momNotes}
+                    </p>
+                  )}
                   {s.reviewed && (
                     <p className="mt-0.5 text-xs text-amber-600">
                       {s.rating}★ {s.reviewHidden ? "(hidden)" : ""}{" "}
@@ -676,11 +695,23 @@ export function ExpertAdminPanel({
   );
 }
 
-function SummaryStat({ label, value }: { label: string; value: string }) {
+function SummaryStat({
+  label,
+  value,
+  warn,
+}: {
+  label: string;
+  value: string;
+  warn?: boolean;
+}) {
   return (
-    <div className="rounded-lg bg-slate-50 p-2.5">
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="font-bold text-slate-900">{value}</p>
+    <div className={`rounded-lg p-2.5 ${warn ? "bg-amber-50" : "bg-slate-50"}`}>
+      <p className={`text-xs ${warn ? "text-amber-700" : "text-slate-500"}`}>
+        {label}
+      </p>
+      <p className={`font-bold ${warn ? "text-amber-800" : "text-slate-900"}`}>
+        {value}
+      </p>
     </div>
   );
 }

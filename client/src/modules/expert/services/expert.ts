@@ -57,6 +57,7 @@ export type ExpertRefundStatus = "NONE" | "REQUIRED" | "MANUAL_DONE";
 
 /** Compact briefing an expert sees for the child a session was booked about. */
 export interface ExpertSessionPlayer {
+  _id?: string;
   name: string;
   age?: number;
   gender?: "MALE" | "FEMALE" | "OTHER";
@@ -98,6 +99,9 @@ export interface ExpertSession {
   expertRespondedAt?: string;
   // Canonical display timezone (the expert's) for scheduledAt.
   expertTimezone?: string;
+  /** The expert's minutes of meeting — required to complete a session, visible to the parent. */
+  momNotes?: string;
+  momAddedAt?: string;
   reviewed: boolean;
   rating?: number;
   review?: string;
@@ -165,39 +169,8 @@ export interface ExpertSessionPlayerDetail {
   wizardCompletedAt?: string;
 }
 
-/** AI-guidance roadmap narrative for the child, if a guidance report was ever generated for them. */
-export interface ExpertSessionGuidance {
-  profileAnalysis?: string;
-  idealCoachingStyle?: string;
-  weeklyBlueprint?: {
-    trainingHours?: string;
-    freePlayHours?: string;
-    restDays?: string;
-  };
-  recommendedSports?: string[];
-  mentalSkillsRoadmap?: {
-    currentFocus?: string;
-    skills?: Array<{ skill?: string; howToDevelop?: string }>;
-  };
-  talentIdentifiers?: string[];
-  multiSportAdvisory?: string;
-  goalAssessment?: {
-    statedGoal?: string;
-    verdict?: "On Track" | "Achievable" | "Ambitious" | "Long-Term";
-    rationale?: string;
-    benchmark?: string;
-  };
-  burnoutRisk?: {
-    level?: "low" | "medium" | "high";
-    message?: string;
-    recommendations?: string[];
-  };
-  createdAt?: string;
-}
-
 export interface ExpertSessionPlayerDetailResponse {
   player: ExpertSessionPlayerDetail;
-  guidance?: ExpertSessionGuidance;
 }
 
 export interface ExpertReview {
@@ -289,6 +262,14 @@ export const expertApi = {
     return res.data;
   },
 
+  downloadSessionInvoicePdf: async (sessionId: string): Promise<Blob> => {
+    const res = await axiosInstance.get(
+      `/experts/sessions/${sessionId}/invoice/pdf`,
+      { responseType: "blob" },
+    );
+    return res.data as Blob;
+  },
+
   // Full child profile + AI guidance narrative — expert-only booking-detail page.
   getSessionPlayerDetail: async (
     sessionId: string,
@@ -323,9 +304,22 @@ export const expertApi = {
 
   completeSession: async (
     sessionId: string,
+    momNotes: string,
   ): Promise<ApiResponse<ExpertSession>> => {
     const res = await axiosInstance.post(
       `/experts/sessions/${sessionId}/complete`,
+      { momNotes },
+    );
+    return res.data;
+  },
+
+  updateSessionMom: async (
+    sessionId: string,
+    momNotes: string,
+  ): Promise<ApiResponse<ExpertSession>> => {
+    const res = await axiosInstance.patch(
+      `/experts/sessions/${sessionId}/mom`,
+      { momNotes },
     );
     return res.data;
   },

@@ -101,6 +101,7 @@ export interface AdminExpertSession {
   status: string;
   paymentStatus: string;
   scheduledAt?: string;
+  durationMinutes?: number;
   mode?: string;
   clientName?: string;
   refundStatus?: "NONE" | "REQUIRED" | "MANUAL_DONE";
@@ -111,6 +112,11 @@ export interface AdminExpertSession {
   rating?: number;
   review?: string;
   reviewHidden?: boolean;
+  /** The expert's minutes of meeting, once the session is COMPLETED. */
+  momNotes?: string;
+  momAddedAt?: string;
+  /** SCHEDULED, past its end time, and still has no MOM — needs follow-up. */
+  awaitingMom?: boolean;
   createdAt: string;
 }
 
@@ -120,6 +126,7 @@ export interface AdminExpertSessionsResult {
     total: number;
     completed: number;
     upcoming: number;
+    awaitingMom: number;
     grossEarnings: number;
     refundsPending: number;
     payoutPending: number;

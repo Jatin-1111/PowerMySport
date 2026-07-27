@@ -65,6 +65,12 @@ function getNotificationLink(notification: Notification): string {
     case "BOOKING_REMINDER":
     case "INVITATION_EXPIRY":
       return "/dashboard";
+    case "SESSION_MOM_ADDED": {
+      const sessionId = data.sessionId as string | undefined;
+      return sessionId ? `/experts/sessions/${sessionId}` : "/experts/sessions";
+    }
+    case "SESSION_MOM_REMINDER":
+      return "/expert/sessions";
     case "PAYMENT_FAILED":
       return "/dashboard";
     case "PAYMENT_REFUND": {

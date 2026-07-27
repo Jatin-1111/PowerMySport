@@ -35,6 +35,7 @@ interface AuthBridgeSession {
   id: string;
   role:
     | "Player"
+    | "Parent"
     | "VenueLister"
     | "Coach"
     | "SUPPORT_ADMIN"
@@ -203,10 +204,10 @@ export const communityService = {
 
   async searchCommunityUsers(
     query: string,
-    filters?: { userType?: string; role?: string },
+    filters?: { role?: string },
   ): Promise<CommunityUserSearchResult[]> {
     const normalizedQuery = query.trim().toLowerCase();
-    const cacheKey = `players:${normalizedQuery}:${filters?.userType || ""}:${filters?.role || ""}`;
+    const cacheKey = `players:${normalizedQuery}:${filters?.role || ""}`;
     return withRequestCache(
       cacheKey,
       async () => {
@@ -224,7 +225,7 @@ export const communityService = {
 
   async searchPlayers(
     query: string,
-    filters?: { userType?: string; role?: string },
+    filters?: { role?: string },
   ): Promise<CommunityUserSearchResult[]> {
     return this.searchCommunityUsers(query, filters);
   },

@@ -8,14 +8,17 @@ import {
 } from "@/modules/expert/services/expert";
 import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
 import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
+import { Modal } from "@/modules/shared/ui/Modal";
 import {
     StaggerContainer,
     StaggerItem,
 } from "@/modules/shared/ui/motion/StaggerContainer";
-import { Check, Star, Target, Users } from "lucide-react";
+import { Check, FileText, Star, Target, Users } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+
+export const MOM_MIN_LENGTH = 20;
 
 export const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
@@ -112,9 +115,23 @@ export function SessionRow({
   const [showDecline, setShowDecline] = useState(false);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [newSlot, setNewSlot] = useState<string | null>(null);
+  const [momOpen, setMomOpen] = useState(false);
+  const [momMode, setMomMode] = useState<"complete" | "edit">("complete");
+  const [momText, setMomText] = useState(session.momNotes || "");
   const id = String(session.id || session._id || "");
   const canManage = ["PAID", "SCHEDULED"].includes(session.status);
   const needsResponse = canManage && session.expertAcceptance !== "ACCEPTED";
+  // Mirrors completeExpertSession's server-side gate: can't complete before the session starts.
+  const sessionStarted = Boolean(
+    session.scheduledAt && new Date(session.scheduledAt) <= new Date(),
+  );
+  // Mirrors cancelExpertSession's server-side gate: can't cancel once it's over.
+  const sessionEnded = Boolean(
+    session.scheduledAt &&
+      new Date(session.scheduledAt).getTime() +
+        (session.durationMinutes || 60) * 60_000 <
+        Date.now(),
+  );
 
   const run = async (
     fn: () => Promise<{
@@ -149,6 +166,28 @@ export function SessionRow({
     }
     await run(() => expertApi.setMeetingLink(id, link.trim()));
     setLinkOpen(false);
+  };
+
+  const openMomDialog = (mode: "complete" | "edit") => {
+    setMomMode(mode);
+    setMomText(mode === "edit" ? session.momNotes || "" : "");
+    setMomOpen(true);
+  };
+
+  const submitMom = async () => {
+    const trimmed = momText.trim();
+    if (trimmed.length < MOM_MIN_LENGTH) {
+      toast.error(
+        `Add at least ${MOM_MIN_LENGTH} characters — summarize what was covered and any next steps.`,
+      );
+      return;
+    }
+    await run(() =>
+      momMode === "complete"
+        ? expertApi.completeSession(id, trimmed)
+        : expertApi.updateSessionMom(id, trimmed),
+    );
+    setMomOpen(false);
   };
 
   const saveReschedule = async () => {
@@ -231,6 +270,27 @@ export function SessionRow({
               <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
               {session.rating}/5{session.review ? ` — "${session.review}"` : ""}
             </p>
+          )}
+          {session.status === "COMPLETED" && (
+            <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                  <FileText className="h-3.5 w-3.5 text-power-orange" />
+                  Session notes (MOM)
+                </p>
+                <button
+                  onClick={() => openMomDialog("edit")}
+                  className="text-xs font-semibold text-power-orange hover:underline"
+                >
+                  Edit
+                </button>
+              </div>
+              {session.momNotes && (
+                <p className="mt-1 text-sm text-slate-600">
+                  {session.momNotes}
+                </p>
+              )}
+            </div>
           )}
         </div>
         <div className="flex flex-col items-end gap-1.5">
@@ -365,19 +425,26 @@ export function SessionRow({
                 {session.meetingLink ? "Edit meeting link" : "Add meeting link"}
               </button>
               <button
-                onClick={() => run(() => expertApi.completeSession(id))}
-                disabled={busy}
+                onClick={() => openMomDialog("complete")}
+                disabled={busy || !sessionStarted}
+                title={
+                  sessionStarted
+                    ? undefined
+                    : "You can complete this session once it has started."
+                }
                 className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
               >
-                Mark complete
+                Add notes &amp; complete
               </button>
-              <button
-                onClick={() => setShowCancel(true)}
-                disabled={busy}
-                className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
-              >
-                Cancel
-              </button>
+              {!sessionEnded && (
+                <button
+                  onClick={() => setShowCancel(true)}
+                  disabled={busy}
+                  className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -408,6 +475,48 @@ export function SessionRow({
         variant="danger"
         loading={busy}
       />
+
+      <Modal
+        isOpen={momOpen}
+        onClose={() => setMomOpen(false)}
+        title={
+          momMode === "complete"
+            ? "Add session notes to complete"
+            : "Edit session notes"
+        }
+        size="md"
+      >
+        <p className="text-sm text-slate-600">
+          {momMode === "complete"
+            ? "Summarize what you covered and any next steps — the parent will see this once the session is complete."
+            : "Update your minutes of meeting for this session."}
+        </p>
+        <textarea
+          rows={6}
+          value={momText}
+          onChange={(e) => setMomText(e.target.value)}
+          placeholder="What did you cover? Any homework or next steps for the player?"
+          className="mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm transition-all focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+        />
+        <p className="mt-1 text-xs text-slate-400">
+          {momText.trim().length}/{MOM_MIN_LENGTH} characters minimum
+        </p>
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            onClick={() => setMomOpen(false)}
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={submitMom}
+            disabled={busy || momText.trim().length < MOM_MIN_LENGTH}
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+          >
+            {momMode === "complete" ? "Complete session" : "Save notes"}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

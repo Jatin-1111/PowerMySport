@@ -186,7 +186,7 @@ export default function DashboardLayout({
   return (
     <DashboardShell
       dashboardLabel={
-        user?.userType === "Parent" ? "Parent Dashboard" : "Player Dashboard"
+        user?.role === "Parent" ? "Parent Dashboard" : "Player Dashboard"
       }
       userName={user?.name}
       navItems={navItems}

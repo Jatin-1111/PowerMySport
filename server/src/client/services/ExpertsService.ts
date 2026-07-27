@@ -1,15 +1,15 @@
 import crypto from "crypto";
 import mongoose from "mongoose";
 import { User } from "../models/User";
-import { Expert } from "../models/ExpertProfile";
+import { Expert, ExpertDocument } from "../models/ExpertProfile";
 import { IPayoutMethod } from "../models/Coach";
 import { Player, PlayerDocument } from "../models/Player";
-import { GuidanceSubmission } from "../models/GuidanceSubmission";
 import {
   ExpertSession,
   ExpertSessionDocument,
   ExpertSessionCanceller,
 } from "../models/ExpertBooking";
+import { BookingSlotLock } from "../models/BookingSlotLock";
 import {
   initiatePhonePePayment,
   getPhonePeOrderStatus,
@@ -112,6 +112,7 @@ const serializeExpertFull = (expert: any) => ({
  * session — the wizard-built profile signals, not the full raw document.
  */
 const summarizePlayerForExpert = (player: PlayerDocument | any) => ({
+  _id: player._id?.toString(),
   name: player.name,
   age: player.age,
   gender: player.gender,
@@ -190,20 +191,6 @@ const serializeFullPlayerForExpert = (player: PlayerDocument | any) => ({
   wizardCompletedAt: player.wizardCompletedAt,
 });
 
-/** AI-guidance roadmap narrative for a child, trimmed to what's useful pre-session. */
-const serializeGuidanceForExpert = (guidance: any) => ({
-  profileAnalysis: guidance.response?.profileAnalysis,
-  idealCoachingStyle: guidance.response?.idealCoachingStyle,
-  weeklyBlueprint: guidance.response?.weeklyBlueprint,
-  recommendedSports: guidance.response?.recommendedSports || [],
-  mentalSkillsRoadmap: guidance.response?.mentalSkillsRoadmap,
-  talentIdentifiers: guidance.response?.talentIdentifiers || [],
-  multiSportAdvisory: guidance.response?.multiSportAdvisory,
-  goalAssessment: guidance.response?.goalAssessment,
-  burnoutRisk: guidance.response?.burnoutRisk,
-  createdAt: guidance.createdAt,
-});
-
 /** Batch-fetches the players referenced by a set of sessions, keyed by playerId string. */
 const fetchPlayerSummariesByIds = async (
   sessions: Array<{ playerId?: mongoose.Types.ObjectId | string }>,
@@ -260,6 +247,8 @@ const serializeSession = (
   expertAcceptance: session.expertAcceptance || "PENDING",
   expertRespondedAt: session.expertRespondedAt,
   completedAt: session.completedAt,
+  momNotes: session.momNotes,
+  momAddedAt: session.momAddedAt,
   payoutStatus: session.payoutStatus || "PENDING",
   payoutPaidAt: session.payoutPaidAt,
   reviewed: session.reviewed,
@@ -740,6 +729,100 @@ const assertExpertOperational = (expert: {
   }
 };
 
+/** Whether a session's scheduled end time has already passed (or it was never scheduled at all). */
+const sessionHasEnded = (session: {
+  scheduledAt?: Date | null;
+  durationMinutes?: number;
+}): boolean => {
+  if (!session.scheduledAt) return false;
+  const end =
+    new Date(session.scheduledAt).getTime() +
+    (session.durationMinutes || 60) * 60_000;
+  return end < Date.now();
+};
+
+// ── Slot-locking (double-booking race prevention) ─────────────────────────────
+// assertSlotBookable's conflict check and the subsequent write aren't atomic
+// on their own — two concurrent requests for the identical expert+time could
+// both read "no conflict" before either write commits. This mirrors the
+// BookingSlotLock mechanism BookingService.ts already uses for venue/coach
+// bookings: acquire a per-slot lock inside a transaction (which serializes
+// concurrent transactions on the same lock document), re-validate, then
+// mutate — all committed together, or none of it.
+
+const MAX_SLOT_LOCK_RETRIES = 3;
+
+const hasErrorLabel = (error: unknown, label: string): boolean => {
+  if (!error || typeof error !== "object") return false;
+  const e = error as { hasErrorLabel?: (value: string) => boolean };
+  return typeof e.hasErrorLabel === "function" ? e.hasErrorLabel(label) : false;
+};
+
+const isRetryableTransactionError = (error: unknown): boolean =>
+  hasErrorLabel(error, "TransientTransactionError") ||
+  hasErrorLabel(error, "UnknownTransactionCommitResult");
+
+/**
+ * Reserve `scheduledAt` for `expert` and run `mutate` — both atomically. Retries
+ * a bounded number of times on transient transaction errors (e.g. a write
+ * conflict from a competing request racing for the same lock document).
+ */
+const withExpertSlotLock = async <T>(
+  expert: ExpertDocument,
+  scheduledAt: Date,
+  excludeSessionId: string | undefined,
+  mutate: (dbSession: mongoose.ClientSession) => Promise<T>,
+): Promise<T> => {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= MAX_SLOT_LOCK_RETRIES; attempt += 1) {
+    const dbSession = await mongoose.startSession();
+    try {
+      let result: T | undefined;
+      await dbSession.withTransaction(async () => {
+        await BookingSlotLock.findOneAndUpdate(
+          {
+            resourceType: "EXPERT_SLOT",
+            resourceId: expert._id,
+            dateKey: scheduledAt.toISOString(),
+          },
+          {
+            $inc: { version: 1 },
+            $set: { lastLockedAt: new Date() },
+          },
+          {
+            upsert: true,
+            new: true,
+            session: dbSession,
+            setDefaultsOnInsert: true,
+          },
+        );
+
+        // Re-validate now that we hold the lock — no concurrent request for
+        // this exact slot can commit ahead of us from this point on.
+        await assertSlotBookable(expert, scheduledAt, excludeSessionId, dbSession);
+
+        result = await mutate(dbSession);
+      });
+      return result as T;
+    } catch (error) {
+      lastError = error;
+      if (
+        !isRetryableTransactionError(error) ||
+        attempt === MAX_SLOT_LOCK_RETRIES
+      ) {
+        throw error;
+      }
+    } finally {
+      await dbSession.endSession();
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Failed to reserve this slot after multiple attempts");
+};
+
 export const initiateExpertSession = async (params: {
   expertId: string;
   userId: string;
@@ -756,7 +839,6 @@ export const initiateExpertSession = async (params: {
   }
 
   const scheduledAt = new Date(params.scheduledAt);
-  await assertSlotBookable(expert, scheduledAt);
 
   // Only attach the player if it's actually one of this parent's own children —
   // silently drop it otherwise rather than failing the whole booking.
@@ -778,20 +860,33 @@ export const initiateExpertSession = async (params: {
         ? "IN_PERSON"
         : "ONLINE";
 
-  const session = await ExpertSession.create({
-    expertId: expert._id,
-    userId: toObjectId(params.userId),
-    ...(playerId ? { playerId } : {}),
-    amount: expert.sessionFee,
-    status: "PENDING_PAYMENT",
-    paymentStatus: "PENDING",
-    merchantOrderId,
+  const session = await withExpertSlotLock(
+    expert,
     scheduledAt,
-    durationMinutes: expert.sessionDurationMinutes || 60,
-    holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60_000),
-    mode: resolvedMode,
-    clientNote: params.clientNote?.trim(),
-  });
+    undefined,
+    async (dbSession) => {
+      const [doc] = await ExpertSession.create(
+        [
+          {
+            expertId: expert._id,
+            userId: toObjectId(params.userId),
+            ...(playerId ? { playerId } : {}),
+            amount: expert.sessionFee,
+            status: "PENDING_PAYMENT",
+            paymentStatus: "PENDING",
+            merchantOrderId,
+            scheduledAt,
+            durationMinutes: expert.sessionDurationMinutes || 60,
+            holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60_000),
+            mode: resolvedMode,
+            clientNote: params.clientNote?.trim(),
+          },
+        ],
+        { session: dbSession },
+      );
+      return doc;
+    },
+  );
 
   const payment = await initiatePhonePePayment({
     merchantOrderId,
@@ -816,6 +911,7 @@ const applyExpertPaymentSuccess = async (
 ): Promise<ExpertSessionDocument> => {
   const wasPaid = session.paymentStatus === "COMPLETED";
   session.paymentStatus = "COMPLETED";
+  if (!wasPaid) session.paidAt = new Date();
   session.set("holdExpiresAt", undefined);
   if (session.status === "PENDING_PAYMENT") {
     session.status = session.scheduledAt ? "SCHEDULED" : "PAID";
@@ -903,12 +999,17 @@ export const scheduleExpertSession = async (params: {
   if (!expert) throw new Error("Expert not found");
 
   const when = new Date(params.scheduledAt);
-  await assertSlotBookable(expert, when, session._id.toString());
-
-  session.scheduledAt = when;
-  session.status = "SCHEDULED";
-  if (params.mode) session.mode = params.mode;
-  await session.save();
+  await withExpertSlotLock(
+    expert,
+    when,
+    session._id.toString(),
+    async (dbSession) => {
+      session.scheduledAt = when;
+      session.status = "SCHEDULED";
+      if (params.mode) session.mode = params.mode;
+      await session.save({ session: dbSession });
+    },
+  );
 
   const expertUserId = (expert.userId as mongoose.Types.ObjectId).toString();
   notify(
@@ -921,10 +1022,29 @@ export const scheduleExpertSession = async (params: {
   return session;
 };
 
+// Minimum length (after trimming) for an expert's minutes-of-meeting text —
+// enough to stop a one-word close-out, not a rigid content requirement.
+const MOM_MIN_LENGTH = 20;
+
+const assertValidMom = (momNotes: unknown): string => {
+  const trimmed = typeof momNotes === "string" ? momNotes.trim() : "";
+  if (trimmed.length < MOM_MIN_LENGTH) {
+    throw new Error(
+      `Minutes of meeting must be at least ${MOM_MIN_LENGTH} characters — summarize what was covered and any next steps.`,
+    );
+  }
+  return trimmed;
+};
+
+/**
+ * Complete a session. Requires minutes of meeting (MOM) — a session cannot be
+ * marked COMPLETED without them, so the parent always has notes to read.
+ */
 export const completeExpertSession = async (params: {
   sessionId: string;
   actorUserId: string;
   isAdmin?: boolean;
+  momNotes: string;
 }) => {
   const session = await ExpertSession.findById(params.sessionId);
   if (!session) throw new Error("Session not found");
@@ -940,18 +1060,59 @@ export const completeExpertSession = async (params: {
   if (!["PAID", "SCHEDULED"].includes(session.status)) {
     throw new Error("Session cannot be completed from its current state");
   }
+  if (
+    !params.isAdmin &&
+    (!session.scheduledAt || session.scheduledAt > new Date())
+  ) {
+    throw new Error(
+      "You can only complete a session once it has started.",
+    );
+  }
+  const momNotes = assertValidMom(params.momNotes);
+  const now = new Date();
   session.status = "COMPLETED";
-  session.completedAt = new Date();
+  session.completedAt = now;
+  session.momNotes = momNotes;
+  session.momAddedAt = now;
   await session.save();
 
   notify(
     session.userId,
-    "REVIEW_REMINDER",
-    "How was your session?",
-    "Your expert session is complete. Leave a rating and feedback to help others.",
+    "SESSION_MOM_ADDED",
+    "Session notes are ready",
+    "Your expert session is complete and your expert's notes (minutes of meeting) are ready to read. Leave a rating and feedback too.",
     { sessionId: session._id.toString() },
     true,
   );
+  return session;
+};
+
+/**
+ * Let the expert revise their MOM after completion — no lock, since notes
+ * are commonly refined after the fact (e.g. fixing a typo, adding a detail).
+ */
+export const updateExpertSessionMom = async (params: {
+  sessionId: string;
+  actorUserId: string;
+  isAdmin?: boolean;
+  momNotes: string;
+}) => {
+  const session = await ExpertSession.findById(params.sessionId);
+  if (!session) throw new Error("Session not found");
+  if (!params.isAdmin) {
+    const expert = await Expert.findById(session.expertId).select(
+      "userId isActive verificationStatus",
+    );
+    if (!expert || expert.userId.toString() !== params.actorUserId) {
+      throw new Error("Only the expert or an admin can edit these notes");
+    }
+    assertExpertOperational(expert);
+  }
+  if (session.status !== "COMPLETED") {
+    throw new Error("Notes can only be edited on a completed session");
+  }
+  session.momNotes = assertValidMom(params.momNotes);
+  await session.save();
   return session;
 };
 
@@ -1043,6 +1204,11 @@ export const respondToExpertSession = async (params: {
   }
 
   if (params.action === "DECLINE") {
+    if (!params.isAdmin && sessionHasEnded(session)) {
+      throw new Error(
+        "This session already took place and can no longer be declined.",
+      );
+    }
     const declinedAt = new Date();
     session.status = "CANCELLED";
     session.cancelledAt = declinedAt;
@@ -1078,12 +1244,18 @@ export const respondToExpertSession = async (params: {
   if (!params.scheduledAt)
     throw new Error("A new time is required to reschedule");
   const when = new Date(params.scheduledAt);
-  await assertSlotBookable(expert, when, session._id.toString());
-  session.scheduledAt = when;
-  session.status = "SCHEDULED";
-  session.expertAcceptance = "ACCEPTED";
-  session.expertRespondedAt = new Date();
-  await session.save();
+  await withExpertSlotLock(
+    expert,
+    when,
+    session._id.toString(),
+    async (dbSession) => {
+      session.scheduledAt = when;
+      session.status = "SCHEDULED";
+      session.expertAcceptance = "ACCEPTED";
+      session.expertRespondedAt = new Date();
+      await session.save({ session: dbSession });
+    },
+  );
   notify(
     session.userId,
     "BOOKING_STATUS_UPDATED",
@@ -1114,6 +1286,16 @@ export const cancelExpertSession = async (params: {
   if (session.status === "COMPLETED")
     throw new Error("A completed session cannot be cancelled");
   if (session.status === "CANCELLED") return session;
+  // Once a session has actually taken place, cancelling it would auto-flag a
+  // refund below — that's only safe before the session happens. Without an
+  // auto-complete job, a session can otherwise sit SCHEDULED past its end
+  // time (awaiting the expert's MOM), which would make it cancellable —
+  // and refundable — well after the fact. Admin keeps override for disputes.
+  if (!isAdmin && sessionHasEnded(session)) {
+    throw new Error(
+      "This session already took place and can no longer be cancelled. Contact support if it didn't actually happen.",
+    );
+  }
 
   const by: ExpertSessionCanceller = isAdmin
     ? "ADMIN"
@@ -1364,15 +1546,8 @@ export const getExpertSessionPlayerDetail = async (params: {
   const player = await Player.findById(session.playerId).lean();
   if (!player) throw new Error("Player profile not found");
 
-  const guidance = await GuidanceSubmission.findOne({
-    "request.dependent_id": session.playerId,
-  })
-    .sort({ createdAt: -1 })
-    .lean();
-
   return {
     player: serializeFullPlayerForExpert(player),
-    guidance: guidance ? serializeGuidanceForExpert(guidance) : undefined,
   };
 };
 
@@ -1404,10 +1579,11 @@ export const listExpertOwnSessions = async (expertUserId: string) => {
   const tz = (expert as any).timezone || "Asia/Kolkata";
   const sessions = await ExpertSession.find({
     expertId: expert._id,
-    // Hide holds the client never actually paid for — these were never a
-    // real booking from the expert's point of view, just noise. Sessions a
-    // person (client/expert/admin) cancelled are always kept.
-    $nor: [{ status: "CANCELLED", cancelledBy: "SYSTEM" }],
+    // Only show sessions the client actually paid for — an unpaid hold
+    // (PENDING_PAYMENT) or a failed payment was never a real booking from
+    // the expert's point of view, just noise. A session cancelled after
+    // payment succeeded is still shown (paymentStatus stays COMPLETED).
+    paymentStatus: "COMPLETED",
   })
     .populate("userId", "name")
     .sort({ createdAt: -1 })
@@ -1446,19 +1622,32 @@ export const getExpertSessionsForAdmin = async (expertId: string) => {
     .filter((s) => s.payoutStatus === "PAID")
     .reduce((sum, s) => sum + (s.amount || 0), 0);
   const playerSummaries = await fetchPlayerSummariesByIds(sessions);
+  const now = Date.now();
+  // A SCHEDULED session whose end time has passed and still has no MOM —
+  // it can no longer auto-complete, so this is the admin escalation signal.
+  const isAwaitingMom = (s: (typeof sessions)[number]) => {
+    if (s.status !== "SCHEDULED" || !s.scheduledAt) return false;
+    const end =
+      new Date(s.scheduledAt).getTime() + (s.durationMinutes || 60) * 60_000;
+    return end < now;
+  };
   return {
     sessions: sessions.map((s) => {
       const u = s.userId as unknown as { name?: string; email?: string } | null;
-      return serializeSession(s, {
-        clientName: u?.name || "Client",
-        expertTimezone: tz,
-        player: s.playerId ? playerSummaries.get(s.playerId.toString()) : undefined,
-      });
+      return {
+        ...serializeSession(s, {
+          clientName: u?.name || "Client",
+          expertTimezone: tz,
+          player: s.playerId ? playerSummaries.get(s.playerId.toString()) : undefined,
+        }),
+        awaitingMom: isAwaitingMom(s),
+      };
     }),
     summary: {
       total: sessions.length,
       completed: sessions.filter((s) => s.status === "COMPLETED").length,
       upcoming: sessions.filter((s) => s.status === "SCHEDULED").length,
+      awaitingMom: sessions.filter(isAwaitingMom).length,
       grossEarnings,
       refundsPending,
       payoutPending,
@@ -1587,30 +1776,49 @@ export const expireUnpaidExpertHolds = async (): Promise<number> => {
 };
 
 /** Auto-complete scheduled sessions whose end time has passed. */
-export const autoCompleteExpertSessions = async (): Promise<number> => {
+// Grace period after a session's end time before the expert gets nudged —
+// generous since the cleanup job itself only polls every 15–60 minutes.
+const MOM_REMINDER_GRACE_MS = 2 * 60 * 60_000;
+// Re-nudge cadence once a session is overdue for MOM (not one-shot — a
+// session can sit SCHEDULED indefinitely now that nothing auto-completes it).
+const MOM_REMINDER_REPEAT_MS = 24 * 60 * 60_000;
+
+/**
+ * Nudge experts whose SCHEDULED session has ended but still has no MOM, so
+ * it never gets marked COMPLETED. Repeats every MOM_REMINDER_REPEAT_MS until
+ * the expert submits notes — there is no time-based auto-complete anymore.
+ */
+export const sendExpertMomReminders = async (): Promise<number> => {
   const now = new Date();
   const candidates = await ExpertSession.find({
     status: "SCHEDULED",
-    scheduledAt: { $lte: now },
-  }).select("_id scheduledAt durationMinutes userId");
+    scheduledAt: { $exists: true },
+  }).select("_id expertId scheduledAt durationMinutes momReminderSentAt");
   let count = 0;
   for (const s of candidates) {
     const end = new Date(
       new Date(s.scheduledAt as Date).getTime() +
         (s.durationMinutes || 60) * 60_000,
     );
-    if (end > now) continue;
+    if (now.getTime() - end.getTime() < MOM_REMINDER_GRACE_MS) continue;
+    const lastSent = s.momReminderSentAt
+      ? new Date(s.momReminderSentAt).getTime()
+      : 0;
+    if (now.getTime() - lastSent < MOM_REMINDER_REPEAT_MS) continue;
+
     const updated = await ExpertSession.findOneAndUpdate(
-      { _id: s._id, status: "SCHEDULED" },
-      { $set: { status: "COMPLETED", autoCompleted: true, completedAt: now } },
+      { _id: s._id, status: "SCHEDULED", momReminderSentAt: s.momReminderSentAt },
+      { $set: { momReminderSentAt: now } },
     );
-    if (updated) {
-      count += 1;
+    if (!updated) continue;
+    count += 1;
+    const expertUserId = await expertUserIdOf(s.expertId);
+    if (expertUserId) {
       notify(
-        s.userId,
-        "REVIEW_REMINDER",
-        "How was your session?",
-        "Your expert session is complete. Leave a rating and feedback to help others.",
+        expertUserId,
+        "SESSION_MOM_REMINDER",
+        "Add your session notes to complete this session",
+        "A session of yours has ended but isn't marked complete yet — add your minutes of meeting to close it out. The parent is waiting to see your notes.",
         { sessionId: s._id.toString() },
         true,
       );

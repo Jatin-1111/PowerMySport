@@ -46,18 +46,22 @@ export class FriendService {
       throw new Error("Cannot send friend request to yourself");
     }
 
-    // Check if recipient exists and is a PLAYER
+    // Check if recipient exists and is a PLAYER (Parent counts too — both
+    // used to share role:"Player", this preserves that existing behavior)
     const recipient = await User.findById(recipientId);
     if (!recipient) {
       throw new Error("User not found");
     }
-    if (recipient.role !== "Player") {
+    if (recipient.role !== "Player" && recipient.role !== "Parent") {
       throw new Error("Can only send friend requests to players");
     }
 
-    // Check if requester is a PLAYER
+    // Check if requester is a PLAYER (Parent counts too, same as above)
     const requester = await User.findById(requesterId);
-    if (!requester || requester.role !== "Player") {
+    if (
+      !requester ||
+      (requester.role !== "Player" && requester.role !== "Parent")
+    ) {
       throw new Error("Only players can send friend requests");
     }
 

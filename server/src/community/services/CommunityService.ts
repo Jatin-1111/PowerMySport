@@ -1104,11 +1104,10 @@ export const CommunityService = {
     userId: string,
     query: string,
     limit = 10,
-    userTypeFilter?: string,
     roleFilter?: string,
   ) {
     const normalizedQuery = query.trim();
-    if (!normalizedQuery && !userTypeFilter && !roleFilter) {
+    if (!normalizedQuery && !roleFilter) {
       return [];
     }
 
@@ -1119,9 +1118,6 @@ export const CommunityService = {
       _id: { $ne: userId },
       role: roleFilter ? roleFilter : { $in: COMMUNITY_ALLOWED_ROLES },
     };
-    if (userTypeFilter) {
-      userMatchCriteria.userType = userTypeFilter;
-    }
     if (normalizedQuery) {
       userMatchCriteria.name = new RegExp(escapeRegex(normalizedQuery), "i");
     }
@@ -1162,7 +1158,7 @@ export const CommunityService = {
 
     const [users, profiles] = await Promise.all([
       User.find({ _id: { $in: ids }, role: { $in: COMMUNITY_ALLOWED_ROLES } })
-        .select("_id name photoUrl photoS3Key role userType city dob")
+        .select("_id name photoUrl photoS3Key role city dob")
         .lean(),
       CommunityProfile.find({ userId: { $in: ids } })
         .select("userId anonymousAlias isIdentityPublic blockedUsers")
@@ -1203,7 +1199,6 @@ export const CommunityService = {
             displayName,
             isIdentityPublic,
             role: user.role,
-            userType: (user as any).userType || "Player",
             photoUrl: null,
             city: typeof user.city === "string" ? user.city.trim() : null,
             age: calculateAge(user.dob),
@@ -1238,7 +1233,7 @@ export const CommunityService = {
     const [targetUser, targetProfile] = await Promise.all([
       User.findById(targetUserId)
         .select(
-          "_id name photoUrl photoS3Key role userType dob city createdAt lastActiveAt",
+          "_id name photoUrl photoS3Key role dob city createdAt lastActiveAt",
         )
         .lean(),
       CommunityProfile.findOne({ userId: targetUserId })
@@ -1281,7 +1276,6 @@ export const CommunityService = {
     return {
       id: String(targetUser._id),
       role: targetUser.role,
-      userType: (targetUser as any).userType || "Player",
       displayName: isIdentityPublic
         ? targetUser.name
         : profile.anonymousAlias || "Anonymous Member",

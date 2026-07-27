@@ -11,10 +11,11 @@ import { Card } from "@/modules/shared/ui/Card";
 import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
-import { Booking } from "@/types";
+import { AcademyRef, Booking, Coach } from "@/types";
 import { formatDate, formatTime, formatTimestampTime } from "@/utils/format";
 import {
   Award,
+  Building2,
   Calendar,
   CalendarX,
   CheckCircle2,
@@ -37,7 +38,25 @@ interface PaginationInfo {
   totalPages: number;
 }
 
-type TabType = "venues" | "coaches";
+type TabType = "venues" | "coaches" | "academies";
+
+const asAcademy = (value: Booking["academyId"]): AcademyRef | null => {
+  if (value && typeof value === "object") {
+    return value as AcademyRef;
+  }
+  return null;
+};
+const asCoach = (value: Booking["coachId"]): Coach | null => {
+  if (value && typeof value === "object") {
+    return value as Coach;
+  }
+  return null;
+};
+const coachName = (coach: Coach | null): string | undefined => {
+  if (!coach) return undefined;
+  const user = coach.userId;
+  return user && typeof user === "object" ? user.name : undefined;
+};
 const canViewInvoice = (status: Booking["status"]): boolean => {
   return ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"].includes(status);
 };
@@ -259,10 +278,17 @@ export default function BookingsPage() {
   };
 
   // Filter bookings by type
-  const venueBookings = bookings.filter((b) => b.venueId && !b.coachId);
-  const coachBookings = bookings.filter((b) => b.coachId);
+  const venueBookings = bookings.filter(
+    (b) => b.venueId && !b.coachId && !b.academyId,
+  );
+  const coachBookings = bookings.filter((b) => b.coachId && !b.academyId);
+  const academyBookings = bookings.filter((b) => b.academyId);
   const filteredBookings =
-    activeTab === "venues" ? venueBookings : coachBookings;
+    activeTab === "venues"
+      ? venueBookings
+      : activeTab === "coaches"
+        ? coachBookings
+        : academyBookings;
 
   // Stats
   const confirmedCount = bookings.filter(
@@ -412,6 +438,31 @@ export default function BookingsPage() {
                   </span>
                 </div>
               </button>
+              <button
+                onClick={() => {
+                  setActiveTab("academies");
+                  setCurrentPage(1);
+                }}
+                className={`flex-1 border-b-2 px-3 py-4 font-semibold transition-colors sm:border-b-2 sm:border-l sm:px-6 ${
+                  activeTab === "academies"
+                    ? "border-power-orange bg-orange-50/50 text-power-orange"
+                    : "border-transparent text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <div
+                    className={`flex h-7 w-7 items-center justify-center rounded-lg ${activeTab === "academies" ? "bg-power-orange text-white" : "bg-slate-100 text-slate-500"}`}
+                  >
+                    <Building2 className="h-4 w-4" />
+                  </div>
+                  <span className="text-sm sm:text-base">Academy Bookings</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold sm:text-xs ${activeTab === "academies" ? "bg-power-orange/10 text-power-orange" : "bg-teal-100/70 text-teal-700"}`}
+                  >
+                    {academyBookings.length}
+                  </span>
+                </div>
+              </button>
             </div>
           </Card>
 
@@ -419,19 +470,35 @@ export default function BookingsPage() {
           {filteredBookings.length === 0 ? (
             <Card className="shop-surface premium-shadow">
               <EmptyState
-                icon={activeTab === "venues" ? MapPin : Award}
+                icon={
+                  activeTab === "venues"
+                    ? MapPin
+                    : activeTab === "coaches"
+                      ? Award
+                      : Building2
+                }
                 title={`No ${activeTab} bookings`}
                 description={
                   activeTab === "venues"
                     ? "You haven't booked any venues yet."
-                    : "You haven't booked any coaches yet."
+                    : activeTab === "coaches"
+                      ? "You haven't booked any coaches yet."
+                      : "You haven't booked any academy sessions yet."
                 }
                 actionLabel={
-                  activeTab === "venues" ? "Browse Venues" : "Find a Coach"
+                  activeTab === "venues"
+                    ? "Browse Venues"
+                    : activeTab === "coaches"
+                      ? "Find a Coach"
+                      : "Browse Academies"
                 }
                 onAction={() =>
                   (window.location.href =
-                    activeTab === "venues" ? "/venues" : "/coaches")
+                    activeTab === "venues"
+                      ? "/venues"
+                      : activeTab === "coaches"
+                        ? "/coaches"
+                        : "/booking?tab=academies")
                 }
               />
             </Card>
@@ -492,25 +559,73 @@ export default function BookingsPage() {
                         ) : null}
 
                         {/* Coach Booking */}
-                        {activeTab === "coaches" && booking.coach ? (
-                          <>
-                            <div className="mb-1 inline-flex items-center gap-2 text-base font-bold text-slate-900">
-                              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100">
-                                <Award className="h-4 w-4 text-purple-600" />
-                              </div>
-                              {booking.coach.sports?.[0] || "Coach"} Coach
-                            </div>
-                            <p className="mb-2 text-sm text-slate-500">
-                              Service:{" "}
-                              <span className="font-medium text-slate-700">
-                                {booking.coach.serviceMode === "FREELANCE"
-                                  ? "Freelance"
-                                  : booking.coach.serviceMode === "OWN_VENUE"
-                                    ? "Own Venue"
-                                    : "Hybrid"}
-                              </span>
+                        {activeTab === "coaches" && asCoach(booking.coachId) ? (
+                          (() => {
+                            const coach = asCoach(booking.coachId)!;
+                            return (
+                              <>
+                                <div className="mb-1 inline-flex items-center gap-2 text-base font-bold text-slate-900">
+                                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100">
+                                    <Award className="h-4 w-4 text-purple-600" />
+                                  </div>
+                                  {coachName(coach) || coach.sports?.[0] || "Coach"}
+                                </div>
+                                <p className="mb-2 text-sm text-slate-500">
+                                  Service:{" "}
+                                  <span className="font-medium text-slate-700">
+                                    {coach.serviceMode === "FREELANCE"
+                                      ? "Freelance"
+                                      : coach.serviceMode === "OWN_VENUE"
+                                        ? "Own Venue"
+                                        : "Hybrid"}
+                                  </span>
+                                </p>
+                              </>
+                            );
+                          })()
+                        ) : activeTab === "coaches" ? (
+                          <div className="mb-2">
+                            <h3 className="text-base font-bold text-slate-900">
+                              Coach details pending
+                            </h3>
+                            <p className="text-sm text-slate-500">
+                              We'll show the full coach profile once the
+                              details are resolved.
                             </p>
-                          </>
+                          </div>
+                        ) : null}
+
+                        {/* Academy Booking */}
+                        {activeTab === "academies" ? (
+                          (() => {
+                            const academy = asAcademy(booking.academyId);
+                            const academyAddress = academy
+                              ? [
+                                  academy.address,
+                                  academy.city,
+                                  academy.state,
+                                  academy.pincode,
+                                ]
+                                  .filter(Boolean)
+                                  .join(", ")
+                              : "";
+                            return (
+                              <>
+                                <div className="mb-1 inline-flex items-center gap-2 text-base font-bold text-slate-900">
+                                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-100">
+                                    <Building2 className="h-4 w-4 text-teal-600" />
+                                  </div>
+                                  {academy?.name || "Academy"}
+                                </div>
+                                {academyAddress && (
+                                  <p className="mb-2 flex items-center gap-2 text-sm text-slate-500">
+                                    <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                                    {academyAddress}
+                                  </p>
+                                )}
+                              </>
+                            );
+                          })()
                         ) : null}
 
                         {/* Common Details */}

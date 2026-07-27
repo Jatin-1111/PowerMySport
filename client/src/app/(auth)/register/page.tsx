@@ -25,6 +25,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useState } from "react";
 
+// Player (Athlete) self-registration is self-serve — immediately active, no
+// admin review, same as Parent. Coach carries the same "early access" badge
+// as Expert: both self-register and sit pending admin review/approval rather
+// than becoming active immediately.
 const ROLE_OPTIONS = [
   {
     value: "Parent" as const,
@@ -43,6 +47,7 @@ const ROLE_OPTIONS = [
     label: "Coach",
     desc: "Offer training services",
     Icon: Target,
+    badge: "Early access",
   },
   {
     value: "Expert" as const,
@@ -58,12 +63,18 @@ function RegisterContent() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || null;
   const { user, setUser, setToken, setLoading } = useAuthStore();
+  // Pre-select the role card from a `?role=` link (e.g. the footer's "Become
+  // a Coach" → /register?role=Coach) when it matches an available option.
+  const roleParam = searchParams.get("role");
+  const preselectedUserType =
+    ROLE_OPTIONS.find((r) => r.value.toLowerCase() === roleParam?.toLowerCase())
+      ?.value ?? "Parent";
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
     password: "",
-    userType: "Player" as "Parent" | "Player" | "Coach" | "Expert",
+    userType: preselectedUserType as "Parent" | "Player" | "Coach" | "Expert",
     serviceMode: "OWN_VENUE" as "OWN_VENUE" | "FREELANCE" | "HYBRID",
     acceptedTerms: false,
     acceptedPrivacy: false,
@@ -74,7 +85,7 @@ function RegisterContent() {
 
   useEffect(() => {
     if (user) {
-      if (user.userType === "Parent") {
+      if (user.role === "Parent") {
         router.push("/assessment");
       } else if (user.role === "Player") {
         router.push("/dashboard/my-bookings");
@@ -134,9 +145,9 @@ function RegisterContent() {
     setIsSubmitting(true);
     setLoading(true);
     try {
-      const roleMap: Record<string, string> = { Coach: "Coach", Expert: "EXPERT" };
-      const payload = { ...formData, role: roleMap[formData.userType] || "Player" };
-      // @ts-ignore - The API expects role, we derived it from userType
+      const roleMap = { Parent: "Parent", Player: "Player", Coach: "Coach", Expert: "EXPERT" } as const;
+      const { userType, ...rest } = formData;
+      const payload = { ...rest, role: roleMap[userType] };
       const response = await authApi.register(payload);
       if (response.success && response.data) {
         setToken(response.data.token);
@@ -147,7 +158,7 @@ function RegisterContent() {
         }
         if (redirectTo) {
           router.push(redirectTo);
-        } else if (formData.userType === "Parent") {
+        } else if (response.data.user.role === "Parent") {
           router.push("/assessment");
         } else if (response.data.user.role === "Coach") {
           router.push("/coach/verification");
@@ -190,12 +201,10 @@ function RegisterContent() {
         toast.error("No credential received from Google");
         return;
       }
-      const googleRoleMap: Record<string, string> = { Coach: "Coach", Expert: "EXPERT" };
-      const googleRole = (googleRoleMap[formData.userType] || "Player") as any;
+      const googleRoleMap = { Parent: "Parent", Player: "Player", Coach: "Coach", Expert: "EXPERT" } as const;
       const response = await authApi.googleLogin({
         credential: credentialResponse.credential,
-        role: googleRole,
-        userType: formData.userType as any,
+        role: googleRoleMap[formData.userType],
         action: "register",
         acceptedTerms: formData.acceptedTerms,
         acceptedPrivacy: formData.acceptedPrivacy,
@@ -207,7 +216,7 @@ function RegisterContent() {
         if (formData.userType === "Coach") {
           localStorage.setItem("coachServiceMode", formData.serviceMode);
         }
-        if (formData.userType === "Parent") {
+        if (response.data.user.role === "Parent") {
           router.push("/assessment");
         } else if (response.data.user.role === "Coach") {
           router.push("/coach/verification");
