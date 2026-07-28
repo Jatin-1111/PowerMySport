@@ -2,9 +2,10 @@ import mongoose, { Document, Schema } from "mongoose";
 
 /**
  * A dated instance ("edition") of a real tournament — e.g. the August 2026
- * running of the AITA Talent Series — extracted by the Lane-A calendar
- * pipeline (tournamentCalendarService) from official federation calendar
- * pages listed in the tournament source registry.
+ * running of the AITA Talent Series. Populated via the admin-managed data
+ * source review flow (see DataSourceExtractionService.ts /
+ * dataSourceAdminController.ts) — an admin submits a link or PDF, AI extracts
+ * candidate editions, and an admin approves before they land here.
  *
  * Distinct from the evergreen Tournament collection (one row per series,
  * fuzzy typicalDates) so multiple dated editions of the same event can

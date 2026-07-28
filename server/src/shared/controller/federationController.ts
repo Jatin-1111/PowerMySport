@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { Federation } from "../models/Federation";
 import { Tournament } from "../models/Tournament";
+import { TournamentEdition } from "../models/TournamentEdition";
 
 const fail = (res: Response, error: unknown, code = 400) =>
   res.status(code).json({
@@ -71,17 +72,24 @@ export const getFederationTournaments = async (
       return;
     }
 
-    // Filter by both sportSlug and the federation acronym embedded in each tournament.
-    // Falls back to sport-only if no tournaments match the acronym filter (e.g. legacy data).
+    // Prefer the hard federationSlug reference; fall back to matching the
+    // denormalized acronym snapshot (tournaments approved before that field
+    // existed), then to sport-wide if neither yields anything (legacy data).
     const baseFilter: Record<string, unknown> = {
       sportSlug: fed.sportSlug,
       isCurated: true,
     };
+    const slugFilter = { ...baseFilter, federationSlug: slug.toLowerCase() };
     const acronymFilter = { ...baseFilter, "federation.acronym": fed.acronym };
 
-    // Use acronym filter when it yields results, else fall back to sport-wide
-    const acronymCount = await Tournament.countDocuments(acronymFilter);
-    const filter: Record<string, unknown> = acronymCount > 0 ? acronymFilter : baseFilter;
+    const slugCount = await Tournament.countDocuments(slugFilter);
+    let filter: Record<string, unknown>;
+    if (slugCount > 0) {
+      filter = slugFilter;
+    } else {
+      const acronymCount = await Tournament.countDocuments(acronymFilter);
+      filter = acronymCount > 0 ? acronymFilter : baseFilter;
+    }
 
     if (level && typeof level === "string") {
       (filter as any).level = { $regex: new RegExp(level, "i") };
@@ -115,6 +123,58 @@ export const getFederationTournaments = async (
         },
       },
     });
+  } catch (err) {
+    fail(res, err, 500);
+  }
+};
+
+/**
+ * GET /api/federations/:slug/editions?limit=50
+ * Upcoming dated tournament editions for this federation's sport, populated
+ * via the admin data-source review flow (TOURNAMENT_CALENDAR submissions in
+ * DataSourceExtractionService.ts / dataSourceAdminController.ts). Editions
+ * are keyed by sportSlug only (not a specific federation), so this is the
+ * sport-wide calendar, not filtered to this federation's own events.
+ */
+export const getFederationEditions = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const slug = typeof req.params.slug === "string" ? req.params.slug : "";
+    const { limit = "50" } = req.query;
+
+    const fed = await Federation.findOne({ slug: slug.toLowerCase() })
+      .select("sportSlug")
+      .lean();
+    if (!fed) {
+      res.status(404).json({ success: false, message: "Federation not found." });
+      return;
+    }
+
+    // Generous ceiling on purpose: the client renders a month-navigated
+    // calendar, so a low cap silently truncates the far months rather than
+    // paginating. High-volume sports need it — chess alone has ~285 upcoming
+    // editions and tennis ~109, and a cap of 100 hid everything past October.
+    const limitNum = Math.min(400, Math.max(1, parseInt(limit as string, 10) || 200));
+    const startOfToday = new Date();
+    startOfToday.setUTCHours(0, 0, 0, 0);
+
+    const editions = await TournamentEdition.find({
+      sportSlug: fed.sportSlug,
+      startDate: { $gte: startOfToday },
+      status: { $ne: "cancelled" },
+    })
+      .sort({ startDate: 1 })
+      .limit(limitNum)
+      .lean();
+
+    const lastCheckedAt = editions.reduce<Date | null>(
+      (latest, e) => (!latest || e.lastCheckedAt > latest ? e.lastCheckedAt : latest),
+      null,
+    );
+
+    res.json({ success: true, data: { editions, lastCheckedAt } });
   } catch (err) {
     fail(res, err, 500);
   }

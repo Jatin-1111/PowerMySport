@@ -382,6 +382,52 @@ export class S3Service {
     };
   }
 
+  /**
+   * Generate presigned upload URL for an admin-submitted federation/tournament
+   * data source (PDF). Same shape as generateCoachVerificationUploadUrl — the
+   * downloadUrl here is only ever used server-side to fetch bytes for Gemini
+   * extraction, never written into a user-facing sourceUrls field (it expires
+   * in 7 days).
+   * @param fileName - Original file name
+   * @param contentType - MIME type (expected: application/pdf)
+   * @param sportSlug - Sport slug for folder organization
+   */
+  async generateDataSourceUploadUrl(
+    fileName: string,
+    contentType: string,
+    sportSlug: string,
+  ): Promise<UploadUrlResponse> {
+    const fileExtension = this.resolveSafeExtension(fileName, contentType);
+    const sanitizedFileName = `${Date.now()}.${fileExtension}`;
+    const key = `federation-sources/${sportSlug}/${sanitizedFileName}`;
+
+    const putCommand = new PutObjectCommand({
+      Bucket: this.documentsBucket,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const uploadUrl = await getSignedUrl(this.s3Client, putCommand, {
+      expiresIn: 3600,
+    });
+
+    const getCommand = new GetObjectCommand({
+      Bucket: this.documentsBucket,
+      Key: key,
+    });
+
+    const downloadUrl = await getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: 604800,
+    });
+
+    return {
+      uploadUrl,
+      downloadUrl,
+      fileName: sanitizedFileName,
+      key,
+    };
+  }
+
   async generateCoachVenueImageUploadUrl(
     fileName: string,
     contentType: string,
@@ -632,6 +678,44 @@ export class S3Service {
     });
 
     await this.s3Client.send(deleteCommand);
+  }
+
+  /**
+   * Fetch an object's raw bytes from the documents bucket. Used server-side
+   * to feed uploaded PDFs to Gemini for extraction — deliberately reads the
+   * object directly rather than round-tripping through a presigned download
+   * URL.
+   * @param key - S3 object key
+   * @param maxSizeBytes - Reject (throw) if the object is larger than this
+   */
+  async getDocumentBuffer(
+    key: string,
+    maxSizeBytes = 15 * 1024 * 1024,
+  ): Promise<Buffer> {
+    const getCommand = new GetObjectCommand({
+      Bucket: this.documentsBucket,
+      Key: key,
+    });
+    const response = await this.s3Client.send(getCommand);
+    if (
+      typeof response.ContentLength === "number" &&
+      response.ContentLength > maxSizeBytes
+    ) {
+      throw new Error(
+        `Document is too large (${response.ContentLength} bytes, max ${maxSizeBytes})`,
+      );
+    }
+    const chunks: Buffer[] = [];
+    for await (const chunk of response.Body) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    const buffer = Buffer.concat(chunks);
+    if (buffer.byteLength > maxSizeBytes) {
+      throw new Error(
+        `Document is too large (${buffer.byteLength} bytes, max ${maxSizeBytes})`,
+      );
+    }
+    return buffer;
   }
 
   /**

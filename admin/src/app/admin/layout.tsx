@@ -10,6 +10,7 @@ import {
   Building2,
   Calendar,
   CheckCircle,
+  Database,
   Gavel,
   LayoutDashboard,
   LifeBuoy,
@@ -73,6 +74,7 @@ const NAV_BADGE_KEYS: Record<string, keyof PendingCounts> = {
   "/admin/support-tickets": "supportTickets",
   "/admin/concierge-requests": "conciergeRequests",
   "/admin/webhook-recovery": "webhookErrors",
+  "/admin/data-sources": "dataSourcesPending",
 };
 
 const getNavBadgeCount = (
@@ -221,6 +223,11 @@ export default function AdminLayout({
             href: "/admin/screenings",
             label: "Screenings",
             icon: Stethoscope,
+          },
+          {
+            href: "/admin/data-sources",
+            label: "Data Sources",
+            icon: Database,
           },
         ],
       },

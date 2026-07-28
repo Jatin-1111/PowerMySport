@@ -407,6 +407,114 @@ const SEED_DATA = [
     dataVerifiedAt: new Date("2026-07-10"),
     isActive: true,
   },
+
+  // ─── BAI ──────────────────────────────────────────────────────────────────────
+  {
+    slug: "bai",
+    name: "Badminton Association of India",
+    acronym: "BAI",
+    sportSlug: "badminton",
+    type: "national" as const,
+    about:
+      "The Badminton Association of India (BAI) is the national governing body for badminton in India, founded in 1934 and affiliated with the Badminton World Federation (BWF). BAI has run the National Badminton Championships since 1936 and today organises India's full domestic competitive calendar — from age-group ranking tournaments to the Senior National Championship — as well as India's flagship international events (the India Open, a BWF Super 500, and the Syed Modi India International). BAI also selects and fields India's teams for the Thomas Cup, Uber Cup, Commonwealth Games, and Asian Games. Competitive players register through their State Badminton Association, which is affiliated to BAI, and are issued a BAI-ID before they can enter any BAI-sanctioned ranking tournament.",
+    founded: 1934,
+    headquarters: "New Delhi",
+    website: "https://www.badmintonindia.org",
+    officialCalendarUrl: "https://www.badmintonindia.org/tournaments",
+    affiliations: [
+      "Badminton World Federation (BWF)",
+      "Badminton Confederation of Asia (BCA)",
+      "Indian Olympic Association (IOA)",
+    ],
+    stateAssociations: [
+      {
+        name: "Karnataka Badminton Association",
+        state: "Karnataka",
+        website: "https://kba.org.in",
+      },
+    ],
+    keyFacts: [
+      "Governs all competitive badminton in India — from sub-junior ranking events to the Thomas Cup and Uber Cup national teams",
+      "Runs two parallel ranking circuits: a domestic BAI national ranking and, separately, the BWF world ranking for international events",
+      "Age-group categories: Midget/Sub-Junior (Under-13), Sub-Junior (Under-15, Under-17), Junior (Under-19), and Senior/Open — plus a Veteran category for players above 35",
+      "A BAI-ID (obtained via the player's State Badminton Association) is mandatory before entering any All-India Ranking Tournament",
+      "Entry to BAI's National Championships and Ranking Tournaments is nomination-based — each State Association nominates a limited number of players per category, it is not open entry",
+      "Hosts India's two marquee BWF international events: the India Open (Super 500, January) and the Syed Modi India International (BWF International Series, October–November)",
+      "BAI publishes a season-long tournament calendar (April–March) on its website, listing every ranking tournament and championship with entry deadlines",
+    ],
+    eligibilityCriteria: {
+      ageCutoffRule:
+        "Age group is generally determined by the player's age as of the start of the BAI season (1st April) for domestic ranking tournaments; individual tournament circulars specify the exact cutoff date, so always check the circular for that event.",
+      categories: [
+        {
+          name: "Under-13 (Midget / Sub-Junior)",
+          maxAge: 13,
+          genders: ["Boys", "Girls"],
+          notes:
+            "Entry-level national ranking category. Requires a BAI-ID via the State Badminton Association.",
+        },
+        {
+          name: "Under-15 (Sub-Junior)",
+          maxAge: 15,
+          genders: ["Boys", "Girls"],
+          notes:
+            "Yonex-Sunrise All India Sub-Junior Ranking Tournaments run at this level.",
+        },
+        {
+          name: "Under-17 (Sub-Junior)",
+          maxAge: 17,
+          genders: ["Boys", "Girls"],
+          notes:
+            "Feeds into the Junior National Championship selection alongside Under-19.",
+        },
+        {
+          name: "Under-19 (Junior)",
+          maxAge: 19,
+          genders: ["Boys", "Girls"],
+          notes:
+            "Junior National Championship category. Top finishers are considered for the BWF World Junior Championships and Asian Junior Championships.",
+        },
+        {
+          name: "Senior (Open)",
+          maxAge: 99,
+          genders: ["Men", "Women"],
+          notes:
+            "Senior National Championship and All-India Senior Ranking Tournaments. A strong BAI senior ranking is what earns wildcards into BWF International Challenge/Series events.",
+        },
+      ],
+      registrationRequired: true,
+      stateAssociationFirst: true,
+      notes:
+        "Players must first register with their State Badminton Association to receive a BAI-ID. Unlike open-entry sports, most BAI ranking tournaments and championships are nomination-based — the state association nominates a capped number of players per age category based on state-level ranking or trials, so state-level performance directly gates access to national events. Always confirm nomination and entry deadlines directly with the state association, since these are set independently by each state and are typically 3–4 weeks before the tournament.",
+    },
+    registrationSteps: [
+      "Identify your State Badminton Association — every Indian state has a BAI-affiliated body (e.g. Karnataka Badminton Association).",
+      "Apply for state-association membership and a BAI-ID with proof of age, passport-size photographs, and the membership fee (varies by state).",
+      "Compete in state-level ranking tournaments and trials — this is how most state associations select who they nominate for national events.",
+      "Watch for your state association's nomination announcement ahead of each BAI National Ranking Tournament or Championship.",
+      "Once nominated, complete entry formalities through your state association before the deadline listed in the tournament circular on badmintonindia.org.",
+      "Prepare the required documents (below) ahead of the event, since national-level draws are typically finalised 1–2 weeks before play begins.",
+    ],
+    requiredDocuments: [
+      "Valid BAI-ID (obtained via your State Badminton Association)",
+      "Birth certificate or Aadhaar card — for age-category verification",
+      "Recent passport-size photographs",
+      "State association nomination confirmation for the specific event",
+      "Parent / guardian consent form — mandatory for players under 18",
+      "Entry fee payment proof as specified in the tournament circular",
+    ],
+    contact: {
+      address:
+        "Badminton Association of India, New Delhi",
+    },
+    sourceUrls: [
+      "https://www.badmintonindia.org",
+      "https://www.badmintonindia.org/tournaments",
+      "https://en.wikipedia.org/wiki/Badminton_Association_of_India",
+    ],
+    dataVerifiedAt: new Date("2026-07-28"),
+    isActive: true,
+  },
 ];
 
 async function main() {

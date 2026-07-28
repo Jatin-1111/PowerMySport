@@ -4,7 +4,7 @@ import { SportPathway } from "../../shared/models/SportPathway";
 import { RoadmapChatSession } from "../models/RoadmapChatSession";
 import { buildRoadmapChatSystemPrompt } from "../../shared/services/roadmapChatService";
 import { streamChatAndPersist } from "../../shared/services/chatStreamService";
-import { getUpcomingEditions } from "../../shared/services/tournamentCalendarService";
+import { getUpcomingEditions } from "../../shared/services/tournamentEditionQueries";
 import {
   DAILY_MESSAGE_CAP,
   LIFETIME_MESSAGE_CAP,

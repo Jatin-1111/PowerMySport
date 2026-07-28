@@ -522,6 +522,28 @@ export interface FederationTournamentsResponse {
   };
 }
 
+export interface TournamentEdition {
+  _id?: string;
+  sportSlug: string;
+  name: string;
+  editionYear: number;
+  startDate: string;
+  endDate?: string;
+  registrationDeadlineDate?: string;
+  venue?: string;
+  city?: string;
+  level?: string;
+  ageGroups?: string[];
+  sourceUrl: string;
+  status: "announced" | "ongoing" | "completed" | "cancelled";
+  lastCheckedAt: string;
+}
+
+export interface FederationEditionsResponse {
+  editions: TournamentEdition[];
+  lastCheckedAt: string | null;
+}
+
 export const federationApi = {
   listBySport: async (sportSlug: string): Promise<Federation[]> => {
     try {
@@ -558,6 +580,22 @@ export const federationApi = {
       const resp = await axiosInstance.get<
         ApiResponse<FederationTournamentsResponse>
       >(`/federations/${encodeURIComponent(slug)}/tournaments?${qs.toString()}`);
+      return resp.data.data ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  getEditions: async (
+    slug: string,
+    params?: { limit?: number },
+  ): Promise<FederationEditionsResponse | null> => {
+    try {
+      const qs = new URLSearchParams();
+      if (params?.limit) qs.set("limit", String(params.limit));
+      const resp = await axiosInstance.get<ApiResponse<FederationEditionsResponse>>(
+        `/federations/${encodeURIComponent(slug)}/editions?${qs.toString()}`,
+      );
       return resp.data.data ?? null;
     } catch {
       return null;

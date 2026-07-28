@@ -115,7 +115,7 @@ export default async function FederationDetailPage({
   const fed = await fetchFederation(slug);
   if (!fed) notFound();
 
-  const validTabs = ["overview", "tournaments", "eligibility", "register"] as const;
+  const validTabs = ["overview", "tournaments", "calendar", "eligibility", "register"] as const;
   type TabId = (typeof validTabs)[number];
   const initialTab: TabId = validTabs.includes(tab as TabId)
     ? (tab as TabId)

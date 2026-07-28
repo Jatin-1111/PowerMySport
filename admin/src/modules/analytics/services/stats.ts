@@ -18,6 +18,7 @@ export interface PendingCounts {
   supportTickets: number;
   conciergeRequests: number;
   webhookErrors: number;
+  dataSourcesPending: number;
 }
 
 export interface UserData {

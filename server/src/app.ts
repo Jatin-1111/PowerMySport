@@ -17,6 +17,7 @@ import {
 import academyOnboardingRoutes from "./admin/routes/academyOnboardingRoutes";
 import adminRoutes from "./admin/routes/adminRoutes";
 import pathwayAdminRoutes from "./admin/routes/pathwayAdminRoutes";
+import dataSourceAdminRoutes from "./admin/routes/dataSourceAdminRoutes";
 import payoutMethodsRoutes from "./admin/routes/payoutMethodsRoutes";
 import statsRoutes from "./admin/routes/statsRoutes";
 import bookingRoutes from "./client/routes/bookingRoutes";
@@ -201,6 +202,7 @@ app.use("/api/community", communityRoutes);
 // Admin Domain
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/sport-pathways", pathwayAdminRoutes);
+app.use("/api/admin/data-sources", dataSourceAdminRoutes);
 app.use("/api/academies", academyOnboardingRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/payout-methods", payoutMethodsRoutes);

@@ -74,17 +74,18 @@ const deriveAdminBaseUrlFromFrontend = (frontendUrl: string): string | null => {
   }
 };
 
-const resolveAdminLoginUrl = (): string => {
+/** Base admin app origin (no path) — reused by any admin-linking email, not just login. */
+export const resolveAdminAppUrl = (): string => {
   const explicitLoginUrl = process.env.ADMIN_LOGIN_URL?.trim();
   if (explicitLoginUrl) {
-    return explicitLoginUrl;
+    return normalizeUrl(explicitLoginUrl.replace(/\/admin\/login$/, ""));
   }
 
   const frontendUrl = process.env.FRONTEND_URL?.trim();
   if (frontendUrl) {
     const derivedAdminBaseUrl = deriveAdminBaseUrlFromFrontend(frontendUrl);
     if (derivedAdminBaseUrl) {
-      return `${normalizeUrl(derivedAdminBaseUrl)}/admin/login`;
+      return normalizeUrl(derivedAdminBaseUrl);
     }
   }
 
@@ -94,14 +95,14 @@ const resolveAdminLoginUrl = (): string => {
     process.env.ADMIN_APP_URL?.trim();
 
   if (adminBaseUrl) {
-    const normalized = normalizeUrl(adminBaseUrl);
-    return normalized.endsWith("/admin/login")
-      ? normalized
-      : `${normalized}/admin/login`;
+    return normalizeUrl(adminBaseUrl.replace(/\/admin\/login$/, ""));
   }
 
-  return "http://localhost:3001/admin/login";
+  return "http://localhost:3001";
 };
+
+const resolveAdminLoginUrl = (): string =>
+  `${resolveAdminAppUrl()}/admin/login`;
 
 export const loginAdmin = async (data: LoginPayload) => {
   const { email, password } = data;
@@ -253,6 +254,29 @@ export const getAdminById = async (adminId: string): Promise<IAdmin | null> => {
 
 export const getAllAdmins = async (): Promise<IAdmin[]> => {
   return await Admin.find().sort({ createdAt: -1 });
+};
+
+/**
+ * Active admins who can act on `permission` — either because their role
+ * template grants it, or because it was added to their ad-hoc `permissions`
+ * array. Used to target notifications at "whoever can review X" rather than
+ * a single hardcoded recipient.
+ */
+export const getAdminsWithPermission = async (
+  permission: string,
+): Promise<Array<{ email: string; name: string }>> => {
+  const rolesWithPermission = Object.values(ADMIN_ROLES).filter((role) =>
+    getRolePermissions(role).includes(permission),
+  );
+
+  const admins = await Admin.find({
+    isActive: true,
+    $or: [{ role: { $in: rolesWithPermission } }, { permissions: permission }],
+  })
+    .select("email name")
+    .lean();
+
+  return admins.map((a) => ({ email: a.email, name: a.name }));
 };
 
 export const updateAdmin = async (

@@ -85,6 +85,13 @@ export const ORDERS_PERMISSIONS = {
   REFUND: "orders:refund",
 } as const;
 
+// Federation/Tournament Data Sources Module
+export const DATA_SOURCES_PERMISSIONS = {
+  VIEW: "data-sources:view",
+  REVIEW: "data-sources:review",
+  MANAGE: "data-sources:manage",
+} as const;
+
 // Flatten all permissions into a single array for validation
 export const ALL_PERMISSIONS = [
   ...Object.values(USERS_PERMISSIONS),
@@ -100,6 +107,7 @@ export const ALL_PERMISSIONS = [
   ...Object.values(PRODUCTS_PERMISSIONS),
   ...Object.values(ORDERS_PERMISSIONS),
   ...Object.values(PATHWAYS_PERMISSIONS),
+  ...Object.values(DATA_SOURCES_PERMISSIONS),
 ] as const;
 
 // ============================================
@@ -140,6 +148,9 @@ export const OPERATIONS_ADMIN_PERMISSIONS = [
   PRODUCTS_PERMISSIONS.MANAGE,
   PATHWAYS_PERMISSIONS.VIEW,
   PATHWAYS_PERMISSIONS.MANAGE,
+  DATA_SOURCES_PERMISSIONS.VIEW,
+  DATA_SOURCES_PERMISSIONS.REVIEW,
+  DATA_SOURCES_PERMISSIONS.MANAGE,
 ] as const;
 
 // Finance Admin - Handles refunds, disputes, and financial matters
@@ -280,6 +291,10 @@ export const PERMISSION_MODULES = {
     name: "Sport Pathway Management",
     permissions: Object.values(PATHWAYS_PERMISSIONS),
   },
+  dataSources: {
+    name: "Federation & Tournament Data Sources",
+    permissions: Object.values(DATA_SOURCES_PERMISSIONS),
+  },
 } as const;
 
 // Permission labels for display
@@ -341,6 +356,11 @@ export const PERMISSION_LABELS: Record<string, string> = {
   // Sport Pathways
   "pathways:view": "View Sport Pathways",
   "pathways:manage": "Edit & Verify Sport Pathways",
+
+  // Data Sources
+  "data-sources:view": "View Federation/Tournament Data Sources",
+  "data-sources:review": "Review & Approve Extracted Data",
+  "data-sources:manage": "Submit New Data Sources",
 };
 
 // Legacy support (for backward compatibility during migration)

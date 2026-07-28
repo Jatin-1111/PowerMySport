@@ -98,6 +98,61 @@ export interface AdminPathwayCareer {
   demand: string;
 }
 
+// ─── Federation/Tournament Data Sources ─────────────────────────────────────
+
+export type DataSourceTargetType = "FEDERATION" | "CURATED_TOURNAMENT" | "TOURNAMENT_CALENDAR";
+export type DataSourceKind = "PDF" | "LINK";
+export type DataSourceStatus =
+  | "PENDING_EXTRACTION"
+  | "EXTRACTION_FAILED"
+  | "PENDING_REVIEW"
+  | "APPROVED"
+  | "REJECTED";
+
+export interface DataSourceUploadUrlResponse {
+  uploadUrl: string;
+  downloadUrl: string;
+  fileName: string;
+  key: string;
+}
+
+export interface DataSourceTargetOption {
+  slug: string;
+  name: string;
+}
+
+export interface AdminCalendarFreshnessRow {
+  sportSlug: string;
+  sportName: string;
+  lastCheckedAt: string | null;
+}
+
+export interface AdminDataSourceSubmission {
+  _id: string;
+  targetType: DataSourceTargetType;
+  sportSlug: string;
+  federationSlug?: string;
+  tournamentSlug?: string;
+  sourceKind: DataSourceKind;
+  sourceUrl?: string;
+  s3Key?: string;
+  fileName?: string;
+  originUrl?: string;
+  status: DataSourceStatus;
+  extractedData?: unknown;
+  citations?: Record<string, string>;
+  extractionError?: string;
+  extractionModel?: string;
+  extractedAt?: string;
+  reviewNotes?: string;
+  reviewedBy?: { _id: string; name?: string; email?: string } | null;
+  reviewedAt?: string;
+  submittedBy?: { _id: string; name?: string; email?: string } | null;
+  currentLiveData?: unknown;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AdminSportPathway {
   _id: string;
   sportSlug: string;
@@ -1150,6 +1205,100 @@ export const adminApi = {
         verified,
       },
     );
+    return response.data;
+  },
+
+  // ─── Federation/Tournament Data Sources ───────────────────────────────────
+
+  getDataSourceUploadUrl: async (
+    fileName: string,
+    contentType: string,
+    sportSlug: string,
+  ): Promise<ApiResponse<DataSourceUploadUrlResponse>> => {
+    const response = await axiosInstance.post("/admin/data-sources/upload-url", {
+      fileName,
+      contentType,
+      sportSlug,
+    });
+    return response.data;
+  },
+
+  listDataSourceTargets: async (
+    targetType: DataSourceTargetType,
+    sportSlug: string,
+  ): Promise<ApiResponse<DataSourceTargetOption[]>> => {
+    const query = new URLSearchParams({ targetType, sportSlug });
+    const response = await axiosInstance.get(`/admin/data-sources/targets?${query.toString()}`);
+    return response.data;
+  },
+
+  getCalendarFreshness: async (): Promise<ApiResponse<AdminCalendarFreshnessRow[]>> => {
+    const response = await axiosInstance.get("/admin/data-sources/calendar-freshness");
+    return response.data;
+  },
+
+  listDataSources: async (params?: {
+    status?: DataSourceStatus;
+    targetType?: DataSourceTargetType;
+    sportSlug?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<AdminDataSourceSubmission[]>> => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append("status", params.status);
+    if (params?.targetType) query.append("targetType", params.targetType);
+    if (params?.sportSlug) query.append("sportSlug", params.sportSlug);
+    if (params?.page) query.append("page", String(params.page));
+    if (params?.limit) query.append("limit", String(params.limit));
+    const response = await axiosInstance.get(
+      `/admin/data-sources${query.toString() ? `?${query.toString()}` : ""}`,
+    );
+    return response.data;
+  },
+
+  getDataSource: async (id: string): Promise<ApiResponse<AdminDataSourceSubmission>> => {
+    const response = await axiosInstance.get(`/admin/data-sources/${id}`);
+    return response.data;
+  },
+
+  createDataSource: async (payload: {
+    targetType: DataSourceTargetType;
+    sportSlug: string;
+    federationSlug?: string;
+    tournamentSlug?: string;
+    sourceKind: "PDF" | "LINK";
+    sourceUrl?: string;
+    s3Key?: string;
+    fileName?: string;
+    originUrl?: string;
+  }): Promise<ApiResponse<AdminDataSourceSubmission>> => {
+    const response = await axiosInstance.post("/admin/data-sources", payload);
+    return response.data;
+  },
+
+  updateDataSource: async (
+    id: string,
+    extractedData: unknown,
+  ): Promise<ApiResponse<AdminDataSourceSubmission>> => {
+    const response = await axiosInstance.patch(`/admin/data-sources/${id}`, { extractedData });
+    return response.data;
+  },
+
+  reExtractDataSource: async (id: string): Promise<ApiResponse<AdminDataSourceSubmission>> => {
+    const response = await axiosInstance.post(`/admin/data-sources/${id}/re-extract`);
+    return response.data;
+  },
+
+  approveDataSource: async (id: string): Promise<ApiResponse<AdminDataSourceSubmission>> => {
+    const response = await axiosInstance.post(`/admin/data-sources/${id}/approve`);
+    return response.data;
+  },
+
+  rejectDataSource: async (
+    id: string,
+    reason: string,
+  ): Promise<ApiResponse<AdminDataSourceSubmission>> => {
+    const response = await axiosInstance.post(`/admin/data-sources/${id}/reject`, { reason });
     return response.data;
   },
 };

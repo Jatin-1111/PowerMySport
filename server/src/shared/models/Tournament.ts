@@ -41,6 +41,10 @@ export interface TournamentDocument extends Document {
   isCurated: boolean;
   /** The governing body that organises this tournament */
   federation?: FederationInfo;
+  /** Hard reference to the Federation doc this snapshot was copied from — lets an
+   *  admin's re-approval of that Federation resync this tournament's `federation`
+   *  snapshot instead of it silently going stale. */
+  federationSlug?: string;
   /** Numbered steps telling a parent/player how to participate */
   participationGuide?: string[];
   /** How players qualify — ranking, state selection, open registration, etc. */
@@ -102,6 +106,7 @@ const tournamentSchema = new Schema<TournamentDocument>(
     slug: { type: String, lowercase: true, trim: true, sparse: true },
     isCurated: { type: Boolean, default: false, index: true },
     federation: { type: federationSchema },
+    federationSlug: { type: String, lowercase: true, trim: true, index: true },
     participationGuide: [{ type: String }],
     qualificationPath: { type: String },
     format: { type: String },

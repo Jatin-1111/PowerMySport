@@ -1,6 +1,6 @@
 import { listActiveExperts } from "../../client/services/ExpertsService";
 import { SportPathway, type PathwayLevel } from "../models/SportPathway";
-import { getUpcomingEditions } from "./tournamentCalendarService";
+import { getUpcomingEditions } from "./tournamentEditionQueries";
 
 export interface ChatToolDefinition {
   name: string;

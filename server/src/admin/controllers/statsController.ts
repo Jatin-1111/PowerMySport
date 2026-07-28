@@ -11,6 +11,7 @@ import { SupportTicket } from "../../client/models/SupportTicket";
 import { CommunityReport } from "../../community/models/CommunityReport";
 import { ConciergeRequest } from "../../shared/models/ConciergeRequest";
 import Academy from "../models/Academy";
+import { DataSourceSubmission } from "../../shared/models/DataSourceSubmission";
 import { WebhookRecoveryService } from "../../shared/controllers/WebhookController";
 import { getObservabilitySnapshot } from "../../middleware/observability";
 import { transformDocuments } from "../../middleware/responseTransform";
@@ -1629,6 +1630,7 @@ export const getPendingCounts = async (
       disputes,
       supportTickets,
       conciergeRequests,
+      dataSourcesPending,
     ] = await Promise.all([
       Academy.countDocuments({ onboardingCompleted: true, isApproved: false }),
       Coach.countDocuments({ verificationStatus: "PENDING" }),
@@ -1637,6 +1639,7 @@ export const getPendingCounts = async (
       Dispute.countDocuments({ status: "OPEN" }),
       SupportTicket.countDocuments({ status: "OPEN" }),
       ConciergeRequest.countDocuments({ status: "pending" }),
+      DataSourceSubmission.countDocuments({ status: "PENDING_REVIEW" }),
     ]);
 
     res.status(200).json({
@@ -1651,6 +1654,7 @@ export const getPendingCounts = async (
         supportTickets,
         conciergeRequests,
         webhookErrors: WebhookRecoveryService.listErrors().length,
+        dataSourcesPending,
       },
     });
   } catch (error) {
