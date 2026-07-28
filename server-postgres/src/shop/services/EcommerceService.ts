@@ -397,13 +397,16 @@ export class CartService {
       return;
     }
 
-    // Release all reserved inventory
-    for (const item of cart.items) {
-      await this.inventoryService.releaseReservedInventory(
-        item.productVariantId,
-        item.quantity,
-      );
-    }
+    // Release all reserved inventory. Each item targets a distinct variant row,
+    // so release them concurrently instead of sequentially.
+    await Promise.all(
+      cart.items.map((item) =>
+        this.inventoryService.releaseReservedInventory(
+          item.productVariantId,
+          item.quantity,
+        ),
+      ),
+    );
 
     // Clear items and reset totals
     await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
@@ -589,13 +592,18 @@ export class OrderService {
       throw new Error("Cart is empty");
     }
 
-    // Create order items from cart
+    // Create order items from cart. Batch-load every variant (+product) in a
+    // single query instead of one findUnique per cart item (avoids N+1).
+    const variantIds = cart.items.map((ci) => ci.productVariantId);
+    const variants = await prisma.productVariant.findMany({
+      where: { id: { in: variantIds } },
+      include: { product: true },
+    });
+    const variantById = new Map(variants.map((v) => [v.id, v]));
+
     const orderItems: Prisma.OrderItemCreateWithoutOrderInput[] = [];
     for (const cartItem of cart.items) {
-      const variant = await prisma.productVariant.findUnique({
-        where: { id: cartItem.productVariantId },
-        include: { product: true },
-      });
+      const variant = variantById.get(cartItem.productVariantId);
 
       if (!variant || !variant.product) {
         throw new Error("Product variant not found");
