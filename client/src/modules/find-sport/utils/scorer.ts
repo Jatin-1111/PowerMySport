@@ -326,12 +326,23 @@ interface TaggedReason {
 // the same conditions in the same order, so without this a parent would see
 // two cards with literally identical justification text (just the sport name
 // swapped) — technically true, but reads as templated rather than personalised.
+// Pronoun helpers — resolve to he/she when gender is known, singular "they"
+// only when the parent didn't specify (same fallback rule as the wizard's
+// own question prompts).
+function pronounsFor(gender: WizardAnswers["gender"]) {
+  if (gender === "boy") return { poss: "his", possPronoun: "his" };
+  if (gender === "girl") return { poss: "her", possPronoun: "hers" };
+  return { poss: "their", possPronoun: "theirs" };
+}
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 function buildReasons(
   answers: WizardAnswers,
   sport: SportProfile,
   child: ReturnType<typeof getChildDimensions>,
 ): TaggedReason[] {
   const name = answers.childName || "Your child";
+  const { poss, possPronoun } = pronounsFor(answers.gender);
   const reasons: TaggedReason[] = [];
 
   // Family/peer/informal-exposure reasons — pushed first so they win the
@@ -359,7 +370,7 @@ function buildReasons(
   if (indMatch >= 0.75) {
     if (sport.individual >= 4) {
       reasons.push({ type: "team-individual", text:
-        `${name}'s preference for individual competition is a natural fit — every point in ${sport.name} is entirely theirs to win or lose.`,
+        `${name}'s preference for individual competition is a natural fit — every point in ${sport.name} is entirely ${possPronoun} to win or lose.`,
       });
     } else {
       reasons.push({ type: "team-individual", text:
@@ -371,11 +382,11 @@ function buildReasons(
   if (answers.energyType && dimMatch(child.explosive, sport.explosive) >= 0.75) {
     if (answers.energyType === "explosive" && sport.explosive >= 4) {
       reasons.push({ type: "energy", text:
-        `Their explosive bursts of energy are exactly what ${sport.name} demands — speed and power define the sport.`,
+        `${cap(poss)} explosive bursts of energy are exactly what ${sport.name} demands — speed and power define the sport.`,
       });
     } else if (answers.energyType === "endurance" && sport.endurance >= 4) {
       reasons.push({ type: "energy", text:
-        `Their ability to sustain effort over time is a key asset in ${sport.name}, which rewards consistent physical output.`,
+        `${cap(poss)} ability to sustain effort over time is a key asset in ${sport.name}, which rewards consistent physical output.`,
       });
     }
   }
@@ -396,7 +407,7 @@ function buildReasons(
     dimMatch(child.reactFast, sport.reactFast) >= 0.75
   ) {
     reasons.push({ type: "decision-style", text:
-      `${name}'s instinct to react fast and trust their read suits ${sport.name}'s pace — there's rarely time to overthink.`,
+      `${name}'s instinct to react fast and trust ${poss} read suits ${sport.name}'s pace — there's rarely time to overthink.`,
     });
   } else if (
     answers.decisionStyle === "strategic" &&
@@ -425,7 +436,7 @@ function buildReasons(
       : false;
     if (sport.heightAdvantage === "tall" && isTall) {
       reasons.push({ type: "physical", text:
-        `Being taller than most kids their age is a genuine structural advantage in ${sport.name}.`,
+        `Being taller than most kids ${poss} age is a genuine structural advantage in ${sport.name}.`,
       });
     } else if (sport.heightAdvantage === "short" && isShort) {
       reasons.push({ type: "physical", text:

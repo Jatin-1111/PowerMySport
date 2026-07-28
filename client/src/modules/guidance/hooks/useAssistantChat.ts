@@ -1,8 +1,8 @@
 "use client";
 
-import type { SessionSummary } from "@/modules/guidance/components/chat/ChatDrawer";
-import { authHeaders, useChatCore } from "@/modules/guidance/hooks/useChatCore";
-import { useCallback, useRef, useState } from "react";
+import { authHeaders, useChatCore } from "./useChatCore";
+import type { SessionSummary } from "../components/chat/ChatDrawer";
+import { useCallback, useState } from "react";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -14,12 +14,13 @@ interface ChatSessionMeta {
   totalMessageCount: number;
 }
 
-interface UseRoadmapChatOptions {
-  sportSlug: string;
-  level?: number;
-}
-
-export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
+/**
+ * The site-wide general assistant — reachable from the floating bubble on
+ * every page. Always opens to a brand-new session (like ChatGPT/Claude/
+ * Gemini's "new chat" default) rather than resuming the last one; past
+ * conversations are reachable through the history panel.
+ */
+export function useAssistantChat() {
   const {
     messages,
     setMessages,
@@ -40,18 +41,16 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
     dailyMessageCount: 0,
     totalMessageCount: 0,
   });
-  const levelRef = useRef(level);
-  levelRef.current = level;
 
   // ── Load session list ──────────────────────────────────────────────────────
 
   const loadSessions = useCallback(async () => {
     setIsLoadingSessions(true);
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/roadmap-chat/sessions?sportSlug=${encodeURIComponent(sportSlug)}`,
-        { headers: authHeaders(), credentials: "include" },
-      );
+      const res = await fetch(`${API_BASE_URL}/assistant-chat/sessions`, {
+        headers: authHeaders(),
+        credentials: "include",
+      });
       const data = await res.json();
       if (data.success) setSessions(data.data);
     } catch {
@@ -59,19 +58,19 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
     } finally {
       setIsLoadingSessions(false);
     }
-  }, [sportSlug]);
+  }, []);
 
-  // ── Initialize (load latest session or create one) ────────────────────────
+  // ── Initialize: always start a brand-new session ──────────────────────────
 
   const initialize = useCallback(async () => {
-    if (!sportSlug) return;
     setIsInitializing(true);
     setError(null);
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/roadmap-chat/${encodeURIComponent(sportSlug)}`,
-        { headers: authHeaders(), credentials: "include" },
-      );
+      const res = await fetch(`${API_BASE_URL}/assistant-chat/sessions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        credentials: "include",
+      });
       const data = await res.json();
       if (data.success) {
         setMessages(data.data.messages);
@@ -84,58 +83,14 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
         });
         loadSessions();
       } else {
-        setError(data.message || "Failed to load chat session");
+        setError(data.message || "Failed to start chat session");
       }
     } catch {
       setError("Failed to connect to chat service");
     } finally {
       setIsInitializing(false);
     }
-  }, [sportSlug, loadSessions, setMessages, setError]);
-
-  // ── Create a brand-new session ─────────────────────────────────────────────
-
-  const createNewSession = useCallback(async () => {
-    setIsInitializing(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_BASE_URL}/roadmap-chat/sessions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        credentials: "include",
-        body: JSON.stringify({ sportSlug }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMessages(data.data.messages);
-        setCurrentSessionId(data.data.sessionId ?? null);
-        setMeta({
-          dailyRemaining: data.data.dailyRemaining,
-          lifetimeRemaining: data.data.lifetimeRemaining,
-          dailyMessageCount: data.data.dailyMessageCount ?? 0,
-          totalMessageCount: data.data.totalMessageCount,
-        });
-        // Prepend to local session list
-        setSessions((prev) => [
-          {
-            _id: data.data.sessionId,
-            sportSlug,
-            title: null,
-            totalMessageCount: 0,
-            updatedAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-          },
-          ...prev,
-        ]);
-      } else {
-        setError(data.message || "Failed to create session");
-      }
-    } catch {
-      setError("Failed to connect to chat service");
-    } finally {
-      setIsInitializing(false);
-    }
-  }, [sportSlug, setMessages, setError]);
+  }, [loadSessions, setMessages, setError]);
 
   // ── Switch to an existing session ─────────────────────────────────────────
 
@@ -145,10 +100,10 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
       setIsInitializing(true);
       setError(null);
       try {
-        const res = await fetch(
-          `${API_BASE_URL}/roadmap-chat/sessions/${sessionId}`,
-          { headers: authHeaders(), credentials: "include" },
-        );
+        const res = await fetch(`${API_BASE_URL}/assistant-chat/sessions/${sessionId}`, {
+          headers: authHeaders(),
+          credentials: "include",
+        });
         const data = await res.json();
         if (data.success) {
           setMessages(data.data.messages);
@@ -175,14 +130,11 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
 
   const sendMessage = useCallback(
     async (userContent: string) => {
-      // Determine endpoint: prefer session-specific, fall back to sport slug
-      const endpoint = currentSessionId
-        ? `${API_BASE_URL}/roadmap-chat/sessions/${currentSessionId}`
-        : `${API_BASE_URL}/roadmap-chat/${encodeURIComponent(sportSlug)}`;
+      if (!currentSessionId) return;
 
       const result = await sendCore(userContent, {
-        endpoint,
-        body: { message: userContent.trim(), level: levelRef.current },
+        endpoint: `${API_BASE_URL}/assistant-chat/sessions/${currentSessionId}`,
+        body: { message: userContent.trim() },
         onDone: () => {
           setMeta((m) => ({
             ...m,
@@ -191,23 +143,20 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
             dailyRemaining: Math.max(0, m.dailyRemaining - 1),
             lifetimeRemaining: Math.max(0, m.lifetimeRemaining - 1),
           }));
-          // Update title in sessions list if this was the first user message
-          if (currentSessionId) {
-            setSessions((prev) =>
-              prev.map((s) =>
-                s._id === currentSessionId
-                  ? {
-                      ...s,
-                      title:
-                        s.title ??
-                        userContent.trim().slice(0, 60) +
-                          (userContent.trim().length > 60 ? "…" : ""),
-                      updatedAt: new Date().toISOString(),
-                    }
-                  : s,
-              ),
-            );
-          }
+          setSessions((prev) =>
+            prev.map((s) =>
+              s._id === currentSessionId
+                ? {
+                    ...s,
+                    title:
+                      s.title ??
+                      userContent.trim().slice(0, 60) +
+                        (userContent.trim().length > 60 ? "…" : ""),
+                    updatedAt: new Date().toISOString(),
+                  }
+                : s,
+            ),
+          );
         },
       });
 
@@ -215,7 +164,7 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
         setMeta((m) => ({ ...m, dailyRemaining: 0 }));
       }
     },
-    [sendCore, currentSessionId, sportSlug],
+    [sendCore, currentSessionId],
   );
 
   return {
@@ -229,7 +178,7 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
     error,
     initialize,
     loadSessions,
-    createNewSession,
+    createNewSession: initialize,
     switchToSession,
     sendMessage,
     clearError,

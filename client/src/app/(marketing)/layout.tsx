@@ -1,6 +1,6 @@
+import { AIAssistantBubble } from "@/components/layout/AIAssistantBubble";
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
-import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
 import type { Metadata } from "next";
 import React from "react";
 
@@ -32,8 +32,8 @@ export default function MarketingLayout({
       {/* Footer */}
       <Footer />
 
-      {/* WhatsApp lead channel — floats bottom-right on all marketing pages */}
-      <WhatsAppButton />
+      {/* AI assistant entry point — floats bottom-right on all marketing pages */}
+      <AIAssistantBubble />
     </div>
   );
 }

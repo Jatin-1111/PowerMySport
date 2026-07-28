@@ -8,6 +8,10 @@ import redis from "../../config/redis";
 
 export const DAILY_MESSAGE_CAP = 30;
 
+// ─── Lifetime cap — per chat session (guidance chat, roadmap chat, etc.) ──────
+
+export const LIFETIME_MESSAGE_CAP = 150;
+
 function getIstDateKey(): string {
   return new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
@@ -38,4 +42,49 @@ export async function decrementDailyMessageCount(
   userId: string,
 ): Promise<void> {
   await redis.decr(getDailyLimitKey(userId));
+}
+
+// ─── Shared daily + lifetime cap check ────────────────────────────────────────
+// Used by every AI chat feature (guidance chat, roadmap chat, ...) right before
+// streaming a response, so the two caps are enforced identically everywhere.
+
+export interface ChatRateLimitResult {
+  ok: boolean;
+  status: number;
+  message: string;
+  code?: "DAILY_LIMIT_REACHED" | "LIFETIME_LIMIT_REACHED";
+}
+
+/**
+ * Reserves today's message slot and checks it against both caps. On rejection,
+ * releases the slot it just reserved. Callers must not increment the daily
+ * count themselves — this is the single place that happens.
+ */
+export async function checkChatRateLimit(
+  userId: string,
+  currentLifetimeCount: number,
+  copy: { dailyReached: string; lifetimeReached: string },
+): Promise<ChatRateLimitResult> {
+  const dailyCount = await incrementDailyMessageCount(userId);
+  if (dailyCount > DAILY_MESSAGE_CAP) {
+    await decrementDailyMessageCount(userId);
+    return {
+      ok: false,
+      status: 429,
+      message: copy.dailyReached,
+      code: "DAILY_LIMIT_REACHED",
+    };
+  }
+
+  if (currentLifetimeCount >= LIFETIME_MESSAGE_CAP) {
+    await decrementDailyMessageCount(userId);
+    return {
+      ok: false,
+      status: 429,
+      message: copy.lifetimeReached,
+      code: "LIFETIME_LIMIT_REACHED",
+    };
+  }
+
+  return { ok: true, status: 200, message: "" };
 }

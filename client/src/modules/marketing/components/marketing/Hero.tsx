@@ -347,23 +347,6 @@ function HomeHero({
           )}
         </motion.div>
       </motion.div>
-
-      {/* ── Scroll cue (desktop only) ── */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.6, duration: 0.8 }}
-        className="absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 sm:block"
-      >
-        <div className="flex h-10 w-6 justify-center rounded-full border-2 border-white/25 pt-1.5">
-          <motion.span
-            className="h-1.5 w-1.5 rounded-full bg-white/90"
-            animate={{ y: [0, 14, 0], opacity: [0.9, 0.2, 0.9] }}
-            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </div>
-      </motion.div>
-
     </section>
   );
 }

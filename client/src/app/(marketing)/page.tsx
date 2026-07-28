@@ -106,14 +106,6 @@ export default function HomePage() {
   ];
 
   // ── Why Parents Choose Us: two journeys, depending on where you're starting from ──
-  const pathwaysStep = {
-    label: "Where do we start?",
-    title: "Discover Pathways",
-    description:
-      "Get a clear, personalised roadmap for that sport—what to focus on now, the milestones that matter, and exactly what comes next.",
-    icon: <Map className="h-6 w-6" />,
-    stat: "Built in 2 minutes",
-  };
   const expertStep = {
     label: "Still have questions?",
     title: "Consult an Expert",
@@ -141,7 +133,6 @@ export default function HomePage() {
       stat: "Takes about 5 minutes",
     },
     screeningStep,
-    pathwaysStep,
     expertStep,
   ];
 
@@ -154,7 +145,6 @@ export default function HomePage() {
       icon: <CheckCircle2 className="h-6 w-6" />,
       stat: "Takes about 5 minutes",
     },
-    pathwaysStep,
     expertStep,
   ];
 
@@ -174,9 +164,9 @@ export default function HomePage() {
       {/* ── Hero ── */}
       <Hero
         variant="home"
-        title="Guiding Your Child's Sporting Journey"
-        titleHighlight="Sporting Journey"
-        description="AI-powered guidance, trusted experts and a community that helps parents make better sports decisions."
+        title="Helping Parents Make Confident Sports Decisions"
+        titleHighlight="Sports Decisions"
+        description="Powered by AI, personalised by experts and supported by a trusted community everything you need to guide your child's sporting journey."
         ctaPrompt={
           user?.role === "VenueLister"
             ? undefined

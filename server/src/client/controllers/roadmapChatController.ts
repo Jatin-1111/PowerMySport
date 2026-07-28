@@ -3,16 +3,14 @@ import mongoose from "mongoose";
 import { SportPathway } from "../../shared/models/SportPathway";
 import { RoadmapChatSession } from "../models/RoadmapChatSession";
 import { buildRoadmapChatSystemPrompt } from "../../shared/services/roadmapChatService";
-import { streamGuidanceChatResponse } from "../../shared/services/guidanceChatService";
+import { streamChatAndPersist } from "../../shared/services/chatStreamService";
 import { getUpcomingEditions } from "../../shared/services/tournamentCalendarService";
 import {
   DAILY_MESSAGE_CAP,
+  LIFETIME_MESSAGE_CAP,
   getDailyMessageCount,
-  incrementDailyMessageCount,
-  decrementDailyMessageCount,
+  checkChatRateLimit,
 } from "../../shared/services/chatRateLimitService";
-
-const LIFETIME_MESSAGE_CAP = 150;
 
 function buildOpeningMessage(sportName: string, levelLabel?: string): string {
   const levelBit = levelLabel ? ` at the ${levelLabel} level` : "";
@@ -217,23 +215,15 @@ export const sendRoadmapChatSessionMessage = async (
     }
 
     // ── Rate limit checks ──────────────────────────────────────────────────────
-    const dailyCount = await incrementDailyMessageCount(req.user.id);
-    if (dailyCount > DAILY_MESSAGE_CAP) {
-      await decrementDailyMessageCount(req.user.id);
-      res.status(429).json({
+    const rateLimit = await checkChatRateLimit(req.user.id, session.totalMessageCount, {
+      dailyReached: `You've reached today's limit of ${DAILY_MESSAGE_CAP} messages. Come back tomorrow!`,
+      lifetimeReached: `You've had an in-depth conversation about this sport! Start a new chat or explore another sport.`,
+    });
+    if (!rateLimit.ok) {
+      res.status(rateLimit.status).json({
         success: false,
-        message: `You've reached today's limit of ${DAILY_MESSAGE_CAP} messages. Come back tomorrow!`,
-        code: "DAILY_LIMIT_REACHED",
-      });
-      return;
-    }
-
-    if (session.totalMessageCount >= LIFETIME_MESSAGE_CAP) {
-      await decrementDailyMessageCount(req.user.id);
-      res.status(429).json({
-        success: false,
-        message: `You've had an in-depth conversation about this sport! Start a new chat or explore another sport.`,
-        code: "LIFETIME_LIMIT_REACHED",
+        message: rateLimit.message,
+        code: rateLimit.code,
       });
       return;
     }
@@ -248,37 +238,8 @@ export const sendRoadmapChatSessionMessage = async (
     const upcomingTournaments = await getUpcomingEditions(session.sportSlug, 5).catch(() => []);
     const systemPrompt = buildRoadmapChatSystemPrompt(pathway, level, upcomingTournaments);
 
-    const historyForAI = session.messages.map((m) => ({ role: m.role, content: m.content }));
-
-    // ── Stream response ────────────────────────────────────────────────────────
-    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.setHeader("X-Accel-Buffering", "no");
-
-    let fullAssistantResponse = "";
-
-    try {
-      for await (const chunk of streamGuidanceChatResponse(systemPrompt, historyForAI, userMessage)) {
-        fullAssistantResponse += chunk;
-        res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
-      }
-    } catch (aiError) {
-      await decrementDailyMessageCount(req.user.id);
-      res.write(`data: ${JSON.stringify({ error: aiError instanceof Error ? aiError.message : "AI error" })}\n\n`);
-      res.end();
-      return;
-    }
-
-    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-    res.end();
-
-    session.messages.push(
-      { role: "user" as const, content: userMessage, createdAt: new Date() },
-      { role: "assistant" as const, content: fullAssistantResponse, createdAt: new Date() },
-    );
-    session.totalMessageCount += 1;
-    await session.save();
+    // ── Stream response and persist both turns ─────────────────────────────────
+    await streamChatAndPersist(res, req.user.id, session, systemPrompt, userMessage);
   } catch (error) {
     if (!res.headersSent) {
       res.status(500).json({
@@ -394,23 +355,15 @@ export const sendRoadmapChatMessage = async (req: Request, res: Response): Promi
       });
     }
 
-    const dailyCount = await incrementDailyMessageCount(req.user.id);
-    if (dailyCount > DAILY_MESSAGE_CAP) {
-      await decrementDailyMessageCount(req.user.id);
-      res.status(429).json({
+    const rateLimit = await checkChatRateLimit(req.user.id, session.totalMessageCount, {
+      dailyReached: `You've reached today's limit of ${DAILY_MESSAGE_CAP} messages. Come back tomorrow!`,
+      lifetimeReached: `You've had an in-depth conversation about this sport! Start a new chat or explore another sport.`,
+    });
+    if (!rateLimit.ok) {
+      res.status(rateLimit.status).json({
         success: false,
-        message: `You've reached today's limit of ${DAILY_MESSAGE_CAP} messages. Come back tomorrow!`,
-        code: "DAILY_LIMIT_REACHED",
-      });
-      return;
-    }
-
-    if (session.totalMessageCount >= LIFETIME_MESSAGE_CAP) {
-      await decrementDailyMessageCount(req.user.id);
-      res.status(429).json({
-        success: false,
-        message: `You've had an in-depth conversation about this sport! Start a new chat or explore another sport.`,
-        code: "LIFETIME_LIMIT_REACHED",
+        message: rateLimit.message,
+        code: rateLimit.code,
       });
       return;
     }
@@ -422,36 +375,8 @@ export const sendRoadmapChatMessage = async (req: Request, res: Response): Promi
 
     const upcomingTournaments = await getUpcomingEditions(sportSlug, 5).catch(() => []);
     const systemPrompt = buildRoadmapChatSystemPrompt(pathway, level, upcomingTournaments);
-    const historyForAI = session.messages.map((m) => ({ role: m.role, content: m.content }));
 
-    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.setHeader("X-Accel-Buffering", "no");
-
-    let fullAssistantResponse = "";
-
-    try {
-      for await (const chunk of streamGuidanceChatResponse(systemPrompt, historyForAI, userMessage)) {
-        fullAssistantResponse += chunk;
-        res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
-      }
-    } catch (aiError) {
-      await decrementDailyMessageCount(req.user.id);
-      res.write(`data: ${JSON.stringify({ error: aiError instanceof Error ? aiError.message : "AI error" })}\n\n`);
-      res.end();
-      return;
-    }
-
-    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-    res.end();
-
-    session.messages.push(
-      { role: "user" as const, content: userMessage, createdAt: new Date() },
-      { role: "assistant" as const, content: fullAssistantResponse, createdAt: new Date() },
-    );
-    session.totalMessageCount += 1;
-    await session.save();
+    await streamChatAndPersist(res, req.user.id, session, systemPrompt, userMessage);
   } catch (error) {
     if (!res.headersSent) {
       res.status(500).json({

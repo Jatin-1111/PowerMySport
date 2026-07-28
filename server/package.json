@@ -13,6 +13,8 @@
     "migrate:admin-permissions": "ts-node src/scripts/migrateAdminPermissions.ts",
     "community:players-public": "ts-node src/scripts/makePlayerProfilesPublic.ts",
     "seed:sports": "ts-node src/scripts/seedSports.ts",
+    "embed:knowledge": "ts-node src/scripts/embedKnowledgeBase.ts",
+    "embed:pages": "ts-node src/scripts/embedWebsitePages.ts",
     "scrape:tournaments": "ts-node src/scripts/scrapeTournaments.ts",
     "scrape:scholarships": "ts-node src/scripts/scrapeScholarships.ts",
     "scrape:universities": "ts-node src/scripts/scrapeUniversities.ts",

@@ -1,50 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import type { GuidanceRequest, GuidanceResponse } from "./guidanceAiService";
-
-// ─── Site-map reference baked into the system prompt ─────────────────────────
-
-const SITE_MAP_REFERENCE = `
-## Platform Site-Map Reference (for navigation answers)
-
-Free tools:
-- /roadmap — Build a sport pathway roadmap
-- /guidance — AI guidance portal (current page)
-- /how-it-works — How the platform works
-- /experts — Browse experts
-
-Booking hub:
-- /booking?tab=venues|coaches|academies — Browse & filter venues, coaches, academies (filters: sport, price, rating, city, age group)
-- /venues/[venueId] — Individual venue detail page
-- /coaches/[coachId] — Individual coach profile page
-- /academies/[slug] — Academy detail page
-- /checkout — Checkout flow
-
-Player account:
-- /dashboard — Player dashboard
-- /dashboard/my-bookings — Booking history & upcoming sessions
-- /dashboard/wallet — Wallet & credits
-- /saved — Saved venues / coaches
-- /notifications — Notifications
-- /settings — Account settings
-${
-  process.env.SHOP_IS_LIVE === "true"
-    ? `
-Shop:
-- /shop — Sports equipment & gear shop
-- /shop/cart — Cart
-- /shop/orders — Order history
-- /shop/wishlist — Wishlist
-`
-    : `
-Shop:
-- The shop is not yet available. If a parent asks about buying equipment, guide them to search local sports retailers or check the /booking hub for academy-recommended gear — do not mention a shop link.
-`
-}
-Community:
-- Opens in the Community app (separate app — tell the parent it opens in the Community app)
-
-Important: When answering "where do I find X?", always respond with the page name AND the link path. Never perform actions on behalf of the user — tell + link only.
-`.trim();
+import { SITE_MAP_REFERENCE } from "./siteMapReference";
 
 // ─── Persona + guardrail instruction ─────────────────────────────────────────
 

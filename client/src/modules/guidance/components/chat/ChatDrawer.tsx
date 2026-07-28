@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
     AlertCircle,
     ChevronLeft,
@@ -12,10 +12,10 @@ import {
     X,
     Zap,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import type { ChatMessage } from "../../hooks/useGuidanceChat";
+import type { ChatMessage } from "../../hooks/useChatCore";
 
 // ─── Markdown renderer for assistant messages ────────────────────────────────
 
@@ -148,17 +148,18 @@ function MessageBubble({
   isStreaming?: boolean;
 }) {
   const isUser = role === "user";
+  const prefersReducedMotion = useReducedMotion();
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
       className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}
     >
       {!isUser && (
         <div className="mr-2 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-100 ring-1 ring-orange-200">
-          <Zap className="h-3.5 w-3.5 text-power-orange" />
+          <Zap className="h-3.5 w-3.5 text-power-orange" aria-hidden="true" />
         </div>
       )}
       <div
@@ -178,15 +179,18 @@ function MessageBubble({
           <div className="prose-chat">
             <MarkdownContent content={content} />
             {isStreaming && (
-              <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse rounded-full bg-slate-400 align-text-bottom" />
+              <span
+                aria-hidden="true"
+                className="ml-0.5 inline-block h-4 w-0.5 animate-pulse rounded-full bg-slate-400 align-text-bottom motion-reduce:animate-none"
+              />
             )}
           </div>
         ) : isStreaming ? (
           /* Empty placeholder while first tokens arrive */
-          <span className="flex items-center gap-1.5 text-slate-400 py-0.5">
-            <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:0ms]" />
-            <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:150ms]" />
-            <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:300ms]" />
+          <span aria-hidden="true" className="flex items-center gap-1.5 text-slate-400 py-0.5">
+            <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:0ms] motion-reduce:animate-none" />
+            <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:150ms] motion-reduce:animate-none" />
+            <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:300ms] motion-reduce:animate-none" />
           </span>
         ) : null}
       </div>
@@ -265,6 +269,13 @@ export function ChatDrawer({
   const [showHistory, setShowHistory] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const containerRef = useRef<HTMLElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const wasStreamingRef = useRef(false);
+  const titleId = useId();
+  const hintId = useId();
+  const prefersReducedMotion = useReducedMotion();
+  const [liveAnnouncement, setLiveAnnouncement] = useState("");
   const hasHistory = !!sessions;
 
   // Notify the rest of the app (e.g. WhatsApp button) when the drawer opens/closes
@@ -285,6 +296,63 @@ export function ChatDrawer({
       setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [isOpen]);
+
+  // Remember what had focus before opening, and restore it on close
+  useEffect(() => {
+    if (isOpen) {
+      previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    } else {
+      previouslyFocusedRef.current?.focus?.();
+    }
+  }, [isOpen]);
+
+  // Trap focus inside the drawer and close on Escape while open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+
+      const container = containerRef.current;
+      if (!container) return;
+      const focusable = Array.from(
+        container.querySelectorAll<HTMLElement>(
+          'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((el) => !el.hasAttribute("disabled"));
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  // Announce streaming state changes once (not per chunk) so screen readers
+  // aren't flooded with partial-text mutations.
+  useEffect(() => {
+    if (isStreaming) {
+      wasStreamingRef.current = true;
+      setLiveAnnouncement(`${title} is responding…`);
+    } else if (wasStreamingRef.current) {
+      wasStreamingRef.current = false;
+      setLiveAnnouncement(`${title} has responded`);
+    }
+  }, [isStreaming, title]);
 
   const handleSend = useCallback(async () => {
     const text = inputValue.trim();
@@ -324,7 +392,7 @@ export function ChatDrawer({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
             className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px] lg:hidden"
             onClick={onClose}
             aria-hidden="true"
@@ -332,15 +400,26 @@ export function ChatDrawer({
 
           {/* Drawer */}
           <motion.aside
+            ref={containerRef}
             key="chat-drawer"
-            role="complementary"
-            aria-label="Coach chat"
-            initial={{ x: "100%", opacity: 0 }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            initial={prefersReducedMotion ? { opacity: 0 } : { x: "100%", opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: "100%", opacity: 0 }}
-            transition={{ type: "spring", damping: 28, stiffness: 280 }}
+            exit={prefersReducedMotion ? { opacity: 0 } : { x: "100%", opacity: 0 }}
+            transition={
+              prefersReducedMotion
+                ? { duration: 0.01 }
+                : { type: "spring", damping: 28, stiffness: 280 }
+            }
             className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-slate-200/80 bg-white shadow-[−8px_0_30px_-10px_rgba(15,23,42,0.15)] sm:max-w-[560px]"
           >
+            {/* Screen-reader-only status announcements (streaming state, not per-chunk) */}
+            <div role="status" aria-live="polite" className="sr-only">
+              {liveAnnouncement}
+            </div>
+
             {/* ── Header ── */}
             <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3.5">
               {showHistory ? (
@@ -349,15 +428,15 @@ export function ChatDrawer({
                   aria-label="Back to chat"
                   className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
                 >
-                  <ChevronLeft className="h-3.5 w-3.5" />
+                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               ) : (
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 ring-1 ring-orange-100">
-                  <MessageCircle className="h-[18px] w-[18px] text-power-orange" />
+                  <MessageCircle className="h-[18px] w-[18px] text-power-orange" aria-hidden="true" />
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-slate-900 leading-tight truncate">
+                <p id={titleId} className="text-sm font-bold text-slate-900 leading-tight truncate">
                   {showHistory ? "Chat History" : title}
                 </p>
                 <p className="text-[11px] text-slate-400 truncate">
@@ -376,7 +455,7 @@ export function ChatDrawer({
                   title="History"
                   className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
                 >
-                  <Clock className="h-3.5 w-3.5" />
+                  <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               )}
               <button
@@ -385,7 +464,7 @@ export function ChatDrawer({
                 aria-label="Close chat"
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             </div>
 
@@ -408,7 +487,7 @@ export function ChatDrawer({
                     }}
                     className="flex w-full items-center gap-2.5 rounded-xl border border-dashed border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-semibold text-power-orange transition hover:bg-orange-100 cursor-pointer"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-4 w-4" aria-hidden="true" />
                     New Chat
                   </button>
                 </div>
@@ -417,11 +496,12 @@ export function ChatDrawer({
                 <div className="flex-1 overflow-y-auto p-3 space-y-1">
                   {isLoadingSessions ? (
                     <div className="flex items-center justify-center py-12">
-                      <Loader2 className="h-5 w-5 animate-spin text-slate-300" />
+                      <Loader2 className="h-5 w-5 animate-spin text-slate-300" aria-hidden="true" />
+                      <span className="sr-only">Loading chat history…</span>
                     </div>
                   ) : !sessions || sessions.length === 0 ? (
                     <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-                      <MessageCircle className="h-8 w-8 text-slate-200" />
+                      <MessageCircle className="h-8 w-8 text-slate-200" aria-hidden="true" />
                       <p className="text-sm text-slate-400">No past conversations yet</p>
                     </div>
                   ) : (
@@ -459,8 +539,8 @@ export function ChatDrawer({
               {isInitializing ? (
                 <div className="flex h-full items-center justify-center">
                   <div className="flex flex-col items-center gap-3 text-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-power-orange" />
-                    <p className="text-sm text-slate-500">
+                    <Loader2 className="h-6 w-6 animate-spin text-power-orange" aria-hidden="true" />
+                    <p className="text-sm text-slate-500" role="status">
                       Loading your conversation…
                     </p>
                   </div>
@@ -485,18 +565,19 @@ export function ChatDrawer({
                   {/* Error banner */}
                   {error && (
                     <motion.div
-                      initial={{ opacity: 0, y: 4 }}
+                      initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 4 }}
                       animate={{ opacity: 1, y: 0 }}
+                      role="alert"
                       className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700"
                     >
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                       <span className="flex-1 leading-snug">{error}</span>
                       <button
                         onClick={clearError}
                         aria-label="Dismiss error"
                         className="shrink-0 text-rose-400 hover:text-rose-600"
                       >
-                        <X className="h-3.5 w-3.5" />
+                        <X className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                     </motion.div>
                   )}
@@ -533,7 +614,7 @@ export function ChatDrawer({
 
             {/* ── Rate limit message ── */}
             {!showHistory && rateLimitHit && !isInitializing && (
-              <div className="border-t border-amber-100 bg-amber-50 px-4 py-3">
+              <div className="border-t border-amber-100 bg-amber-50 px-4 py-3" role="status">
                 <p className="text-xs text-amber-700 text-center leading-snug">
                   {meta.lifetimeRemaining === 0
                     ? "You've explored this thoroughly! Come back with a fresh question soon."
@@ -556,6 +637,7 @@ export function ChatDrawer({
                     rows={1}
                     disabled={isStreaming}
                     aria-label="Chat message input"
+                    aria-describedby={hintId}
                     className="flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-orange-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-200/60 disabled:opacity-50 leading-relaxed"
                     style={{ minHeight: "42px", maxHeight: "120px" }}
                     onInput={(e) => {
@@ -572,13 +654,13 @@ export function ChatDrawer({
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-power-orange text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.5)] transition hover:bg-orange-600 active:scale-95 disabled:opacity-40 disabled:shadow-none"
                   >
                     {isStreaming ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                     ) : (
-                      <Send className="h-4 w-4" />
+                      <Send className="h-4 w-4" aria-hidden="true" />
                     )}
                   </button>
                 </div>
-                <p className="mt-1.5 text-center text-[10px] text-slate-400">
+                <p id={hintId} className="mt-1.5 text-center text-[10px] text-slate-400">
                   Enter to send · Shift+Enter for new line
                 </p>
               </div>

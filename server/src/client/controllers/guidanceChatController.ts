@@ -2,20 +2,14 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { GuidanceSubmission } from "../models/GuidanceSubmission";
 import { GuidanceChatSession } from "../models/GuidanceChatSession";
-import {
-  buildChatSystemPrompt,
-  streamGuidanceChatResponse,
-} from "../../shared/services/guidanceChatService";
+import { buildChatSystemPrompt } from "../../shared/services/guidanceChatService";
+import { streamChatAndPersist } from "../../shared/services/chatStreamService";
 import {
   DAILY_MESSAGE_CAP,
+  LIFETIME_MESSAGE_CAP,
   getDailyMessageCount,
-  incrementDailyMessageCount,
-  decrementDailyMessageCount,
+  checkChatRateLimit,
 } from "../../shared/services/chatRateLimitService";
-
-// ─── Rate-limit constants (§10) ───────────────────────────────────────────────
-
-const LIFETIME_MESSAGE_CAP = 150;
 
 // ─── Opening assistant message ────────────────────────────────────────────────
 
@@ -215,23 +209,15 @@ export const sendGuidanceChatMessage = async (
     // Daily cap is global per user (across all their guidance submissions), not
     // per session — reserved atomically via Redis so concurrent requests can't
     // both slip past the cap.
-    const dailyCount = await incrementDailyMessageCount(req.user.id);
-    if (dailyCount > DAILY_MESSAGE_CAP) {
-      await decrementDailyMessageCount(req.user.id);
-      res.status(429).json({
+    const rateLimit = await checkChatRateLimit(req.user.id, session.totalMessageCount, {
+      dailyReached: `You've reached today's limit of ${DAILY_MESSAGE_CAP} messages. Come back tomorrow to continue the conversation!`,
+      lifetimeReached: `You've had an in-depth coaching conversation for this guidance plan! Consider generating a fresh roadmap to continue your journey.`,
+    });
+    if (!rateLimit.ok) {
+      res.status(rateLimit.status).json({
         success: false,
-        message: `You've reached today's limit of ${DAILY_MESSAGE_CAP} messages. Come back tomorrow to continue the conversation!`,
-        code: "DAILY_LIMIT_REACHED",
-      });
-      return;
-    }
-
-    if (session.totalMessageCount >= LIFETIME_MESSAGE_CAP) {
-      await decrementDailyMessageCount(req.user.id); // this message never went through
-      res.status(429).json({
-        success: false,
-        message: `You've had an in-depth coaching conversation for this guidance plan! Consider generating a fresh roadmap to continue your journey.`,
-        code: "LIFETIME_LIMIT_REACHED",
+        message: rateLimit.message,
+        code: rateLimit.code,
       });
       return;
     }
@@ -242,57 +228,8 @@ export const sendGuidanceChatMessage = async (
       submission.response as any,
     );
 
-    // ── Prepare history for Gemini (exclude opening if it's the only message) ─
-    const historyForAI = session.messages.map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
-
-    // ── Stream response ──────────────────────────────────────────────────────
-    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.setHeader("X-Accel-Buffering", "no");
-
-    let fullAssistantResponse = "";
-
-    try {
-      for await (const chunk of streamGuidanceChatResponse(
-        systemPrompt,
-        historyForAI,
-        userMessage,
-      )) {
-        fullAssistantResponse += chunk;
-        res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
-      }
-    } catch (aiError) {
-      await decrementDailyMessageCount(req.user.id); // the message never actually went through
-      res.write(
-        `data: ${JSON.stringify({ error: aiError instanceof Error ? aiError.message : "AI error" })}\n\n`,
-      );
-      res.end();
-      return;
-    }
-
-    // Signal stream completion
-    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-    res.end();
-
-    // ── Persist both turns to the session ────────────────────────────────────
-    const userTurn = {
-      role: "user" as const,
-      content: userMessage,
-      createdAt: new Date(),
-    };
-    const assistantTurn = {
-      role: "assistant" as const,
-      content: fullAssistantResponse,
-      createdAt: new Date(),
-    };
-
-    session.messages.push(userTurn, assistantTurn);
-    session.totalMessageCount += 1;
-    await session.save();
+    // ── Stream response and persist both turns ───────────────────────────────
+    await streamChatAndPersist(res, req.user.id, session, systemPrompt, userMessage);
   } catch (error) {
     // If headers not sent yet, return JSON error; otherwise end the stream
     if (!res.headersSent) {

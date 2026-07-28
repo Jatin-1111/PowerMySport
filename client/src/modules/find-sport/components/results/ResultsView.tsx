@@ -118,8 +118,18 @@ const HOURS_LABEL: Record<NonNullable<WizardAnswers["weeklyHours"]>, string> = {
   "13-plus": "13+ hours a week",
 };
 
+// Pronoun helpers — resolve to he/she when gender is known, singular "they"
+// only when the parent didn't specify (same fallback rule as the wizard's
+// own question prompts).
+function pronounsFor(gender: WizardAnswers["gender"]) {
+  if (gender === "boy") return { poss: "his", obj: "him" };
+  if (gender === "girl") return { poss: "her", obj: "her" };
+  return { poss: "their", obj: "them" };
+}
+
 function buildKeyFindings(answers: WizardAnswers): string[] {
   const name = answers.childName || "Your child";
+  const { poss, obj } = pronounsFor(answers.gender);
   const findings: string[] = [];
 
   if (answers.energyType === "explosive") {
@@ -130,16 +140,16 @@ function buildKeyFindings(answers: WizardAnswers): string[] {
 
   if (answers.teamIndividual !== null) {
     if (answers.teamIndividual >= 4) {
-      findings.push(`Prefers individual competition — wants the result to rest on their own performance alone.`);
+      findings.push(`Prefers individual competition — wants the result to rest on ${poss} own performance alone.`);
     } else if (answers.teamIndividual <= 2) {
       findings.push(`Prefers team environments — plays better with shared effort and shared momentum.`);
     }
   }
 
   if (answers.pressureResponse === "thrives") {
-    findings.push(`${name} gets better under pressure — big moments bring out their best, not their worst.`);
+    findings.push(`${name} gets better under pressure — big moments bring out ${poss} best, not ${poss} worst.`);
   } else if (answers.pressureResponse === "avoids") {
-    findings.push(`${name} plays better without pressure — high-stakes moments work against them, not for them.`);
+    findings.push(`${name} plays better without pressure — high-stakes moments work against ${obj}, not for ${obj}.`);
   }
 
   if (answers.agility === "high") {
@@ -350,41 +360,12 @@ export function ResultsView({
             What&apos;s next
           </p>
           <h3 className="font-title text-xl font-bold text-white">
-            Three ways to keep {name}&apos;s momentum going
+            Keep {name}&apos;s momentum going
           </h3>
         </div>
 
         {/* Columns */}
-        <div className="relative grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/[0.06]">
-          {/* Expert */}
-          <div className="group flex flex-col p-6 sm:p-7 transition-colors duration-300 hover:bg-white/[0.03]">
-            <div className="w-10 h-10 rounded-xl bg-power-orange/15 ring-1 ring-power-orange/20 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-105">
-              <Sparkles className="w-[18px] h-[18px] text-power-orange" />
-            </div>
-            <p className="font-semibold text-[15px] text-white mb-1.5">
-              Get a second opinion
-            </p>
-            <p className="text-sm text-slate-400 leading-relaxed mb-6 flex-1">
-              Our consultants work with parents across India — academies, costs, and realistic timelines for {name}&apos;s profile.
-            </p>
-            <a
-              href="/experts"
-              className="group/cta flex items-center justify-center gap-2 w-full bg-white text-slate-900 rounded-xl py-3 text-sm font-semibold transition-all duration-200 hover:bg-slate-100 hover:shadow-lg hover:shadow-black/20"
-            >
-              Talk to our Expert
-              <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover/cta:translate-x-0.5" />
-            </a>
-            <a
-              href="https://wa.me/918968582443"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group/wa flex items-center justify-center gap-1.5 mt-3.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
-            >
-              or chat free on WhatsApp
-              <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover/wa:translate-x-0.5" />
-            </a>
-          </div>
-
+        <div className="relative grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-white/[0.06]">
           {/* Community */}
           <div className="group flex flex-col p-6 sm:p-7 transition-colors duration-300 hover:bg-white/[0.03]">
             <div className="w-10 h-10 rounded-xl bg-violet-500/15 ring-1 ring-violet-400/20 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-105">
