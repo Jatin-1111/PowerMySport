@@ -8,6 +8,8 @@ import {
   CommunityGroupSummary,
   CommunityUserSearchResult,
 } from "@/modules/community/types";
+import { redirectToMainLogin } from "@/lib/auth/redirect";
+import { hasAuthToken } from "@/lib/auth/token";
 import { CommunityPageHeader } from "@/modules/community/components/CommunityPageHeader";
 import CreateCommunityModal from "@/modules/community/components/discover/CreateCommunityModal";
 import EditCommunityModal from "@/modules/community/components/discover/EditCommunityModal";
@@ -106,6 +108,10 @@ export default function DiscoverPageClient() {
   useEffect(() => {
     let isMounted = true;
     const fetchData = async () => {
+      if (activeTab !== "COMMUNITIES" && !hasAuthToken()) {
+        redirectToMainLogin();
+        return;
+      }
       setLoading(true);
       try {
         if (activeTab === "COMMUNITIES") {
@@ -146,6 +152,10 @@ export default function DiscoverPageClient() {
   };
 
   const handleJoinGroup = async (groupId: string) => {
+    if (!hasAuthToken()) {
+      redirectToMainLogin();
+      return;
+    }
     setIsJoiningCommunity(true);
     try {
       await communityService.joinGroup(groupId);
@@ -192,6 +202,10 @@ export default function DiscoverPageClient() {
   };
 
   const handleCommunityChat = async (groupId: string) => {
+    if (!hasAuthToken()) {
+      redirectToMainLogin();
+      return;
+    }
     try {
       const convs = await communityService.listConversationsItems(1, 100, {
         type: "GROUPS",
@@ -211,6 +225,10 @@ export default function DiscoverPageClient() {
   };
 
   const handlePlayerChat = async (userId: string) => {
+    if (!hasAuthToken()) {
+      redirectToMainLogin();
+      return;
+    }
     try {
       const conversation = await communityService.startConversation(userId);
       router.push(`/chats?conversation=${conversation.id}`);
@@ -419,7 +437,13 @@ export default function DiscoverPageClient() {
               return (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab as any)}
+                  onClick={() => {
+                    if (tab !== "COMMUNITIES" && !hasAuthToken()) {
+                      redirectToMainLogin();
+                      return;
+                    }
+                    setActiveTab(tab as any);
+                  }}
                   className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-[13px] font-semibold transition-colors duration-200 ${
                     isActive ? "text-power-orange" : "text-slate-400 hover:text-slate-600"
                   }`}
@@ -470,7 +494,13 @@ export default function DiscoverPageClient() {
                       </div>
                     </div>
                     <button
-                      onClick={() => setIsCreateModalOpen(true)}
+                      onClick={() => {
+                        if (!hasAuthToken()) {
+                          redirectToMainLogin();
+                          return;
+                        }
+                        setIsCreateModalOpen(true);
+                      }}
                       style={{ background: 'rgba(233,115,22,0.9)' }}
                       className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
                     >

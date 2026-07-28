@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Trophy } from "lucide-react";
 import { communityService } from "@/modules/community/services/community";
+import { hasAuthToken } from "@/lib/auth/token";
 
 export default function DynamicCommunityPulse() {
   const [displayCount, setDisplayCount] = useState<number>(1);
@@ -30,9 +31,17 @@ export default function DynamicCommunityPulse() {
     async function loadPulse() {
       try {
         const posts = await communityService.listPosts(1, 1);
-        const groups = await communityService.listGroups();
-        const totalActivity =
-          (posts.pagination?.total || 0) + groups.length * 12;
+        // Groups are members-only, so guests don't have a session to fetch
+        // them with — fold in the group count only when one exists, rather
+        // than gating this whole widget (and the home page's 401 interceptor)
+        // on a private endpoint.
+        const groupCount = hasAuthToken()
+          ? await communityService.listGroups().then(
+              (groups) => groups.length,
+              () => 0,
+            )
+          : 0;
+        const totalActivity = (posts.pagination?.total || 0) + groupCount * 12;
         target = totalActivity > 0 ? totalActivity : 1280;
       } catch (err) {
         target = 1280;

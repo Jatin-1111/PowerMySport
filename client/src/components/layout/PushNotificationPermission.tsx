@@ -55,7 +55,7 @@ export function PushNotificationPermission() {
       await pushNotificationService.subscribe();
       setPermission("granted");
       setIsSubscribed(true);
-      toast.success("Push notifications enabled successfully!");
+      toast.success("Push notifications enabled");
 
       // Send a test notification
       setTimeout(() => {
@@ -70,11 +70,9 @@ export function PushNotificationPermission() {
         error instanceof Error &&
         error.message.includes("permission denied")
       ) {
-        toast.error(
-          "Notification permission denied. Please enable notifications in your browser settings.",
-        );
+        toast.error("Notification permission denied");
       } else {
-        toast.error("Failed to enable push notifications. Please try again.");
+        toast.error("Failed to enable push notifications");
       }
     } finally {
       setActionLoading(false);
@@ -86,10 +84,10 @@ export function PushNotificationPermission() {
     try {
       await pushNotificationService.unsubscribe();
       setIsSubscribed(false);
-      toast.success("Push notifications disabled successfully");
+      toast.success("Push notifications disabled");
     } catch (error) {
       console.error("Failed to disable push notifications:", error);
-      toast.error("Failed to disable push notifications. Please try again.");
+      toast.error("Failed to disable push notifications");
     } finally {
       setActionLoading(false);
     }
@@ -101,7 +99,7 @@ export function PushNotificationPermission() {
         "Test Notification",
         "This is a test notification from PowerMySport",
       );
-      toast.success("Test notification sent!");
+      toast.success("Test notification sent");
     } catch (error) {
       console.error("Failed to send test notification:", error);
       toast.error("Failed to send test notification");

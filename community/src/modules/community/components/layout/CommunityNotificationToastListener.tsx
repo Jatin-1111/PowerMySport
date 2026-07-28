@@ -65,8 +65,8 @@ export default function CommunityNotificationToastListener() {
         return;
       }
 
-      const title = payload.title?.trim() || "New community notification";
-      const message = payload.message?.trim() || "You have a new update";
+      const title = payload.title?.trim() || "New notification";
+      const message = payload.message?.trim() || "New update";
       const actionHref = buildActionHref(payload);
       const toastKey = [
         payload.id || "",

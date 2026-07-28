@@ -153,11 +153,11 @@ export function RefundMethodManager({
       if (editingMethod) {
         saved = await onUpdate(editingMethod.id!, payload);
         setMethods((prev) => prev.map((m) => (m.id === saved.id ? saved : m)));
-        toast.success("Refund method updated!");
+        toast.success("Refund method updated");
       } else {
         saved = await onAdd(payload);
         setMethods((prev) => [...prev, saved]);
-        toast.success("Refund method added!");
+        toast.success("Refund method added");
       }
 
       resetForm();

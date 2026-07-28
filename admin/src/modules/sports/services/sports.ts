@@ -15,11 +15,6 @@ interface SportsResponse<T> {
   data?: T;
 }
 
-interface VerifyResponse {
-  isValid: boolean;
-  message: string;
-}
-
 export const sportsApi = {
   getAllSports: async (): Promise<Sport[]> => {
     try {
@@ -42,32 +37,6 @@ export const sportsApi = {
     } catch (error) {
       console.error("Error searching sports:", error);
       return [];
-    }
-  },
-
-  verifySport: async (sportName: string): Promise<VerifyResponse> => {
-    try {
-      const response = await axiosInstance.post<SportsResponse<VerifyResponse>>(
-        "/sports/verify",
-        { sportName },
-      );
-      return response.data.data || { isValid: false, message: "Unknown error" };
-    } catch (error) {
-      console.error("Error verifying sport:", error);
-      return { isValid: false, message: "Failed to verify sport" };
-    }
-  },
-
-  addCustomSport: async (sportName: string) => {
-    try {
-      const response = await axiosInstance.post<SportsResponse<Sport>>(
-        "/sports/add",
-        { sportName },
-      );
-      return response.data.data || null;
-    } catch (error) {
-      console.error("Error adding custom sport:", error);
-      throw error;
     }
   },
 };

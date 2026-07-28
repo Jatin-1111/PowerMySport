@@ -13,7 +13,7 @@ const faqs = [
       {
         question: "What is PowerMySport?",
         answer:
-          "PowerMySport is a hyperlocal sports venue and coach booking platform that connects players with premium sports facilities and professional coaches. We make it easy to discover, book, and pay for sports activities in your area.",
+          "PowerMySport helps parents plan their child's sports journey with AI-powered pathways, personalised guidance, and verified expert sessions across India. Our core tools are kept separate on purpose: Get Started (a free Sport Assessment for parents who don't yet know which sport suits their child), Problem Solver (AI Guidance that builds a full personalized development plan once a sport is known), Sports Pathways (a roadmap explorer covering 70+ sports), and Experts (1:1 consultations with verified coaches and mentors).",
       },
       {
         question: "How do I create an account?",
@@ -23,32 +23,32 @@ const faqs = [
       {
         question: "Is PowerMySport free to use?",
         answer:
-          "Creating an account and browsing venues/coaches is completely free. You only pay when you book a session or service. Venue listers and coaches pay a small commission on successful bookings.",
+          "Yes — creating an account, using the free Sport Assessment to find the right sport, using AI Guidance to build a personalized plan, and exploring sport pathways/roadmaps are all free. You only pay when you book a paid service, like an expert consultation.",
       },
     ],
   },
   {
-    category: "Booking & Payments",
+    category: "Expert Sessions & Payments",
     questions: [
       {
-        question: "How do I book a venue or coach?",
+        question: "Can I book a venue, coach, or academy session right now?",
         answer:
-          "Browse available venues or coaches, select your preferred date and time slot, choose your sport, and confirm your booking. You'll be directed to payment, and once completed, you'll receive a confirmation with all details.",
+          "The venue/coach/academy booking marketplace is temporarily paused while we roll out improvements. In the meantime, you can still get 1:1 guidance from a verified expert, or use our free Sport Assessment and AI Guidance tools to plan your child's sports journey.",
+      },
+      {
+        question: "How do I book an expert consultation?",
+        answer:
+          "Browse verified experts, pick one whose expertise fits your child, select an available time slot, and confirm. You'll be directed to payment, and you'll get a confirmation with the session details once it's complete.",
       },
       {
         question: "What payment methods are accepted?",
         answer:
-          "We support card, UPI, and wallet checkout options in our booking flow. All payments are processed securely through our payment gateway.",
+          "We support card, UPI, and wallet checkout for expert session payments. All payments are processed securely through our payment gateway.",
       },
       {
-        question: "Can I cancel or reschedule my booking?",
+        question: "Can I cancel or reschedule an expert session?",
         answer:
-          "Yes, you can cancel bookings according to the cancellation policy (usually 24-48 hours before the session). To cancel, go to 'My Bookings' in your dashboard and select the booking you wish to cancel. Refunds are processed within 5-7 business days.",
-      },
-      {
-        question: "Do I need to pay separately for venue and coach?",
-        answer:
-          "If you book a venue with a coach, the system automatically calculates split payments. You'll see the breakdown before confirming, and payments are distributed automatically to the venue owner and coach.",
+          "Yes — go to your dashboard, find the session, and choose to cancel or reschedule. Refunds follow our standard cancellation policy (see Payment & Refunds below).",
       },
     ],
   },
@@ -56,19 +56,19 @@ const faqs = [
     category: "For Players",
     questions: [
       {
-        question: "Can I book for multiple people?",
+        question: "How do I find the right sport for my child?",
         answer:
-          "Yes! You can add dependents (like children) to your account and book sessions for them. This is especially useful for parents booking for their kids.",
+          "Use Get Started (our free Sport Assessment) — answer a few quick questions about your child's age, personality, and physical traits, and it recommends sports that genuinely fit. Already know the sport? Build a Sport Profile instead to skip straight to personalization.",
       },
       {
-        question: "How do I find venues near me?",
+        question: "Can I get a personalized development plan for my child?",
         answer:
-          "Use the venues page search and filters (sport, price, rating, amenities) to shortlist the right options quickly. Open any venue to check details, slots, and booking flow.",
+          "Yes — Problem Solver (AI Guidance) builds a full plan once you know your child's sport: training phases, a weekly schedule, a cost breakdown, and the ideal coaching style for their personality.",
       },
       {
-        question: "What if I arrive and the venue is closed?",
+        question: "Can I add multiple children or book for more than one?",
         answer:
-          "Contact our support team immediately. We'll help resolve the issue and ensure you get a refund or alternative booking. Venue listers are held accountable for no-shows.",
+          "Yes! You can add dependents (like children) to your account and book expert sessions for them. This is especially useful for parents managing more than one child's sports journey.",
       },
     ],
   },
@@ -88,7 +88,7 @@ const faqs = [
       {
         question: "How do I receive payments?",
         answer:
-          "Payments are automatically deposited to your registered bank account after each booking is completed. You can track all earnings in your dashboard.",
+          "Once the booking marketplace is live, payments are automatically deposited to your registered bank account after each booking is completed, and you'll be able to track earnings in your dashboard. Onboarding is open now so your listing is ready as soon as bookings launch.",
       },
       {
         question: "Can I set different prices for different sports?",
@@ -103,7 +103,7 @@ const faqs = [
       {
         question: "How do I become a coach on the platform?",
         answer:
-          "Sign up as a Coach, provide your certifications, sports expertise, and choose your service mode (own venue, freelance, or hybrid). You can start receiving bookings once your profile is complete.",
+          "Sign up as a Coach, provide your certifications, sports expertise, and choose your service mode (own venue, freelance, or hybrid). The booking marketplace is temporarily paused, so complete your profile now and you'll be ready to receive bookings as soon as it reopens.",
       },
       {
         question: "What are the different service modes?",
@@ -228,7 +228,7 @@ const faqs = [
       {
         question: "Can I post reviews and photos on PowerMySport?",
         answer:
-          "Yes! You can post reviews after completing a booking with a coach or venue. You can also share photos from your sessions. However, all content must follow our Content Policy - no abusive, misleading, or inappropriate content.",
+          "Yes! You can post reviews after completing a session with an expert. You can also share photos from your sessions. However, all content must follow our Content Policy - no abusive, misleading, or inappropriate content.",
       },
       {
         question: "What content is not allowed?",
@@ -278,7 +278,7 @@ const faqs = [
       {
         question: "What can I do if I don't want cookies?",
         answer:
-          "You can disable cookies in your browser settings or clear them at any time. Note: blocking essential cookies may prevent login and bookings from working properly.",
+          "You can disable cookies in your browser settings or clear them at any time. Note: blocking essential cookies may prevent login and other core features from working properly.",
       },
       {
         question: "How is my personal data used?",
@@ -299,11 +299,6 @@ const faqs = [
         question: "Why can't I log in to my account?",
         answer:
           "Try: (1) Reset your password via the login page; (2) Clear your browser cache; (3) Try a different browser; (4) Check that JavaScript is enabled. If still not working, email teams@powermysport.com with your email address.",
-      },
-      {
-        question: "What payment methods do you accept?",
-        answer:
-          "You can pay using card, UPI, and wallet options available in checkout. All payment processing is encrypted and secure.",
       },
       {
         question: "Why was my transaction declined?",
@@ -328,7 +323,7 @@ const faqs = [
       {
         question: "How do I contact PowerMySport?",
         answer:
-          "You can reach us at teams@powermysport.com, use the contact form at powermysport.com/contact, or access the in-app help center when logged in.",
+          "You can reach us at teams@powermysport.com, use the contact form at powermysport.com/contact, or browse this FAQ page for quick answers.",
       },
     ],
   },

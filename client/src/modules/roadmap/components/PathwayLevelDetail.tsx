@@ -270,87 +270,109 @@ export function PathwayLevelDetail({
         </div>
       )}
 
-      {/* ── At-a-glance strip ── */}
-      <div className="shrink-0 flex flex-wrap gap-2 px-5 sm:px-6 pt-4 pb-4 border-b border-white/60">
-        {leadLevel?.keyFocus && (
-          <div className="flex items-center gap-1.5 rounded-lg border border-white/70 bg-white/80 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700">
-            <Target className={`h-3.5 w-3.5 ${colors.text}`} />{" "}
-            {leadLevel.keyFocus}
-          </div>
-        )}
-        {ageRangeLabel && (
-          <div className="flex items-center gap-1.5 rounded-lg border border-white/70 bg-white/80 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700">
-            <Calendar className={`h-3.5 w-3.5 ${colors.text}`} />{" "}
-            {ageRangeLabel}
-          </div>
-        )}
+      {/* ── At-a-glance strip ──
+          Plain facts (key focus, age range) are de-emphasized text, not
+          boxed pills — they're context, not insight. The persona-fit row
+          below is the only thing styled as a real chip, since it's the one
+          personalized, actionable read on this stage. */}
+      {(leadLevel?.keyFocus ||
+        ageRangeLabel ||
+        ageFit ||
+        (budgetFit && persona?.budgetRange) ||
+        isGoalStage) && (
+        <div className="shrink-0 space-y-2 px-5 sm:px-6 pt-4 pb-4 border-b border-white/60">
+          {(leadLevel?.keyFocus || ageRangeLabel) && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-slate-500">
+              {leadLevel?.keyFocus && (
+                <span className="flex items-center gap-1.5">
+                  <Target className={`h-3.5 w-3.5 ${colors.text}`} />
+                  {leadLevel.keyFocus}
+                </span>
+              )}
+              {ageRangeLabel && (
+                <span className="flex items-center gap-1.5">
+                  <Calendar className={`h-3.5 w-3.5 ${colors.text}`} />
+                  {ageRangeLabel}
+                </span>
+              )}
+            </div>
+          )}
 
-        {/* ── Persona fit chips — deterministic, from the child's profile ── */}
-        {ageFit && (
-          <div
-            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${
-              ageFit.fit === "within"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border-amber-200 bg-amber-50 text-amber-700"
-            }`}
-          >
-            <UserCheck className="h-3.5 w-3.5" />
-            {personaFirst ? `${personaFirst} is ${persona!.age}` : `Age ${persona!.age}`}
-            {ageFit.fit === "within"
-              ? " — fits this stage"
-              : ageFit.fit === "younger"
-                ? " — a little young for this stage"
-                : " — past the typical window"}
-          </div>
-        )}
-        {budgetFit && persona?.budgetRange && (
-          <div
-            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${
-              budgetFit === "within"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : budgetFit === "stretch"
-                  ? "border-amber-200 bg-amber-50 text-amber-700"
-                  : "border-rose-200 bg-rose-50 text-rose-700"
-            }`}
-          >
-            <Wallet className="h-3.5 w-3.5" />
-            {budgetFit === "within"
-              ? `Fits the ${BUDGET_RANGE_DISPLAY[persona.budgetRange]} budget you set`
-              : budgetFit === "stretch"
-                ? `Entry fits your ${BUDGET_RANGE_DISPLAY[persona.budgetRange]} budget — the top end costs more`
-                : `Costs more than your ${BUDGET_RANGE_DISPLAY[persona.budgetRange]} budget — scholarships can bridge it`}
-          </div>
-        )}
-        {isGoalStage && (
-          <div className="flex items-center gap-1.5 rounded-lg border border-power-orange/30 bg-orange-50 px-2.5 py-1.5 text-[11px] font-semibold text-power-orange">
-            <Target className="h-3.5 w-3.5" />
-            {personaFirst
-              ? `The goal you set for ${personaFirst}`
-              : "The goal you set"}
-          </div>
-        )}
-      </div>
+          {/* ── Persona fit chips — deterministic, from the child's profile ── */}
+          {(ageFit || (budgetFit && persona?.budgetRange) || isGoalStage) && (
+            <div className="flex flex-wrap gap-2">
+              {ageFit && (
+                <div
+                  className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${
+                    ageFit.fit === "within"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                      : "border-amber-200 bg-amber-50 text-amber-700"
+                  }`}
+                >
+                  <UserCheck className="h-3.5 w-3.5" />
+                  {personaFirst ? `${personaFirst} is ${persona!.age}` : `Age ${persona!.age}`}
+                  {ageFit.fit === "within"
+                    ? " — fits this stage"
+                    : ageFit.fit === "younger"
+                      ? " — a little young for this stage"
+                      : " — past the typical window"}
+                </div>
+              )}
+              {budgetFit && persona?.budgetRange && (
+                <div
+                  className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${
+                    budgetFit === "within"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                      : budgetFit === "stretch"
+                        ? "border-amber-200 bg-amber-50 text-amber-700"
+                        : "border-rose-200 bg-rose-50 text-rose-700"
+                  }`}
+                >
+                  <Wallet className="h-3.5 w-3.5" />
+                  {budgetFit === "within"
+                    ? `Fits the ${BUDGET_RANGE_DISPLAY[persona.budgetRange]} budget you set`
+                    : budgetFit === "stretch"
+                      ? `Entry fits your ${BUDGET_RANGE_DISPLAY[persona.budgetRange]} budget — the top end costs more`
+                      : `Costs more than your ${BUDGET_RANGE_DISPLAY[persona.budgetRange]} budget — scholarships can bridge it`}
+                </div>
+              )}
+              {isGoalStage && (
+                <div className="flex items-center gap-1.5 rounded-lg border border-power-orange/30 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-power-orange">
+                  <Target className="h-3.5 w-3.5" />
+                  {personaFirst
+                    ? `The goal you set for ${personaFirst}`
+                    : "The goal you set"}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* ── Inner tab navigation ── */}
+      {/* ── Inner tab navigation ──
+          Horizontally scrollable with labels always visible — matches the
+          outer tab bar's pattern instead of hiding labels below `lg` and
+          leaving mobile users to guess from icons alone. */}
       {innerTabs.length > 1 && (
         <div className="shrink-0 px-5 sm:px-6 pt-3">
-          <div className="flex gap-1 rounded-xl bg-white/70 p-1">
-            {innerTabs.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                title={t.label}
-                onClick={() => setInnerTab(t.id)}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[11px] font-bold transition-all duration-200 ${
-                  innerTab === t.id
-                    ? `bg-white ${colors.text} shadow-sm`
-                    : `text-slate-600 hover:text-slate-900 hover:bg-white/60`
-                }`}
-              >
-                {t.icon}
-                <span className="hidden lg:inline truncate">{t.label}</span>
-              </button>
-            ))}
+          <div className="overflow-x-auto hide-scrollbar">
+            <div className="inline-flex min-w-full gap-1 rounded-xl bg-white/70 p-1">
+              {innerTabs.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setInnerTab(t.id)}
+                  className={`flex flex-1 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-[11px] font-bold transition-all duration-200 ${
+                    innerTab === t.id
+                      ? `bg-white ${colors.text} shadow-sm`
+                      : `text-slate-600 hover:text-slate-900 hover:bg-white/60`
+                  }`}
+                >
+                  {t.icon}
+                  <span>{t.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

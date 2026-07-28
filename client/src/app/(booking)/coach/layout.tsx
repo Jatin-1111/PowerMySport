@@ -73,9 +73,7 @@ export default function CoachLayout({
           const toastKey = `incomplete:${pathname}`;
           if (lastGateToastKeyRef.current !== toastKey) {
             lastGateToastKeyRef.current = toastKey;
-            toast.error(
-              "Coach verification is incomplete. Redirected to verification page.",
-            );
+            toast.error("Coach verification incomplete");
           }
           router.replace("/coach/verification");
         }
@@ -89,9 +87,7 @@ export default function CoachLayout({
           const toastKey = `fetch-failed:${pathname}`;
           if (lastGateToastKeyRef.current !== toastKey) {
             lastGateToastKeyRef.current = toastKey;
-            toast.error(
-              "Unable to load coach profile. Redirected to verification page.",
-            );
+            toast.error("Unable to load coach profile");
           }
           router.replace("/coach/verification");
         }

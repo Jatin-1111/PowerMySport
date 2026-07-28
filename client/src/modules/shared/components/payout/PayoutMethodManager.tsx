@@ -236,7 +236,7 @@ export function PayoutMethodManager({
       const saved = await onSave(payload);
       setCurrent(saved);
       setEditing(false);
-      toast.success("Payout method saved successfully! 🎉");
+      toast.success("Payout method saved");
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Failed to save payout method",

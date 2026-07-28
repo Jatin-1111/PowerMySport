@@ -18,7 +18,7 @@ export const KNOWLEDGE_BASE_SOURCES: KnowledgeSourceEntry[] = [
     sourceId: "general-what-is-powermysport",
     title: "What is PowerMySport?",
     content:
-      "PowerMySport helps parents plan their child's sports journey with AI-powered pathways, personalised guidance, and verified expert sessions across India. Core tools are kept separate on purpose: a free Sport Assessment (/assessment/discover) for parents who don't yet know which sport suits their child, AI Guidance (/guidance) that builds a full personalized development plan once a sport is known, a sport pathway/roadmap explorer (/roadmap) covering 70+ sports, physical screenings, 1:1 expert consultations, a parent community, and a booking marketplace for verified coaches, academies, and venues.",
+      "PowerMySport helps parents plan their child's sports journey with AI-powered pathways, personalised guidance, and verified expert sessions across India. Core tools are kept separate on purpose: Get Started (a free Sport Assessment at /assessment/discover for parents who don't yet know which sport suits their child), Problem Solver (AI Guidance at /guidance that builds a full personalized development plan once a sport is known), Sports Pathways (a roadmap explorer at /roadmap covering 70+ sports), and Experts (1:1 consultations with verified coaches and mentors at /experts). The venue/coach/academy booking marketplace is temporarily paused.",
   },
   {
     sourceType: "faq",
@@ -32,60 +32,60 @@ export const KNOWLEDGE_BASE_SOURCES: KnowledgeSourceEntry[] = [
     sourceId: "general-is-it-free",
     title: "Is PowerMySport free to use?",
     content:
-      "Yes — creating an account, using the free Sport Assessment to find the right sport, using AI Guidance to build a personalized plan, exploring sport pathways/roadmaps, and browsing coaches, academies, and venues are all free. You only pay when you book a paid service, like an expert consultation or a coaching/venue session. Venue listers and coaches pay a small commission on successful bookings.",
+      "Yes — creating an account, using the free Sport Assessment to find the right sport, using AI Guidance to build a personalized plan, and exploring sport pathways/roadmaps are all free. You only pay when you book a paid service, like an expert consultation.",
   },
 
-  // ── Booking & Payments ───────────────────────────────────────────────────
+  // ── Expert Sessions & Payments ───────────────────────────────────────────
   {
     sourceType: "faq",
     sourceId: "booking-how-to-book",
-    title: "How do I book a venue or coach?",
+    title: "Can I book a venue, coach, or academy session right now?",
     content:
-      "Browse available venues or coaches, select a date and time slot, choose your sport, and confirm your booking. You're directed to payment, and once completed you receive a confirmation with all details.",
+      "The venue/coach/academy booking marketplace is temporarily paused while we roll out improvements. In the meantime, you can still get 1:1 guidance from a verified expert, or use the free Sport Assessment and AI Guidance tools to plan your child's sports journey.",
+  },
+  {
+    sourceType: "faq",
+    sourceId: "booking-split-payment",
+    title: "How do I book an expert consultation?",
+    content:
+      "Browse verified experts, pick one whose expertise fits your child, select an available time slot, and confirm. You're directed to payment, and you get a confirmation with the session details once it's complete.",
   },
   {
     sourceType: "faq",
     sourceId: "booking-payment-methods",
     title: "What payment methods are accepted?",
     content:
-      "Card, UPI, and wallet checkout options are supported in the booking flow. All payments are processed securely through the payment gateway.",
+      "Card, UPI, and wallet checkout are supported for expert session payments. All payments are processed securely through the payment gateway.",
   },
   {
     sourceType: "faq",
     sourceId: "booking-cancel-reschedule",
-    title: "Can I cancel or reschedule my booking?",
+    title: "Can I cancel or reschedule an expert session?",
     content:
-      "Yes, bookings can be cancelled according to the cancellation policy (usually 24-48 hours before the session). Go to 'My Bookings' in the dashboard and select the booking to cancel. Refunds are processed within 5-7 business days.",
-  },
-  {
-    sourceType: "faq",
-    sourceId: "booking-split-payment",
-    title: "Do I need to pay separately for venue and coach?",
-    content:
-      "If a venue is booked together with a coach, the system automatically calculates split payments. The breakdown is shown before confirming, and payments are distributed automatically to the venue owner and coach.",
+      "Yes — go to your dashboard, find the session, and choose to cancel or reschedule. Refunds follow the standard cancellation policy.",
   },
 
   // ── For Players ───────────────────────────────────────────────────────────
   {
     sourceType: "faq",
-    sourceId: "players-book-multiple",
-    title: "Can I book for multiple people?",
-    content:
-      "Yes — dependents (like children) can be added to an account and sessions booked for them. This is especially useful for parents booking for their kids.",
-  },
-  {
-    sourceType: "faq",
     sourceId: "players-find-venues",
-    title: "How do I find venues near me?",
+    title: "How do I find the right sport for my child?",
     content:
-      "Use the venues page search and filters (sport, price, rating, amenities) to shortlist options quickly. Open any venue to check details, slots, and the booking flow.",
+      "Use Get Started (the free Sport Assessment) — answer a few quick questions about your child's age, personality, and physical traits, and it recommends sports that genuinely fit. Already know the sport? Build a Sport Profile instead to skip straight to personalization.",
   },
   {
     sourceType: "faq",
     sourceId: "players-venue-closed",
-    title: "What if I arrive and the venue is closed?",
+    title: "Can I get a personalized development plan for my child?",
     content:
-      "Contact the support team immediately. They'll help resolve the issue and ensure a refund or alternative booking — venue listers are held accountable for no-shows.",
+      "Yes — Problem Solver (AI Guidance) builds a full plan once you know your child's sport: training phases, a weekly schedule, a cost breakdown, and the ideal coaching style for their personality.",
+  },
+  {
+    sourceType: "faq",
+    sourceId: "players-book-multiple",
+    title: "Can I add multiple children or book for more than one?",
+    content:
+      "Yes — dependents (like children) can be added to an account and expert sessions booked for them. This is especially useful for parents managing more than one child's sports journey.",
   },
 
   // ── For Venue & Academy Owners ────────────────────────────────────────────
@@ -108,7 +108,7 @@ export const KNOWLEDGE_BASE_SOURCES: KnowledgeSourceEntry[] = [
     sourceId: "venues-receive-payments",
     title: "How do I receive payments?",
     content:
-      "Payments are automatically deposited to the registered bank account after each booking is completed. Earnings can be tracked in the dashboard.",
+      "Once the booking marketplace is live, payments are automatically deposited to the registered bank account after each booking is completed, and earnings can be tracked in the dashboard. Onboarding is open now so listings are ready as soon as bookings launch.",
   },
   {
     sourceType: "faq",
@@ -124,7 +124,7 @@ export const KNOWLEDGE_BASE_SOURCES: KnowledgeSourceEntry[] = [
     sourceId: "coaches-become-a-coach",
     title: "How do I become a coach on the platform?",
     content:
-      "Sign up as a Coach, provide certifications and sports expertise, and choose a service mode (own venue, freelance, or hybrid). Bookings can start once the profile is complete.",
+      "Sign up as a Coach, provide certifications and sports expertise, and choose a service mode (own venue, freelance, or hybrid). The booking marketplace is temporarily paused, so complete the profile now to be ready to receive bookings as soon as it reopens.",
   },
   {
     sourceType: "faq",
@@ -274,7 +274,7 @@ export const KNOWLEDGE_BASE_SOURCES: KnowledgeSourceEntry[] = [
     sourceId: "content-reviews-and-photos",
     title: "Can I post reviews and photos on PowerMySport?",
     content:
-      "Yes — reviews can be posted after completing a booking with a coach or venue, and photos from sessions can be shared. All content must follow the Content Policy: no abusive, misleading, or inappropriate content.",
+      "Yes — reviews can be posted after completing a session with an expert, and photos from sessions can be shared. All content must follow the Content Policy: no abusive, misleading, or inappropriate content.",
   },
   {
     sourceType: "faq",
@@ -334,7 +334,7 @@ export const KNOWLEDGE_BASE_SOURCES: KnowledgeSourceEntry[] = [
     sourceId: "privacy-disable-cookies",
     title: "What can I do if I don't want cookies?",
     content:
-      "Cookies can be disabled in browser settings or cleared at any time. Note that blocking essential cookies may prevent login and bookings from working properly.",
+      "Cookies can be disabled in browser settings or cleared at any time. Note that blocking essential cookies may prevent login and other core features from working properly.",
   },
   {
     sourceType: "faq",
@@ -387,6 +387,6 @@ export const KNOWLEDGE_BASE_SOURCES: KnowledgeSourceEntry[] = [
     sourceId: "support-contact-methods",
     title: "How do I contact PowerMySport?",
     content:
-      "Reach the team at teams@powermysport.com, via the contact form at powermysport.com/contact, or through the in-app help center when logged in.",
+      "Reach the team at teams@powermysport.com, via the contact form at powermysport.com/contact, or browse the FAQ page for quick answers.",
   },
 ];

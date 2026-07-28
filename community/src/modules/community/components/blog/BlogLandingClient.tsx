@@ -5,8 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { blogService } from "@/modules/community/services/blog";
 import { BlogListItem } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
-import { isCommunityEligibleRole } from "@/lib/auth/roles";
-import { communityService } from "@/modules/community/services/community";
+import { hasAuthToken } from "@/lib/auth/token";
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import { toast } from "@/lib/toast";
 import { Search } from "lucide-react";
@@ -50,12 +49,6 @@ export default function BlogLandingClient() {
       try {
         if (append) setIsLoadingMore(true);
         else setIsLoading(true);
-
-        const session = await communityService.ensureSession();
-        if (!isCommunityEligibleRole(session.role)) {
-          redirectToMainLogin();
-          return;
-        }
 
         const data = await blogService.listBlogs(targetPage, PAGE_SIZE, {
           topic: topic || undefined,
@@ -117,6 +110,10 @@ export default function BlogLandingClient() {
   }, []);
 
   const handleToggleLike = async (blog: BlogListItem) => {
+    if (!hasAuthToken()) {
+      redirectToMainLogin();
+      return;
+    }
     // Optimistic update.
     setLikePendingId(blog.id);
     const optimisticLiked = !blog.likedByMe;

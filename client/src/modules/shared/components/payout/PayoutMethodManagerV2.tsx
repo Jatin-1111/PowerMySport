@@ -389,11 +389,11 @@ export function PayoutMethodManager({
       if (editingMethod) {
         saved = await onUpdate(editingMethod.id!, payload);
         setMethods((prev) => prev.map((m) => (m.id === saved.id ? saved : m)));
-        toast.success("Payout method updated!");
+        toast.success("Payout method updated");
       } else {
         saved = await onAdd(payload);
         setMethods((prev) => [...prev, saved]);
-        toast.success("Payout method added!");
+        toast.success("Payout method added");
       }
 
       resetForm();

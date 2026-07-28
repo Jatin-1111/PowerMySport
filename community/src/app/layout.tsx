@@ -50,7 +50,12 @@ export default function RootLayout({
             {children}
           </main>
         </div>
-        <Toaster richColors closeButton position="top-right" />
+        <Toaster
+          richColors
+          closeButton
+          position="top-right"
+          toastOptions={{ style: { width: "fit-content", maxWidth: "420px" } }}
+        />
       </body>
     </html>
   );

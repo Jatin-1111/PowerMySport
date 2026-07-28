@@ -1021,7 +1021,7 @@ function ProblemWizardInner({
       if (res.data.status === "not_supported") {
         const sportName = res.data.sport ?? form.sport ?? "that sport";
         toast.error(
-          `We're building the ${sportName} pathway — try Cricket, Tennis, or Football for now.`,
+          `${sportName} pathway isn't available yet. Try Cricket, Tennis, or Football.`,
           { duration: 6000 } as Parameters<typeof toast.error>[1],
         );
         setLoading(false);

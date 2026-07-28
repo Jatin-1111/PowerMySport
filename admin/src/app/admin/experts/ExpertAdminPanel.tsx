@@ -4,6 +4,7 @@ import { DetailRow, DetailSection } from "@/modules/shared/ui/DetailDrawer";
 import CoachPhotoUpload from "@/modules/admin/components/CoachPhotoUpload";
 import { AvailabilityEditor } from "@/modules/expert/components/AvailabilityEditor";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
+import { SUPPORTED_SPORT_NAMES } from "@/modules/sports/config/supportedSports";
 import ExpertiseMultiSelect from "@/modules/shared/components/ExpertiseMultiSelect";
 import LanguagesMultiSelect from "@/modules/shared/components/LanguagesMultiSelect";
 import {
@@ -267,7 +268,11 @@ export function ExpertAdminPanel({
         </div>
         <div>
           <label className={label}>Sports</label>
-          <SportsMultiSelect value={sports} onChange={setSports} />
+          <SportsMultiSelect
+            value={sports}
+            onChange={setSports}
+            allowedSports={SUPPORTED_SPORT_NAMES}
+          />
         </div>
         <div>
           <label className={label}>Expertise</label>

@@ -47,7 +47,7 @@ export default function FeatureWaitlist({
       });
       if (!res.ok) throw new Error("Something went wrong");
       setSubmitted(true);
-      toast.success("Successfully joined the waitlist!");
+      toast.success("Joined the waitlist");
       setTimeout(() => setSubmitted(false), 3000);
       setEmail("");
     } catch (error: any) {

@@ -22,7 +22,7 @@ import {
   CommunityVoteResult,
 } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
-import { isCommunityEligibleRole } from "@/lib/auth/roles";
+import { hasAuthToken } from "@/lib/auth/token";
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import { toast } from "@/lib/toast";
 import AuthorAvatar from "@/modules/community/components/page/AuthorAvatar";
@@ -79,13 +79,6 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
           setIsLoading(true);
         }
 
-        const session = await communityService.ensureSession();
-        if (!isCommunityEligibleRole(session.role)) {
-          redirectToMainLogin();
-          return;
-        }
-        setCurrentUserId(session.id);
-
         const data = await communityService.getPostDetails(
           postId,
           targetPage,
@@ -116,6 +109,17 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
   useEffect(() => {
     void loadDetails();
   }, [loadDetails]);
+
+  // This page is a shareable public link — resolve who's viewing it (if
+  // anyone) without gating render on it, so owner actions (edit/delete) still
+  // show up for a logged-in author without blocking guests.
+  useEffect(() => {
+    if (!hasAuthToken()) return;
+    communityService
+      .ensureSession()
+      .then((session) => setCurrentUserId(session.id))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const socket = getCommunitySocket();
@@ -216,6 +220,10 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
     targetId: string,
     value: 1 | -1,
   ) => {
+    if (!hasAuthToken()) {
+      redirectToMainLogin();
+      return;
+    }
     const key = `${targetType}:${targetId}`;
     try {
       setIsVotingKey(key);
@@ -233,6 +241,10 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
   };
 
   const submitAnswer = async () => {
+    if (!hasAuthToken()) {
+      redirectToMainLogin();
+      return;
+    }
     if (post?.status === "CLOSED") {
       toast.error("This question is closed for new answers");
       return;
@@ -433,7 +445,11 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
     targetType: "POST" | "ANSWER",
     targetId: string,
   ) => {
-    toast("Report this content for spam or abuse?", {
+    if (!hasAuthToken()) {
+      redirectToMainLogin();
+      return;
+    }
+    toast("Report this content?", {
       action: {
         label: "Report",
         onClick: () => {

@@ -11,6 +11,10 @@ const getUserId = (req: Request): string => {
   return req.user.id;
 };
 
+// Used on the guest-readable Q&A routes (post list + detail) — a shared
+// post link must render for anonymous visitors, so these can't require a user.
+const getOptionalUserId = (req: Request): string | undefined => req.user?.id;
+
 const getConversationId = (req: Request): string => {
   const conversationId = req.params.conversationId;
   if (typeof conversationId !== "string" || !conversationId) {
@@ -441,7 +445,7 @@ export const listGroups = async (
       ? Number(req.query.limit)
       : 20;
     const data = await CommunityService.listGroups(
-      getUserId(req),
+      getOptionalUserId(req),
       query,
       limit,
     );
@@ -840,7 +844,7 @@ export const listCommunityPosts = async (
         ? req.query.mine.toLowerCase() === "true"
         : false;
 
-    const data = await CommunityService.listPosts(getUserId(req), page, limit, {
+    const data = await CommunityService.listPosts(getOptionalUserId(req), page, limit, {
       sort,
       direction,
       q,
@@ -874,7 +878,7 @@ export const getCommunityPostDetails = async (
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 30));
 
     const data = await CommunityService.getPostDetails(
-      getUserId(req),
+      getOptionalUserId(req),
       postId,
       page,
       limit,

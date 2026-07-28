@@ -6,9 +6,6 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { blogService } from "@/modules/community/services/blog";
 import { BlogAuthorProfile, BlogListItem } from "@/modules/community/types";
-import { redirectToMainLogin } from "@/lib/auth/redirect";
-import { isCommunityEligibleRole } from "@/lib/auth/roles";
-import { communityService } from "@/modules/community/services/community";
 import { toast } from "@/lib/toast";
 import BlogProfileView from "./BlogProfileView";
 
@@ -26,11 +23,6 @@ export default function WriterProfileClient({
 
   const load = useCallback(async () => {
     try {
-      const session = await communityService.ensureSession();
-      if (!isCommunityEligibleRole(session.role)) {
-        redirectToMainLogin();
-        return;
-      }
       const author = await blogService.getAuthorProfile(identifier);
 
       // Viewing your own writer page → send to the editable account page.

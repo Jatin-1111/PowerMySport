@@ -63,8 +63,10 @@ export default function PathwaysPage() {
       {/* Reserve roughly the section's real height so it doesn't pop in at
           full height once useSearchParams() finishes its client-only render
           — an empty fallback collapses this to 0px and causes a large CLS
-          jump when the real content mounts. */}
-      <Suspense fallback={<div className="min-h-[720px] sm:min-h-[860px]" />}>
+          jump when the real content mounts. The fallback below mirrors the
+          real header/search layout (instead of a bare blank box) so a slow
+          first paint still looks intentional. */}
+      <Suspense fallback={<PathwayExplorerSkeleton />}>
         <PathwayExplorerSection />
       </Suspense>
 
@@ -208,5 +210,39 @@ export default function PathwaysPage() {
         }}
       />
     </main>
+  );
+}
+
+// ─── Suspense fallback ────────────────────────────────────────────────────────
+//
+// Mirrors the explorer's header/search layout with pulse-animated blocks so a
+// slow first paint reads as "still loading" rather than a broken blank page.
+
+function PathwayExplorerSkeleton() {
+  return (
+    <section className="py-12 sm:py-16 md:py-20 lg:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-10 flex flex-col items-center gap-4 text-center">
+          <div className="h-6 w-28 animate-pulse rounded-full bg-slate-200" />
+          <div className="h-9 w-72 max-w-full animate-pulse rounded-lg bg-slate-200 sm:h-11 sm:w-96" />
+          <div className="h-4 w-64 max-w-full animate-pulse rounded bg-slate-100" />
+        </div>
+
+        <div className="mx-auto flex max-w-3xl flex-col gap-2 sm:flex-row">
+          <div className="h-12 w-full animate-pulse rounded-xl bg-slate-100 sm:w-40" />
+          <div className="h-12 w-full flex-1 animate-pulse rounded-xl bg-slate-100" />
+        </div>
+
+        <div className="mx-auto mt-8 flex max-w-3xl flex-wrap justify-center gap-2">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-8 animate-pulse rounded-full bg-slate-100"
+              style={{ width: 64 + (i % 3) * 20 }}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }

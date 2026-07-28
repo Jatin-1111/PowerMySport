@@ -9,6 +9,10 @@ const getUserId = (req: Request): string => {
   return req.user.id;
 };
 
+// Used on the guest-readable routes (single post + its comments) — a shared
+// blog link must render for anonymous visitors, so these can't require a user.
+const getOptionalUserId = (req: Request): string | undefined => req.user?.id;
+
 const getStatusCode = (message: string): number => {
   if (message === "Unauthorized") return 401;
   if (message === "Access denied") return 403;
@@ -44,7 +48,7 @@ export const listBlogs = async (req: Request, res: Response): Promise<void> => {
   try {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 12;
-    const data = await BlogService.listBlogs(getUserId(req), page, limit, {
+    const data = await BlogService.listBlogs(getOptionalUserId(req), page, limit, {
       topic: typeof req.query.topic === "string" ? req.query.topic : undefined,
       q: typeof req.query.q === "string" ? req.query.q : undefined,
       mine: req.query.mine === "true" || req.query.mine === "1",
@@ -60,7 +64,7 @@ export const listBlogs = async (req: Request, res: Response): Promise<void> => {
 export const getBlog = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = await BlogService.getBlog(
-      getUserId(req),
+      getOptionalUserId(req),
       String(req.params.blogId || ""),
     );
     res.status(200).json({ success: true, message: "Blog fetched", data });
@@ -156,7 +160,7 @@ export const listBlogComments = async (
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 30;
     const data = await BlogService.listComments(
-      getUserId(req),
+      getOptionalUserId(req),
       String(req.params.blogId || ""),
       page,
       limit,
@@ -224,7 +228,7 @@ export const getBlogAuthorProfile = async (
 ): Promise<void> => {
   try {
     const data = await BlogService.getBlogAuthorProfile(
-      getUserId(req),
+      getOptionalUserId(req),
       String(req.params.identifier || ""),
     );
     res.status(200).json({ success: true, message: "Profile fetched", data });

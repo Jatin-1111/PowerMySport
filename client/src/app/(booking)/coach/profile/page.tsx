@@ -563,7 +563,7 @@ export default function CoachProfilePage() {
         ],
       }));
 
-      toast.success("Venue image(s) uploaded successfully.");
+      toast.success("Venue images uploaded.");
     } catch (error) {
       toast.error(
         error instanceof Error

@@ -20,7 +20,7 @@ export default function ShopWaitlist() {
       setLoading(true);
       await axiosInstance.post("/v1/waitlist", { email });
       setSubmitted(true);
-      toast.success("Successfully joined the waitlist!");
+      toast.success("Joined the waitlist");
       setTimeout(() => setSubmitted(false), 3000);
       setEmail("");
     } catch (error: any) {

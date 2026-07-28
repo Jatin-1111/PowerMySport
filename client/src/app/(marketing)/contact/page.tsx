@@ -309,11 +309,11 @@ export default function ContactPage() {
         message: "",
         userType: "player",
       });
-      toast.success("Your message has been sent to our team.");
+      toast.success("Your message has been sent.");
     } catch (error) {
       console.error("Contact form submission failed:", error);
       setSubmitStatus("error");
-      toast.error("Failed to send your message. Please try again.");
+      toast.error("Failed to send message. Try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -756,10 +756,10 @@ export default function ContactPage() {
               variants={fadeSlideUp}
               className="mx-auto mb-10 max-w-2xl text-base leading-relaxed text-slate-400 sm:text-lg"
             >
-              Whether you&apos;re a player booking a venue, a venue owner
-              listing your facility, or a coach expanding your practice —
-              we&apos;re just a message away. Our team typically responds within
-              24 hours.
+              Whether you&apos;re a parent planning your child&apos;s sports
+              journey, a venue owner listing your facility, or a coach
+              expanding your practice — we&apos;re just a message away. Our team
+              typically responds within 24 hours.
             </motion.p>
 
             <motion.div
@@ -787,12 +787,12 @@ export default function ContactPage() {
               </motion.a>
 
               <motion.a
-                href="/help"
+                href="/faq"
                 className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-8 py-4 text-base font-bold text-white backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/10"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
               >
-                Visit Help Center
+                Browse FAQs
               </motion.a>
             </motion.div>
           </motion.div>

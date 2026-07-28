@@ -701,7 +701,7 @@ export function useCommunityPage(options?: {
       const session = await communityService.ensureSession();
       if (!isCommunityEligibleRole(session.role)) {
         toast.error(
-          "Community chat is available only for player, coach, and parent accounts",
+          "Community chat is unavailable for this account",
         );
         redirectToMainLogin();
         return;
@@ -1437,7 +1437,7 @@ export function useCommunityPage(options?: {
 
   const handleCreateGroup = async () => {
     if (!newGroupName.trim()) {
-      toast.error("Add a group name to continue.");
+      toast.error("Group name is required");
       return;
     }
     setIsCreatingGroup(true);
@@ -2029,7 +2029,7 @@ export function useCommunityPage(options?: {
   const handleSendMessage = async () => {
     if (!selectedConversation || !newMessage.trim()) return;
     if (selectedConversationNeedsMyApproval)
-      return toast.error("Accept this message request before sending a reply.");
+      return toast.error("Accept the message request before replying");
 
     const content = newMessage.trim();
     const optimisticMessageId = `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`;

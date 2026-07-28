@@ -2,7 +2,7 @@
 
 import { sportsApi, Sport } from "@/modules/sports/services/sports";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronDown, Loader, Plus, AlertCircle } from "lucide-react";
+import { ChevronDown, Loader } from "lucide-react";
 import Fuse from "fuse.js";
 
 interface SportsSelectProps {
@@ -27,9 +27,6 @@ export default function SportsSelect({
   const [filteredSports, setFilteredSports] = useState<Sport[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [customSportInput, setCustomSportInput] = useState("");
-  const [isVerifyingCustom, setIsVerifyingCustom] = useState(false);
-  const [customSportError, setCustomSportError] = useState("");
   const [fuse, setFuse] = useState<Fuse<Sport> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -91,7 +88,6 @@ export default function SportsSelect({
   const handleSearch = useCallback(
     (query: string) => {
       setSearchQuery(query);
-      setCustomSportError("");
 
       if (!query.trim()) {
         setFilteredSports(allSports);
@@ -111,55 +107,6 @@ export default function SportsSelect({
     onChange(sport);
     setSearchQuery("");
     setIsOpen(false);
-  };
-
-  // Handle custom sport verification and addition
-  const handleAddCustomSport = async () => {
-    if (!customSportInput.trim()) {
-      setCustomSportError("Please enter a sport name");
-      return;
-    }
-
-    setIsVerifyingCustom(true);
-    setCustomSportError("");
-
-    try {
-      // Step 1: Verify the sport using Gemini
-      const verification = await sportsApi.verifySport(customSportInput.trim());
-
-      if (!verification.isValid) {
-        setCustomSportError(
-          `Invalid sport: ${verification.message}. Please try another.`,
-        );
-        setIsVerifyingCustom(false);
-        return;
-      }
-
-      // Step 2: Add the custom sport
-      const newSport = await sportsApi.addCustomSport(customSportInput.trim());
-
-      if (newSport) {
-        // Add to local sports list
-        setAllSports((prev) => [...prev, newSport]);
-
-        // Re-initialize fuse
-        const updatedSports = [...allSports, newSport];
-        const fuseInstance = new Fuse(updatedSports, {
-          keys: ["name"],
-          threshold: 0.3,
-        });
-        setFuse(fuseInstance);
-
-        // Add to selected sports
-        handleSelectSport(newSport.name);
-        setCustomSportInput("");
-      }
-    } catch (error) {
-      setCustomSportError("Failed to add sport. Please try again.");
-      console.error("Error adding custom sport:", error);
-    } finally {
-      setIsVerifyingCustom(false);
-    }
   };
 
   return (
@@ -228,60 +175,9 @@ export default function SportsSelect({
 
               {filteredSports.length === 0 && (
                 <div className="px-4 py-6 text-center text-sm text-slate-500">
-                  No predefined sports match "{searchQuery}"
+                  No sports match "{searchQuery}"
                 </div>
               )}
-
-              {/* Custom Sport Input */}
-              <div className="mt-2 border-t border-slate-100 px-2 pt-3 pb-1">
-                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  <Plus size={14} />
-                  Add New Sport
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="e.g., Pickleball"
-                    value={customSportInput}
-                    onChange={(e) => {
-                      setCustomSportInput(e.target.value);
-                      setCustomSportError("");
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleAddCustomSport();
-                      }
-                    }}
-                    disabled={isVerifyingCustom}
-                    className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm placeholder-slate-400 focus:border-power-orange/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/10 disabled:opacity-50"
-                  />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddCustomSport();
-                    }}
-                    disabled={isVerifyingCustom || !customSportInput.trim()}
-                    className="flex h-[38px] items-center justify-center rounded-xl bg-power-orange px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d96610] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isVerifyingCustom ? (
-                      <Loader size={16} className="animate-spin" />
-                    ) : (
-                      "Verify"
-                    )}
-                  </button>
-                </div>
-
-                {/* Custom Sport Error */}
-                {customSportError && (
-                  <div className="mt-2 flex items-start gap-2 rounded-xl bg-red-50 p-2.5 text-xs text-red-600">
-                    <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                    <span>{customSportError}</span>
-                  </div>
-                )}
-              </div>
             </>
           )}
         </div>

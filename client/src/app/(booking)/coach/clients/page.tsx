@@ -231,7 +231,7 @@ export default function CoachClientsPage() {
           toast.error(res.message ?? "Failed to load clients.");
         }
       } catch {
-        toast.error("Something went wrong while fetching clients.");
+        toast.error("Unable to load clients.");
       } finally {
         setIsLoading(false);
       }

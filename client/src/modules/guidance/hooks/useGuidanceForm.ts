@@ -256,7 +256,7 @@ export function useGuidanceForm({
       if (response.data.status === "not_supported") {
         const sport = response.data.sport ?? form.sport ?? "that sport";
         toast.error(
-          `We're building the ${sport} pathway — our team is working on it! Try Cricket, Tennis, Football, or any of our 10 supported sports.`,
+          `${sport} is not yet supported. Try Cricket, Tennis, or Football.`,
           { duration: 6000 } as any,
         );
         return;
@@ -272,7 +272,7 @@ export function useGuidanceForm({
           block: "start",
         });
       }, 2000);
-      toast.success("Guidance generated!");
+      toast.success("Guidance generated");
       onSuccess(response.data.data);
     } catch (err) {
       const msg =

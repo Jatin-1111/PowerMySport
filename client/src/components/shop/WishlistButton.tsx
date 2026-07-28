@@ -41,7 +41,7 @@ export function WishlistButton({
       setIsLoading(true);
       const newWishedState = await toggleWishlist(productId);
       if (newWishedState) {
-        toast.success("Item saved to your wishlist!");
+        toast.success("Item saved to your wishlist.");
       } else {
         toast.success("Item removed from your wishlist.");
       }

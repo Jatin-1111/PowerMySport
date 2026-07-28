@@ -3,12 +3,10 @@
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
-import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
 import RoadmapIntroModal from "./RoadmapIntroModal";
 import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
-import { RoadmapChatDrawer } from "@/modules/sports/components/RoadmapChatDrawer";
 import {
     getArchetypeForSport,
     groupLevelsIntoMacro,
@@ -179,8 +177,6 @@ export function PathwayExplorerSection() {
 
   const { user } = useAuthStore();
   const [dbStories, setDbStories] = useState<AthleteStory[]>([]);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatLoginModalOpen, setChatLoginModalOpen] = useState(false);
   const [introModalOpen, setIntroModalOpen] = useState(false);
   const _cacheRestoredRef = useRef(false);
   const INTRO_KEY = "pms_roadmap_intro_v2";
@@ -573,23 +569,6 @@ export function PathwayExplorerSection() {
     }
   }, []);
 
-  // Auto-open the chat drawer after a login redirect (?openChat=1) once the
-  // pathway has loaded and the user session is available.
-  const openChatParam = searchParams.get("openChat") === "1";
-  useEffect(() => {
-    if (openChatParam && result && user) {
-      setChatOpen(true);
-    }
-  }, [openChatParam, result, user]);
-
-  const handleChatCtaClick = () => {
-    if (!user) {
-      setChatLoginModalOpen(true);
-    } else {
-      setChatOpen(true);
-    }
-  };
-
   // Application assistance now routes straight to a human on WhatsApp instead
   // of the in-app document-upload concierge flow.
   const getConciergeWhatsAppUrl = (
@@ -613,11 +592,9 @@ export function PathwayExplorerSection() {
   const currentLevels = result ? result.pathway.levels : pathwayLevels;
   // The four archetypes each define their own skeleton (stage count, grouping,
   // labels, visuals) — the same 5 raw levels flow into whichever matches.
-  const {
-    archetype,
-    unit: archetypeUnit,
-    meta: archetypeMeta,
-  } = getArchetypeForSport(result ? result.pathway.sportName : "");
+  const { archetype, unit: archetypeUnit } = getArchetypeForSport(
+    result ? result.pathway.sportName : "",
+  );
   const macroLevels = groupLevelsIntoMacro(
     currentLevels as PathwayLevel[],
     archetype,
@@ -699,6 +676,21 @@ export function PathwayExplorerSection() {
       (result.pathway.scholarships?.length || 0) +
       (result.pathway.universities?.length || 0)
     : 0;
+
+  // Secondary facts (category, freshness) read as a plain meta line under the
+  // heading rather than competing pills — the trust badge and state are the
+  // only two facts important enough to earn a chip in the header.
+  const lastCheckedRaw = result
+    ? result.pathway.lastRefreshedAt ||
+      result.pathway.updatedAt ||
+      result.pathway.createdAt
+    : null;
+  const lastCheckedLabel = lastCheckedRaw
+    ? new Date(lastCheckedRaw).toLocaleDateString("en-IN", {
+        month: "short",
+        year: "numeric",
+      })
+    : null;
 
   return (
     <section className="relative overflow-hidden py-12 sm:py-16 md:py-20 lg:py-28">
@@ -1353,48 +1345,18 @@ export function PathwayExplorerSection() {
                               <MapPin className="h-3 w-3" /> {selectedState}
                             </span>
                           )}
-                          {result.pathway.category && (
-                            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 border border-slate-200">
-                              {result.pathway.category}
-                            </span>
-                          )}
-                          {/* Journey structure — which of the four archetype
-                              skeletons this sport's data flows into */}
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-600 border border-violet-100">
-                            <TrendingUp className="h-3 w-3" />
-                            {archetypeMeta.label}
-                          </span>
-                          {(() => {
-                            const lastCheckedRaw =
-                              result.pathway.lastRefreshedAt ||
-                              result.pathway.updatedAt ||
-                              result.pathway.createdAt;
-                            if (!lastCheckedRaw) return null;
-                            const label = new Date(lastCheckedRaw).toLocaleDateString("en-IN", {
-                              month: "short",
-                              year: "numeric",
-                            });
-                            return (
-                              <span
-                                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium border ${
-                                  isStale
-                                    ? "bg-amber-50 text-amber-700 border-amber-200"
-                                    : "bg-slate-50 text-slate-400 border-slate-200"
-                                }`}
-                              >
-                                Last checked {label}
-                              </span>
-                            );
-                          })()}
                         </div>
-                        {isStale && (
+                        {isStale ? (
                           <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
                             <Info className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                             <p className="text-xs text-amber-800 leading-relaxed">
+                              {lastCheckedLabel
+                                ? `Last checked ${lastCheckedLabel} — `
+                                : ""}
                               This pathway hasn&apos;t been rechecked in over 6 months — costs, tournaments, and academy details may have changed. We&apos;re refreshing it; check back soon or verify specifics with a local academy.
                             </p>
                           </div>
-                        )}
+                        ) : null}
                         <h2 className="font-title text-2xl font-bold text-slate-900 break-words sm:text-3xl">
                           {persona?.name ? (
                             <>
@@ -1412,6 +1374,18 @@ export function PathwayExplorerSection() {
                             </>
                           )}
                         </h2>
+                        {(result.pathway.category || (!isStale && lastCheckedLabel)) && (
+                          <p className="mt-1 text-xs text-slate-400">
+                            {[
+                              result.pathway.category,
+                              !isStale && lastCheckedLabel
+                                ? `Last checked ${lastCheckedLabel}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        )}
                         {result.pathway.overview && (
                           <p className="mt-2 max-w-2xl text-sm text-slate-600 leading-relaxed sm:text-base">
                             {result.pathway.overview}
@@ -1628,8 +1602,22 @@ export function PathwayExplorerSection() {
                     transition={{ duration: 0.2 }}
                   >
                     <div className="space-y-5">
-                      {/* Archetype-matched progression skeleton */}
-                      <div className="rounded-3xl border border-slate-200/60 bg-white/70 shadow-sm backdrop-blur-sm overflow-hidden">
+                      {/* Archetype-matched progression skeleton — the
+                          flagship widget of this tab, so it gets a brand
+                          accent stripe and eyebrow label the surrounding
+                          cards don't, instead of blending in as one more
+                          white rounded-2xl box. */}
+                      <div className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white shadow-md">
+                        <div
+                          aria-hidden
+                          className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-power-orange via-orange-400 to-amber-300"
+                        />
+                        <div className="flex items-center gap-2 px-5 pt-5 sm:px-6">
+                          <Flag className="h-3.5 w-3.5 text-power-orange" />
+                          <p className="text-[11px] font-bold uppercase tracking-widest text-power-orange">
+                            The Journey
+                          </p>
+                        </div>
                         <ArchetypeStepper
                           archetype={archetype}
                           unit={archetypeUnit}
@@ -2288,46 +2276,6 @@ export function PathwayExplorerSection() {
           }}
         />
 
-        {/* Floating "Ask AI Coach" CTA — always visible, no scrolling needed */}
-        {result && !chatOpen && (
-          <motion.button
-            type="button"
-            onClick={handleChatCtaClick}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            className="fixed bottom-24 right-5 z-30 flex items-center gap-2 rounded-full bg-power-orange px-4 py-3 text-sm font-bold text-white shadow-[0_10px_30px_-8px_rgba(233,115,22,0.6)] transition hover:bg-orange-600 sm:bottom-24 sm:right-6"
-          >
-            <MessageSquareQuote className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">
-              Got a quick question? Ask our AI Coach
-            </span>
-            <span className="sm:hidden">Ask AI Coach</span>
-          </motion.button>
-        )}
-
-        {/* Roadmap chat drawer — opens inline, no navigation away from this page */}
-        {result && (
-          <RoadmapChatDrawer
-            isOpen={chatOpen}
-            onClose={() => setChatOpen(false)}
-            sportSlug={result.pathway.sportSlug}
-            sportName={result.pathway.sportName}
-            level={selectedMacroLevel?.representativeRawLevel}
-            levelLabel={selectedMacroLevel?.representativeLabel}
-          />
-        )}
-
-        {/* Login required before chatting (guests) */}
-        {result && (
-          <LoginRequiredModal
-            isOpen={chatLoginModalOpen}
-            onClose={() => setChatLoginModalOpen(false)}
-            sport={result.pathway.sportName}
-            redirectPath={`/roadmap?sport=${encodeURIComponent(result.pathway.sportName)}&openChat=1`}
-          />
-        )}
       </div>
     </section>
   );

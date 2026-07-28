@@ -590,7 +590,7 @@ function SellerDashboardView() {
         images,
       });
 
-      toast.success("Your gear has been listed on the marketplace!");
+      toast.success("Gear listed on the marketplace.");
       // Reset form
       setName("");
       setDescription("");
@@ -620,7 +620,7 @@ function SellerDashboardView() {
         basePrice: Number(editPrice) * 100,
         stock: Number(editStock),
       });
-      toast.success("Listing updated successfully!");
+      toast.success("Listing updated.");
       setEditingId(null);
       await fetchData();
     } catch (err: any) {
@@ -635,7 +635,7 @@ function SellerDashboardView() {
 
     try {
       await deleteSellerProduct(productId);
-      toast.success("Listing removed successfully!");
+      toast.success("Listing removed.");
       setDeleteConfirmId(null);
       await fetchData();
     } catch (err: any) {
@@ -662,7 +662,7 @@ function SellerDashboardView() {
         statusData.status,
         statusData.tracking,
       );
-      toast.success("Order fulfillment details updated successfully!");
+      toast.success("Fulfillment updated.");
       await fetchData();
     } catch (err: any) {
       toast.error(err.message || "Failed to update fulfillment.");

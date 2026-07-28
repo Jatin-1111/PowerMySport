@@ -363,7 +363,7 @@ export default function ClientProfilePage() {
 
       const res = await coachApi.addClientNote(clientId, payload);
       if (res.success) {
-        toast.success("Note added successfully.");
+        toast.success("Note added.");
         setNoteText("");
         setNoteType("GENERAL");
         setSessionDate("");

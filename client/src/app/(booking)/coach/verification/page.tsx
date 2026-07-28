@@ -880,7 +880,7 @@ export default function CoachVerificationPage() {
             : doc,
         ),
       );
-      toast.success(`${fileName} uploaded successfully.`);
+      toast.success(`${fileName} uploaded.`);
     } catch (uploadError) {
       toast.error(
         uploadError instanceof Error ? uploadError.message : "Upload failed",
@@ -893,7 +893,7 @@ export default function CoachVerificationPage() {
   const handleUploadVenueImage = async (file: File) => {
     if (file.size > MAX_FILE_SIZE) {
       toast.error(
-        `Image size exceeds 5MB. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+        `Image exceeds 5MB (current: ${(file.size / 1024 / 1024).toFixed(2)}MB)`,
       );
       return;
     }
@@ -934,7 +934,7 @@ export default function CoachVerificationPage() {
         images: [...(prev.images || []), downloadUrl],
         imageS3Keys: [...(prev.imageS3Keys || []), key],
       }));
-      toast.success("Venue image uploaded successfully.");
+      toast.success("Venue image uploaded.");
     } catch (uploadError) {
       toast.error(
         uploadError instanceof Error ? uploadError.message : "Upload failed",
@@ -1084,7 +1084,7 @@ export default function CoachVerificationPage() {
       }
       if (!venueCoordinates) {
         toast.error(
-          "Please select a venue address from the suggestions or use current location to set the coordinates.",
+          "Select a venue address from the suggestions or use your current location.",
         );
         return;
       }
@@ -1270,7 +1270,7 @@ export default function CoachVerificationPage() {
           step2SyncResponse.data.ownVenueDetails?.images || [];
         if (ownVenueImages.length < 3) {
           toast.error(
-            "OWN_VENUE coaches must upload at least 3 venue images before submitting verification.",
+            "Upload at least 3 venue images before submitting verification.",
           );
           return;
         }
@@ -1284,9 +1284,7 @@ export default function CoachVerificationPage() {
         throw new Error(response.message || "Verification submission failed");
       }
 
-      toast.success(
-        "Verification submitted successfully. Your profile is now in review.",
-      );
+      toast.success("Verification submitted. Your profile is now in review.");
       clearCoachVerificationDraft(draftStorageKey);
       await loadProfile();
 

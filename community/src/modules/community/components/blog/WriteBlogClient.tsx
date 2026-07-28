@@ -249,7 +249,7 @@ export default function WriteBlogClient({
   const saveDraft = async () => {
     if (title.trim().length < MIN_TITLE_LENGTH) {
       toast.error(
-        `Give your story a title of at least ${MIN_TITLE_LENGTH} characters before saving.`,
+        `Title must be at least ${MIN_TITLE_LENGTH} characters`,
       );
       return;
     }
@@ -279,11 +279,11 @@ export default function WriteBlogClient({
 
   const publish = async () => {
     if (title.trim().length < MIN_TITLE_LENGTH) {
-      toast.error("Give your story a title of at least 5 characters.");
+      toast.error("Title must be at least 5 characters");
       return;
     }
     if (!htmlToText(content).trim()) {
-      toast.error("Add some content before publishing.");
+      toast.error("Add content before publishing");
       return;
     }
 
@@ -296,7 +296,7 @@ export default function WriteBlogClient({
         : await blogService.createBlog(payload);
 
       markSaved();
-      toast.success(postStatus === "PUBLISHED" ? "Blog Updated!" : "Blog Published!");
+      toast.success(postStatus === "PUBLISHED" ? "Blog updated" : "Blog published");
       router.push(`/blog/${result.id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to publish");

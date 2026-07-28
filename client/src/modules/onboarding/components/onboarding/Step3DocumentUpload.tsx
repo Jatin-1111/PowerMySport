@@ -153,7 +153,7 @@ export default function Step3DocumentUpload({
 
     if (uploadedDocs.length < presignedUrls.length) {
       toast.error(
-        `Please upload all ${presignedUrls.length} required documents`,
+        `Upload all ${presignedUrls.length} required documents`,
       );
       return;
     }

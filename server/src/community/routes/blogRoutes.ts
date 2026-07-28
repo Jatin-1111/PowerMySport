@@ -15,7 +15,7 @@ import {
   updateBlog,
   updateBlogProfile,
 } from "../controllers/blogController";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware, optionalAuthMiddleware } from "../../middleware/auth";
 import {
   blogCommentSchema,
   blogCreateSchema,
@@ -28,19 +28,24 @@ import { validateRequest } from "../../middleware/validation";
 
 const router = Router();
 
-router.use(authMiddleware);
-
 // ─── Profile (specific paths before /:blogId dynamic segments) ────────────────
-router.get("/profile", getMyBlogProfile);
+router.get("/profile", authMiddleware, getMyBlogProfile);
 router.patch(
   "/profile",
+  authMiddleware,
   validateRequest(blogProfileUpdateSchema),
   updateBlogProfile,
 );
-router.get("/authors/:identifier", getBlogAuthorProfile);
+// Public — writer profile pages are shareable like the posts themselves.
+router.get("/authors/:identifier", optionalAuthMiddleware, getBlogAuthorProfile);
 
 // ─── Likes ────────────────────────────────────────────────────────────────────
-router.post("/likes", validateRequest(blogLikeSchema), toggleBlogLike);
+router.post(
+  "/likes",
+  authMiddleware,
+  validateRequest(blogLikeSchema),
+  toggleBlogLike,
+);
 
 // ─── Image upload (rate-limited per user) ─────────────────────────────────────
 const blogUploadRateLimit = rateLimit({
@@ -60,25 +65,36 @@ const blogUploadRateLimit = rateLimit({
 
 router.post(
   "/upload-url",
+  authMiddleware,
   blogUploadRateLimit,
   validateRequest(blogUploadUrlSchema),
   getBlogImageUploadUrl,
 );
 
 // ─── Comments ─────────────────────────────────────────────────────────────────
-router.get("/posts/:blogId/comments", listBlogComments);
+// Reading comments is public (same as the post itself, for shared links);
+// posting/deleting still requires auth.
+router.get("/posts/:blogId/comments", optionalAuthMiddleware, listBlogComments);
 router.post(
   "/posts/:blogId/comments",
+  authMiddleware,
   validateRequest(blogCommentSchema),
   createBlogComment,
 );
-router.delete("/comments/:commentId", deleteBlogComment);
+router.delete("/comments/:commentId", authMiddleware, deleteBlogComment);
 
 // ─── Blogs ────────────────────────────────────────────────────────────────────
-router.get("/posts", listBlogs);
-router.get("/posts/:blogId", getBlog);
-router.post("/posts", validateRequest(blogCreateSchema), createBlog);
-router.patch("/posts/:blogId", validateRequest(blogUpdateSchema), updateBlog);
-router.delete("/posts/:blogId", deleteBlog);
+// Public — feeds the blog landing page and the sitemap generator.
+router.get("/posts", optionalAuthMiddleware, listBlogs);
+// Public — this is the shareable link a reader can open without logging in.
+router.get("/posts/:blogId", optionalAuthMiddleware, getBlog);
+router.post("/posts", authMiddleware, validateRequest(blogCreateSchema), createBlog);
+router.patch(
+  "/posts/:blogId",
+  authMiddleware,
+  validateRequest(blogUpdateSchema),
+  updateBlog,
+);
+router.delete("/posts/:blogId", authMiddleware, deleteBlog);
 
 export default router;

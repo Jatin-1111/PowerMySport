@@ -61,7 +61,7 @@ export function ExpertPhotoUpload({
       await authApi.uploadProfilePictureToS3(file, uploadUrl, file.type);
       setPreviewUrl(downloadUrl);
       onPhotoReady(downloadUrl, key);
-      toast.success("Photo uploaded — click Save changes to apply it.");
+      toast.success("Photo uploaded.");
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Failed to upload photo.",

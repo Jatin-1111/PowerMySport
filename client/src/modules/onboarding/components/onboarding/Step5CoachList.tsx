@@ -152,7 +152,7 @@ export default function Step5CoachList({
       return;
     }
     if (!SPORTS_OPTIONS.includes(newCoach.sport)) {
-      toast.error("Please select a valid sport");
+      toast.error("Select a valid sport");
       return;
     }
     if (newCoach.hourlyRate <= 0) {

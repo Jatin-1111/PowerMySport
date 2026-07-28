@@ -7,6 +7,8 @@ import { Loader2, MessageCircle, Send, X } from "lucide-react";
 import { blogService } from "@/modules/community/services/blog";
 import { BlogComment } from "@/modules/community/types";
 import { toast } from "@/lib/toast";
+import { redirectToMainLogin } from "@/lib/auth/redirect";
+import { hasAuthToken } from "@/lib/auth/token";
 import CommentItem from "./CommentItem";
 import EmojiPicker from "./EmojiPicker";
 
@@ -69,6 +71,10 @@ export default function BlogCommentsSidebar({
   const submitComment = async () => {
     const value = draft.trim();
     if (!value) return;
+    if (!hasAuthToken()) {
+      redirectToMainLogin();
+      return;
+    }
     setSubmitting(true);
     try {
       const created = await blogService.createComment(blogId, value);
@@ -85,6 +91,10 @@ export default function BlogCommentsSidebar({
   };
 
   const handleReply = async (parentId: string, content: string) => {
+    if (!hasAuthToken()) {
+      redirectToMainLogin();
+      return;
+    }
     try {
       const created = await blogService.createComment(
         blogId,
@@ -107,6 +117,10 @@ export default function BlogCommentsSidebar({
   };
 
   const handleToggleLike = async (comment: BlogComment) => {
+    if (!hasAuthToken()) {
+      redirectToMainLogin();
+      return;
+    }
     const optimisticLiked = !comment.likedByMe;
     setComments((current) =>
       patchComment(current, comment.id, (item) => ({

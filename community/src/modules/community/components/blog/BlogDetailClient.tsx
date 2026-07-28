@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ChevronLeft,
+  Link as LinkIcon,
   Loader2,
   MessageCircle,
   Pencil,
@@ -15,8 +16,7 @@ import {
 import { blogService } from "@/modules/community/services/blog";
 import { BlogDetail } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
-import { isCommunityEligibleRole } from "@/lib/auth/roles";
-import { communityService } from "@/modules/community/services/community";
+import { hasAuthToken } from "@/lib/auth/token";
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import { toast } from "@/lib/toast";
 import { getBlogTopic } from "@/modules/community/constants/blogTopics";
@@ -43,11 +43,7 @@ export default function BlogDetailClient({ blogId }: { blogId: string }) {
   const load = useCallback(async () => {
     try {
       setIsLoading(true);
-      const session = await communityService.ensureSession();
-      if (!isCommunityEligibleRole(session.role)) {
-        redirectToMainLogin();
-        return;
-      }
+      // This page is a shareable public link — no session required to read it.
       const data = await blogService.getBlog(blogId);
       setBlog(data);
     } catch (error) {
@@ -93,6 +89,10 @@ export default function BlogDetailClient({ blogId }: { blogId: string }) {
 
   const handleToggleLike = async () => {
     if (!blog) return;
+    if (!hasAuthToken()) {
+      redirectToMainLogin();
+      return;
+    }
     setLikePending(true);
     const optimisticLiked = !blog.likedByMe;
     setBlog({
@@ -146,6 +146,16 @@ export default function BlogDetailClient({ blogId }: { blogId: string }) {
       text,
     )}&url=${encodeURIComponent(url)}`;
     window.open(shareUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const copyLink = async () => {
+    if (typeof window === "undefined") return;
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success("Link copied");
+    } catch {
+      toast.error("Failed to copy link");
+    }
   };
 
   if (isLoading) {
@@ -301,13 +311,22 @@ export default function BlogDetailClient({ blogId }: { blogId: string }) {
           <p className="text-sm text-slate-500">
             Enjoyed this story? Share it.
           </p>
-          <button
-            onClick={shareOnTwitter}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-600"
-          >
-            <Twitter size={16} />
-            Share on Twitter
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => void copyLink()}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <LinkIcon size={16} />
+              Copy Link
+            </button>
+            <button
+              onClick={shareOnTwitter}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-600"
+            >
+              <Twitter size={16} />
+              Share on Twitter
+            </button>
+          </div>
         </div>
       </article>
 

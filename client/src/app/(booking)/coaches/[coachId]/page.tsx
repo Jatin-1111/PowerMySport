@@ -434,7 +434,7 @@ export default function CoachDetailsPage() {
         endTime: selectedSlot.endTime,
       });
       toast.success(
-        "You were added to the waitlist for this session! We will notify you if it becomes available.",
+        "Added to the waitlist. You'll be notified if a spot opens.",
       );
       setSelectedSlot(null);
     } catch (error: any) {

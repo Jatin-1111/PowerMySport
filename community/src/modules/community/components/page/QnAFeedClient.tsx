@@ -32,7 +32,7 @@ import {
   CommunityReputationSummary,
 } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
-import { isCommunityEligibleRole } from "@/lib/auth/roles";
+import { hasAuthToken } from "@/lib/auth/token";
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import { communityFollowStore } from "@/modules/community/lib/followStore";
 import { toast } from "@/lib/toast";
@@ -282,13 +282,7 @@ export default function QnAFeedClient() {
           setIsLoading(true);
         }
 
-        const session = await communityService.ensureSession();
-        if (!isCommunityEligibleRole(session.role)) {
-          redirectToMainLogin();
-          return;
-        }
-        setCurrentUserId(session.id);
-
+        const authed = hasAuthToken();
         const [postData, rep] = await Promise.all([
           communityService.listPosts(targetPage, 20, {
             sort,
@@ -300,7 +294,7 @@ export default function QnAFeedClient() {
             category: categoryFilter || undefined,
             mine: viewMode === "MINE",
           }),
-          communityService.getMyReputation(),
+          authed ? communityService.getMyReputation() : Promise.resolve(null),
         ]);
 
         const items = postData.items || [];
@@ -347,6 +341,11 @@ export default function QnAFeedClient() {
   );
 
   const loadActivity = useCallback(async () => {
+    if (!hasAuthToken()) {
+      setActivity([]);
+      setActivityUnreadCount(0);
+      return;
+    }
     try {
       setIsLoadingActivity(true);
       const items = await communityService.listMyKnowledgeActivity(20);
@@ -421,6 +420,17 @@ export default function QnAFeedClient() {
   useEffect(() => {
     void loadActivity();
   }, [loadActivity]);
+
+  // This feed is a shareable public page — resolve who's viewing it (if
+  // anyone) without gating render on it, so "mine"/owner actions still work
+  // for a logged-in visitor without blocking guests.
+  useEffect(() => {
+    if (!hasAuthToken()) return;
+    communityService
+      .ensureSession()
+      .then((session) => setCurrentUserId(session.id))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const socket = getCommunitySocket();
@@ -561,6 +571,10 @@ export default function QnAFeedClient() {
   };
 
   const vote = async (post: CommunityPost, value: 1 | -1) => {
+    if (!hasAuthToken()) {
+      redirectToMainLogin();
+      return;
+    }
     await voting.mutate(post.id, { value });
   };
 
@@ -766,7 +780,13 @@ export default function QnAFeedClient() {
               <motion.button
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                onClick={() => setShowAskForm((v) => !v)}
+                onClick={() => {
+                  if (!hasAuthToken()) {
+                    redirectToMainLogin();
+                    return;
+                  }
+                  setShowAskForm((v) => !v);
+                }}
                 className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700"
               >
                 <Plus size={16} />
@@ -799,7 +819,13 @@ export default function QnAFeedClient() {
                     All Threads
                   </button>
                   <button
-                    onClick={() => setViewMode("MINE")}
+                    onClick={() => {
+                      if (!hasAuthToken()) {
+                        redirectToMainLogin();
+                        return;
+                      }
+                      setViewMode("MINE");
+                    }}
                     className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
                       viewMode === "MINE"
                         ? "bg-slate-900 text-white shadow-sm"

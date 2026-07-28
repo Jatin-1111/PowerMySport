@@ -94,7 +94,7 @@ export function OrderDetailClient({ orderId }: { orderId: string }) {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast.success("Invoice downloaded successfully");
+      toast.success("Invoice downloaded");
     } catch (err: any) {
       toast.error(err.message || "Failed to download invoice");
     } finally {

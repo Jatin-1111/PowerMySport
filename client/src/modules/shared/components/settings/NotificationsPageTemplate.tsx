@@ -171,7 +171,7 @@ export function NotificationsPageTemplate({
     try {
       await notificationApi.updatePreferences(preferences);
       setOriginalPreferences(preferences);
-      toast.success("Notification preferences saved successfully");
+      toast.success("Notification preferences saved");
     } catch (error) {
       console.error("Failed to save preferences:", error);
       toast.error("Failed to save notification preferences");

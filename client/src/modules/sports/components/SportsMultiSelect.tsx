@@ -1,9 +1,8 @@
 "use client";
 
-import { Button } from "@/modules/shared/ui/Button";
 import { Sport, sportsApi } from "@/modules/sports/services/sports";
 import Fuse from "fuse.js";
-import { AlertCircle, ChevronDown, Loader, Plus, X } from "lucide-react";
+import { ChevronDown, Loader, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface SportsMultiSelectProps {
@@ -11,6 +10,8 @@ interface SportsMultiSelectProps {
   onChange: (sports: string[]) => void;
   disabled?: boolean;
   required?: boolean;
+  /** When provided, only these sport names (case-insensitive) are selectable. */
+  allowedSports?: string[];
 }
 
 export default function SportsMultiSelect({
@@ -18,15 +19,13 @@ export default function SportsMultiSelect({
   onChange,
   disabled = false,
   required = false,
+  allowedSports,
 }: SportsMultiSelectProps) {
   const [allSports, setAllSports] = useState<Sport[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredSports, setFilteredSports] = useState<Sport[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [customSportInput, setCustomSportInput] = useState("");
-  const [isVerifyingCustom, setIsVerifyingCustom] = useState(false);
-  const [customSportError, setCustomSportError] = useState("");
   const [fuse, setFuse] = useState<Fuse<Sport> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -66,7 +65,14 @@ export default function SportsMultiSelect({
     const fetchSports = async () => {
       try {
         setIsLoading(true);
-        const sports = await sportsApi.getAllSports();
+        const fetched = await sportsApi.getAllSports();
+        const sports = allowedSports
+          ? fetched.filter((s) =>
+              allowedSports.some(
+                (allowed) => allowed.toLowerCase() === s.name.toLowerCase(),
+              ),
+            )
+          : fetched;
         setAllSports(sports);
         setFilteredSports(sports);
 
@@ -84,13 +90,14 @@ export default function SportsMultiSelect({
     };
 
     fetchSports();
+    // allowedSports is expected to be a stable reference (module-level constant)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle search with fuzzy matching
   const handleSearch = useCallback(
     (query: string) => {
       setSearchQuery(query);
-      setCustomSportError("");
 
       if (!query.trim()) {
         setFilteredSports(allSports);
@@ -134,55 +141,6 @@ export default function SportsMultiSelect({
   // Handle sport removal
   const handleRemoveSport = (sport: string) => {
     onChange(value.filter((s) => s !== sport));
-  };
-
-  // Handle custom sport verification and addition
-  const handleAddCustomSport = async () => {
-    if (!customSportInput.trim()) {
-      setCustomSportError("Please enter a sport name");
-      return;
-    }
-
-    setIsVerifyingCustom(true);
-    setCustomSportError("");
-
-    try {
-      // Step 1: Verify the sport using Gemini
-      const verification = await sportsApi.verifySport(customSportInput.trim());
-
-      if (!verification.isValid) {
-        setCustomSportError(
-          `Invalid sport: ${verification.message}. Please try another.`,
-        );
-        setIsVerifyingCustom(false);
-        return;
-      }
-
-      // Step 2: Add the custom sport
-      const newSport = await sportsApi.addCustomSport(customSportInput.trim());
-
-      if (newSport) {
-        // Add to local sports list
-        setAllSports((prev) => [...prev, newSport]);
-
-        // Re-initialize fuse
-        const updatedSports = [...allSports, newSport];
-        const fuseInstance = new Fuse(updatedSports, {
-          keys: ["name"],
-          threshold: 0.3,
-        });
-        setFuse(fuseInstance);
-
-        // Add to selected sports
-        handleSelectSport(newSport.name);
-        setCustomSportInput("");
-      }
-    } catch (error) {
-      setCustomSportError("Failed to add sport. Please try again.");
-      console.error("Error adding custom sport:", error);
-    } finally {
-      setIsVerifyingCustom(false);
-    }
   };
 
   // Get selected sport objects
@@ -318,55 +276,6 @@ export default function SportsMultiSelect({
                     No sports found
                   </div>
                 )}
-
-                {/* Custom Sport Input - Always visible */}
-                <div className="border-t border-slate-200 px-4 py-3">
-                  <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-slate-600">
-                    <Plus size={14} />
-                    Add Custom Sport
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="e.g., Parkour"
-                      value={customSportInput}
-                      onChange={(e) => {
-                        setCustomSportInput(e.target.value);
-                        setCustomSportError("");
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleAddCustomSport();
-                        }
-                      }}
-                      disabled={isVerifyingCustom}
-                      className="flex-1 rounded border border-slate-200 bg-white px-2 py-1 text-sm placeholder-slate-400 focus:border-blue-500 focus:outline-none disabled:bg-slate-50"
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleAddCustomSport}
-                      disabled={isVerifyingCustom || !customSportInput.trim()}
-                      size="sm"
-                      variant="primary"
-                      className="sm:whitespace-nowrap"
-                    >
-                      {isVerifyingCustom ? (
-                        <Loader size={14} className="animate-spin" />
-                      ) : (
-                        "Add"
-                      )}
-                    </Button>
-                  </div>
-
-                  {/* Custom Sport Error */}
-                  {customSportError && (
-                    <div className="mt-2 flex items-start gap-2 rounded bg-red-50 p-2 text-xs text-red-600">
-                      <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                      <span>{customSportError}</span>
-                    </div>
-                  )}
-                </div>
               </>
             )}
           </div>

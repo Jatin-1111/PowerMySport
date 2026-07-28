@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getMainAppUrl } from "@/lib/auth/redirect";
+import { hasAuthToken } from "@/lib/auth/token";
 import { communityService } from "@/modules/community/services/community";
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import {
@@ -48,8 +49,16 @@ export default function CommunityTopNav() {
   const settingsRef = useRef<HTMLDivElement>(null);
 
   // ── load / refresh unread badge ──────────────────────────────────────────
+  // This nav renders on every page, including public ones (blog/Q&A posts,
+  // writer profiles, home) — these two counts are personal, so skip them
+  // entirely for guests rather than let a 401 trip the global axios
+  // interceptor and bounce a guest reader to login.
   useEffect(() => {
     const loadUnreadCount = async () => {
+      if (!hasAuthToken()) {
+        setUnreadCount(0);
+        return;
+      }
       try {
         const count =
           await communityService.getCommunityUnreadNotificationCount();
@@ -60,6 +69,10 @@ export default function CommunityTopNav() {
     };
 
     const loadUnreadChatsCount = async () => {
+      if (!hasAuthToken()) {
+        setUnreadChatsCount(0);
+        return;
+      }
       try {
         const count = await communityService.getUnreadConversationCount();
         setUnreadChatsCount(count);

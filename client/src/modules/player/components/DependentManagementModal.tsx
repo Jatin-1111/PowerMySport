@@ -161,8 +161,8 @@ export default function DependentManagementModal({
     if (!formData.name.trim()) { toast.error("Name is required"); setStepIndex(0); return; }
     if (!formData.dob)         { toast.error("Date of birth is required"); setStepIndex(0); return; }
     const age = getDependentAge(formData.dob);
-    if (age === null)  { toast.error("Please enter a valid date of birth"); setStepIndex(0); return; }
-    if (age >= 18)     { toast.error("Dependents must be under 18 years old"); setStepIndex(0); return; }
+    if (age === null)  { toast.error("Enter a valid date of birth"); setStepIndex(0); return; }
+    if (age >= 18)     { toast.error("Must be under 18 years old"); setStepIndex(0); return; }
 
     let submitData: DependentFormData = formData;
     const sportIsKnown = (formData.sportsFocus?.length ?? 0) > 0;

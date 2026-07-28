@@ -105,7 +105,7 @@ export default function FriendsPage() {
   const handleAcceptRequest = async (requestId: string) => {
     try {
       await friendService.acceptFriendRequest(requestId);
-      toast.success("Friend request accepted!");
+      toast.success("Friend request accepted");
       loadFriends();
       loadPendingRequests();
     } catch {
@@ -144,7 +144,7 @@ export default function FriendsPage() {
 
     try {
       await friendService.blockUser(userId);
-      toast.success(`${userName} has been blocked`);
+      toast.success(`${userName} blocked`);
       loadFriends();
     } catch {
       toast.error("Failed to block user");
@@ -184,7 +184,7 @@ export default function FriendsPage() {
 
         setSearchResults(results);
         if (options?.showEmptyToast && results.length === 0) {
-          toast.info("No users found matching your search");
+          toast.info("No users found");
         }
       } catch {
         if (requestId === latestSearchRequestIdRef.current) {
@@ -238,7 +238,7 @@ export default function FriendsPage() {
   const handleSendFriendRequest = async (userId: string) => {
     try {
       await friendService.sendFriendRequest(userId);
-      toast.success("Friend request sent!");
+      toast.success("Friend request sent");
       handleSearch();
       loadSentRequests();
     } catch (error: unknown) {

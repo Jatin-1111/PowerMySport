@@ -353,7 +353,7 @@ export function FriendSocketProvider({
         console.log("Legacy friend request event:", data);
         setPendingRequestCount((prev) => prev + 1);
         toast.info(
-          `${data.requester?.name || "Someone"} sent you a friend request!`,
+          `${data.requester?.name || "Someone"} sent you a friend request`,
           {
             duration: 5000,
           },
@@ -366,7 +366,7 @@ export function FriendSocketProvider({
       (data: FriendRequestAcceptedData) => {
         console.log("Legacy friend request accepted event:", data);
         toast.success(
-          `${data.friend?.name || "User"} accepted your friend request!`,
+          `${data.friend?.name || "User"} accepted your friend request`,
           {
             duration: 5000,
           },

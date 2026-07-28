@@ -99,7 +99,7 @@ export default function Step6Payouts({
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error("Please fix the errors before submitting");
+      toast.error("Fix the errors before submitting");
       return;
     }
 

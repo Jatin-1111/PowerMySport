@@ -33,9 +33,7 @@ export default function AcademyLayout({
 
   useEffect(() => {
     if (user && user.role !== "Academy" && !isOnboardingRoute) {
-      toast.error(
-        "Academy dashboard is limited to academy owners. Use onboarding to activate your academy.",
-      );
+      toast.error("Academy dashboard is limited to academy owners.");
       router.replace("/");
     }
   }, [isOnboardingRoute, router, user]);

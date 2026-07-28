@@ -214,9 +214,7 @@ function ProfilePageContent() {
     }
 
     if (age < 18) {
-      toast.error(
-        `This dependent is ${age} years old and must be at least 18 to graduate.`,
-      );
+      toast.error(`Must be at least 18 to graduate (currently ${age}).`);
       return;
     }
 
@@ -251,9 +249,7 @@ function ProfilePageContent() {
         phone: graduationForm.phone,
       });
       if (response.success) {
-        toast.success(
-          "Dependent successfully graduated to independent account! They'll receive a welcome email.",
-        );
+        toast.success("Dependent graduated to an independent account.");
         setShowGraduationModal(false);
         setGraduationForm({
           dependentId: "",
@@ -433,7 +429,7 @@ function ProfilePageContent() {
       await authApi.updateProfile(updatePayload);
       await fetchProfile();
       setIsEditingSports(false);
-      toast.success("Profile updated!");
+      toast.success("Profile updated.");
     } catch (error: unknown) {
       toast.error(getErrorMessage(error) || "Failed to update profile");
     } finally {

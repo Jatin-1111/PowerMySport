@@ -16,6 +16,7 @@ import { payoutApi } from "@/modules/shared/services/payout";
 import { Button } from "@/modules/shared/ui/Button";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
+import { SUPPORTED_SPORT_NAMES } from "@/modules/sports/config/supportedSports";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
   AlertCircle,
@@ -234,7 +235,7 @@ export default function ExpertOnboardingPage() {
         return;
       }
       if (!achievements.trim()) {
-        toast.error("Achievements are required — this is your main trust signal with clients");
+        toast.error("Achievements are required");
         return;
       }
       if (name.trim() !== user?.name) {
@@ -261,7 +262,7 @@ export default function ExpertOnboardingPage() {
         return;
       }
       if ((sessionMode === "IN_PERSON" || sessionMode === "BOTH") && !inPersonAddress.trim()) {
-        toast.error("In-person address is required for in-person sessions");
+        toast.error("In-person address is required");
         return;
       }
       await saveDraft({
@@ -274,7 +275,7 @@ export default function ExpertOnboardingPage() {
     if (step === 4) {
       for (const w of windows) {
         if (w.start >= w.end) {
-          toast.error(`Availability window on ${DAYS[w.dayOfWeek]} has an invalid time range`);
+          toast.error(`Invalid time range on ${DAYS[w.dayOfWeek]}`);
           return;
         }
       }
@@ -310,7 +311,7 @@ export default function ExpertOnboardingPage() {
       const res = await expertApi.submitForReview();
       if (res.success) {
         setSubmitted(true);
-        toast.success("Profile submitted for review!");
+        toast.success("Profile submitted for review.");
       } else {
         toast.error(res.message || "Submission failed");
       }
@@ -541,7 +542,11 @@ export default function ExpertOnboardingPage() {
                 <label className={label}>
                   Sports <span className="text-red-500">*</span>
                 </label>
-                <SportsMultiSelect value={sports} onChange={setSports} />
+                <SportsMultiSelect
+                  value={sports}
+                  onChange={setSports}
+                  allowedSports={SUPPORTED_SPORT_NAMES}
+                />
               </div>
               <div>
                 <label htmlFor="expert-expertise" className={label}>

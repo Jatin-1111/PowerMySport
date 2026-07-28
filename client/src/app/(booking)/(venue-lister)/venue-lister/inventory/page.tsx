@@ -895,9 +895,7 @@ export default function VenueInventoryPage() {
       setEditingVenue(null);
       loadVenues();
       toast.success(
-        editingVenue
-          ? "Venue updated successfully!"
-          : "Venue created successfully!",
+        editingVenue ? "Venue updated." : "Venue created.",
       );
     } catch (error: unknown) {
       console.error("Failed to save venue:", error);

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { blogService } from "@/modules/community/services/blog";
 import { BlogAuthorProfile } from "@/modules/community/types";
+import { hasAuthToken } from "@/lib/auth/token";
 import AuthorAvatar from "./AuthorAvatar";
 
 /**
@@ -20,6 +21,14 @@ export default function BlogAccountChip({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // This chip renders on the public blog pages too — skip the call
+    // entirely for guests rather than let a 401 trip the global axios
+    // interceptor and bounce a guest reader to login.
+    if (!hasAuthToken()) {
+      setLoading(false);
+      return;
+    }
+
     let active = true;
     void blogService
       .getMyProfile()

@@ -378,7 +378,7 @@ export default function CoachBillingPage() {
     setSubmitAttempted(true);
 
     if (Object.keys(formErrors).length > 0) {
-      toast.error("Fix the highlighted fields before saving this package.");
+      toast.error("Fix the highlighted fields to continue.");
       return;
     }
 

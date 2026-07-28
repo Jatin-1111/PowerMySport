@@ -240,9 +240,7 @@ export default function BookingsPage() {
               : b,
           ),
         );
-        toast.success(
-          "Refund retry initiated — you'll be notified once processed.",
-        );
+        toast.success("Refund retry initiated.");
       } else {
         toast.error(result.message || "Failed to retry refund.");
       }

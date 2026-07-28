@@ -77,7 +77,7 @@ export default function Step5Pricing({
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error("Please fix the errors before continuing");
+      toast.error("Fix the errors before continuing");
       return;
     }
 

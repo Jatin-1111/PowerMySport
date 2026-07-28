@@ -132,7 +132,7 @@ export default function ExpertSessionPage() {
         setSession(res.data);
         setRescheduleOpen(false);
         setNewSlot(null);
-        toast.success("Session scheduled!");
+        toast.success("Session scheduled.");
       } else {
         toast.error(res.message || "Could not schedule.");
       }
@@ -221,7 +221,7 @@ export default function ExpertSessionPage() {
       });
       if (res.success && res.data) {
         setSession(res.data);
-        toast.success("Thanks for your review!");
+        toast.success("Thank you for your review.");
       } else {
         toast.error(res.message || "Could not submit review.");
       }

@@ -204,7 +204,7 @@ export default function AcademyOnboardingContainer() {
           }
         } catch (error) {
           console.error("Failed to load academy from server:", error);
-          toast.error("Could not load your saved progress. Please try again.");
+          toast.error("Failed to load saved progress.");
         }
       } else {
         // No resumeId in URL — check localStorage for an in-progress onboarding as fallback
@@ -279,7 +279,7 @@ export default function AcademyOnboardingContainer() {
       // Save Step 1 data
       saveStepData(1, data);
       advanceStep(newAcademyId, 2);
-      toast.success("Academy created! Continue with Step 2");
+      toast.success("Academy created. Continuing to Step 2");
       return { academyId: newAcademyId };
     } catch (error) {
       toast.error(
@@ -316,12 +316,12 @@ export default function AcademyOnboardingContainer() {
         } catch {
           // ignore
         }
-        toast.success("Academy submitted for approval! 🎉");
+        toast.success("Academy submitted for approval");
         router.push(`/academy/onboarding/success/${academyId}`);
       } else {
         const nextStep = (stepNumber + 1) as OnboardingStep;
         advanceStep(academyId, nextStep);
-        toast.success(`Step ${stepNumber} saved! ✓`);
+        toast.success(`Step ${stepNumber} saved`);
       }
     } catch (error) {
       toast.error(

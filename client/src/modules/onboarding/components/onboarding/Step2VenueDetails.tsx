@@ -333,9 +333,7 @@ export default function Step2VenueDetails({
       try {
         const result = await geoApi.geocode(formData.address);
         if (!result) {
-          toast.error(
-            "We couldn't find this address. Please pick a suggestion.",
-          );
+          toast.error("Address not found. Please pick a suggestion.");
           return;
         }
 
@@ -350,7 +348,7 @@ export default function Step2VenueDetails({
           },
         }));
       } catch (err) {
-        toast.error("Unable to verify address right now. Please try again.");
+        toast.error("Unable to verify address. Please try again.");
         return;
       } finally {
         setIsGeocoding(false);

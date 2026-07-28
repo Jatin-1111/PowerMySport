@@ -23,6 +23,7 @@ import {
   OpenSlot,
 } from "./ExpertAvailabilityService";
 import { encryptValue, decryptValue } from "../../shared/utils/encryption";
+import { isSupportedSport, SUPPORTED_SPORTS } from "../../shared/constants/supportedSports";
 
 const toObjectId = (id: string) => new mongoose.Types.ObjectId(id);
 const frontendUrl = () => process.env.FRONTEND_URL || "http://localhost:3000";
@@ -317,6 +318,7 @@ export const createExpertByAdmin = async (payload: CreateExpertPayload) => {
   if (payload.sessionFee == null || payload.sessionFee < 0) {
     throw new Error("A valid session fee is required");
   }
+  assertSupportedSports(payload.sports);
 
   const temporaryPassword = generateTemporaryPassword();
   const user = new User({
@@ -412,11 +414,28 @@ const EDITABLE_FIELDS = [
   "gstNumber",
 ] as const;
 
+// Experts are restricted to these sports for now — see supportedSports.ts.
+const assertSupportedSports = (sports: unknown) => {
+  if (!Array.isArray(sports)) return;
+  const unsupported = sports.filter(
+    (s) => typeof s === "string" && !isSupportedSport(s),
+  );
+  if (unsupported.length > 0) {
+    const names = SUPPORTED_SPORTS.map((s) => s.name).join(", ");
+    throw new Error(
+      `Unsupported sport(s): ${unsupported.join(", ")}. Experts currently only cover: ${names}.`,
+    );
+  }
+};
+
 const sanitizeProfilePatch = (patch: Record<string, unknown>) => {
   const out: Record<string, unknown> = {};
   for (const key of EDITABLE_FIELDS) {
     if (patch[key] === undefined) continue;
     out[key] = patch[key];
+  }
+  if (out.sports != null) {
+    assertSupportedSports(out.sports);
   }
   if (
     out.sessionFee != null &&

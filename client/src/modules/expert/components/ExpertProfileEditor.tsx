@@ -11,6 +11,7 @@ import LanguagesMultiSelect from "@/modules/shared/components/LanguagesMultiSele
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
+import { SUPPORTED_SPORT_NAMES } from "@/modules/sports/config/supportedSports";
 import {
     Award,
     BadgeIndianRupee,
@@ -138,9 +139,7 @@ export function ExpertProfileEditor({
       return;
     }
     if (!achievements.trim()) {
-      toast.error(
-        "Achievements are required — this is your main trust signal with clients.",
-      );
+      toast.error("Achievements are required.");
       return;
     }
     const fee = Number(sessionFee);
@@ -152,14 +151,12 @@ export function ExpertProfileEditor({
       (sessionMode === "IN_PERSON" || sessionMode === "BOTH") &&
       !inPersonAddress.trim()
     ) {
-      toast.error("In-person address is required for in-person sessions.");
+      toast.error("In-person address is required.");
       return;
     }
     for (const w of windows) {
       if (w.start >= w.end) {
-        toast.error(
-          `Availability on ${DAYS[w.dayOfWeek]} has an invalid time range.`,
-        );
+        toast.error(`Invalid time range on ${DAYS[w.dayOfWeek]}.`);
         return;
       }
     }
@@ -356,7 +353,11 @@ export function ExpertProfileEditor({
             <div className="space-y-4">
               <div>
                 <label className={fieldLabel}>Sports</label>
-                <SportsMultiSelect value={sports} onChange={setSports} />
+                <SportsMultiSelect
+                  value={sports}
+                  onChange={setSports}
+                  allowedSports={SUPPORTED_SPORT_NAMES}
+                />
               </div>
               <div>
                 <label className={fieldLabel}>Expertise</label>

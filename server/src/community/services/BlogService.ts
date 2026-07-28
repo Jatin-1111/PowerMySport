@@ -415,7 +415,7 @@ const buildAuthorMaps = async (authorIds: mongoose.Types.ObjectId[]) => {
 
 export const BlogService = {
   async listBlogs(
-    userId: string,
+    userId: string | undefined,
     page = 1,
     limit = 12,
     filters?: {
@@ -437,7 +437,7 @@ export const BlogService = {
       status: "PUBLISHED",
     };
 
-    if (filters?.mine) {
+    if (filters?.mine && userId) {
       query.authorId = toObjectId(userId, "user id");
       // Only the owner's own list includes drafts — never shown to anyone
       // browsing someone else's posts.
@@ -510,11 +510,11 @@ export const BlogService = {
   },
 
   async buildLikedSet(
-    userId: string,
+    userId: string | undefined,
     targetType: BlogLikeTargetType,
     targetIds: string[],
   ): Promise<Set<string>> {
-    if (!targetIds.length) {
+    if (!targetIds.length || !userId) {
       return new Set();
     }
     const likes = await BlogLike.find({
@@ -527,14 +527,14 @@ export const BlogService = {
     return new Set(likes.map((like) => String(like.targetId)));
   },
 
-  async getBlog(userId: string, blogId: string): Promise<BlogDetail> {
+  async getBlog(userId: string | undefined, blogId: string): Promise<BlogDetail> {
     const id = toObjectId(blogId, "blog id");
     const post = await BlogPost.findOne({ _id: id, isDeleted: false }).lean();
     if (!post) {
       throw new Error("Blog not found");
     }
 
-    const isMine = String(post.authorId) === userId;
+    const isMine = Boolean(userId) && String(post.authorId) === userId;
     // A draft is only visible to its author — hide its existence entirely
     // from anyone else rather than leaking a 403 (which would confirm the id
     // is real).
@@ -727,7 +727,7 @@ export const BlogService = {
   },
 
   async listComments(
-    userId: string,
+    userId: string | undefined,
     blogId: string,
     page = 1,
     limit = 30,
@@ -891,7 +891,7 @@ export const BlogService = {
   },
 
   async buildProfilePayload(
-    viewerId: string,
+    viewerId: string | undefined,
     targetUserId: string,
   ): Promise<BlogAuthorProfile> {
     const [user, profile] = await Promise.all([
@@ -943,7 +943,7 @@ export const BlogService = {
   },
 
   async getBlogAuthorProfile(
-    viewerId: string,
+    viewerId: string | undefined,
     identifier: string,
   ): Promise<BlogAuthorProfile> {
     let targetUserId: string | null = null;

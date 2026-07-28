@@ -17,21 +17,28 @@ function WhatsAppIcon() {
 
 const WA_FOOTER_URL = `https://wa.me/918968582443?text=${encodeURIComponent("Hi! I found PowerMySport and would like to know more.")}`;
 
+// Mirrors the flags Navigation.tsx already reads, so the footer stays in
+// sync with what's actually live instead of drifting independently.
+const isBookingLive = process.env.NEXT_PUBLIC_BOOKING_IS_LIVE !== "false";
+
 const navColumns = [
   {
     title: "Company",
     links: [
       { label: "About Us", href: "/about" },
       { label: "How It Works", href: "/how-it-works" },
-      { label: "Sports Roadmap", href: "/roadmap" },
-      { label: "Get Expert Help", href: "/guidance" },
+      { label: "Get Started", href: "/assessment" },
+      { label: "Sports Pathways", href: "/roadmap" },
+      { label: "Problem Solver", href: "/guidance" },
+      { label: "Experts", href: "/experts" },
+      { label: "FAQ", href: "/faq" },
       { label: "Contact", href: "/contact" },
     ],
   },
   {
     title: "Platform",
     links: [
-      { label: "Book a Session", href: "/booking" },
+      ...(isBookingLive ? [{ label: "Book a Session", href: "/booking" }] : []),
       { label: "List Your Venue", href: "/onboarding" },
       { label: "List Your Academy", href: "/academy/onboarding" },
       { label: "Become a Coach", href: "/register?role=COACH" },
@@ -96,8 +103,9 @@ export const Footer: React.FC = () => {
             </Link>
 
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
-              India&apos;s first sports guidance platform for parents - Get
-              expert guidance, join parents community & book sports services.
+              India&apos;s first sports guidance platform for parents - AI-powered
+              pathways, personalised guidance, and verified expert sessions to
+              plan your child&apos;s sports journey.
             </p>
 
             {/* Quick contact */}

@@ -357,7 +357,7 @@ export default function VenueDetailsPage() {
         endTime: selectedSlot.endTime,
       });
       toast.success(
-        "You were added to the waitlist for this slot! We will notify you if it becomes available.",
+        "Added to the waitlist. We'll notify you when a slot opens.",
       );
       setSelectedSlot(null);
     } catch (error: any) {

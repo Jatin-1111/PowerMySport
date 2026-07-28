@@ -351,7 +351,7 @@ function AddEventForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      toast.error("Please enter a title");
+      toast.error("Title is required");
       return;
     }
     setSaving(true);

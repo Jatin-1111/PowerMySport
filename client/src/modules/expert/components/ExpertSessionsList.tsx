@@ -177,9 +177,7 @@ export function SessionRow({
   const submitMom = async () => {
     const trimmed = momText.trim();
     if (trimmed.length < MOM_MIN_LENGTH) {
-      toast.error(
-        `Add at least ${MOM_MIN_LENGTH} characters — summarize what was covered and any next steps.`,
-      );
+      toast.error(`Add at least ${MOM_MIN_LENGTH} characters.`);
       return;
     }
     await run(() =>

@@ -313,7 +313,7 @@ export const CommunityService = {
   },
 
   async listPosts(
-    userId: string,
+    userId: string | undefined,
     page = 1,
     limit = 20,
     filters?: {
@@ -327,9 +327,11 @@ export const CommunityService = {
       mine?: boolean;
     },
   ) {
-    await ensureProfile(userId);
-    const userRole = await getCommunityRole(userId);
-    ensureQnaAllowedForRole(userRole);
+    if (userId) {
+      await ensureProfile(userId);
+      const userRole = await getCommunityRole(userId);
+      ensureQnaAllowedForRole(userRole);
+    }
 
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(50, Math.max(1, limit));
@@ -344,7 +346,7 @@ export const CommunityService = {
       status: { $in: ["OPEN", "CLOSED"] },
     };
 
-    if (filters?.mine) {
+    if (filters?.mine && userId) {
       query.authorId = userId;
     }
 
@@ -418,13 +420,15 @@ export const CommunityService = {
       CommunityProfile.find({ userId: { $in: authorIds } })
         .select("userId anonymousAlias isIdentityPublic")
         .lean(),
-      CommunityVote.find({
-        userId,
-        targetType: "POST",
-        targetId: { $in: posts.map((post) => post._id) },
-      })
-        .select("targetId value")
-        .lean(),
+      userId
+        ? CommunityVote.find({
+            userId,
+            targetType: "POST",
+            targetId: { $in: posts.map((post) => post._id) },
+          })
+            .select("targetId value")
+            .lean()
+        : Promise.resolve([]),
     ]);
 
     const userMap = new Map(users.map((user) => [String(user._id), user]));
@@ -439,7 +443,7 @@ export const CommunityService = {
           const authorId = String(post.authorId);
           const authorUser = userMap.get(authorId);
           const profile = profileMap.get(authorId);
-          const isSelf = authorId === userId;
+          const isSelf = Boolean(userId) && authorId === userId;
           const isPostAnon = post.isAnonymous && !isSelf;
           const isVerifiedExpert = !isPostAnon && authorUser?.role === "Coach";
 
@@ -490,8 +494,15 @@ export const CommunityService = {
     };
   },
 
-  async getPostDetails(userId: string, postId: string, page = 1, limit = 30) {
-    await ensureProfile(userId);
+  async getPostDetails(
+    userId: string | undefined,
+    postId: string,
+    page = 1,
+    limit = 30,
+  ) {
+    if (userId) {
+      await ensureProfile(userId);
+    }
 
     const post = await CommunityPost.findOne({ _id: postId, isDeleted: false });
     if (!post) {
@@ -521,13 +532,15 @@ export const CommunityService = {
         CommunityProfile.findOne({ userId: post.authorId })
           .select("userId anonymousAlias isIdentityPublic")
           .lean(),
-        CommunityVote.findOne({
-          userId,
-          targetType: "POST",
-          targetId: post._id,
-        })
-          .select("value")
-          .lean(),
+        userId
+          ? CommunityVote.findOne({
+              userId,
+              targetType: "POST",
+              targetId: post._id,
+            })
+              .select("value")
+              .lean()
+          : Promise.resolve(null),
       ]);
 
     const answerAuthorIds = answers.map((item) => String(item.authorId));
@@ -538,13 +551,15 @@ export const CommunityService = {
       CommunityProfile.find({ userId: { $in: answerAuthorIds } })
         .select("userId anonymousAlias isIdentityPublic")
         .lean(),
-      CommunityVote.find({
-        userId,
-        targetType: "ANSWER",
-        targetId: { $in: answers.map((item) => item._id) },
-      })
-        .select("targetId value")
-        .lean(),
+      userId
+        ? CommunityVote.find({
+            userId,
+            targetType: "ANSWER",
+            targetId: { $in: answers.map((item) => item._id) },
+          })
+            .select("targetId value")
+            .lean()
+        : Promise.resolve([]),
     ]);
 
     const answerUserMap = new Map(
@@ -564,7 +579,7 @@ export const CommunityService = {
     );
 
     const postAuthorId = String(post.authorId);
-    const isPostAuthorSelf = postAuthorId === userId;
+    const isPostAuthorSelf = Boolean(userId) && postAuthorId === userId;
     const isPostAnon = post.isAnonymous && !isPostAuthorSelf;
     const isPostAuthorExpert = !isPostAnon && postAuthor?.role === "Coach";
 
@@ -611,7 +626,7 @@ export const CommunityService = {
           const answerAuthorId = String(answer.authorId);
           const answerUser = answerUserMap.get(answerAuthorId);
           const answerProfile = answerProfileMap.get(answerAuthorId);
-          const isAnswerSelf = answerAuthorId === userId;
+          const isAnswerSelf = Boolean(userId) && answerAuthorId === userId;
           const isAnswerAnon = answer.isAnonymous && !isAnswerSelf;
           const isAnswerExpert = !isAnswerAnon && answerUser?.role === "Coach";
 
@@ -1383,8 +1398,10 @@ export const CommunityService = {
     );
   },
 
-  async listGroups(userId: string, query = "", limit = 20) {
-    await ensureProfile(userId);
+  async listGroups(userId: string | undefined, query = "", limit = 20) {
+    if (userId) {
+      await ensureProfile(userId);
+    }
 
     const normalizedQuery = query.trim();
     const safeLimit = Math.min(50, Math.max(1, limit));
@@ -1419,9 +1436,9 @@ export const CommunityService = {
           createdBy: String(group.createdBy),
           profilePicture: await resolveGroupPhotoUrl(group),
           memberCount: memberIds.length,
-          isMember: memberIds.includes(userId),
-          isAdmin: adminIds.includes(userId),
-          isOwner: String(group.createdBy) === userId,
+          isMember: userId ? memberIds.includes(userId) : false,
+          isAdmin: userId ? adminIds.includes(userId) : false,
+          isOwner: userId ? String(group.createdBy) === userId : false,
           memberAddPolicy: group.memberAddPolicy || "ADMIN_ONLY",
         };
       }),

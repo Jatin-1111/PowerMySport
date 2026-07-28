@@ -8,6 +8,7 @@ import { University } from "../models/University";
 import { realDataScraperService } from "./RealDataScraperService";
 import { buildSafeSearchRegexSource } from "../../utils/regex";
 import { getLevelScopeGuidance, getLevelLabelFallbacks } from "../utils/sportArchetypes";
+import { SUPPORTED_SPORTS } from "../constants/supportedSports";
 
 const isDev = process.env.NODE_ENV !== "production";
 const log = {
@@ -35,19 +36,8 @@ function normalizeCity(city?: string): string {
   return city.trim().toLowerCase().replace(/\s+/g, "-");
 }
 
-/** Top Indian sports to pre-warm at startup so the first user always gets an instant response */
-const POPULAR_SPORTS = [
-  "Cricket",
-  "Badminton",
-  "Football",
-  "Kabaddi",
-  "Hockey",
-  "Tennis",
-  "Athletics",
-  "Wrestling",
-  "Shooting",
-  "Swimming",
-];
+/** Supported sports to pre-warm at startup so the first user always gets an instant response */
+const POPULAR_SPORTS = SUPPORTED_SPORTS.map((s) => s.name);
 
 /** Days before a pathway is considered stale and eligible for background refresh */
 const DEFAULT_STALE_DAYS = parseInt(process.env.PATHWAY_STALE_DAYS || "30", 10);

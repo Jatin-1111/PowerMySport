@@ -47,7 +47,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
         return true;
       } catch {
         toast.error(
-          "Invite link generated, but automatic copy was blocked. Use the Copy Link button.",
+          "Copy failed. Use the Copy Link button.",
         );
         return false;
       }

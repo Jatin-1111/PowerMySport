@@ -147,9 +147,7 @@ export function AddressManagement() {
       }
 
       toast.success(
-        editingId
-          ? "Address updated successfully!"
-          : "Address added successfully!",
+        editingId ? "Address updated" : "Address added",
       );
       resetForm();
     } catch (err: any) {
@@ -169,7 +167,7 @@ export function AddressManagement() {
       if (response.defaultAddressId) {
         setDefaultAddressId(response.defaultAddressId);
       }
-      toast.success("Address deleted successfully!");
+      toast.success("Address deleted");
     } catch (err: any) {
       toast.error(err.message || "Failed to delete address");
     } finally {
@@ -185,7 +183,7 @@ export function AddressManagement() {
       if (response.defaultAddressId) {
         setDefaultAddressId(response.defaultAddressId);
       }
-      toast.success("Default address updated!");
+      toast.success("Default address updated");
     } catch (err: any) {
       toast.error(err.message || "Failed to set default address");
     } finally {

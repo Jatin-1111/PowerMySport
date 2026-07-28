@@ -1,29 +1,9 @@
 import "dotenv/config";
 import mongoose from "mongoose";
 import { pathwayService } from "../src/shared/services/PathwayService";
+import { SUPPORTED_SPORTS } from "../src/shared/constants/supportedSports";
 
-const TOP_SPORTS = [
-  "Cricket",
-  "Football",
-  "Badminton",
-  "Tennis",
-  "Kabaddi",
-  "Athletics",
-  "Boxing",
-  "Wrestling",
-  "Weightlifting",
-  "Table Tennis",
-  "Hockey",
-  "Basketball",
-  "Volleyball",
-  "Swimming",
-  "Gymnastics",
-  "Archery",
-  "Shooting",
-  "Cycling",
-  "Judo",
-  "Taekwondo",
-];
+const TOP_SPORTS = SUPPORTED_SPORTS.map((s) => s.name);
 
 async function seed() {
   try {

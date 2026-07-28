@@ -124,7 +124,7 @@ export default function Step3Legal({
         }));
         setPanUploaded(true);
         setFieldErrors((prev) => ({ ...prev, panDocument: "" }));
-        toast.success("PAN document uploaded ✓");
+        toast.success("PAN document uploaded");
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "PAN upload failed");
         setPanFile(null);
@@ -164,7 +164,7 @@ export default function Step3Legal({
         }));
         setGstUploaded(true);
         setFieldErrors((prev) => ({ ...prev, gstDocument: "" }));
-        toast.success("GST document uploaded ✓");
+        toast.success("GST document uploaded");
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "GST upload failed");
         setGstFile(null);

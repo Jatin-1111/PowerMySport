@@ -673,7 +673,7 @@ function CheckoutPageContent() {
         endTime,
         alternateSlots,
       });
-      toast.success("Added to waitlist. We will notify you of any changes.");
+      toast.success("Added to waitlist.");
       setShowWaitlistPrompt(false);
     } catch (err) {
       toast.error(

@@ -113,7 +113,12 @@ export default function RootLayout({
           <FriendSocketProvider>{children}</FriendSocketProvider>
         </HydrationBoundary>
         <CookieConsentBanner />
-        <Toaster richColors closeButton position="top-right" />
+        <Toaster
+          richColors
+          closeButton
+          position="top-right"
+          toastOptions={{ style: { width: "fit-content", maxWidth: "420px" } }}
+        />
       </body>
     </html>
   );

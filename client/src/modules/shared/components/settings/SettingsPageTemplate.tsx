@@ -179,7 +179,7 @@ export function SettingsPageTemplate({
       }
       const response = await authApi.linkGoogleAccount(credentialResponse.credential);
       if (response.success && response.data) {
-        toast.success("Google account linked successfully!");
+        toast.success("Google account linked");
         setUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
       }
@@ -262,7 +262,7 @@ export function SettingsPageTemplate({
       if (response.success) {
         toast.success(
           response.message ||
-            "Your account has been deactivated and is scheduled for deletion.",
+            "Account deactivated and scheduled for deletion",
         );
         logout();
         router.push("/");
