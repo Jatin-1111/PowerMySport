@@ -6,6 +6,8 @@ import {
   Calendar,
   CalendarDays,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   ExternalLink,
   FileText,
@@ -16,6 +18,7 @@ import {
   MapPin,
   Phone,
   Search,
+  SlidersHorizontal,
   Sparkles,
   Trophy,
   Users,
@@ -30,6 +33,18 @@ import type { FederationDetail } from "./page";
 import type { Tournament, TournamentEdition } from "@/modules/sports/services/pathway";
 import { federationApi } from "@/modules/sports/services/pathway";
 import { getSportArchetypeInfo } from "@/modules/sports/config/sportArchetypes";
+import { CalendarMonthGrid } from "./CalendarMonthGrid";
+import { EditionRow } from "./EditionRow";
+import { groupEditionsBySeries } from "./seriesGroups";
+import { stateForCity } from "@/modules/sports/config/indianCityStates";
+import {
+  CAL_TZ,
+  ageGroupRank,
+  bucketEditionsByMonth,
+  dateKey,
+  levelColor,
+  monthKeyOf,
+} from "./editionUtils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -51,121 +66,6 @@ const TYPE_META = {
   national: { label: "National Federation", bg: "bg-emerald-500/20", text: "text-emerald-200", border: "border-emerald-400/30" },
   hybrid: { label: "Public-Private Body", bg: "bg-violet-500/20", text: "text-violet-200", border: "border-violet-400/30" },
 } as const;
-
-const LEVEL_COLORS: Record<string, { pill: string; dot: string }> = {
-  international: { pill: "bg-rose-50 text-rose-700 border-rose-200", dot: "bg-rose-500" },
-  national: { pill: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500" },
-  state: { pill: "bg-violet-50 text-violet-700 border-violet-200", dot: "bg-violet-500" },
-  district: { pill: "bg-slate-50 text-slate-600 border-slate-200", dot: "bg-slate-400" },
-  zonal: { pill: "bg-slate-50 text-slate-600 border-slate-200", dot: "bg-slate-400" },
-};
-
-function levelColor(level: string) {
-  return LEVEL_COLORS[level.toLowerCase()] ?? { pill: "bg-slate-50 text-slate-600 border-slate-200", dot: "bg-slate-400" };
-}
-
-/** The approval flow writes the literal string "admin-submitted" when a calendar edition has no cited source. */
-function isLinkableSourceUrl(url: string | undefined): url is string {
-  return !!url && /^https?:\/\//i.test(url);
-}
-
-// Editions are calendar dates stored as UTC midnight, so every read below uses
-// UTC getters / `timeZone: "UTC"` — otherwise a viewer west of UTC sees every
-// tournament shifted a day earlier. Separately: ICU returns a broken string
-// (e.g. "2026 (day: 31)") when "day"+"year" are requested without "month", so
-// every option bag that asks for a day must also ask for a month.
-const CAL_TZ = "UTC";
-
-function dateKey(date: string): string {
-  return new Date(date).toISOString().slice(0, 10);
-}
-
-function monthKeyOf(date: string): string {
-  return dateKey(date).slice(0, 7);
-}
-
-function isMultiDayEdition(e: TournamentEdition): boolean {
-  return !!e.endDate && dateKey(e.endDate) !== dateKey(e.startDate);
-}
-
-function formatShortEndDate(endDate: string, startDate: string): string {
-  const end = new Date(endDate);
-  const label = end.toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: CAL_TZ });
-  return end.getUTCFullYear() === new Date(startDate).getUTCFullYear()
-    ? label
-    : `${label} ${end.getUTCFullYear()}`;
-}
-
-/**
- * Extracted venue/city are frequently identical, or one contains the other, or
- * venue is a placeholder — collapse those so we never render "Raipur, Raipur".
- */
-function formatLocation(venue?: string, city?: string): string | null {
-  const v = venue?.trim();
-  const c = city?.trim();
-  if (!v) return c || null;
-  if (!c) return v;
-  if (/^(tbc|tba|to be (confirmed|announced))$/i.test(v)) return c;
-  const vl = v.toLowerCase();
-  const cl = c.toLowerCase();
-  if (vl === cl || vl.includes(cl) || cl.includes(vl)) return v.length >= c.length ? v : c;
-  return `${v}, ${c}`;
-}
-
-/** "Under-14" -> 14, so age-group chips sort numerically rather than alphabetically. */
-function ageGroupRank(label: string): number {
-  const match = label.match(/\d+/);
-  return match ? parseInt(match[0], 10) : 999;
-}
-
-interface EditionDateGroup {
-  key: string;
-  date: Date;
-  editions: TournamentEdition[];
-}
-
-interface EditionMonthBucket {
-  key: string;
-  shortLabel: string;
-  fullLabel: string;
-  editions: TournamentEdition[];
-}
-
-/** Many editions share one start date (a series running in several cities) — group them under a single date header. */
-function groupEditionsByDate(editions: TournamentEdition[]): EditionDateGroup[] {
-  const groups = new Map<string, EditionDateGroup>();
-  for (const e of editions) {
-    const key = dateKey(e.startDate);
-    let group = groups.get(key);
-    if (!group) {
-      group = { key, date: new Date(e.startDate), editions: [] };
-      groups.set(key, group);
-    }
-    group.editions.push(e);
-  }
-  return Array.from(groups.values());
-}
-
-/** Month buckets drive the calendar's primary navigation — one pill per month with a live count. */
-function bucketEditionsByMonth(editions: TournamentEdition[]): EditionMonthBucket[] {
-  const buckets = new Map<string, EditionMonthBucket>();
-  for (const e of editions) {
-    const key = monthKeyOf(e.startDate);
-    let bucket = buckets.get(key);
-    if (!bucket) {
-      const d = new Date(e.startDate);
-      bucket = {
-        key,
-        shortLabel: d.toLocaleDateString("en-IN", { month: "short", timeZone: CAL_TZ }),
-        fullLabel: `${d.toLocaleDateString("en-IN", { month: "long", timeZone: CAL_TZ })} ${d.getUTCFullYear()}`,
-        editions: [],
-      };
-      buckets.set(key, bucket);
-    }
-    bucket.editions.push(e);
-  }
-  return Array.from(buckets.values());
-}
 
 const TABS = [
   { id: "overview", label: "Overview", icon: Globe },
@@ -264,10 +164,17 @@ export function FederationDetailClient({
   const [editionsLoading, setEditionsLoading] = useState(false);
   const [editionsLoaded, setEditionsLoaded] = useState(false);
   const [editionsLastChecked, setEditionsLastChecked] = useState<string | null>(null);
-  /** "" = auto (first month with events), "all" = every month, else a "YYYY-MM" key */
+  /** "YYYY-MM"; "" means auto — the soonest month that has events. */
   const [editionMonth, setEditionMonth] = useState("");
   const [editionAgeGroup, setEditionAgeGroup] = useState("All");
-  const [editionCity, setEditionCity] = useState("All");
+  /** Filters by state, not city: exact-city is far too narrow (Under-14 in Delhi is 3 events). */
+  const [editionState, setEditionState] = useState("All");
+  /** Series card keys the reader has opened. Collapsed by default — the point is a short list. */
+  const [openSeries, setOpenSeries] = useState<Set<string>>(new Set());
+  /** "YYYY-MM-DD" when a day is picked in the grid; null means the whole month. */
+  const [editionDate, setEditionDate] = useState<string | null>(null);
+  /** Refinements stay folded away by default — they are secondary to the calendar. */
+  const [showEditionFilters, setShowEditionFilters] = useState(false);
 
   const sportLabel = SPORT_LABEL[fed.sportSlug] ?? fed.sportSlug;
   const typeMeta = TYPE_META[fed.type];
@@ -322,29 +229,43 @@ export function FederationDetailClient({
     new Set(editions.flatMap((e) => e.ageGroups ?? [])),
   ).sort((a, b) => ageGroupRank(a) - ageGroupRank(b) || a.localeCompare(b));
 
-  const editionCityOptions = Array.from(
-    new Set(editions.map((e) => e.city?.trim()).filter((c): c is string => !!c)),
+  const editionStateOptions = Array.from(
+    new Set(editions.map((e) => stateForCity(e.city)).filter((s): s is string => !!s)),
   ).sort((a, b) => a.localeCompare(b));
 
   const filteredEditions = editions.filter((e) => {
     if (editionAgeGroup !== "All" && !(e.ageGroups ?? []).includes(editionAgeGroup)) return false;
-    if (editionCity !== "All" && e.city?.trim() !== editionCity) return false;
+    if (editionState !== "All" && stateForCity(e.city) !== editionState) return false;
     return true;
   });
 
-  const editionMonths = bucketEditionsByMonth(filteredEditions);
-  // Default to the soonest month with events; fall back if the active month is
-  // filtered out from under us so the list is never mysteriously empty.
-  const activeMonthKey =
-    editionMonth === "all"
-      ? "all"
-      : editionMonths.some((m) => m.key === editionMonth)
-        ? editionMonth
-        : (editionMonths[0]?.key ?? "all");
-  const visibleMonths =
-    activeMonthKey === "all" ? editionMonths : editionMonths.filter((m) => m.key === activeMonthKey);
-  const soonestDateKey = filteredEditions[0] ? dateKey(filteredEditions[0].startDate) : null;
-  const editionFiltersActive = editionAgeGroup !== "All" || editionCity !== "All";
+  /**
+   * Month navigation is built from ALL editions, not the filtered set. Deriving
+   * it from filtered data made the calendar and the month stepper vanish
+   * entirely whenever a filter matched nothing, stranding the reader with no
+   * control to undo it. The filters belong on the counts and the detail panel,
+   * not on the furniture used to navigate.
+   */
+  const editionMonths = bucketEditionsByMonth(editions);
+  const activeMonthKey = editionMonths.some((m) => m.key === editionMonth)
+    ? editionMonth
+    : (editionMonths[0]?.key ?? "");
+  const activeMonth = editionMonths.find((m) => m.key === activeMonthKey);
+  const editionFiltersActive = editionAgeGroup !== "All" || editionState !== "All";
+  /** Editions of the month in view (filtered), before the grid's day selection. */
+  const monthEditions = filteredEditions.filter((e) => monthKeyOf(e.startDate) === activeMonthKey);
+  const monthDateKeys = [...new Set(monthEditions.map((e) => dateKey(e.startDate)))].sort();
+  /**
+   * The detail panel is always about one date, never a whole-month aggregate.
+   * Falls back to the soonest date in the month, which also handles switching
+   * month (the previous month's date is no longer in range) without an effect.
+   */
+  const activeDate =
+    editionDate && monthDateKeys.includes(editionDate) ? editionDate : (monthDateKeys[0] ?? null);
+  const visibleEditions = activeDate
+    ? monthEditions.filter((e) => dateKey(e.startDate) === activeDate)
+    : [];
+  const visibleSeries = groupEditionsBySeries(visibleEditions);
 
   // Only offer pills the data can satisfy, and only when there's a real choice
   // to make — a lone "All / National" pair filters nothing.
@@ -794,276 +715,252 @@ export function FederationDetailClient({
             )}
 
             {!editionsLoading && editionsLoaded && editions.length > 0 && (
-              <>
-                {/* ── Cross-link out to the curated guidance for this federation ── */}
-                <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4">
-                  <p className="text-sm text-slate-600 leading-relaxed">{archetypeNote.calendar}</p>
-                  <button
-                    onClick={() => switchTab("tournaments")}
-                    className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-power-orange hover:text-orange-600 transition"
-                  >
-                    <Trophy className="h-3.5 w-3.5" />
-                    {archetypeNote.competitions}
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-
-                {/* ── Month navigator: primary way around the calendar ── */}
-                <div className="rounded-2xl border border-slate-100 bg-white shadow-sm p-3">
-                  <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-                    <button
-                      onClick={() => setEditionMonth("all")}
-                      className={`shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition ${
-                        activeMonthKey === "all"
-                          ? "bg-slate-900 text-white"
-                          : "text-slate-600 hover:bg-slate-100"
-                      }`}
-                    >
-                      All
-                      <span className="ml-1.5 opacity-50">{filteredEditions.length}</span>
-                    </button>
-                    <span className="shrink-0 h-6 w-px bg-slate-200" />
-                    {editionMonths.map((m) => (
-                      <button
-                        key={m.key}
-                        onClick={() => setEditionMonth(m.key)}
-                        className={`shrink-0 flex flex-col items-center rounded-xl px-3 py-1.5 transition ${
-                          activeMonthKey === m.key
-                            ? "bg-power-orange text-white shadow-sm"
-                            : "text-slate-600 hover:bg-slate-100"
-                        }`}
-                      >
-                        <span className="text-xs font-bold uppercase tracking-wide">{m.shortLabel}</span>
-                        <span
-                          className={`text-[10px] font-semibold ${
-                            activeMonthKey === m.key ? "text-white/70" : "text-slate-400"
-                          }`}
+              /* Master-detail: the grid is a fixed-width control column, the
+                 series list takes the rest. Collapses to stacked below lg,
+                 where there is no room for two columns. minmax(0,1fr) keeps a
+                 long tournament name from pushing the column wider than the
+                 track. */
+              <div className="grid gap-5 lg:grid-cols-[19rem_minmax(0,1fr)] lg:items-start">
+                {/* ── Left: the calendar. Stretches to the detail panel's height
+                       (grid items stretch by default — no items-start here) with the
+                       month centred in whatever room that leaves. ── */}
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 lg:sticky lg:top-[63px]">
+                    <div className="mb-4 flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-0.5">
+                        <button
+                          onClick={() => {
+                            const i = editionMonths.findIndex((m) => m.key === activeMonthKey);
+                            const prev = editionMonths[i - 1];
+                            if (prev) {
+                              setEditionMonth(prev.key);
+                              setEditionDate(null);
+                            }
+                          }}
+                          disabled={editionMonths.findIndex((m) => m.key === activeMonthKey) <= 0}
+                          aria-label="Previous month"
+                          className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
                         >
-                          {m.editions.length}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* ── Filters: age group is the question parents actually ask ── */}
-                {(editionAgeGroupOptions.length > 0 || editionCityOptions.length > 1) && (
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-                    {editionAgeGroupOptions.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400 mr-0.5">
-                          Age
-                        </span>
-                        {["All", ...editionAgeGroupOptions].map((ag) => (
-                          <button
-                            key={ag}
-                            onClick={() => setEditionAgeGroup(ag)}
-                            className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
-                              editionAgeGroup === ag
-                                ? "border-power-orange bg-power-orange text-white"
-                                : "border-slate-200 bg-white text-slate-600 hover:border-orange-200 hover:text-power-orange"
-                            }`}
-                          >
-                            {ag}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {editionCityOptions.length > 1 && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">
-                          City
-                        </span>
-                        <select
-                          value={editionCity}
-                          onChange={(e) => setEditionCity(e.target.value)}
-                          className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-power-orange/20 focus:border-power-orange"
-                        >
-                          <option value="All">All cities</option>
-                          {editionCityOptions.map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                    {editionFiltersActive && (
-                      <button
-                        onClick={() => {
-                          setEditionAgeGroup("All");
-                          setEditionCity("All");
-                        }}
-                        className="text-xs font-semibold text-slate-400 underline hover:text-power-orange transition"
-                      >
-                        Clear filters
-                      </button>
-                    )}
-                    {editionsLastChecked && (
-                      <p className="ml-auto text-xs text-slate-400">
-                        Last confirmed{" "}
-                        {new Date(editionsLastChecked).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                          timeZone: CAL_TZ,
-                        })}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* ── Agenda, one section per visible month ── */}
-                {filteredEditions.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-300 py-14 text-center">
-                    <CalendarDays className="h-8 w-8 text-slate-300 mx-auto mb-3" />
-                    <p className="text-sm font-semibold text-slate-600">No dates match these filters</p>
-                    <p className="text-xs text-slate-400 mt-1">Try a different age group or city</p>
-                  </div>
-                ) : (
-                  visibleMonths.map((month) => (
-                    <section key={month.key} className="space-y-2">
-                      {/* top offset must match the sticky tab bar's height (51px) so no content peeks between them */}
-                      <div className="sticky top-[51px] z-20 -mx-1 flex items-baseline gap-2 bg-slate-50/95 px-1 py-2 backdrop-blur">
-                        <h3 className="font-title text-lg font-bold text-slate-900 tracking-tight">
-                          {month.fullLabel}
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <h3 className="font-title min-w-0 flex-1 truncate text-center text-[15px] font-bold tracking-tight text-slate-900">
+                          {activeMonth?.fullLabel ?? "Upcoming"}
                         </h3>
-                        <span className="text-xs font-semibold text-slate-400">
-                          {month.editions.length} tournament{month.editions.length === 1 ? "" : "s"}
+                        <button
+                          onClick={() => {
+                            const i = editionMonths.findIndex((m) => m.key === activeMonthKey);
+                            const next = editionMonths[i + 1];
+                            if (next) {
+                              setEditionMonth(next.key);
+                              setEditionDate(null);
+                            }
+                          }}
+                          disabled={
+                            editionMonths.findIndex((m) => m.key === activeMonthKey) >=
+                            editionMonths.length - 1
+                          }
+                          aria-label="Next month"
+                          className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <span className="shrink-0 text-xs font-semibold text-slate-400">
+                        {monthEditions.length}
+                      </span>
+                    </div>
+
+                  <CalendarMonthGrid
+                    monthKey={activeMonthKey}
+                    editions={monthEditions}
+                    selectedDate={activeDate}
+                    onSelectDate={setEditionDate}
+                  />
+                </div>
+
+                {/* ── Right: what is actually on ── */}
+                <div className="space-y-3">
+                  {visibleSeries.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-slate-300 py-12 text-center">
+                      <p className="text-sm font-semibold text-slate-600">
+                        {editionFiltersActive ? "Nothing matches these filters" : "Pick a highlighted date"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        {editionFiltersActive
+                          ? "Try a different age group or state"
+                          : "The orange dates on the left have tournaments"}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                      <div className="flex items-center justify-between gap-3 px-5 py-2.5">
+                        <span className="min-w-0 truncate text-sm font-bold text-slate-800">
+                          {activeDate
+                            ? new Date(activeDate).toLocaleDateString("en-IN", {
+                                weekday: "long",
+                                day: "numeric",
+                                month: "long",
+                                timeZone: CAL_TZ,
+                              })
+                            : (activeMonth?.fullLabel ?? "Upcoming")}
                         </span>
+                        <div className="flex shrink-0 items-center gap-3">
+                          <span className="text-xs text-slate-400">
+                            {visibleEditions.length} event{visibleEditions.length === 1 ? "" : "s"}
+                          </span>
+                          {(editionAgeGroupOptions.length > 0 || editionStateOptions.length > 1) && (
+                            <button
+                              onClick={() => setShowEditionFilters((v) => !v)}
+                              className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition ${
+                                editionFiltersActive
+                                  ? "bg-orange-50 text-power-orange"
+                                  : "text-slate-500 hover:bg-slate-100"
+                              }`}
+                            >
+                              <SlidersHorizontal className="h-3.5 w-3.5" />
+                              {editionFiltersActive
+                                ? [
+                                    editionAgeGroup !== "All" ? editionAgeGroup : null,
+                                    editionState !== "All" ? editionState : null,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" · ")
+                                : "Filter"}
+                            </button>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm divide-y divide-slate-100">
-                        {groupEditionsByDate(month.editions).map((group) => {
-                          const isNext = group.key === soonestDateKey;
-                          return (
-                            <div key={group.key} className="flex gap-4 px-4 py-3 sm:px-5">
-                              {/* Date gutter */}
-                              <div className="shrink-0 w-12 pt-0.5 text-center">
-                                <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">
-                                  {group.date.toLocaleDateString("en-IN", {
-                                    weekday: "short",
-                                    timeZone: CAL_TZ,
-                                  })}
-                                </p>
-                                <p
-                                  className={`text-xl font-black leading-none ${
-                                    isNext ? "text-power-orange" : "text-slate-900"
+                      {showEditionFilters && (
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5 bg-slate-50 px-5 py-3">
+                          {editionAgeGroupOptions.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {["All", ...editionAgeGroupOptions].map((ag) => (
+                                <button
+                                  key={ag}
+                                  onClick={() => setEditionAgeGroup(ag)}
+                                  className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${
+                                    editionAgeGroup === ag
+                                      ? "bg-power-orange text-white"
+                                      : "bg-white text-slate-600 hover:text-power-orange"
                                   }`}
                                 >
-                                  {group.date.getUTCDate()}
-                                </p>
-                                {isNext && (
-                                  <p className="mt-1 text-[8px] font-bold uppercase tracking-wide text-power-orange">
-                                    Next
-                                  </p>
-                                )}
-                              </div>
-
-                              {/* Events on this date */}
-                              <div className="min-w-0 flex-1 divide-y divide-slate-50">
-                                {group.editions.map((e, i) => {
-                                  const lc = e.level ? levelColor(e.level) : null;
-                                  const location = formatLocation(e.venue, e.city);
-                                  const multiDay = isMultiDayEdition(e);
-                                  const hasMeta =
-                                    !!location ||
-                                    multiDay ||
-                                    !!e.registrationDeadlineDate ||
-                                    !!e.ageGroups?.length;
-                                  return (
-                                    <div
-                                      key={i}
-                                      className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0"
-                                    >
-                                      <div className="min-w-0 flex-1">
-                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                          <span className="text-sm font-semibold text-slate-800 leading-snug">
-                                            {e.name}
-                                          </span>
-                                          {lc && (
-                                            <span
-                                              className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${lc.pill}`}
-                                            >
-                                              <span className={`h-1 w-1 rounded-full ${lc.dot}`} />
-                                              {e.level}
-                                            </span>
-                                          )}
-                                        </div>
-                                        {hasMeta && (
-                                          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
-                                            {location && (
-                                              <span className="flex items-center gap-1">
-                                                <MapPin className="h-3 w-3 shrink-0" />
-                                                {location}
-                                              </span>
-                                            )}
-                                            {multiDay && (
-                                              <span className="flex items-center gap-1">
-                                                <Calendar className="h-3 w-3 shrink-0" />
-                                                until {formatShortEndDate(e.endDate!, e.startDate)}
-                                              </span>
-                                            )}
-                                            {e.registrationDeadlineDate && (
-                                              <span className="flex items-center gap-1 font-semibold text-amber-600">
-                                                <Clock className="h-3 w-3 shrink-0" />
-                                                Reg. by{" "}
-                                                {new Date(
-                                                  e.registrationDeadlineDate,
-                                                ).toLocaleDateString("en-IN", {
-                                                  day: "numeric",
-                                                  month: "short",
-                                                  timeZone: CAL_TZ,
-                                                })}
-                                              </span>
-                                            )}
-                                            {e.ageGroups?.map((ag) => (
-                                              <span
-                                                key={ag}
-                                                className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600"
-                                              >
-                                                {ag}
-                                              </span>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
-                                      {isLinkableSourceUrl(e.sourceUrl) && (
-                                        <a
-                                          href={e.sourceUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="shrink-0 mt-0.5 text-slate-300 hover:text-power-orange transition"
-                                          title="View official source"
-                                        >
-                                          <ExternalLink className="h-3.5 w-3.5" />
-                                        </a>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
+                                  {ag}
+                                </button>
+                              ))}
                             </div>
-                          );
-                        })}
-                      </div>
-                    </section>
-                  ))
-                )}
+                          )}
+                          {editionStateOptions.length > 1 && (
+                            <select
+                              value={editionState}
+                              onChange={(e) => setEditionState(e.target.value)}
+                              className="rounded-xl border-0 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+                            >
+                              <option value="All">All states</option>
+                              {editionStateOptions.map((st) => (
+                                <option key={st} value={st}>
+                                  {st}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          {editionFiltersActive && (
+                            <button
+                              onClick={() => {
+                                setEditionAgeGroup("All");
+                                setEditionState("All");
+                              }}
+                              className="text-xs font-semibold text-slate-400 underline transition hover:text-power-orange"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      )}
 
-                {/* The server caps the window, so say where the data stops rather than implying it's exhaustive. */}
-                {filteredEditions.length > 0 && (
-                  <p className="pt-1 text-center text-xs text-slate-400">
-                    Showing {filteredEditions.length} confirmed {sportLabel} date
+                      {visibleSeries.map((group) => {
+                        const isOpen = openSeries.has(group.key);
+                        const first = group.ageGroups[0];
+                        const last = group.ageGroups[group.ageGroups.length - 1];
+                        const ageSpan =
+                          group.ageGroups.length > 1 ? `${first} – ${last}` : (first ?? null);
+                        return (
+                          <div key={group.key}>
+                            <button
+                              onClick={() =>
+                                setOpenSeries((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(group.key)) next.delete(group.key);
+                                  else next.add(group.key);
+                                  return next;
+                                })
+                              }
+                              className="flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:bg-slate-50"
+                            >
+                              <ChevronDown
+                                className={`h-3.5 w-3.5 shrink-0 text-slate-300 transition-transform ${
+                                  isOpen ? "rotate-180" : "-rotate-90"
+                                }`}
+                              />
+                              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">
+                                {group.label}
+                              </span>
+                              {ageSpan && (
+                                <span className="hidden shrink-0 text-xs text-slate-400 sm:block">
+                                  {ageSpan}
+                                </span>
+                              )}
+                              <span className="w-7 shrink-0 text-right text-sm font-bold text-slate-900">
+                                {group.editions.length}
+                              </span>
+                            </button>
+
+                            {isOpen && (
+                              <div className="divide-y divide-slate-50 bg-slate-50/40 py-2 pl-12 pr-5">
+                                {group.editions.map((e, i) => (
+                                  <EditionRow
+                                    key={i}
+                                    edition={e}
+                                    inSeries
+                                    highlightAgeGroup={
+                                      editionAgeGroup === "All" ? undefined : editionAgeGroup
+                                    }
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <p className="text-xs leading-relaxed text-slate-400">
+                    {archetypeNote.calendar}{" "}
+                    <button
+                      onClick={() => switchTab("tournaments")}
+                      className="font-semibold text-slate-500 underline transition hover:text-power-orange"
+                    >
+                      {archetypeNote.competitions}
+                    </button>
+                  </p>
+
+                  <p className="text-xs text-slate-400">
+                    {filteredEditions.length} confirmed {sportLabel} date
                     {filteredEditions.length === 1 ? "" : "s"} through{" "}
                     {new Date(
-                      filteredEditions[filteredEditions.length - 1]!.startDate,
+                      filteredEditions[filteredEditions.length - 1]?.startDate ?? new Date().toISOString(),
                     ).toLocaleDateString("en-IN", {
                       day: "numeric",
                       month: "short",
                       year: "numeric",
                       timeZone: CAL_TZ,
                     })}
+                    {editionsLastChecked &&
+                      ` · last confirmed ${new Date(editionsLastChecked).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        timeZone: CAL_TZ,
+                      })}`}
                     {fed.officialCalendarUrl && (
                       <>
                         {" · "}
@@ -1071,15 +968,15 @@ export function FederationDetailClient({
                           href={fed.officialCalendarUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-semibold text-slate-500 underline hover:text-power-orange transition"
+                          className="font-semibold text-slate-500 underline transition hover:text-power-orange"
                         >
-                          full official calendar
+                          official calendar
                         </a>
                       </>
                     )}
                   </p>
-                )}
-              </>
+                </div>
+              </div>
             )}
 
             {!editionsLoading && editionsLoaded && editions.length === 0 && (
