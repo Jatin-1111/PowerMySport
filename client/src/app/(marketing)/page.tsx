@@ -166,7 +166,7 @@ export default function HomePage() {
         variant="home"
         title="Helping Parents Make Confident Sports Decisions"
         titleHighlight="Sports Decisions"
-        description="Powered by AI, personalised by experts and supported by a trusted community everything you need to guide your child's sporting journey."
+        description="Powered by AI, personalised by experts and supported by a trusted community—everything you need to guide your child's sporting journey."
         ctaPrompt={
           user?.role === "VenueLister"
             ? undefined
