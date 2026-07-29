@@ -22,9 +22,11 @@ const SPORT_ARCHETYPE: Record<string, SportArchetypeInfo> = {
   wrestling: { archetype: "federation" },
   volleyball: { archetype: "federation" },
   gymnastics: { archetype: "federation" },
+  hockey: { archetype: "federation" },
   tennis: { archetype: "ranking" },
   badminton: { archetype: "ranking" },
   "table tennis": { archetype: "ranking" },
+  squash: { archetype: "ranking" },
   chess: { archetype: "rating" },
   athletics: { archetype: "standard", unit: "time" },
   swimming: { archetype: "standard", unit: "time" },
@@ -34,8 +36,19 @@ const SPORT_ARCHETYPE: Record<string, SportArchetypeInfo> = {
 /** Federation is the safest generic default for sports outside our explicit map — most Indian sports run on a district/state/national structure. */
 const DEFAULT_ARCHETYPE_INFO: SportArchetypeInfo = { archetype: "federation" };
 
-function getSportArchetypeInfo(sportName: string): SportArchetypeInfo {
-  const key = sportName.trim().toLowerCase();
+/**
+ * Accepts a sport name ("Table Tennis") or a slug ("table-tennis") — callers
+ * pass both. Without the separator normalisation, "table-tennis" missed the
+ * "table tennis" key and silently fell through to the federation default,
+ * handing a ranking sport district/state pathway guidance. Mirrors the client
+ * copy's behaviour in client/src/modules/sports/config/sportArchetypes.ts.
+ */
+export function getSportArchetypeInfo(sportNameOrSlug: string): SportArchetypeInfo {
+  const key = sportNameOrSlug
+    .trim()
+    .toLowerCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ");
   return SPORT_ARCHETYPE[key] ?? DEFAULT_ARCHETYPE_INFO;
 }
 

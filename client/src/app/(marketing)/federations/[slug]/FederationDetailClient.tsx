@@ -29,6 +29,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import type { FederationDetail } from "./page";
 import type { Tournament, TournamentEdition } from "@/modules/sports/services/pathway";
 import { federationApi } from "@/modules/sports/services/pathway";
+import { getSportArchetypeInfo } from "@/modules/sports/config/sportArchetypes";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -176,7 +177,66 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-const LEVEL_FILTERS = ["All", "International", "National", "State", "District", "Zonal"] as const;
+/**
+ * Candidate level pills, widest scope first. These are only ever *offered* when
+ * the loaded tournaments actually contain them — a fixed list shipped dead
+ * options: "District" and "Zonal" matched zero records anywhere in the database,
+ * and for ranking/rating sports they don't exist as a concept at all (see
+ * sportArchetypes.ts).
+ */
+const LEVEL_FILTER_CANDIDATES = ["International", "National", "State", "District", "Zonal"] as const;
+
+/**
+ * Word-boundary match, NOT substring: "International".includes("national") is
+ * true, so a plain substring test made the National pill select every
+ * International event too. Still tolerates the free-form values scraped records
+ * carry — "National (School)", "Grassroots / National" — and correctly reports
+ * "National/International" as both.
+ */
+function levelMatches(level: string | undefined, candidate: string): boolean {
+  return !!level && new RegExp(`\\b${candidate}\\b`, "i").test(level);
+}
+
+function availableLevelFilters(list: Tournament[]): string[] {
+  return LEVEL_FILTER_CANDIDATES.filter((candidate) =>
+    list.some((t) => levelMatches(t.level, candidate)),
+  );
+}
+
+/**
+ * How the two tabs describe each other, per sport archetype.
+ *
+ * Archetypes exist precisely because competitive structure isn't universal (see
+ * sportArchetypes.ts) — a ranking sport has no district/state ladder, so the
+ * calendar can't be framed as "events at your level". Each archetype gets copy
+ * that matches how progression actually works, and points at the tab that
+ * explains it.
+ */
+const ARCHETYPE_CALENDAR_NOTE: Record<
+  ReturnType<typeof getSportArchetypeInfo>["archetype"],
+  { calendar: string; competitions: string }
+> = {
+  ranking: {
+    calendar:
+      "These are ranking-circuit events — entering them is how a player earns the points that build a national ranking. The tier of each event decides how many points are on offer.",
+    competitions: "See how the ranking tiers fit together",
+  },
+  rating: {
+    calendar:
+      "These are rated events — results from them move a player's official rating, which is what determines entry to higher tiers.",
+    competitions: "See how the rating milestones work",
+  },
+  federation: {
+    calendar:
+      "These are the dated events on this federation's calendar. Selection runs through district and state representation before the national level.",
+    competitions: "See the selection pathway",
+  },
+  standard: {
+    calendar:
+      "These are the dated meets on this federation's calendar — each is a chance to post a time or score against the published qualifying standards.",
+    competitions: "See the qualifying standards",
+  },
+};
 
 // ─── Main client component ────────────────────────────────────────────────────
 
@@ -212,6 +272,8 @@ export function FederationDetailClient({
   const sportLabel = SPORT_LABEL[fed.sportSlug] ?? fed.sportSlug;
   const typeMeta = TYPE_META[fed.type];
   const isVerified = !!fed.dataVerifiedAt;
+  const archetype = getSportArchetypeInfo(fed.sportSlug).archetype;
+  const archetypeNote = ARCHETYPE_CALENDAR_NOTE[archetype];
 
   const switchTab = useCallback((tab: TabId) => {
     setActiveTab(tab);
@@ -284,8 +346,17 @@ export function FederationDetailClient({
   const soonestDateKey = filteredEditions[0] ? dateKey(filteredEditions[0].startDate) : null;
   const editionFiltersActive = editionAgeGroup !== "All" || editionCity !== "All";
 
+  // Only offer pills the data can satisfy, and only when there's a real choice
+  // to make — a lone "All / National" pair filters nothing.
+  const levelFilterOptions = availableLevelFilters(tournaments);
+  const showLevelFilters = levelFilterOptions.length >= 2;
+  // If the active pill isn't offered (data changed, or filters just collapsed),
+  // fall back to "All" rather than silently showing an empty list.
+  const activeLevelFilter =
+    levelFilter === "All" || levelFilterOptions.includes(levelFilter) ? levelFilter : "All";
+
   const filteredTournaments = tournaments.filter((t) => {
-    if (levelFilter !== "All" && !t.level.toLowerCase().includes(levelFilter.toLowerCase())) return false;
+    if (activeLevelFilter !== "All" && !levelMatches(t.level, activeLevelFilter)) return false;
     if (ageGroupFilter && !t.ageGroup?.toLowerCase().includes(ageGroupFilter.toLowerCase())) return false;
     if (tournamentSearch && !t.name.toLowerCase().includes(tournamentSearch.toLowerCase())) return false;
     return true;
@@ -605,29 +676,47 @@ export function FederationDetailClient({
                 onChange={(e) => setAgeGroupFilter(e.target.value)}
                 className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-power-orange/20 focus:border-power-orange w-48"
               />
-              {/* Level pills */}
-              <div className="flex flex-wrap gap-1.5">
-                {LEVEL_FILTERS.map((l) => (
-                  <button
-                    key={l}
-                    onClick={() => setLevelFilter(l)}
-                    className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                      levelFilter === l
-                        ? "bg-power-orange border-power-orange text-white"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-orange-200 hover:text-power-orange"
-                    }`}
-                  >
-                    {l}
-                  </button>
-                ))}
-              </div>
+              {/* Level pills — omitted entirely when the data offers no real choice */}
+              {showLevelFilters && (
+                <div className="flex flex-wrap gap-1.5">
+                  {["All", ...levelFilterOptions].map((l) => (
+                    <button
+                      key={l}
+                      onClick={() => setLevelFilter(l)}
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                        activeLevelFilter === l
+                          ? "bg-power-orange border-power-orange text-white"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-orange-200 hover:text-power-orange"
+                      }`}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Count */}
+            {/* Count + cross-link into the dated calendar. These tabs answer
+                different questions — this tab is the evergreen "what is this and
+                how do I enter", the Calendar is "when and where" — so each needs
+                a route to the other. The count only shows once the Calendar tab
+                has been opened; it stays lazy rather than fetching eagerly. */}
             {tournamentsLoaded && (
-              <p className="text-xs text-slate-500">
-                Showing {filteredTournaments.length} of {tournamentTotal} tournaments
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-slate-500">
+                  Showing {filteredTournaments.length} of {tournamentTotal} tournaments
+                </p>
+                <button
+                  onClick={() => switchTab("calendar")}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-power-orange hover:text-orange-600 transition"
+                >
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  {editionsLoaded && editions.length > 0
+                    ? `${editions.length} upcoming ${sportLabel} dates`
+                    : "See upcoming dates"}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
             )}
 
             {/* Loading */}
@@ -706,6 +795,19 @@ export function FederationDetailClient({
 
             {!editionsLoading && editionsLoaded && editions.length > 0 && (
               <>
+                {/* ── Cross-link out to the curated guidance for this federation ── */}
+                <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4">
+                  <p className="text-sm text-slate-600 leading-relaxed">{archetypeNote.calendar}</p>
+                  <button
+                    onClick={() => switchTab("tournaments")}
+                    className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-power-orange hover:text-orange-600 transition"
+                  >
+                    <Trophy className="h-3.5 w-3.5" />
+                    {archetypeNote.competitions}
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
                 {/* ── Month navigator: primary way around the calendar ── */}
                 <div className="rounded-2xl border border-slate-100 bg-white shadow-sm p-3">
                   <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">

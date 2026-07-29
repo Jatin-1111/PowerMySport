@@ -48,6 +48,8 @@ export interface DataSourceSubmissionDocument extends Document {
   /** field name -> short quote/paraphrase from the source supporting that field (FEDERATION/CURATED_TOURNAMENT only) */
   citations?: Record<string, string>;
   extractionError?: string;
+  /** Non-fatal validation notes on a successful extraction (e.g. "149 of 151 entries were dropped: …") */
+  extractionWarnings?: string[];
   extractionModel?: string;
   extractedAt?: Date;
 
@@ -92,6 +94,7 @@ const dataSourceSubmissionSchema = new Schema<DataSourceSubmissionDocument>(
     extractedData: { type: Schema.Types.Mixed },
     citations: { type: Schema.Types.Mixed },
     extractionError: { type: String },
+    extractionWarnings: { type: [String], default: undefined },
     extractionModel: { type: String },
     extractedAt: { type: Date },
 

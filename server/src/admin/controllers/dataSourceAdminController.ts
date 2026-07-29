@@ -276,6 +276,7 @@ export const createDataSource = async (
     submission.extractedData = result.extractedData;
     submission.citations = result.citations;
     submission.extractionError = result.extractionError;
+    submission.extractionWarnings = result.extractionWarnings;
     submission.extractionModel = result.extractionModel;
     submission.extractedAt = new Date();
     await submission.save();
@@ -437,6 +438,7 @@ export const reExtractDataSource = async (
     submission.extractedData = result.extractedData;
     submission.citations = result.citations;
     submission.extractionError = result.extractionError;
+    submission.extractionWarnings = result.extractionWarnings;
     submission.extractionModel = result.extractionModel;
     submission.extractedAt = new Date();
     await submission.save();

@@ -142,6 +142,7 @@ export interface AdminDataSourceSubmission {
   extractedData?: unknown;
   citations?: Record<string, string>;
   extractionError?: string;
+  extractionWarnings?: string[];
   extractionModel?: string;
   extractedAt?: string;
   reviewNotes?: string;

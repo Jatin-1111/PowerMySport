@@ -194,15 +194,15 @@ const CURATED: Omit<
     },
     participationGuide: [
       "Hold a valid AITA membership number (obtained through your State Tennis Association)",
-      "Build your AITA national ranking through City Series (CS), National Series (NS), and Super Series (SS) events",
+      "Build your AITA national ranking through Championship Series (CS), National Series (NS), and Super Series (SS) events",
       "Monitor the AITA official calendar at aita.in for the entry opening date",
       "Submit your entry online through the AITA tournament registration portal before the deadline",
       "Confirm entry fee payment — entry is accepted by ranking order; lower-ranked players enter qualifying",
     ],
     qualificationPath:
-      "AITA City Series (CS) → AITA National Series (NS) → AITA Super Series (SS) → Fenesta Open National Championship",
+      "AITA Championship Series (CS) → AITA National Series (NS) → AITA Super Series (SS) → Fenesta Open National Championship",
     circuitContext:
-      "AITA organises a tiered domestic ranking circuit. City Series (CS): city-level events, the accessible entry point for beginners. National Series (NS): national-level events with significantly higher ranking points. Super Series (SS): the premium national tier, attracting India's top-100 ranked players. The Fenesta Open is the apex — it is also an ITF-sanctioned event, so results earn ITF world ranking points, bridging the domestic and international circuits. No minimum age — the draw is determined purely by ranking. Players as young as 16 have competed when ranked high enough.",
+      "AITA organises a tiered domestic ranking circuit. Talent Series (TS): the accessible entry point for beginners. Championship Series (CS): the broad ranking tier held across India. National Series (NS): national-level events with significantly higher ranking points. Super Series (SS): the premium national tier, attracting India's top-100 ranked players. The Fenesta Open is the apex — it is also an ITF-sanctioned event, so results earn ITF world ranking points, bridging the domestic and international circuits. No minimum age — the draw is determined purely by ranking. Players as young as 16 have competed when ranked high enough.",
     format: "Single elimination — 32 or 48 main draw + qualifying rounds",
     prestige: "flagship",
     prizePool: "₹15 lakh+ total prize money (varies by edition)",
@@ -225,7 +225,7 @@ const CURATED: Omit<
     name: "AITA National Ranking Tournament (Senior)",
     level: "National",
     description:
-      "A year-round series of national ranking tournaments organised by AITA for senior men and women across four tiers: Super Series (SS), National Series (NS), City Series (CS), and Team Series (TS). Points earned across the circuit determine AITA national ranking, which controls Davis Cup and Billie Jean King Cup squad eligibility and seedings at premier events.",
+      "A year-round series of national ranking tournaments organised by AITA for senior men and women across four tiers: Super Series (SS), National Series (NS), Championship Series (CS), and Talent Series (TS). Points earned across the circuit determine AITA national ranking, which controls Davis Cup and Billie Jean King Cup squad eligibility and seedings at premier events.",
     ageGroup: "Senior — Men's & Women's Open",
     typicalDates: "Year-round — schedule published on AITA website each January",
     registrationDeadline: "Per tournament — typically 3 weeks before each event",
@@ -241,22 +241,22 @@ const CURATED: Omit<
     },
     participationGuide: [
       "Obtain an AITA membership through your State Tennis Association",
-      "Check the AITA tournament calendar at aita.in for upcoming events in your region — start with City Series if new to the circuit",
+      "Check the AITA tournament calendar at aita.in for upcoming events in your region — start with Talent Series if new to the circuit",
       "Register through the AITA online portal before the entry deadline",
       "Pay the entry fee and confirm your spot — ranking determines direct acceptance vs. qualifying",
       "Compete; points are automatically credited to your AITA national ranking within 7 days",
     ],
     qualificationPath:
-      "AITA membership → City Series (CS) → National Series (NS) → Super Series (SS) → Fenesta Open / Davis Cup selection",
+      "AITA membership → Championship Series (CS) → National Series (NS) → Super Series (SS) → Fenesta Open / Davis Cup selection",
     circuitContext:
-      "The AITA Senior Ranking Circuit runs four tiers. City Series (CS): held dozens of times per year across India — the correct starting point. National Series (NS): higher points, stronger field, national venue. Super Series (SS): the premium domestic tier; attracting India's top-100 ranked players. No minimum age for senior events — any AITA-registered player who meets the ranking criteria can enter. Players under 18 regularly compete in senior events if their ranking qualifies them. This circuit is separate from the junior circuit and counts toward senior national ranking only.",
+      "The AITA Senior Ranking Circuit runs four tiers. Talent Series (TS): the entry rung for players new to the circuit. Championship Series (CS): held dozens of times per year across India — the main ranking tier. National Series (NS): higher points, stronger field, national venue. Super Series (SS): the premium domestic tier; attracting India's top-100 ranked players. No minimum age for senior events — any AITA-registered player who meets the ranking criteria can enter. Players under 18 regularly compete in senior events if their ranking qualifies them. This circuit is separate from the junior circuit and counts toward senior national ranking only.",
     format: "Single elimination with qualifying rounds for lower-ranked players",
     prestige: "ranking",
-    entryFee: "City Series: ₹500–₹800 · National Series: ₹800–₹1,200 · Super Series: ₹1,500–₹2,000",
+    entryFee: "Championship Series: ₹500–₹800 · National Series: ₹800–₹1,200 · Super Series: ₹1,500–₹2,000",
     selectionCriteria: "AITA national ranking determines direct acceptance into each tier. No age restriction — senior circuit is open to any AITA-registered player.",
     keyFacts: [
       "No minimum age — junior players with sufficient ranking regularly compete in senior events",
-      "Four tiers: Team Series (TS) → City Series (CS) → National Series (NS) → Super Series (SS)",
+      "Four tiers: Talent Series (TS) → Championship Series (CS) → National Series (NS) → Super Series (SS)",
       "Points from CS, NS, and SS accumulate into a single AITA national ranking",
       "Davis Cup and Billie Jean King Cup selectors use this ranking as the primary criterion",
       "40–60+ events held across India per year — one of the most active domestic circuits in Asia",
@@ -287,15 +287,15 @@ const CURATED: Omit<
     },
     participationGuide: [
       "Join your State Tennis Association (STA) and register as an AITA junior member",
-      "Build your AITA junior national ranking through the Junior City Series (CS), Junior National Series (NS), and Junior Super Series (SS)",
+      "Build your AITA junior national ranking through the Junior Championship Series (CS), Junior National Series (NS), and Junior Super Series (SS)",
       "Qualify directly by ranking or receive a State Tennis Association nomination",
       "Register through your STA's official nomination process before the November deadline",
       "Compete in your age-group draw (U-12, U-14, U-16, or U-18) at the national venue",
     ],
     qualificationPath:
-      "Junior City Series (CS) → Junior National Series (NS) → Junior Super Series (SS) → AITA Junior National Ranking / STA nomination → Junior National Championship",
+      "Junior Championship Series (CS) → Junior National Series (NS) → Junior Super Series (SS) → AITA Junior National Ranking / STA nomination → Junior National Championship",
     circuitContext:
-      "AITA's junior circuit mirrors the senior system across four tiers. Junior City Series (CS): city-level events for beginners — the correct starting point. Junior National Series (NS): national events for established state-level juniors. Junior Super Series (SS): the premium junior tier. Age is determined as of January 1st of the tournament year — a player who turns 14 in any month of 2025 competes in U-14 for all of 2025. After the Junior National, top U-18 performers receive AITA backing for ITF Junior circuit events (ITF J60 through J500 Grade). AITA uses Junior National performance to select India's teams for the Asia-Pacific Junior Team Championship and ITF Junior Davis Cup.",
+      "AITA's junior circuit mirrors the senior system across four tiers. Junior Talent Series (TS): entry-level events for beginners — the correct starting point. Junior Championship Series (CS): the main junior ranking tier, held across India. Junior National Series (NS): national events for established state-level juniors. Junior Super Series (SS): the premium junior tier. Age is determined as of January 1st of the tournament year — a player who turns 14 in any month of 2025 competes in U-14 for all of 2025. After the Junior National, top U-18 performers receive AITA backing for ITF Junior circuit events (ITF J60 through J500 Grade). AITA uses Junior National performance to select India's teams for the Asia-Pacific Junior Team Championship and ITF Junior Davis Cup.",
     format: "Single elimination — separate draws for each age group and gender",
     prestige: "flagship",
     entryFee: "Typically ₹500–₹1,000 per player per category",

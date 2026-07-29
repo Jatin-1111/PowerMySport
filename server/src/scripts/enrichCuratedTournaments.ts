@@ -86,7 +86,7 @@ Find SPECIFIC, ACCURATE answers to these 5 questions. Only report what you actua
    - Common rejection reasons
 
 6. CIRCUIT & RANKING SYSTEM: What is the complete competition ladder and ranking series for this sport that leads to or from this tournament? Be specific and factual — use the exact tier names the federation uses. Include:
-   - The full named tier structure (e.g., for AITA tennis: Team Series TS → City Series CS → National Series NS → Super Series SS → National Championship; for BCCI cricket: district → U-16 Vijay Merchant → U-19 Cooch Behar → U-25 Vinoo Mankad → Ranji Trophy → Duleep/Irani → India team)
+   - The full named tier structure (e.g., for AITA tennis: Talent Series TS → Championship Series CS → National Series NS → Super Series SS → National Championship; for BCCI cricket: district → U-16 Vijay Merchant → U-19 Cooch Behar → U-25 Vinoo Mankad → Ranji Trophy → Duleep/Irani → India team)
    - Where this specific tournament sits in that hierarchy (entry-level, mid-tier, apex)
    - What feeder tournaments/events a player typically competes in 1–2 years before reaching this tournament
    - What tournaments/opportunities open up after performing well here

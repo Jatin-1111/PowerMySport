@@ -921,6 +921,24 @@ export default function AdminDataSourceDetailPage() {
               </p>
             )}
             {submission.extractionError && <p className="text-sm text-red-600">Error: {submission.extractionError}</p>}
+            {submission.extractionWarnings && submission.extractionWarnings.length > 0 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
+                  Extraction warnings
+                </p>
+                <ul className="mt-1 space-y-0.5">
+                  {submission.extractionWarnings.map((w, i) => (
+                    <li key={i} className="text-sm text-amber-800">
+                      {w}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-1.5 text-xs text-amber-700">
+                  These entries never reached the review list — confirm the source really only contains what&apos;s
+                  shown below before approving.
+                </p>
+              </div>
+            )}
           </div>
           <button
             onClick={handleReExtract}
