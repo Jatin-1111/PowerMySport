@@ -30,6 +30,16 @@ export const securityHeadersMiddleware = (
   );
   res.setHeader("Cross-Origin-Resource-Policy", "same-site");
 
+  /**
+   * api.powermysport.com falls inside the powermysport.com *domain* property in
+   * Search Console, so Googlebot crawls it and reports what it finds. Nothing
+   * the API serves should ever be a search result. We send `noindex` rather
+   * than blocking the host in robots.txt: a blocked URL still gets reported
+   * (as "Blocked by robots.txt") and can linger in the index URL-only, whereas
+   * a crawlable `noindex` gets it dropped permanently and silently.
+   */
+  res.setHeader("X-Robots-Tag", "noindex, nofollow");
+
   if (process.env.NODE_ENV === "production") {
     res.setHeader(
       "Strict-Transport-Security",

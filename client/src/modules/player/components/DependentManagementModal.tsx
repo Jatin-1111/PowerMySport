@@ -3,7 +3,10 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/toast";
-import { INDIAN_STATES } from "@/modules/guidance/constants";
+import {
+  normalizeStoredState,
+  stateSelectOptions,
+} from "@/lib/indianStates";
 import { BinaryCards } from "@/modules/find-sport/components/inputs/BinaryCards";
 import { FourContextCards } from "@/modules/find-sport/components/inputs/FourContextCards";
 import { MultiSelectPills } from "@/modules/find-sport/components/inputs/MultiSelectPills";
@@ -125,6 +128,10 @@ export default function DependentManagementModal({
           ? new Date(initialDependent.dob).toISOString().split("T")[0]
           : "",
         relation: normalizeDependentRelation(initialDependent.relation),
+        // Same reason as the relation above: a dependent saved with the old
+        // "Jammu & Kashmir" spelling matches no option in the canonical list, so
+        // the field would render blank and lose the state on the next save.
+        location: normalizeStoredState(initialDependent.location),
       });
     } else {
       setFormData(EMPTY_FORM);
@@ -388,7 +395,7 @@ export default function DependentManagementModal({
                     onChange={(v) => handleChange("location", v)}
                     options={[
                       { value: "", label: "— Select state —" },
-                      ...INDIAN_STATES.map((s) => ({ value: s, label: s })),
+                      ...stateSelectOptions(formData.location),
                     ]}
                   />
                 </ProfileEditField>

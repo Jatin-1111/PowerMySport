@@ -2,7 +2,7 @@
 
 import { Search } from "lucide-react";
 import { useState } from "react";
-import { INDIAN_STATES } from "@/modules/guidance/constants";
+import { INDIAN_STATES_AND_UTS } from "@/lib/indianStates";
 
 export function StateSelector({
   value,
@@ -14,8 +14,10 @@ export function StateSelector({
   const [query, setQuery] = useState("");
 
   const filtered = query.trim()
-    ? INDIAN_STATES.filter((s) => s.toLowerCase().includes(query.toLowerCase()))
-    : INDIAN_STATES;
+    ? INDIAN_STATES_AND_UTS.filter((s) =>
+        s.toLowerCase().includes(query.toLowerCase()),
+      )
+    : INDIAN_STATES_AND_UTS;
 
   return (
     <div className="space-y-3">

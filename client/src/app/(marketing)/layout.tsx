@@ -21,7 +21,13 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col overflow-x-hidden">
+    // `overflow-x-clip`, not `overflow-x-hidden`. Both stop sideways scroll, but
+    // `hidden` computes the other axis to `auto`, which turns this div into a
+    // scroll container and silently breaks `position: sticky` for every
+    // descendant on every marketing page — the sticky rail on the resource pages
+    // simply scrolled away. `clip` prevents overflow without creating a scroll
+    // container, so sticky keeps resolving against the viewport.
+    <div className="flex min-h-screen flex-col overflow-x-clip">
       {/* Navigation Header */}
       <Navigation variant="light" sticky />
       <div className="h-16" aria-hidden />

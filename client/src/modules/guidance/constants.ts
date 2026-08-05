@@ -127,40 +127,10 @@ export const initialForm: GuidanceFormState = {
   location: "",
 };
 
-export const INDIAN_STATES = [
-  "Andhra Pradesh",
-  "Arunachal Pradesh",
-  "Assam",
-  "Bihar",
-  "Chhattisgarh",
-  "Goa",
-  "Gujarat",
-  "Haryana",
-  "Himachal Pradesh",
-  "Jharkhand",
-  "Karnataka",
-  "Kerala",
-  "Madhya Pradesh",
-  "Maharashtra",
-  "Manipur",
-  "Meghalaya",
-  "Mizoram",
-  "Nagaland",
-  "Odisha",
-  "Punjab",
-  "Rajasthan",
-  "Sikkim",
-  "Tamil Nadu",
-  "Telangana",
-  "Tripura",
-  "Uttar Pradesh",
-  "Uttarakhand",
-  "West Bengal",
-  "Delhi",
-  "Jammu & Kashmir",
-  "Chandigarh",
-  "Puducherry",
-].sort((a, b) => a.localeCompare(b));
+// The state list lives in `@/lib/indianStates` — import it there. The copy that
+// used to be here spelled the UT "Jammu & Kashmir" and omitted four others, and
+// every state-scoped API rejects a name it doesn't recognise, so the drift made
+// those options fail rather than merely look different.
 
 // Required fields that must be filled before generating
 export const REQUIRED_FIELDS: Array<{

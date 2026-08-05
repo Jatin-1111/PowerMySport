@@ -4,13 +4,16 @@ import type { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Sports Venue Booking | Book Turf & Courts Online",
+  title: "Sports Venue Booking — Launching Soon",
   description:
-    "Find and book the best sports venues near you. PowerMySport is the premium venue booking platform sports players use to book turf, courts, and fields instantly.",
+    "Turf, court, and field booking on PowerMySport is launching soon. Join the waitlist to get notified when sports venues near you go live.",
+  alternates: {
+    canonical: "/venues",
+  },
   openGraph: {
-    title: "Sports Venue Booking | Book Turf & Courts Online",
+    title: "Sports Venue Booking — Launching Soon",
     description:
-      "Find and book the best sports venues near you. Book turf, courts, and fields instantly.",
+      "Turf, court, and field booking is launching soon. Join the waitlist to hear first.",
   },
 };
 

@@ -210,6 +210,29 @@ app.use("/api/payout-methods", payoutMethodsRoutes);
 // Shop Domain
 app.use("/api/v1", ecommerceRoutes);
 
+/**
+ * Crawler-facing routes for api.powermysport.com.
+ *
+ * The root used to fall through to the 404 handler, which Search Console
+ * reported as a "Not found (404)" page for the domain property. A 200 service
+ * descriptor plus a robots.txt keeps the host well-behaved. Crawling is
+ * *allowed* on purpose so Googlebot can read the `X-Robots-Tag: noindex`
+ * header set in securityHeadersMiddleware — that is what actually keeps the
+ * API out of the index.
+ */
+app.get("/", (_req, res) => {
+  res.status(200).json({
+    success: true,
+    service: "PowerMySport API",
+    docs: "https://powermysport.com",
+    health: "/api/health",
+  });
+});
+
+app.get("/robots.txt", (_req, res) => {
+  res.type("text/plain").send("User-agent: *\nDisallow:\n");
+});
+
 const getDetailedHealthPayload = async () => {
   const dbReadyState = mongoose.connection.readyState;
   const dbStateMap: Record<number, string> = {

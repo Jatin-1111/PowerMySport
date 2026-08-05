@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  INDIAN_STATES_AND_UTS,
+  normalizeStoredState,
+} from "@/lib/indianStates";
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
@@ -62,7 +66,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import {
     fadeUp,
-    INDIAN_STATES,
     orchestrator,
     pathwayLevels,
     SPRING_STIFF
@@ -94,9 +97,7 @@ import {
 import { ApplicationsTab } from './ApplicationsTab';
 import { BudgetCalculator } from './BudgetCalculator';
 import { ComparePanel } from './ComparePanel';
-import { PathwayLevelCard } from './PathwayLevelCard';
-import { PathwayLevelDetail } from './PathwayLevelDetail';
-import { ArchetypeStepper } from './skeletons/ArchetypeStepper';
+import { PathwayGraphSection } from './graph/PathwayGraphSection';
 import { SaveButton } from './SaveButton';
 import { SavedTab } from './SavedTab';
 import { StoriesTab } from './StoriesTab';
@@ -332,7 +333,11 @@ export function PathwayExplorerSection() {
     if (user) roadmapProfileApi.updateProfile({ progress: p }, selectedDependentId);
   };
 
-  const handleStateChange = (s: string) => {
+  const handleStateChange = (raw: string) => {
+    // Canonicalised because this also handles the `?state=` deep link, which a
+    // shared or bookmarked URL can carry in the old "Jammu & Kashmir" spelling —
+    // rejected by every state-scoped pathway endpoint. "" (clear) passes through.
+    const s = normalizeStoredState(raw);
     setSelectedState(s);
     saveState(s);
     setStateOpen(false);
@@ -534,7 +539,11 @@ export function PathwayExplorerSection() {
   useEffect(() => {
     const sport = searchParams.get("sport");
     const level = searchParams.get("level");
-    const state = searchParams.get("state");
+    // Canonicalised here rather than only inside `handleStateChange`, because
+    // `effectiveState` below goes straight to the pathway API — a deep link
+    // carrying the old "Jammu & Kashmir" spelling would otherwise 400 the search
+    // even though the chip showed the corrected name.
+    const state = normalizeStoredState(searchParams.get("state"));
     // Support both legacy "age"/"budget" and wizard-generated "childAge"/"budgetTier"
     const age = searchParams.get("childAge") || searchParams.get("age");
     const budget = searchParams.get("budgetTier") || searchParams.get("budget");
@@ -592,7 +601,7 @@ export function PathwayExplorerSection() {
   const currentLevels = result ? result.pathway.levels : pathwayLevels;
   // The four archetypes each define their own skeleton (stage count, grouping,
   // labels, visuals) — the same 5 raw levels flow into whichever matches.
-  const { archetype, unit: archetypeUnit } = getArchetypeForSport(
+  const { archetype } = getArchetypeForSport(
     result ? result.pathway.sportName : "",
   );
   const macroLevels = groupLevelsIntoMacro(
@@ -823,7 +832,7 @@ export function PathwayExplorerSection() {
                     className="absolute left-0 top-full z-30 mt-1.5 w-52 rounded-2xl border border-slate-100 bg-white shadow-2xl overflow-hidden"
                   >
                     <div className="max-h-60 overflow-y-auto py-1">
-                      {INDIAN_STATES.map((s) => (
+                      {INDIAN_STATES_AND_UTS.map((s) => (
                         <button
                           key={s}
                           onClick={() => handleStateChange(s)}
@@ -1601,56 +1610,24 @@ export function PathwayExplorerSection() {
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <div className="space-y-5">
-                      {/* Archetype-matched progression skeleton — the
-                          flagship widget of this tab, so it gets a brand
-                          accent stripe and eyebrow label the surrounding
-                          cards don't, instead of blending in as one more
-                          white rounded-2xl box. */}
-                      <div className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white shadow-md">
-                        <div
-                          aria-hidden
-                          className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-power-orange via-orange-400 to-amber-300"
-                        />
-                        <div className="flex items-center gap-2 px-5 pt-5 sm:px-6">
-                          <Flag className="h-3.5 w-3.5 text-power-orange" />
-                          <p className="text-[11px] font-bold uppercase tracking-widest text-power-orange">
-                            The Journey
-                          </p>
-                        </div>
-                        <ArchetypeStepper
-                          archetype={archetype}
-                          unit={archetypeUnit}
-                          stages={macroLevels}
-                          activeIdx={safeActiveIdx}
-                          onSelect={setActiveIdx}
-                          currentLevel={effectiveCurrentLevel}
-                          personaName={persona?.name}
-                          goalRawLevel={goalRawLevel}
-                        />
-                      </div>
-
-                      {/* Level detail panel */}
-                      <div>
-                        <AnimatePresence mode="wait">
-                          {selectedMacroLevel && (
-                            <PathwayLevelDetail
-                              key={selectedMacroLevel.id}
-                              macroLevel={selectedMacroLevel}
-                              sportName={
-                                result ? result.pathway.sportName : "General"
-                              }
-                              state={selectedState || undefined}
-                              nextMacroLevel={macroLevels[safeActiveIdx + 1]}
-                              persona={persona}
-                              personalNotes={personalNotes}
-                              personalNotesLoading={personalNotesLoading}
-                            />
-                          )}
-                        </AnimatePresence>
-                      </div>
-
-                    </div>
+                    {/* The journey is a graph, not a ladder. One start, a
+                        small predefined set of end goals, and every route
+                        between them — including the shortcuts parents attempt
+                        and the side routes they never hear about. Selecting a
+                        tier here still opens the full researched detail below
+                        it; it just isn't the first thing on screen any more. */}
+                    <PathwayGraphSection
+                      sportName={result ? result.pathway.sportName : "General"}
+                      state={selectedState || undefined}
+                      archetype={archetype}
+                      macroLevels={macroLevels}
+                      persona={persona}
+                      currentRawLevel={effectiveCurrentLevel}
+                      personalNotes={personalNotes}
+                      personalNotesLoading={personalNotesLoading}
+                      onStageChange={setActiveIdx}
+                      onExploreFunding={() => setActiveTab("opportunities")}
+                    />
                   </motion.div>
                 )}
 

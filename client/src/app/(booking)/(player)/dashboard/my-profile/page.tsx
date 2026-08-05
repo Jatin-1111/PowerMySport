@@ -7,7 +7,10 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
-import { INDIAN_STATES } from "@/modules/guidance/constants";
+import {
+  normalizeStoredState,
+  stateSelectOptions,
+} from "@/lib/indianStates";
 import DependentManagementModal, {
   type DependentModalStepId,
 } from "@/modules/player/components/DependentManagementModal";
@@ -387,7 +390,9 @@ function ProfilePageContent() {
       primaryObjective: user.playerProfile?.primaryObjective || "Recreational",
       weeklyTimeCommitment: user.playerProfile?.weeklyTimeCommitment || 3,
       budgetTier: user.playerProfile?.budgetTier || "Moderate",
-      location: user.playerProfile?.location || "",
+      // Canonicalised on the way in: a profile saved with the old "Jammu &
+      // Kashmir" spelling would otherwise match no option and blank the field.
+      location: normalizeStoredState(user.playerProfile?.location),
       bio: user.parentProfile?.bio || "",
       involvementYears: user.parentProfile?.involvementYears,
       sportInterests: user.parentProfile?.sportInterests || [],
@@ -906,7 +911,7 @@ function ProfilePageContent() {
                       }
                       options={[
                         { value: "", label: "— Select state —" },
-                        ...INDIAN_STATES.map((s) => ({ value: s, label: s })),
+                        ...stateSelectOptions(playerProfileForm.location),
                       ]}
                     />
                   </ProfileEditField>
@@ -1072,7 +1077,8 @@ function ProfilePageContent() {
                     {user.playerProfile?.budgetTier || "Not specified"}
                   </ProfileInfoField>
                   <ProfileInfoField label="State">
-                    {user.playerProfile?.location || "Not specified"}
+                    {normalizeStoredState(user.playerProfile?.location) ||
+                      "Not specified"}
                   </ProfileInfoField>
                   <ProfileInfoField label="Weekly Time">
                     {user.playerProfile?.weeklyTimeCommitment

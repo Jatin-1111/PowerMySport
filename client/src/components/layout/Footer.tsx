@@ -33,6 +33,7 @@ const navColumns = [
       { label: "Experts", href: "/experts" },
       { label: "FAQ", href: "/faq" },
       { label: "Contact", href: "/contact" },
+      { label: "Careers", href: "/careers" },
     ],
   },
   {

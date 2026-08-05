@@ -39,45 +39,11 @@ export const scaleIn: Variants = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const INDIAN_STATES = [
-  "Andhra Pradesh",
-  "Arunachal Pradesh",
-  "Assam",
-  "Bihar",
-  "Chhattisgarh",
-  "Goa",
-  "Gujarat",
-  "Haryana",
-  "Himachal Pradesh",
-  "Jharkhand",
-  "Karnataka",
-  "Kerala",
-  "Madhya Pradesh",
-  "Maharashtra",
-  "Manipur",
-  "Meghalaya",
-  "Mizoram",
-  "Nagaland",
-  "Odisha",
-  "Punjab",
-  "Rajasthan",
-  "Sikkim",
-  "Tamil Nadu",
-  "Telangana",
-  "Tripura",
-  "Uttar Pradesh",
-  "Uttarakhand",
-  "West Bengal",
-  "Andaman & Nicobar",
-  "Chandigarh",
-  "Dadra & Nagar Haveli",
-  "Daman & Diu",
-  "Delhi",
-  "Jammu & Kashmir",
-  "Ladakh",
-  "Lakshadweep",
-  "Puducherry",
-].sort((a, b) => a.localeCompare(b));
+// The state list lives in `@/lib/indianStates` — import it there. The copy that
+// used to be here offered "Jammu & Kashmir", "Andaman & Nicobar", "Dadra & Nagar
+// Haveli" and "Daman & Diu", none of which `GET /pathways` accepts: it validates
+// against the server's own list and answers 400 for anything else, so those four
+// options could only ever fail.
 
 // Coaching fee tiers derived from parentalCommitment.financial text
 export const COACHING_FEE_TIERS: Record<

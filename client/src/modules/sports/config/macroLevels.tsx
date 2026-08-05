@@ -199,9 +199,15 @@ const RANKING_SKELETON: MacroLevelConfig[] = [
       "Racquet and match skills last a lifetime — your child can play socially at any age, and the footwork, coordination, and concentration built here carry into every other sport and into the classroom.",
   },
   {
+    // Was labelled "State Circuit / State Ranking Tournaments", which is a
+    // cricket-shaped idea forced onto a ranking sport. AITA, BAI and TTFI grade
+    // their tournaments NATIONALLY and state bodies merely host them — there is no
+    // state circuit to climb and no state cap to win. What actually happens at
+    // this rung is that a child enters sanctioned age-group draws and earns their
+    // first ranking points, so that is what it now says.
     id: "state-circuit",
-    label: "State Circuit",
-    scopeTag: "State Ranking Tournaments",
+    label: "First Ranking Points",
+    scopeTag: "Age-group ranked events",
     icon: <Flag className="h-5 w-5" />,
     rawLevelNumbers: [2],
     durationNote: "~1–3 years on the circuit",
@@ -212,9 +218,9 @@ const RANKING_SKELETON: MacroLevelConfig[] = [
     badge: "bg-blue-100 text-blue-700 border-blue-200",
     stepper: { hex: "#3b82f6", soft: "#eff6ff", ring: "#bfdbfe", dark: "#1e3a8a" },
     funnelNote:
-      "This is where the sport changes shape: progress is measured in ranking points earned at tournaments, not selection trials. Far fewer children play ranking events than take coaching — entering at all already puts your child in a small group.",
+      "This is where the sport changes shape: progress is measured in ranking points earned at tournaments, not selection trials. Far fewer children play ranked events than take coaching — entering at all already puts your child in a small group.",
     exitValueNote:
-      "Playing state ranking tournaments teaches your child to compete under pressure, win and lose graciously, and manage nerves — skills that show up in exams and interviews. A state tournament record also supports school sports-quota consideration.",
+      "Playing ranked tournaments teaches your child to compete under pressure, win and lose graciously, and manage nerves — skills that show up in exams and interviews. A tournament record also supports school and university sports-quota consideration.",
   },
   {
     id: "national-ranking",
@@ -230,7 +236,7 @@ const RANKING_SKELETON: MacroLevelConfig[] = [
     badge: "bg-indigo-100 text-indigo-700 border-indigo-200",
     stepper: { hex: "#6366f1", soft: "#eef2ff", ring: "#c7d2fe", dark: "#312e81" },
     funnelNote:
-      "Earning an All-India ranking means beating players from across the country, tournament after tournament. Only a small fraction of state-circuit players get here — travel, cost, and training hours all step up sharply.",
+      "Earning an All-India ranking means beating players from across the country, tournament after tournament. Only a small fraction of the children who play ranked events get this far — travel, cost, and training hours all step up sharply.",
     exitValueNote:
       "A national ranking is a documented, verifiable achievement — it strongly supports sports-quota admission at top universities and stands out in any application, whether or not your child turns professional.",
   },
@@ -276,9 +282,12 @@ const RATING_SKELETON: MacroLevelConfig[] = [
       "This game sharpens memory, patience, and planning like almost nothing else — benefits your child keeps forever, whether or not they ever play a rated event.",
   },
   {
+    // "State Rated" for the same reason: a rating is issued by AICF and FIDE, not
+    // by a state, and the events that produce a first one are age-group events
+    // wherever they happen to be held.
     id: "state-rated",
-    label: "State Rated",
-    scopeTag: "First Official Rating",
+    label: "Getting Rated",
+    scopeTag: "Your first official rating",
     icon: <Award className="h-5 w-5" />,
     rawLevelNumbers: [2],
     durationNote: "~1–2 years of rated events",
@@ -291,7 +300,7 @@ const RATING_SKELETON: MacroLevelConfig[] = [
     funnelNote:
       "From here progress is a number: an official rating that rises and falls with every result. Earning a first rating already separates your child from the vast majority who only play casually.",
     exitValueNote:
-      "A rating gives your child a clear, honest measure of progress and teaches them to handle wins and losses objectively. Rated tournament experience also counts toward school and district recognition.",
+      "A rating gives your child a clear, honest measure of progress and teaches them to handle wins and losses objectively. Rated tournament experience also counts toward school and university recognition.",
   },
   {
     id: "national-rated",

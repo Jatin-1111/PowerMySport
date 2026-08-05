@@ -1,6 +1,8 @@
 "use client";
 
 
+import { normalizeStoredState } from '@/lib/indianStates';
+
 import { DEFAULT_PROGRESS, ProgressState } from '../types';
 
 // ─── localStorage helpers ─────────────────────────────────────────────────────
@@ -21,7 +23,11 @@ export function saveProgress(p: ProgressState) {
 
 export function loadState(): string {
   if (typeof window === "undefined") return "";
-  return localStorage.getItem("pms_selected_state") || "";
+  // Canonicalised on read: sessions saved before the picker agreed with the server
+  // hold names like "Jammu & Kashmir", and every state-scoped pathway endpoint
+  // answers 400 for a name it doesn't recognise. This is the only read point for
+  // the persisted state, so normalising here covers restore-on-mount too.
+  return normalizeStoredState(localStorage.getItem("pms_selected_state"));
 }
 
 export function saveState(s: string) {

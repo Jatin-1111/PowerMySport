@@ -29,6 +29,12 @@ export default function robots(): MetadataRoute.Robots {
           "/community/q",
           "/community/discover",
         ],
+        // Only genuinely private / transactional areas belong here. Public
+        // pages we simply don't want indexed (auth screens, onboarding funnels)
+        // are left crawlable and carry a `noindex` tag instead — see
+        // src/lib/seo.ts. Blocking those in robots.txt would stop Googlebot
+        // from ever reading the tag, which is what produced the "Blocked by
+        // robots.txt" report in Search Console.
         disallow: [
           "/dashboard/",
           "/coach/",
@@ -38,9 +44,6 @@ export default function robots(): MetadataRoute.Robots {
           "/settings",
           "/payment",
           "/checkout",
-          "/onboarding",
-          "/login",
-          "/register",
           "/booking",
           "/saved",
           "/notifications",

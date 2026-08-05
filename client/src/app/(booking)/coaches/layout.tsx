@@ -4,13 +4,16 @@ import type { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Find Sports Coaches | Professional Coach Booking",
+  title: "Sports Coach Booking — Launching Soon",
   description:
-    "Connect with certified professional sports coaches for personalized training. The best coach booking platform for cricket, football, tennis, and more.",
+    "Personalised training with certified sports coaches is launching soon on PowerMySport. Join the waitlist to get notified when coach booking opens.",
+  alternates: {
+    canonical: "/coaches",
+  },
   openGraph: {
-    title: "Find Sports Coaches | Professional Coach Booking",
+    title: "Sports Coach Booking — Launching Soon",
     description:
-      "Connect with certified professional sports coaches for personalized training.",
+      "Personalised training with certified sports coaches is launching soon. Join the waitlist.",
   },
 };
 
