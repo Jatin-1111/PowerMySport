@@ -181,7 +181,7 @@ export interface GraphLayout {
  * one-directional chart. Because layering takes the LONGEST path, a genuine
  * shortcut still visibly skips ranks wherever the ladder is longer.
  */
-function computeLayers(graph: PathwayGraph): Map<string, number> {
+export function computeLayers(graph: PathwayGraph): Map<string, number> {
   const structural = graph.edges.filter((e) => e.kind !== "overreach");
 
   const outgoing = new Map<string, string[]>();
@@ -947,6 +947,34 @@ export function initialTransform(
     scale,
     tx: 12,
     ty: (containerH - h * scale) / 2,
+  };
+}
+
+/**
+ * Re-frame an existing view for a new container size: hold whatever diagram
+ * point was centred, at `scale` (which the caller has already re-clamped to the
+ * new container's bounds).
+ *
+ * This is what a resize needs and neither of the other two transforms provide.
+ * Doing nothing leaves a translation computed for the old size, which can park
+ * the whole diagram outside the container — a phone rotation used to leave the
+ * map looking empty. Re-running `initialTransform` fixes the framing but throws
+ * away the parent's place, which matters once they've panned to the one tier
+ * they care about.
+ */
+export function reframeTransform(
+  prev: { w: number; h: number },
+  next: { w: number; h: number },
+  current: { scale: number; tx: number; ty: number },
+  scale: number,
+) {
+  // Diagram-space point that sat at the middle of the old container.
+  const cx = (prev.w / 2 - current.tx) / current.scale;
+  const cy = (prev.h / 2 - current.ty) / current.scale;
+  return {
+    scale,
+    tx: next.w / 2 - cx * scale,
+    ty: next.h / 2 - cy * scale,
   };
 }
 

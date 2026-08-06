@@ -18,6 +18,9 @@ import {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+// `overflow-x-clip` on <main>, not `overflow-x-hidden`: hiding one axis promotes
+// the other to `auto`, which makes this a scroll container and silently breaks
+// `position: sticky` for every descendant on the page.
 export default function PathwaysPage() {
   const communityUrl = getCommunityAppUrl();
   const [activeLevel, setActiveLevel] = useState(0);
@@ -50,7 +53,7 @@ export default function PathwaysPage() {
   ];
 
   return (
-    <main className="overflow-x-hidden">
+    <main className="overflow-x-clip">
       {/* ── Hero ── */}
       {/* <Hero
         variant="page"

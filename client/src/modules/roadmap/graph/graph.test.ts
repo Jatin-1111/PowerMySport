@@ -6,9 +6,11 @@ import type { Archetype } from "@/modules/sports/config/sportArchetypes";
 import { describe, expect, it } from "vitest";
 
 import { deriveGraph } from "./derive";
+import { buildPathwayFlow } from "./flow";
 import {
   layoutGraph,
   orderedRoute,
+  reframeTransform,
   routeEdges,
   subgraphForGoal,
 } from "./geometry";
@@ -643,6 +645,163 @@ describe("edge routing", () => {
     const routed = routeEdges(broken, layoutGraph(broken));
     expect(routed.map((r) => r.edge.id)).not.toContain("ghost");
     expect(routed).toHaveLength(TENNIS_GRAPH.edges.length);
+  });
+});
+
+// ─── Reading order ──────────────────────────────────────────────────────────
+
+describe("buildPathwayFlow", () => {
+  it("takes its spine from the trunk lane, in flow order, for every map", () => {
+    for (const { name, graph } of ALL_GRAPHS()) {
+      const flow = buildPathwayFlow(graph);
+      expect(flow.trunkLane?.tone, `${name}: spine isn't the trunk`).toBe("ladder");
+      expect(flow.spine.length, `${name}: spine too short to read`).toBeGreaterThan(2);
+      // Strictly advancing, so "further down the page" always means "further on".
+      const ranks = flow.spine.map((s) => s.rank);
+      expect([...ranks].sort((a, b) => a - b), name).toEqual(ranks);
+      expect(flow.spine[0].node.id, `${name}: doesn't open at the start`).toBe(
+        graph.startNodeId,
+      );
+      expect(flow.spine[0].arrival, `${name}: start can't be arrived at`).toBeUndefined();
+    }
+  });
+
+  it("shows every node exactly once, so nothing is silently dropped", () => {
+    for (const { name, graph } of ALL_GRAPHS()) {
+      const flow = buildPathwayFlow(graph);
+      const shown = [
+        ...flow.spine.map((s) => s.node.id),
+        ...flow.branches.flatMap((b) => b.steps.map((s) => s.node.id)),
+        ...flow.destinations.map((d) => d.node.id),
+      ];
+      expect(new Set(shown).size, `${name}: a node is rendered twice`).toBe(
+        shown.length,
+      );
+      expect([...shown].sort(), name).toEqual(graph.nodes.map((n) => n.id).sort());
+    }
+  });
+
+  it("hangs the overreach trap off a rung, never off the end", () => {
+    // Its whole job is to appear where the temptation appears. A trap listed in
+    // a footer at the bottom is a trap nobody reads.
+    for (const { name, graph } of ALL_GRAPHS()) {
+      const flow = buildPathwayFlow(graph);
+      const overreach = graph.edges.filter((e) => e.kind === "overreach");
+      for (const edge of overreach) {
+        const host = flow.spine.find((s) =>
+          s.branches.some((b) => b.edge.id === edge.id),
+        );
+        expect(host, `${name}: ${edge.id} isn't attached to any rung`).toBeDefined();
+        // And first in its rung's list, ahead of the ordinary side routes.
+        expect(host!.branches[0].edge.kind, `${name}: ${edge.id} is buried`).toBe(
+          "overreach",
+        );
+      }
+    }
+  });
+
+  it("never treats carrying on up the ladder as a branch", () => {
+    for (const { name, graph } of ALL_GRAPHS()) {
+      const flow = buildPathwayFlow(graph);
+      flow.spine.forEach((step, i) => {
+        const next = flow.spine[i + 1]?.node.id;
+        if (!next) return;
+        expect(
+          step.branches.map((b) => b.to.id),
+          `${name}: ${step.node.id} lists its own next rung as a side route`,
+        ).not.toContain(next);
+      });
+    }
+  });
+
+  it("resolves how you reach every branch node", () => {
+    // A card that just appears, with no way in, reads as a dead end.
+    for (const { name, graph } of ALL_GRAPHS()) {
+      const flow = buildPathwayFlow(graph);
+      for (const branch of flow.branches) {
+        for (const step of branch.steps) {
+          expect(step.arrival, `${name}: no way into ${step.node.id}`).toBeDefined();
+        }
+      }
+    }
+  });
+
+  it("gives every destination at least one route in", () => {
+    for (const { name, graph } of ALL_GRAPHS()) {
+      for (const d of buildPathwayFlow(graph).destinations) {
+        expect(d.from.length, `${name}: ${d.node.id} is unreachable`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("falls back to the start node's lane when no trunk is declared", () => {
+    const untrunked: PathwayGraph = {
+      ...TENNIS_GRAPH,
+      lanes: TENNIS_GRAPH.lanes.map((l) =>
+        l.tone === "ladder" ? { ...l, tone: "national" as const } : l,
+      ),
+    };
+    const flow = buildPathwayFlow(untrunked);
+    const startLane = untrunked.nodes.find((n) => n.id === untrunked.startNodeId)!.lane;
+    expect(flow.trunkLaneIndex).toBe(startLane);
+    expect(flow.spine[0].node.id).toBe(untrunked.startNodeId);
+  });
+});
+
+// ─── Viewport ───────────────────────────────────────────────────────────────
+
+describe("reframeTransform", () => {
+  // The container the parent was looking at, and the view they had panned to.
+  const prev = { w: 1200, h: 820 };
+  const view = { scale: 0.65, tx: -300, ty: -420 };
+  /** Diagram point sitting dead centre of the old container. */
+  const centred = {
+    x: (prev.w / 2 - view.tx) / view.scale,
+    y: (prev.h / 2 - view.ty) / view.scale,
+  };
+
+  it("keeps the centred diagram point centred when the container shrinks", () => {
+    const next = { w: 341, h: 520 };
+    const t = reframeTransform(prev, next, view, view.scale);
+    expect(t.tx + centred.x * t.scale).toBeCloseTo(next.w / 2, 6);
+    expect(t.ty + centred.y * t.scale).toBeCloseTo(next.h / 2, 6);
+  });
+
+  it("keeps it centred across a rotation, where both axes change at once", () => {
+    const next = { w: 820, h: 1200 };
+    const t = reframeTransform(prev, next, view, view.scale);
+    expect(t.tx + centred.x * t.scale).toBeCloseTo(next.w / 2, 6);
+    expect(t.ty + centred.y * t.scale).toBeCloseTo(next.h / 2, 6);
+  });
+
+  it("honours a re-clamped scale, still holding the same point centred", () => {
+    // The caller re-clamps against the new container's bounds before calling.
+    const next = { w: 341, h: 520 };
+    const t = reframeTransform(prev, next, view, 0.42);
+    expect(t.scale).toBe(0.42);
+    expect(t.tx + centred.x * t.scale).toBeCloseTo(next.w / 2, 6);
+    expect(t.ty + centred.y * t.scale).toBeCloseTo(next.h / 2, 6);
+  });
+
+  it("is a no-op when the container hasn't actually changed", () => {
+    const t = reframeTransform(prev, prev, view, view.scale);
+    expect(t.scale).toBeCloseTo(view.scale, 6);
+    expect(t.tx).toBeCloseTo(view.tx, 6);
+    expect(t.ty).toBeCloseTo(view.ty, 6);
+  });
+
+  it("keeps what the parent was looking at on screen, which the stale transform doesn't", () => {
+    // The regression this guards: a resize used to leave the translation that was
+    // computed for the OLD size, so the tier the parent had panned to sat outside
+    // the new container entirely — the map read as blank.
+    const next = { w: 341, h: 520 };
+    const onScreen = (tr: { scale: number; tx: number; ty: number }) => {
+      const x = tr.tx + centred.x * tr.scale;
+      const y = tr.ty + centred.y * tr.scale;
+      return x >= 0 && x <= next.w && y >= 0 && y <= next.h;
+    };
+    expect(onScreen(reframeTransform(prev, next, view, 0.42))).toBe(true);
+    expect(onScreen(view)).toBe(false);
   });
 });
 

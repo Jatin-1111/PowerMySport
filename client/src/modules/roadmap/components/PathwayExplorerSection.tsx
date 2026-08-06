@@ -97,7 +97,7 @@ import {
 import { ApplicationsTab } from './ApplicationsTab';
 import { BudgetCalculator } from './BudgetCalculator';
 import { ComparePanel } from './ComparePanel';
-import { PathwayGraphSection } from './graph/PathwayGraphSection';
+import { PathwayStagesSection } from './stages/PathwayStagesSection';
 import { SaveButton } from './SaveButton';
 import { SavedTab } from './SavedTab';
 import { StoriesTab } from './StoriesTab';
@@ -701,8 +701,13 @@ export function PathwayExplorerSection() {
       })
     : null;
 
+  // The section below clips with `overflow-x-clip`, not `overflow-hidden`: the
+  // ambient blobs only ever spill sideways, and hiding an axis promotes the
+  // OTHER axis to a scroll container — which silently kills `position: sticky`
+  // for every descendant, the pathway's stage headers among them. `clip` clips
+  // without that side effect.
   return (
-    <section className="relative overflow-hidden py-12 sm:py-16 md:py-20 lg:py-28">
+    <section className="relative overflow-x-clip py-12 sm:py-16 md:py-20 lg:py-28">
       <AmbientBlob className="h-96 w-96 bg-orange-100/40 -left-40 top-10" />
       <AmbientBlob className="h-80 w-80 bg-indigo-100/30 -right-40 top-20" />
 
@@ -1610,13 +1615,12 @@ export function PathwayExplorerSection() {
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
                   >
-                    {/* The journey is a graph, not a ladder. One start, a
-                        small predefined set of end goals, and every route
-                        between them — including the shortcuts parents attempt
-                        and the side routes they never hear about. Selecting a
-                        tier here still opens the full researched detail below
-                        it; it just isn't the first thing on screen any more. */}
-                    <PathwayGraphSection
+                    {/* The journey as numbered stages, one on screen at a time.
+                        This was a pan-and-zoom graph until the map's own
+                        geometry beat it: five tracks abreast needs three times
+                        the width of a phone, so it opened below the size its
+                        labels are legible at. Stages read at natural size. */}
+                    <PathwayStagesSection
                       sportName={result ? result.pathway.sportName : "General"}
                       state={selectedState || undefined}
                       archetype={archetype}

@@ -2,17 +2,15 @@
 
 // ─── Guide call-to-action ───────────────────────────────────────────────────
 //
-// Sits in the slot the node inspector used to occupy, directly under the map.
+// Sits under the stage reader.
 //
-// The map answers "what is the shape of this journey" and answers it well enough
-// that a panel repeating one rung's facts underneath was noise. What the map
-// genuinely cannot carry is the written detail — which academies, which schemes,
-// what racquet, how to judge a coach — so the space is better spent pointing at
-// it once, unmissably, than on a panel a parent had to click a node to summon.
+// The reader answers "what happens at each stage, and what does it cost". What
+// it deliberately does not carry is the long-form detail — which academies near
+// you, which schemes, what racquet, how to judge a coach — so the space is spent
+// pointing at that once, unmissably.
 //
-// Contextual when it can be: with a ladder rung selected it deep-links to that
-// rung's own section, so the reader lands where they were looking rather than at
-// the top of a long page.
+// Contextual when it can be: it deep-links to the stage the parent is reading,
+// so they land where they were looking rather than at the top of a long page.
 
 import { ArrowRight, BookOpen } from "lucide-react";
 import Link from "next/link";
