@@ -25,6 +25,7 @@ import { startExpirationJob } from "./utils/timer";
 import { initializeReminderScheduler } from "./utils/reminderScheduler";
 import { startOutboxWorker } from "./shared/services/OutboxService";
 import { initializeScraperScheduler } from "./utils/scraperScheduler";
+import { initializeAitaRankingScheduler } from "./utils/aitaRankingScheduler";
 import { initializeScheduledJobs } from "./utils/scheduledJobs";
 const PORT = process.env.PORT || 5000;
 
@@ -184,6 +185,9 @@ const startServer = async () => {
           // extraction. (Was imported but never invoked before — the weekly
           // scraper cron had silently never been running.)
           initializeScraperScheduler();
+
+          // Hourly tripwire + Thursday sweep for the AITA ranking mirror.
+          initializeAitaRankingScheduler();
         }
       });
 

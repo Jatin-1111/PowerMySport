@@ -58,6 +58,14 @@ export interface PlayerDocument extends Document {
   // Wizard results
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
   wizardCompletedAt?: Date;
+  /**
+   * The sport the parent explicitly committed to on the results page. Distinct
+   * from `consideringSports` (what they shortlisted going in) and from the
+   * top `sportMatches` entry (what we scored highest) — this is the only field
+   * that records a decision rather than an input or an inference.
+   */
+  chosenSport?: string;
+  chosenSportAt?: Date;
   paymentHistory?: Array<{
     bookingId: mongoose.Types.ObjectId;
     amount: number;
@@ -174,6 +182,8 @@ const playerSchema = new Schema<PlayerDocument>(
     wizardCity: { type: String, trim: true },
     sportMatches: [{ sport: String, fitLabel: String, score: Number }],
     wizardCompletedAt: { type: Date },
+    chosenSport: { type: String, trim: true },
+    chosenSportAt: { type: Date },
     paymentHistory: [
       {
         bookingId: {

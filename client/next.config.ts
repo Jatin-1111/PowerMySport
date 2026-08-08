@@ -9,6 +9,17 @@ const nextConfig: NextConfig = {
         destination: "/assessment",
         permanent: true,
       },
+      // Tournament detail pages are gone — both the nested form and the flat
+      // /tournaments/[slug] one. The nested URLs carry their federation slug, so
+      // they keep their equity by landing on that federation's page (which has a
+      // Tournaments tab). Flat /tournaments/[slug] URLs carry nothing we can map
+      // to a destination, so they 404 rather than be funnelled somewhere
+      // irrelevant — see the note on 410 in the handover.
+      {
+        source: "/federations/:slug/:tournamentSlug",
+        destination: "/federations/:slug",
+        permanent: true,
+      },
     ];
   },
   async rewrites() {

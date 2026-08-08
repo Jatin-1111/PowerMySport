@@ -9,6 +9,7 @@ import {
   getDataSourceDetail,
   updateDataSource,
   reExtractDataSource,
+  enrichDataSourceDetails,
   approveDataSource,
   rejectDataSource,
 } from "../controllers/dataSourceAdminController";
@@ -99,6 +100,17 @@ dataSourceAdminRouter.post(
   requirePermission("data-sources:manage"),
   extractionRateLimiter,
   reExtractDataSource,
+);
+
+// Fans out to as many as 150 page fetches plus batched AI reads, so it shares
+// the extraction limiter rather than running unthrottled.
+dataSourceAdminRouter.post(
+  "/:id/enrich-details",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("data-sources:manage"),
+  extractionRateLimiter,
+  enrichDataSourceDetails,
 );
 
 dataSourceAdminRouter.post(

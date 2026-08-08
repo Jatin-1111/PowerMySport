@@ -51,6 +51,8 @@ import sportsRoutes from "./shared/routes/sportsRoutes";
 import findSportTestRoutes from "./shared/routes/findSportTestRoutes";
 import pathwayRoutes from "./shared/routes/pathwayRoutes";
 import federationRoutes from "./shared/routes/federationRoutes";
+import tournamentEditionRoutes from "./shared/routes/tournamentEditionRoutes";
+import rankingRoutes from "./shared/routes/rankingRoutes";
 import conciergeRoutes from "./shared/routes/conciergeRoutes";
 import ecommerceRoutes from "./shop/routes/ecommerceRoutes";
 
@@ -170,6 +172,8 @@ app.use("/api/sports", sportsRoutes);
 app.use("/api/find-sport-test", findSportTestRoutes);
 app.use("/api/pathways", pathwayRoutes);
 app.use("/api/federations", federationRoutes);
+app.use("/api/tournament-editions", tournamentEditionRoutes);
+app.use("/api/rankings", rankingRoutes);
 app.use("/api/concierge", conciergeRoutes);
 // PhonePe webhook route (use raw body captured above for HMAC verification)
 app.use("/api/payments/phonepe", phonepeWebhook);

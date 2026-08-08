@@ -85,6 +85,12 @@ export function buildDependentPayload(
   scored: SportResult[],
   name?: string,
   chosen: SportFitResult[] = [],
+  /**
+   * Set only when a guest picked a sport before registering — the pick has
+   * nowhere to live until the dependent exists, so it rides in on creation.
+   * Omitted on a normal save so a later retake never wipes an earlier decision.
+   */
+  chosenSport?: string,
 ): Partial<Dependent> {
   const genderMap =
     answers.gender === "boy" ? "MALE"
@@ -126,6 +132,7 @@ export function buildDependentPayload(
     consideringSports: answers.consideringSports.length ? answers.consideringSports : undefined,
     sportMatches: mergeSportMatches(scored, chosen),
     wizardCompletedAt: new Date().toISOString(),
+    ...(chosenSport ? { chosenSport, chosenSportAt: new Date().toISOString() } : {}),
   };
 }
 

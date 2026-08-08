@@ -12,6 +12,7 @@ import {
     ChevronDown,
     LayoutDashboard,
     LogOut,
+    ListOrdered,
     Map,
     Menu,
     Settings,
@@ -71,6 +72,12 @@ const exploreItems = [
     label: "Problem Solver",
     description: "AI-powered plan for any sports challenge",
     icon: BrainCircuit,
+  },
+  {
+    href: "/rankings",
+    label: "Tennis Rankings",
+    description: "Official AITA lists, searchable by state and player",
+    icon: ListOrdered,
   },
 ];
 

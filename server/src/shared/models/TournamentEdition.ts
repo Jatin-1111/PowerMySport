@@ -11,10 +11,19 @@ import mongoose, { Document, Schema } from "mongoose";
  * fuzzy typicalDates) so multiple dated editions of the same event can
  * coexist and be queried by real date columns ("what's next?").
  */
+/** A file or page published alongside an edition — fact sheet, acceptance list, draw. */
+export interface EditionDocumentEntry {
+  label: string;
+  url: string;
+  kind: "factSheet" | "acceptanceList" | "entryForm" | "draw" | "results" | "other";
+}
+
 export interface TournamentEditionDocument extends Document {
   sportSlug: string;
   /** Canonical tournament/event name as published on the official calendar */
   name: string;
+  /** URL-safe id for the public detail page — `${kebab(name)}-${startDate}`, deduped with a numeric suffix */
+  slug: string;
   /** Year of this edition, e.g. 2026 */
   editionYear: number;
   startDate: Date;
@@ -26,6 +35,22 @@ export interface TournamentEditionDocument extends Document {
   level?: string;
   /** e.g. ["Under-12", "Under-14"] */
   ageGroups?: string[];
+
+  // ── From the event's own page on the federation site (see the detail
+  // enrichment pass in DataSourceExtractionService.ts). The calendar cell only
+  // ever carries a name and a week; everything below exists solely there.
+  /** The event's page on the federation site — the durable link when a signed document URL expires */
+  detailUrl?: string;
+  /** Full official title, e.g. "AITA CHAMPIONSHIP SERIES TOURNAMENT (DELHI)" — `name` stays the short calendar form */
+  officialName?: string;
+  /** Host club/academy running the event */
+  organiser?: string;
+  state?: string;
+  /** Category exactly as the source prints it, e.g. "Under 12 Under 16" */
+  category?: string;
+  /** Fact sheets, acceptance lists and similar. URLs may be signed and expiring — see detailUrl */
+  documents?: EditionDocumentEntry[];
+
   /** The registry URL this edition was extracted from — shown to parents as provenance */
   sourceUrl: string;
   status: "announced" | "ongoing" | "completed" | "cancelled";
@@ -39,6 +64,7 @@ const tournamentEditionSchema = new Schema<TournamentEditionDocument>(
   {
     sportSlug: { type: String, required: true, lowercase: true, index: true },
     name: { type: String, required: true, trim: true },
+    slug: { type: String, lowercase: true, trim: true },
     editionYear: { type: Number, required: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date },
@@ -47,6 +73,26 @@ const tournamentEditionSchema = new Schema<TournamentEditionDocument>(
     city: { type: String },
     level: { type: String },
     ageGroups: { type: [String], default: [] },
+    detailUrl: { type: String },
+    officialName: { type: String, trim: true },
+    organiser: { type: String, trim: true },
+    state: { type: String, trim: true },
+    category: { type: String, trim: true },
+    documents: {
+      type: [
+        {
+          _id: false,
+          label: { type: String, required: true },
+          url: { type: String, required: true },
+          kind: {
+            type: String,
+            enum: ["factSheet", "acceptanceList", "entryForm", "draw", "results", "other"],
+            default: "other",
+          },
+        },
+      ],
+      default: undefined,
+    },
     sourceUrl: { type: String, required: true },
     status: {
       type: String,
@@ -65,6 +111,10 @@ tournamentEditionSchema.index(
 );
 // The "what's coming up for this sport?" query.
 tournamentEditionSchema.index({ sportSlug: 1, startDate: 1 });
+// Backs the public /tournaments/[slug] page. Sparse on purpose: editions
+// approved before that page existed carry no slug, and a plain unique index
+// would treat every one of those nulls as a duplicate of the last.
+tournamentEditionSchema.index({ slug: 1 }, { unique: true, sparse: true });
 
 export const TournamentEdition =
   mongoose.models.TournamentEdition ||

@@ -1290,6 +1290,19 @@ export const adminApi = {
     return response.data;
   },
 
+  /**
+   * Follows each calendar entry's per-tournament link to pull in its fact
+   * sheet, acceptance lists and host details. Separate from re-extract because
+   * it fans out to as many as 150 page fetches — slow enough that it must not
+   * ride along with every extraction.
+   */
+  enrichDataSourceDetails: async (
+    id: string,
+  ): Promise<ApiResponse<AdminDataSourceSubmission>> => {
+    const response = await axiosInstance.post(`/admin/data-sources/${id}/enrich-details`);
+    return response.data;
+  },
+
   approveDataSource: async (id: string): Promise<ApiResponse<AdminDataSourceSubmission>> => {
     const response = await axiosInstance.post(`/admin/data-sources/${id}/approve`);
     return response.data;

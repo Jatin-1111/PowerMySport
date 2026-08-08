@@ -12,8 +12,10 @@ import {
   validateFederationPayload,
   validateCuratedTournamentPayload,
   validateEditions,
+  enrichEditionsWithDetailPages,
   ValidEdition,
 } from "../services/DataSourceExtractionService";
+import { resolveEditionSlug } from "../../shared/services/editionSlug";
 import { s3Service } from "../../shared/services/S3Service";
 import { recordAuditLog } from "../services/AuditLogService";
 import { getAdminsWithPermission, resolveAdminAppUrl } from "../services/AdminService";
@@ -456,6 +458,85 @@ export const reExtractDataSource = async (
   }
 };
 
+// ─── POST /api/admin/data-sources/:id/enrich-details ───────────────────────────
+// Follows each extracted entry's per-tournament link and merges in what only
+// that page carries — fact sheets, acceptance lists, the host academy, the full
+// official title. Separate from extraction because a full calendar is ~150
+// pages: doing it inline would run the create/re-extract request past the load
+// balancer's timeout, and would spend AI quota on submissions that get rejected.
+
+export const enrichDataSourceDetails = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+    const { id } = req.params;
+    if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
+      res.status(400).json({ success: false, message: "Invalid data source ID" });
+      return;
+    }
+
+    const submission = await DataSourceSubmission.findById(id);
+    if (!submission) {
+      res.status(404).json({ success: false, message: "Data source not found" });
+      return;
+    }
+    if (submission.targetType !== "TOURNAMENT_CALENDAR") {
+      res.status(400).json({
+        success: false,
+        message: "Detail enrichment only applies to tournament calendar sources.",
+      });
+      return;
+    }
+
+    // Work from the saved draft, so a reviewer's edits (deleted rows, corrected
+    // names) are respected rather than overwritten by a stale extraction.
+    const { valid, errors } = validateEditions(submission.extractedData);
+    if (valid.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: `Nothing to enrich: ${errors.join(" ")}`,
+      });
+      return;
+    }
+
+    const result = await enrichEditionsWithDetailPages(valid, submission.sportSlug);
+
+    submission.extractedData = result.editions;
+    // validateEditions drops and dedupes, so the saved draft can come back
+    // shorter than it went in. Carry its notes through alongside the
+    // enrichment's own — a reviewer approves what this list shows, so a row
+    // disappearing between two clicks must never be silent.
+    const warnings = [...errors, ...result.warnings];
+    submission.extractionWarnings = warnings.length ? warnings : undefined;
+    await submission.save();
+
+    void recordAuditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email || "",
+      action: "data-source.enrich-details",
+      targetType: "DataSourceSubmission",
+      targetId: id,
+      metadata: { enriched: result.enriched, documentsFound: result.documentsFound },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Read ${result.enriched} detail page(s); ${result.documentsFound} entry(s) now have documents.`,
+      data: submission,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to enrich details",
+    });
+  }
+};
+
 // ─── POST /api/admin/data-sources/:id/reject ────────────────────────────────────
 
 export const rejectDataSource = async (
@@ -666,8 +747,9 @@ export const approveDataSource = async (
       const sourceUrl = citedSourceUrls[0] || "admin-submitted";
       for (const edition of valid as ValidEdition[]) {
         const startDate = new Date(`${edition.startDate}T00:00:00.000Z`);
+        const key = { sportSlug: submission.sportSlug, name: edition.name, startDate };
         await TournamentEdition.findOneAndUpdate(
-          { sportSlug: submission.sportSlug, name: edition.name, startDate },
+          key,
           {
             $set: {
               editionYear: startDate.getUTCFullYear(),
@@ -681,6 +763,16 @@ export const approveDataSource = async (
               ageGroups: edition.ageGroups,
               sourceUrl,
               lastCheckedAt: new Date(),
+              // Detail-page fields. Written with ?? null so re-approving a
+              // source that was enriched, then re-extracted without
+              // enrichment, doesn't leave stale details attached to the row.
+              detailUrl: edition.detailUrl ?? null,
+              officialName: edition.officialName ?? null,
+              organiser: edition.organiser ?? null,
+              state: edition.state ?? null,
+              category: edition.category ?? null,
+              documents: edition.documents ?? null,
+              slug: await resolveEditionSlug(key),
             },
           },
           { upsert: true, runValidators: true },

@@ -7,6 +7,7 @@ import { Card } from "@/modules/shared/ui/Card";
 import {
   ArrowLeft,
   ExternalLink,
+  FileSearch,
   Plus,
   RefreshCw,
   Trash2,
@@ -307,6 +308,12 @@ interface CuratedTournamentDraft {
   prizePool?: string;
   registrationUrl?: string;
 }
+interface EditionDocumentDraft {
+  label: string;
+  url: string;
+  kind: "factSheet" | "acceptanceList" | "entryForm" | "draw" | "results" | "other";
+}
+
 interface EditionDraft {
   name: string;
   startDate: string;
@@ -317,7 +324,23 @@ interface EditionDraft {
   level?: string;
   ageGroups: string[];
   sourceQuote?: string;
+  // ── Filled by "Fetch tournament details" (see enrichDataSourceDetails) ──
+  detailUrl?: string;
+  officialName?: string;
+  organiser?: string;
+  state?: string;
+  category?: string;
+  documents?: EditionDocumentDraft[];
 }
+
+const DOCUMENT_KIND_LABEL: Record<EditionDocumentDraft["kind"], string> = {
+  factSheet: "Fact sheet",
+  acceptanceList: "Acceptance list",
+  entryForm: "Entry form",
+  draw: "Draw",
+  results: "Results",
+  other: "Document",
+};
 
 function FederationEditor({
   data,
@@ -720,7 +743,75 @@ function CalendarEditor({ data, onChange }: { data: EditionDraft[]; onChange: (d
               placeholder="Age groups, comma-separated"
               className={`${inputCls} col-span-2`}
             />
+            <input
+              value={edition.organiser || ""}
+              onChange={(e) => update(idx, { organiser: e.target.value })}
+              placeholder="Organiser / host academy"
+              className={inputCls}
+            />
+            <input
+              value={edition.state || ""}
+              onChange={(e) => update(idx, { state: e.target.value })}
+              placeholder="State"
+              className={inputCls}
+            />
+            <input
+              value={edition.officialName || ""}
+              onChange={(e) => update(idx, { officialName: e.target.value })}
+              placeholder="Full official title (from the tournament's own page)"
+              className={`${inputCls} col-span-2`}
+            />
           </div>
+
+          {/* Everything below comes from the event's own page, not the calendar. */}
+          {(edition.detailUrl || edition.documents?.length) && (
+            <div className="space-y-1.5 rounded-lg bg-slate-50 px-3 py-2">
+              {edition.detailUrl && (
+                <a
+                  href={edition.detailUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-power-orange"
+                >
+                  Tournament page <ExternalLink size={11} />
+                </a>
+              )}
+              {edition.documents?.length ? (
+                <ul className="space-y-1">
+                  {edition.documents.map((doc, docIdx) => (
+                    <li key={docIdx} className="flex items-center gap-2 text-xs">
+                      <span className="shrink-0 rounded-full bg-white px-2 py-0.5 font-semibold text-slate-600">
+                        {DOCUMENT_KIND_LABEL[doc.kind]}
+                      </span>
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="truncate text-slate-600 underline hover:text-power-orange"
+                      >
+                        {doc.label}
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          update(idx, {
+                            documents: edition.documents?.filter((_, i) => i !== docIdx),
+                          })
+                        }
+                        className="ml-auto shrink-0 text-slate-400 hover:text-red-600"
+                        title="Remove this document"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-slate-400">No documents found on this tournament&apos;s page.</p>
+              )}
+            </div>
+          )}
+
           {edition.sourceQuote && (
             <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs italic text-slate-500">
               “{edition.sourceQuote}”
@@ -753,6 +844,7 @@ export default function AdminDataSourceDetailPage() {
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [reExtracting, setReExtracting] = useState(false);
+  const [enriching, setEnriching] = useState(false);
   const [showRejectPanel, setShowRejectPanel] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
@@ -864,6 +956,33 @@ export default function AdminDataSourceDetailPage() {
     }
   };
 
+  const handleEnrichDetails = async () => {
+    if (!submission) return;
+    setEnriching(true);
+    try {
+      // Save first: enrichment reads the stored draft, so unsaved edits (rows
+      // the reviewer deleted, names they corrected) would otherwise be lost
+      // when the response overwrites extractedData.
+      await adminApi.updateDataSource(submission._id, draft);
+      const response = await adminApi.enrichDataSourceDetails(submission._id);
+      if (response.success && response.data) {
+        setSubmission(response.data);
+        setDraft(response.data.extractedData ?? null);
+        toast.success(response.message || "Tournament details fetched");
+      } else {
+        toast.error(response.message || "Failed to fetch details");
+      }
+    } catch (err) {
+      console.error("Failed to enrich data source details:", err);
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Failed to fetch details";
+      toast.error(message);
+    } finally {
+      setEnriching(false);
+    }
+  };
+
   if (loading) return <div className="text-center py-12">Loading data source...</div>;
   if (error || !submission) {
     return (
@@ -879,6 +998,16 @@ export default function AdminDataSourceDetailPage() {
   }
 
   const canApprove = submission.status === "PENDING_REVIEW";
+
+  // A calendar cell only ever carries a name and a week. Fact sheets, acceptance
+  // lists and the host academy live on each event's own page, which is a second
+  // pass because a full calendar means following ~150 links.
+  const calendarDraft =
+    submission.targetType === "TOURNAMENT_CALENDAR" && Array.isArray(draft)
+      ? (draft as EditionDraft[])
+      : null;
+  const linkedCount = calendarDraft?.filter((e) => e.detailUrl).length ?? 0;
+  const withDocumentsCount = calendarDraft?.filter((e) => e.documents?.length).length ?? 0;
 
   return (
     <div className="space-y-6">
@@ -949,6 +1078,47 @@ export default function AdminDataSourceDetailPage() {
           </button>
         </div>
       </Card>
+
+      {calendarDraft && (
+        <Card className="bg-white space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                Tournament Details
+              </h2>
+              <p className="max-w-2xl text-xs text-slate-500">
+                The calendar only lists a name and a week. Fact sheets, acceptance lists, the host
+                academy and the full official title live on each tournament&apos;s own page — this
+                follows those links and pulls them in.
+              </p>
+              <p className="text-xs text-slate-600">
+                <span className="font-semibold">{linkedCount}</span> of {calendarDraft.length}{" "}
+                entries link to a tournament page;{" "}
+                <span className="font-semibold">{withDocumentsCount}</span> currently have documents.
+              </p>
+              {linkedCount === 0 && (
+                <p className="text-xs text-amber-700">
+                  No entry carries a link yet. Re-extract this source first — links are only captured
+                  by extractions run after this feature was added.
+                </p>
+              )}
+            </div>
+            <button
+              onClick={handleEnrichDetails}
+              disabled={enriching || linkedCount === 0}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              title={
+                linkedCount === 0
+                  ? "No tournament links to follow — re-extract this source first"
+                  : `Follows ${linkedCount} tournament page(s)`
+              }
+            >
+              <FileSearch size={14} className={enriching ? "animate-pulse" : ""} />
+              {enriching ? "Fetching details..." : "Fetch tournament details"}
+            </button>
+          </div>
+        </Card>
+      )}
 
       <Card className="bg-white space-y-3">
         <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Live Now vs. Proposed</h2>

@@ -382,19 +382,6 @@ export const pathwayApi = {
     }
   },
 
-  /** Fetch a single curated tournament by slug (for the detail page). */
-  getCuratedTournamentBySlug: async (
-    slug: string,
-  ): Promise<Tournament | null> => {
-    try {
-      const resp = await axiosInstance.get<ApiResponse<Tournament>>(
-        `/pathways/tournaments/${encodeURIComponent(slug)}`,
-      );
-      return resp.data.data ?? null;
-    } catch {
-      return null;
-    }
-  },
 
   /**
    * Layer-2 personalization: one short AI note per raw level (1–5) for an
@@ -547,10 +534,26 @@ export interface FederationTournamentsResponse {
   };
 }
 
+export type EditionDocumentKind =
+  | "factSheet"
+  | "acceptanceList"
+  | "entryForm"
+  | "draw"
+  | "results"
+  | "other";
+
+export interface EditionDocument {
+  label: string;
+  url: string;
+  kind: EditionDocumentKind;
+}
+
 export interface TournamentEdition {
   _id?: string;
   sportSlug: string;
   name: string;
+  /** Present on editions approved after the detail page shipped; absent ones simply don't link out. */
+  slug?: string;
   editionYear: number;
   startDate: string;
   endDate?: string;
@@ -562,6 +565,33 @@ export interface TournamentEdition {
   sourceUrl: string;
   status: "announced" | "ongoing" | "completed" | "cancelled";
   lastCheckedAt: string;
+
+  // ── From the event's own page on the federation site ──
+  /** The federation's page for this event — the durable link when a signed document URL expires */
+  detailUrl?: string;
+  officialName?: string;
+  organiser?: string;
+  state?: string;
+  category?: string;
+  documents?: EditionDocument[];
+}
+
+/** A trimmed edition used for cross-links, not a full record. */
+export interface RelatedEdition {
+  _id?: string;
+  slug: string;
+  name: string;
+  startDate: string;
+  city?: string;
+  venue?: string;
+  level?: string;
+  ageGroups?: string[];
+}
+
+export interface TournamentEditionDetail {
+  edition: TournamentEdition;
+  federation: { slug: string; name: string; acronym: string } | null;
+  related: RelatedEdition[];
 }
 
 export interface FederationEditionsResponse {

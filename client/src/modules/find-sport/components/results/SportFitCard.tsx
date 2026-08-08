@@ -1,7 +1,8 @@
 "use client";
 
-import { AlertTriangle, Check, Clock, IndianRupee, Minus, ThumbsUp } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, Clock, IndianRupee, Minus, ThumbsUp } from "lucide-react";
 import type { SportFitResult, WizardAnswers } from "../../types";
+import { ChooseSportButton } from "./ChooseSportButton";
 
 // ─── Fit tone ────────────────────────────────────────────────────────────────
 // One tone per fit band, reused across the score rail, the bar and the badge
@@ -58,6 +59,9 @@ export function SportFitCard({
   fit,
   answers,
   eyebrow,
+  chosen,
+  saving,
+  onChoose,
 }: {
   fit: SportFitResult;
   answers: WizardAnswers;
@@ -65,12 +69,21 @@ export function SportFitCard({
    *  sorted by score, so a "#2" beside a higher number than the "#3" below it
    *  read as a bug. */
   eyebrow: string;
+  chosen: boolean;
+  saving: boolean;
+  onChoose: (sport: string) => void;
 }) {
   const name = answers.childName || "Your child";
   const tone = toneFor(fit.score, fit.hasBlocker);
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <article
+      className={`overflow-hidden rounded-2xl bg-white transition-shadow ${
+        chosen
+          ? "border-2 border-turf-green shadow-md shadow-turf-green/10"
+          : "border border-slate-200 shadow-sm"
+      }`}
+    >
       {/* ── Header: score rail + identity ──
           The score sits directly beside the sport name rather than floating at
           the far edge of a wide row — at desktop widths those two were reading
@@ -194,6 +207,26 @@ export function SportFitCard({
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── The decision ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5 sm:px-6">
+        <p className="text-xs text-slate-400">
+          {chosen ? (
+            <span className="inline-flex items-center gap-1.5 font-medium text-turf-green">
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+              Your trial booking and follow-ups will use {fit.sport.name}
+            </span>
+          ) : (
+            "Decided? Tell us and we'll set the trial up in this sport."
+          )}
+        </p>
+        <ChooseSportButton
+          sportName={fit.sport.name}
+          chosen={chosen}
+          saving={saving}
+          onChoose={onChoose}
+        />
       </div>
     </article>
   );

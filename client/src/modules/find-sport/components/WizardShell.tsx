@@ -179,6 +179,17 @@ function primarySport(
 // Schedules the 4-week "how did the trial go?" nudge for the sport the family
 // is most likely to try. Fire-and-forget — a failure here shouldn't affect the
 // save the parent already saw succeed.
+
+/** The 2-3 concrete things to watch for, reused verbatim in the nudge email. */
+function trialSignals(firstNote: string | undefined, childName: string): string[] {
+  const name = childName || "your child";
+  return [
+    firstNote,
+    `Did ${name} ask to play again without being asked?`,
+    "Was the cost and time commitment manageable for your family?",
+  ].filter((s): s is string => !!s);
+}
+
 function scheduleTrialCheckIn(
   dependentId: string | null,
   scored: SportResult[],
@@ -187,20 +198,25 @@ function scheduleTrialCheckIn(
 ): void {
   const top = primarySport(scored, chosen);
   if (!top) return;
-  const name = childName || "your child";
-  const signals = [
-    top.firstNote,
-    `Did ${name} ask to play again without being asked?`,
-    "Was the cost and time commitment manageable for your family?",
-  ].filter((s): s is string => !!s);
 
   api
     .post("/plan-checkins/find-sport-trial", {
       dependentId: dependentId || undefined,
       sport: top.name,
-      signals,
+      signals: trialSignals(top.firstNote, childName),
     })
     .catch(() => {});
+}
+
+/** The first "why this fits" line for a named sport, whichever list it came from. */
+function firstNoteFor(
+  sportName: string,
+  scored: SportResult[],
+  chosen: SportFitResult[],
+): string | undefined {
+  const fit = chosen.find((c) => c.sport.name === sportName);
+  if (fit) return fit.strengths[0];
+  return scored.find((s) => s.sport.name === sportName)?.reasons[0];
 }
 
 // ─── Progress calculation (only question steps count) ─────────────────────────
@@ -825,11 +841,16 @@ export function WizardShell() {
   const [chosenFits, setChosenFits] = useState<SportFitResult[]>([]);
   const [nameInput, setNameInput] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
+  // The sport the parent explicitly committed to on the results page — the one
+  // decision this flow captures, as opposed to everything we infer from scores.
+  const [chosenSport, setChosenSport] = useState<string | null>(null);
+  const [choosingSport, setChoosingSport] = useState(false);
   // Holds wizard data to auto-import once we confirm the user has no children yet
   const pendingImport = useRef<{
     answers: WizardAnswers;
     scored: SportResult[];
     chosen: SportFitResult[];
+    chosenSport?: string;
   } | null>(null);
 
   // Child profile selection
@@ -844,7 +865,11 @@ export function WizardShell() {
     try {
       const raw = localStorage.getItem("pms_wizard_results");
       if (!raw) return;
-      const saved = JSON.parse(raw) as { answers: WizardAnswers; savedAt: string };
+      const saved = JSON.parse(raw) as {
+        answers: WizardAnswers;
+        savedAt: string;
+        chosenSport?: string;
+      };
       if (Date.now() - new Date(saved.savedAt).getTime() > 24 * 60 * 60 * 1000) return;
       if (!saved.answers) return;
 
@@ -856,12 +881,20 @@ export function WizardShell() {
       if (scored.length === 0 && chosen.length === 0) return;
       setResults(scored);
       setChosenFits(chosen);
+      if (saved.chosenSport) setChosenSport(saved.chosenSport);
       setStepIndex(STEPS.length - 1);
 
       // Logged-in user: defer the child profile creation until after the
       // players fetch confirms they have no existing children (newly registered).
       if (token) {
-        pendingImport.current = { answers: restored, scored, chosen };
+        pendingImport.current = {
+          answers: restored,
+          scored,
+          chosen,
+          // A sport picked as a guest has nowhere to live until the dependent
+          // exists — it rides in on creation rather than being lost at signup.
+          ...(saved.chosenSport ? { chosenSport: saved.chosenSport } : {}),
+        };
         setSavedStatus("saving");
       }
     } catch {}
@@ -882,13 +915,13 @@ export function WizardShell() {
 
         if (dependents.length === 0 && pendingImport.current) {
           // Newly registered user — create child profile from their guest session
-          const { answers: a, scored, chosen } = pendingImport.current;
+          const { answers: a, scored, chosen, chosenSport: pickedSport } = pendingImport.current;
           pendingImport.current = null;
           const childName = a.childName?.trim() || "My Child";
           api
             .post<{ success: boolean; data: { _id: string } }>(
               "/auth/dependents",
-              buildDependentPayload(a, scored, childName, chosen),
+              buildDependentPayload(a, scored, childName, chosen, pickedSport),
             )
             .then((r) => {
               if (r.data?.data?._id) setSelectedDependentId(r.data.data._id);
@@ -920,6 +953,9 @@ export function WizardShell() {
       prefilled.childName = firstName;
     }
     setAnswers((prev) => ({ ...prev, ...prefilled }));
+    // Carry the last decision forward on a retake — they can change it on any
+    // card, but it shouldn't silently reset to "no sport picked".
+    setChosenSport(player.chosenSport ?? null);
   }
 
   function selectDependent(player: PlayerProfile) {
@@ -928,6 +964,7 @@ export function WizardShell() {
       setSelectedDependentId(null);
       setAnswers({ ...EMPTY_ANSWERS });
       setNameInput("");
+      setChosenSport(null);
     } else {
       setSelectedDependentId(player._id);
       applyPlayer(player);
@@ -990,7 +1027,45 @@ export function WizardShell() {
     setResults([]);
     setChosenFits([]);
     setSavedStatus("idle");
+    setChosenSport(null);
     setStepIndex(0);
+  };
+
+  /**
+   * The parent committing to a sport. Optimistic — the pick drives the trial
+   * CTA, the screening pre-fill and the check-in immediately, and a failed
+   * write shouldn't undo a decision they can see they made.
+   */
+  const chooseSport = (sport: string) => {
+    if (sport === chosenSport) return;
+    setChosenSport(sport);
+
+    // Guests have no dependent to write to; the pick rides along with the
+    // results in localStorage and transfers on registration.
+    if (!token) {
+      try {
+        const raw = localStorage.getItem("pms_wizard_results");
+        const saved = raw ? JSON.parse(raw) : { answers, savedAt: new Date().toISOString() };
+        localStorage.setItem(
+          "pms_wizard_results",
+          JSON.stringify({ ...saved, chosenSport: sport }),
+        );
+      } catch {}
+      return;
+    }
+
+    setChoosingSport(true);
+    api
+      .post("/plan-checkins/find-sport-trial/choice", {
+        dependentId: selectedDependentId || undefined,
+        sport,
+        signals: trialSignals(
+          firstNoteFor(sport, results, chosenFits),
+          answers.childName,
+        ),
+      })
+      .catch(() => {})
+      .finally(() => setChoosingSport(false));
   };
 
   // Run scoring on the processing screen, then auto-advance to results.
@@ -1472,6 +1547,9 @@ export function WizardShell() {
                 isLoggedIn={!!token}
                 savedForName={savedForName}
                 dependentId={selectedDependentId ?? undefined}
+                chosenSport={chosenSport}
+                choosingSport={choosingSport}
+                onChooseSport={chooseSport}
               />
             )}
           </div>

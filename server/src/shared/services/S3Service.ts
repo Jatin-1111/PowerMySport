@@ -681,6 +681,33 @@ export class S3Service {
   }
 
   /**
+   * Write raw bytes straight into the documents bucket.
+   *
+   * Unlike the `generate*UploadUrl` helpers, this is for objects the server
+   * itself produces rather than ones a browser uploads — currently the archived
+   * AITA ranking PDFs, which are fetched, hashed and stored without a client in
+   * the loop. Objects written here are never served publicly.
+   *
+   * @param key - S3 object key
+   * @param body - Bytes to write
+   * @param contentType - MIME type recorded on the object
+   */
+  async putDocumentBuffer(
+    key: string,
+    body: Buffer,
+    contentType = "application/octet-stream",
+  ): Promise<void> {
+    const putCommand = new PutObjectCommand({
+      Bucket: this.documentsBucket,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+    });
+
+    await this.s3Client.send(putCommand);
+  }
+
+  /**
    * Fetch an object's raw bytes from the documents bucket. Used server-side
    * to feed uploaded PDFs to Gemini for extraction — deliberately reads the
    * object directly rather than round-tripping through a presigned download

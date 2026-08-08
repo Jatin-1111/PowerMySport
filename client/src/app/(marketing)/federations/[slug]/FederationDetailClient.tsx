@@ -24,7 +24,6 @@ import {
   Users,
   CheckCircle2,
 } from "lucide-react";
-import Link from "next/link";
 import { BackToRoadmapLink } from "@/components/BackToRoadmapLink";
 import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
@@ -35,6 +34,9 @@ import { federationApi } from "@/modules/sports/services/pathway";
 import { getSportArchetypeInfo } from "@/modules/sports/config/sportArchetypes";
 import { CalendarMonthGrid } from "./CalendarMonthGrid";
 import { EditionRow } from "./EditionRow";
+import { savedEventKey } from "./AddToCalendarButton";
+import { calendarApi } from "@/modules/booking/services/calendarApi";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { groupEditionsBySeries } from "./seriesGroups";
 import { stateForCity } from "@/modules/sports/config/indianCityStates";
 import {
@@ -175,6 +177,11 @@ export function FederationDetailClient({
   const [editionDate, setEditionDate] = useState<string | null>(null);
   /** Refinements stay folded away by default — they are secondary to the calendar. */
   const [showEditionFilters, setShowEditionFilters] = useState(false);
+  /** `title|YYYY-MM-DD` for each edition already in this reader's own calendar. */
+  const [savedEventKeys, setSavedEventKeys] = useState<Set<string>>(new Set());
+  const [savedEventsLoaded, setSavedEventsLoaded] = useState(false);
+
+  const user = useAuthStore((state) => state.user);
 
   const sportLabel = SPORT_LABEL[fed.sportSlug] ?? fed.sportSlug;
   const typeMeta = TYPE_META[fed.type];
@@ -223,6 +230,40 @@ export function FederationDetailClient({
       .catch(() => setEditionsLoaded(true))
       .finally(() => setEditionsLoading(false));
   }, [activeTab, fed.slug, editionsLoaded]);
+
+  /**
+   * Tournaments this reader already keeps in their own calendar.
+   *
+   * Fetched once for the span the editions cover, so a row shows as saved after
+   * a reload instead of only within the session that added it — without this
+   * the same date is silently addable over and over. Logged-out readers skip it
+   * entirely; the button sends them to login instead.
+   */
+  useEffect(() => {
+    if (activeTab !== "calendar" || !user || editions.length === 0 || savedEventsLoaded) return;
+    const dates = editions.map((e) => new Date(e.startDate).getTime());
+    setSavedEventsLoaded(true);
+    calendarApi
+      .getEvents(
+        new Date(Math.min(...dates)).toISOString().slice(0, 10),
+        new Date(Math.max(...dates)).toISOString().slice(0, 10),
+      )
+      .then((events) =>
+        setSavedEventKeys(
+          new Set(
+            events
+              .filter((ev) => ev.type === "COMPETITION")
+              .map((ev) => savedEventKey(ev.title, ev.date)),
+          ),
+        ),
+      )
+      // A failed lookup only costs the saved-state badge, so leave the tab usable.
+      .catch(() => undefined);
+  }, [activeTab, user, editions, savedEventsLoaded]);
+
+  const markSavedToCalendar = useCallback((key: string) => {
+    setSavedEventKeys((prev) => new Set(prev).add(key));
+  }, []);
 
   // ── Calendar navigation (filters drive the month counts, so they stay honest) ──
   const editionAgeGroupOptions = Array.from(
@@ -654,10 +695,12 @@ export function FederationDetailClient({
                 {filteredTournaments.map((t, i) => {
                   const lc = levelColor(t.level);
                   return (
-                    <Link
+                    // Not a link: there is no tournament detail page. Everything
+                    // a parent gets is on the card, so hover-lift and a trailing
+                    // arrow would promise a destination that doesn't exist.
+                    <div
                       key={i}
-                      href={t.slug ? `/federations/${fed.slug}/${t.slug}` : "#"}
-                      className="group relative rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm transition-all duration-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.09)] hover:border-orange-200 hover:-translate-y-0.5"
+                      className="relative rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm"
                     >
                       <div className="h-[3px] w-full bg-gradient-to-r from-power-orange to-amber-400" />
                       <div className="flex flex-col p-4" style={{ minHeight: "130px" }}>
@@ -670,19 +713,14 @@ export function FederationDetailClient({
                         <p className="font-title font-bold text-slate-900 text-sm leading-snug line-clamp-2 flex-1">
                           {t.name}
                         </p>
-                        <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
-                          {t.ageGroup ? (
-                            <div className="flex items-center gap-1.5 text-xs text-slate-400 min-w-0">
-                              <Users className="h-3 w-3 shrink-0" />
-                              <span className="truncate">{t.ageGroup}</span>
-                            </div>
-                          ) : (
-                            <span />
-                          )}
-                          <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-power-orange group-hover:translate-x-0.5 transition-all shrink-0" />
-                        </div>
+                        {t.ageGroup && (
+                          <div className="mt-3 flex items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-400 min-w-0">
+                            <Users className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{t.ageGroup}</span>
+                          </div>
+                        )}
                       </div>
-                    </Link>
+                    </div>
                   );
                 })}
               </div>
@@ -924,6 +962,10 @@ export function FederationDetailClient({
                                     highlightAgeGroup={
                                       editionAgeGroup === "All" ? undefined : editionAgeGroup
                                     }
+                                    savedInCalendar={savedEventKeys.has(
+                                      savedEventKey(e.name, e.startDate),
+                                    )}
+                                    onSavedToCalendar={markSavedToCalendar}
                                   />
                                 ))}
                               </div>

@@ -1,15 +1,16 @@
 import type { MetadataRoute } from "next";
 
+import { LIVE_COMBOS, comboHref } from "@/modules/rankings/config";
 import { RESOURCE_SPORTS } from "@/modules/resources/config";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 /**
- * Slug-bearing records from the pathways API. Both list endpoints return the
- * full set unpaginated (5 federations, ~43 curated tournaments at time of
- * writing), so a single sitemap is enough — Google's limit is 50,000 URLs.
- * If either set grows past a few thousand, split with `generateSitemaps()`.
+ * Slug-bearing records from the pathways API. The federations endpoint returns
+ * the full set unpaginated (5 at time of writing), so a single sitemap is enough
+ * — Google's limit is 50,000 URLs. If it grows past a few thousand, split with
+ * `generateSitemaps()`.
  */
 interface SlugRecord {
   slug?: string;
@@ -39,9 +40,9 @@ async function fetchSlugs(path: string): Promise<SlugRecord[]> {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  const [federations, tournaments] = await Promise.all([
+  const [federations, editions] = await Promise.all([
     fetchSlugs("/federations"),
-    fetchSlugs("/pathways/tournaments"),
+    fetchSlugs("/tournament-editions"),
   ]);
 
   const lastMod = (record: SlugRecord) =>
@@ -60,22 +61,46 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
 
-  // ── Tournament detail pages (/tournaments/[slug]) ──
-  // Only the flat /tournaments/[slug] form is listed. The nested
-  // /federations/[slug]/[tournamentSlug] route renders the same record from
-  // the same endpoint but self-canonicalizes, so enumerating it here would
-  // feed Google a second copy of every tournament page. See the note in the
-  // handover for the underlying duplicate-content issue.
-  const tournamentEntries: MetadataRoute.Sitemap = tournaments
-    .filter((t): t is SlugRecord & { slug: string } => Boolean(t.slug))
-    .map((t) => ({
-      url: `${siteUrl}/tournaments/${t.slug}`,
-      lastModified: lastMod(t),
+  // ── Tournament edition pages (/tournaments/[slug]) ──
+  // One dated event each — "AITA CS7 (Delhi), 10 Aug 2026" — which is the form
+  // parents actually search. Deliberately a single canonical route: the earlier
+  // pair of tournament routes was deleted precisely because two of them
+  // rendered the same record and fed Google duplicates.
+  //
+  // The endpoint only returns editions that still lie ahead, so finished events
+  // drop out of the sitemap on their own rather than accumulating dead URLs.
+  const editionEntries: MetadataRoute.Sitemap = editions
+    .filter((e): e is SlugRecord & { slug: string } => Boolean(e.slug))
+    .map((e) => ({
+      url: `${siteUrl}/tournaments/${e.slug}`,
+      lastModified: lastMod(e),
       changeFrequency: "weekly" as const,
-      priority: 0.75,
+      priority: 0.7,
     }));
 
+  // ── Ranking list pages (/rankings/[category]/[subcategory]) ──
+  // Twelve fixed lists, refreshed weekly from AITA. Filtered and paginated
+  // views are deliberately absent: they all canonicalise to these twelve, and
+  // listing `?state=` permutations would submit hundreds of near-duplicates.
+  //
+  // Per-player pages are absent on purpose too — they are noindex, because most
+  // of the people on these lists are children. See the note in
+  // app/(marketing)/rankings/players/[regNo]/page.tsx.
+  const rankingEntries: MetadataRoute.Sitemap = LIVE_COMBOS.map((combo) => ({
+    url: `${siteUrl}${comboHref(combo)}`,
+    lastModified: now,
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  }));
+
   return [
+    {
+      url: `${siteUrl}/rankings`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.85,
+    },
+    ...rankingEntries,
     // ── Core product pages (highest priority — live and valuable) ──
     {
       url: `${siteUrl}`,
@@ -228,6 +253,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // ── Dynamic pathway content ──
     ...federationEntries,
-    ...tournamentEntries,
+    ...editionEntries,
   ];
 }

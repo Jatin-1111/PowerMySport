@@ -1,15 +1,16 @@
 "use client";
 
-import { Calendar, Clock, ExternalLink, MapPin } from "lucide-react";
+import Link from "next/link";
+import { Calendar, Clock, FileText, MapPin } from "lucide-react";
 import type { TournamentEdition } from "@/modules/sports/services/pathway";
 import {
   CAL_TZ,
   formatLocation,
   formatShortEndDate,
-  isLinkableSourceUrl,
   isMultiDayEdition,
   levelColor,
 } from "./editionUtils";
+import { AddToCalendarButton } from "./AddToCalendarButton";
 import { editionShortLabel } from "./seriesGroups";
 
 /**
@@ -27,12 +28,16 @@ export function EditionRow({
   showDate = false,
   inSeries = false,
   highlightAgeGroup,
+  savedInCalendar = false,
+  onSavedToCalendar,
 }: {
   edition: TournamentEdition;
   showDate?: boolean;
   inSeries?: boolean;
   /** Renders this age group in the accent colour — the one the parent asked for. */
   highlightAgeGroup?: string | undefined;
+  savedInCalendar?: boolean;
+  onSavedToCalendar?: (key: string) => void;
 }) {
   const lc = e.level ? levelColor(e.level) : null;
   const location = formatLocation(e.venue, e.city);
@@ -47,10 +52,31 @@ export function EditionRow({
     showDate || showLocation || multiDay || !!e.registrationDeadlineDate || !!e.ageGroups?.length;
 
   return (
-    <div className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0">
+    // `group` + `relative` carry the stretched link below: the title's ::after
+    // covers the whole row, so anywhere on it opens the tournament while the
+    // markup stays a single real <a> — middle-click, "open in new tab" and
+    // crawlers all keep working, which an onClick handler would break.
+    <div className="group relative -mx-2 flex items-start justify-between gap-3 rounded-lg px-2 py-2 transition first:pt-0 last:pb-0 hover:bg-white">
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="text-sm font-semibold leading-snug text-slate-800">{title}</span>
+          {/* Editions approved before the detail page existed carry no slug, so
+              they stay plain text rather than linking to a 404. */}
+          {e.slug ? (
+            <Link
+              href={`/tournaments/${e.slug}`}
+              className="text-sm font-semibold leading-snug text-slate-800 transition after:absolute after:inset-0 after:content-[''] group-hover:text-power-orange"
+            >
+              {title}
+            </Link>
+          ) : (
+            <span className="text-sm font-semibold leading-snug text-slate-800">{title}</span>
+          )}
+          {e.documents?.some((d) => d.kind === "factSheet") && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-emerald-700">
+              <FileText className="h-2.5 w-2.5" />
+              Fact sheet
+            </span>
+          )}
           {lc && (
             <span
               className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${lc.pill}`}
@@ -112,17 +138,14 @@ export function EditionRow({
           </div>
         )}
       </div>
-      {isLinkableSourceUrl(e.sourceUrl) && (
-        <a
-          href={e.sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-0.5 shrink-0 text-slate-300 transition hover:text-power-orange"
-          title="View official source"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-      )}
+      {/* Replaces the old "view official source" icon. That link still exists,
+          on the tournament page this row now opens — but from a calendar the
+          useful action is keeping the date, not leaving for the federation. */}
+      <AddToCalendarButton
+        edition={e}
+        saved={savedInCalendar}
+        {...(onSavedToCalendar ? { onSaved: onSavedToCalendar } : {})}
+      />
     </div>
   );
 }

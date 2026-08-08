@@ -159,12 +159,88 @@ async function resolveSafeHttpUrl(raw: string): Promise<string | null> {
   return url.toString();
 }
 
-/** Flattens HTML to text, keeping row/cell boundaries so table-shaped calendars stay readable. */
-function htmlToText(html: string): string {
-  return html
+/** Decodes one numeric HTML entity, falling back to the raw text — an out-of-range code point must not throw mid-extraction. */
+function codePointOr(code: number, raw: string): string {
+  if (!Number.isInteger(code) || code < 0 || code > 0x10ffff) return raw;
+  try {
+    return String.fromCodePoint(code);
+  } catch {
+    return raw;
+  }
+}
+
+/**
+ * Decodes the entities that appear inside href attributes.
+ *
+ * Required, not cosmetic: HTML encodes query separators, so a raw href reads
+ * `?eventuid=8774&amp;acceptid=30066`. Used as-is that sends a parameter
+ * literally named "amp;acceptid" — and on AITA's signed fact-sheet URLs it
+ * corrupts the signature, turning every download into a dead link.
+ */
+function decodeAttributeEntities(value: string): string {
+  return value
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#0?39;|&apos;/gi, "'")
+    .replace(/&#x([0-9a-f]+);/gi, (m, hex: string) => codePointOr(parseInt(hex, 16), m))
+    .replace(/&#(\d+);/g, (m, dec: string) => codePointOr(Number(dec), m));
+}
+
+/**
+ * Rewrites `<a href="…">Label</a>` to `Label (absolute-url)` so links survive
+ * the generic tag strip below.
+ *
+ * Without this the whole detail layer is unreachable: federation calendars link
+ * each cell to a per-tournament page (AITA renders
+ * `<a href='tournament-content?id=4997'>CS7 (Delhi)</a>`), and that page is the
+ * only place the fact sheet, acceptance lists, host academy and exact date
+ * exist. Flattening the anchor away left the model with the cell text alone, so
+ * no prompt change could ever have recovered them.
+ *
+ * The URL is wrapped in PARENTHESES, deliberately not angle brackets: the
+ * `<[^>]+>` strip further down treats `<https://…>` as a tag and deletes it,
+ * which silently produced byte-identical output to not doing this at all.
+ *
+ * Relative hrefs resolve against the page's own URL. AITA's calendar lives at
+ * /management/calendar.php but its links are root-relative in intent — the
+ * resulting /management/tournament-content?id=… still 301s to the canonical
+ * /tournament-content/?id=…, and we follow redirects, so both forms work.
+ */
+function inlineAnchorUrls(html: string, baseUrl: string): string {
+  return html.replace(
+    /<a\b[^>]*\bhref\s*=\s*("([^"]*)"|'([^']*)')[^>]*>([\s\S]*?)<\/a>/gi,
+    (_match, _quoted, doubleQuoted, singleQuoted, inner) => {
+      const href = decodeAttributeEntities(((doubleQuoted ?? singleQuoted ?? "") as string).trim());
+      const label = (inner as string).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      // Fragment/script/contact links carry no page to follow; empty-label
+      // anchors are icons and image wrappers, which only add noise.
+      if (!href || !label || href.startsWith("#") || /^(javascript|mailto|tel):/i.test(href)) {
+        return label;
+      }
+      let absolute = href;
+      try {
+        absolute = new URL(href, baseUrl).toString();
+      } catch {
+        // Unparseable href — keep the raw value rather than dropping the link.
+      }
+      return `${label} (${absolute})`;
+    },
+  );
+}
+
+/**
+ * Flattens HTML to text, keeping row/cell boundaries so table-shaped calendars
+ * stay readable. Pass `baseUrl` to keep link targets (see inlineAnchorUrls).
+ */
+function htmlToText(html: string, baseUrl?: string): string {
+  const withoutInertMarkup = html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ");
+
+  return (baseUrl ? inlineAnchorUrls(withoutInertMarkup, baseUrl) : withoutInertMarkup)
     // AITA renders date cells as "04,<br>May" — the break must become a space,
     // not vanish, or the day and month fuse into "04,May".
     .replace(/<br\s*\/?>/gi, " ")
@@ -177,6 +253,11 @@ function htmlToText(html: string): string {
     .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"')
     .replace(/&#0?39;|&apos;/gi, "'")
+    // Numeric entities are everywhere in WordPress-rendered federation pages
+    // (&#8211; for en-dashes in titles, &#038; in query strings); left raw they
+    // end up inside extracted names and URLs.
+    .replace(/&#x([0-9a-f]+);/gi, (m, hex: string) => codePointOr(parseInt(hex, 16), m))
+    .replace(/&#(\d+);/g, (m, dec: string) => codePointOr(Number(dec), m))
     .replace(/[ \t]+/g, " ")
     // Deliberately NOT collapsing runs of empty cells: calendar tables encode
     // the age group by column position ("WEEK | Under 10 | Under 12 | ..."), so
@@ -187,6 +268,33 @@ function htmlToText(html: string): string {
 }
 
 const MAX_PAGE_TEXT_CHARS = 300_000;
+
+/**
+ * Drops site chrome — nav, sidebars, "More News" widgets, ad slots — before
+ * flattening a page to text.
+ *
+ * This is what makes following per-tournament detail pages affordable: an AITA
+ * tournament page is 140KB of HTML that flattens to ~17,500 characters, of
+ * which about 700 describe the tournament and the rest is the news rail, the
+ * social embeds and the footer. Stripping chrome first takes the same page to
+ * ~1,500 characters, so a dozen of them fit in one extraction call instead of
+ * one page barely fitting.
+ *
+ * Only applied to detail pages, never to calendars — a calendar IS a table of
+ * links, and several of these selectors (`nav`, `menu`) would eat it.
+ */
+export function stripSiteChrome(html: string): string {
+  return (
+    html
+      .replace(/<(nav|header|footer|aside|form|noscript|iframe|svg)\b[\s\S]*?<\/\1>/gi, " ")
+      // Class-based, because most CMS themes mark chrome with a class rather
+      // than a semantic element — AITA's news rail is a div.widget_boc_latest.
+      .replace(
+        /<(div|section|ul|ins)\b[^>]*\bclass\s*=\s*["'][^"']*\b(widget|sidebar|side-bar|menu|navbar|breadcrumb|footer|header|social|share|advert|adsbygoogle|related|more-?news|latest|comment)\b[^"']*["'][\s\S]*?<\/\1>/gi,
+        " ",
+      )
+  );
+}
 
 const MONTH_ABBREVS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 
@@ -281,7 +389,7 @@ function chunkCalendarText(text: string, maxChars = 2_500): string[] {
  * Returns null when the fetch is blocked/fails, so callers can fall back to
  * urlContext for genuinely bot-gated or JS-rendered sources.
  */
-async function fetchPageText(url: string): Promise<string | null> {
+async function fetchPageHtml(url: string): Promise<{ html: string; finalUrl: string } | null> {
   const safeUrl = await resolveSafeHttpUrl(url);
   if (!safeUrl) {
     log.warn("[DataSourceExtraction] refused to fetch unsafe/unresolvable URL");
@@ -307,12 +415,23 @@ async function fetchPageText(url: string): Promise<string | null> {
       log.warn(`[DataSourceExtraction] direct fetch got non-HTML content-type: ${contentType}`);
       return null;
     }
-    const text = htmlToText(await res.text());
-    return text.length > MAX_PAGE_TEXT_CHARS ? text.slice(0, MAX_PAGE_TEXT_CHARS) : text;
+    // Resolve relative links against the FINAL url — federation sites redirect
+    // liberally, and the pre-redirect path would build wrong absolute URLs.
+    return { html: await res.text(), finalUrl: res.url || safeUrl };
   } catch (err) {
     log.warn(`[DataSourceExtraction] direct fetch failed: ${(err as Error).message.slice(0, 120)}`);
     return null;
   }
+}
+
+async function fetchPageText(
+  url: string,
+  { stripChrome = false }: { stripChrome?: boolean } = {},
+): Promise<string | null> {
+  const page = await fetchPageHtml(url);
+  if (!page) return null;
+  const text = htmlToText(stripChrome ? stripSiteChrome(page.html) : page.html, page.finalUrl);
+  return text.length > MAX_PAGE_TEXT_CHARS ? text.slice(0, MAX_PAGE_TEXT_CHARS) : text;
 }
 
 /** Single-step JSON extraction call — used for the format-conversion step and for PDF input. */
@@ -450,10 +569,12 @@ function calendarPromptRules(sportName: string, url: string, today: string): str
 - "city": string or null.
 - "level": one of "District" | "State" | "National" | "International" or null. Only infer when obvious (ITF/Asian/World events = International, "Nationals"/"National Championship" = National); otherwise null.
 - "ageGroups": array of strings like ["Under-14"] based on which age-group column/section the entry appears in; [] if unknown.
+- "detailUrl": if the event name is followed by a URL in parentheses, copy that URL here EXACTLY as written, character for character. Otherwise null. Never invent, shorten, or "correct" it.
 - "sourceQuote": a short direct quote or close paraphrase (under 25 words) from the source that supports this entry, or null.
 
 Rules:
 - Extract ONLY entries actually present in the content. Never invent events or dates.
+- The parenthesised URL after a name is that event's own page — it is NOT part of the name. Keep the name clean and put the URL in "detailUrl".
 - If the same event on the same date appears under multiple age-group columns, output ONE object with all its age groups combined.
 - Skip entries that ended more than 60 days before today (today is ${today}).
 - Output at most 150 entries; if you must cut, keep the upcoming ones.
@@ -524,8 +645,31 @@ export interface ExtractedEdition {
   city?: string | null;
   level?: string | null;
   ageGroups?: string[] | null;
+  detailUrl?: string | null;
   sourceQuote?: string | null;
+  // Added by the detail-page pass, and present when validateEditions re-runs
+  // over an already-enriched draft (it does, at approval time).
+  officialName?: string | null;
+  organiser?: string | null;
+  state?: string | null;
+  category?: string | null;
+  documents?: unknown;
 }
+
+/** A document published alongside an edition — fact sheet, acceptance list, draw, results. */
+export interface EditionDocument {
+  label: string;
+  url: string;
+  kind: EditionDocumentKind;
+}
+
+export type EditionDocumentKind =
+  | "factSheet"
+  | "acceptanceList"
+  | "entryForm"
+  | "draw"
+  | "results"
+  | "other";
 
 export interface ValidEdition {
   name: string;
@@ -537,6 +681,74 @@ export interface ValidEdition {
   level?: string | undefined;
   ageGroups: string[];
   sourceQuote?: string | undefined;
+  /** The event's own page on the federation site — the durable link, and where the fields below come from. */
+  detailUrl?: string | undefined;
+  /** Full official title as published on the detail page, e.g. "AITA CHAMPIONSHIP SERIES TOURNAMENT (DELHI)". */
+  officialName?: string | undefined;
+  /** Host club/academy running the event. */
+  organiser?: string | undefined;
+  state?: string | undefined;
+  /** Category wording exactly as the source prints it, e.g. "Under 12 Under 16". */
+  category?: string | undefined;
+  documents?: EditionDocument[] | undefined;
+}
+
+/**
+ * Keeps a value only if it is a syntactically valid http(s) URL.
+ *
+ * The model copies these out of page text, so the failure mode is a truncated
+ * or hallucinated string rather than a hostile one — but these end up rendered
+ * as links for parents, and `javascript:` must never reach an href. Anything
+ * that isn't cleanly http(s) is dropped rather than repaired.
+ */
+function sanitizeHttpUrl(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const DOCUMENT_KINDS: EditionDocumentKind[] = [
+  "factSheet",
+  "acceptanceList",
+  "entryForm",
+  "draw",
+  "results",
+  "other",
+];
+
+/**
+ * Re-validates a stored/hand-edited document list. These become links rendered
+ * for parents, so a non-http url is dropped rather than trusted — an admin can
+ * edit the draft freely before approving.
+ */
+function sanitizeEditionDocuments(value: unknown): EditionDocument[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  // Same url twice is a real duplicate and is dropped. Same LABEL twice is not:
+  // AITA publishes two distinct acceptance lists both called "Girls Under 18",
+  // and collapsing on label would silently lose one of the two draws.
+  const seenUrls = new Set<string>();
+  const documents = value
+    .filter((d): d is Record<string, unknown> => !!d && typeof d === "object")
+    .map((d) => {
+      const url = sanitizeHttpUrl(d.url);
+      const label = asString(d.label);
+      if (!url || !label || seenUrls.has(url)) return null;
+      seenUrls.add(url);
+      const kind = asString(d.kind);
+      return {
+        label,
+        url,
+        kind: (DOCUMENT_KINDS.includes(kind as EditionDocumentKind)
+          ? kind
+          : "other") as EditionDocumentKind,
+      };
+    })
+    .filter((d): d is EditionDocument => d !== null);
+  return documents.length ? documents : undefined;
 }
 
 function parseDateStrict(value: unknown): Date | undefined {
@@ -682,7 +894,17 @@ export function validateEditions(raw: unknown): { valid: ValidEdition[]; errors:
       ageGroups: Array.isArray(item?.ageGroups)
         ? item.ageGroups.filter((a): a is string => typeof a === "string" && a.trim().length > 0)
         : [],
+      detailUrl: sanitizeHttpUrl(item?.detailUrl),
       sourceQuote: typeof item?.sourceQuote === "string" ? item.sourceQuote.trim() || undefined : undefined,
+      // Detail-page fields must be carried through, not rebuilt from scratch.
+      // This function is a whitelist, and it runs again on the saved draft at
+      // approval time — anything it omits is silently discarded, so dropping
+      // these here would publish every edition with no fact sheet at all.
+      officialName: asString(item?.officialName),
+      organiser: asString(item?.organiser),
+      state: asString(item?.state),
+      category: asString(item?.category),
+      documents: sanitizeEditionDocuments(item?.documents),
     });
   }
 
@@ -710,6 +932,354 @@ export function validateEditions(raw: unknown): { valid: ValidEdition[]; errors:
   }
   if (valid.length === 0) errors.push("No valid calendar entries were found in the source.");
   return { valid, errors };
+}
+
+// ─── Detail-page enrichment ───────────────────────────────────────────────────
+//
+// A federation calendar is an index, not a record: each cell links to the
+// event's own page, and that page is the ONLY place the fact sheet, acceptance
+// lists, host academy and exact category exist. This pass follows those links.
+//
+// It runs as its own admin-triggered step rather than inside extraction,
+// because extraction happens synchronously inside the HTTP request and a full
+// tennis calendar is ~150 detail pages — enough Gemini calls to run past the
+// load balancer's timeout. Splitting it also means quota is only spent on
+// submissions a reviewer actually intends to keep.
+
+/** Fetches at most this many detail pages per run; anything beyond is reported, never silently dropped. */
+const MAX_DETAIL_PAGES = 150;
+const DETAIL_FETCH_CONCURRENCY = 5;
+/** Detail pages read together in one Gemini call — each is ~1.5K chars after chrome-stripping. */
+const DETAIL_BATCH_SIZE = 6;
+const DETAIL_BATCH_CONCURRENCY = 4;
+const DETAIL_TEXT_CHARS = 2_000;
+
+/** Anchors pointing at a downloadable file count as documents whatever their label says. */
+const DOCUMENT_EXTENSION = /\.(pdf|docx?|xlsx?|pptx?|csv)(?:$|\?|#)/i;
+/**
+ * …as do anchors whose label OR url names one.
+ *
+ * Both halves are load-bearing. The label alone catches ITF events, which link
+ * an HTML fact sheet page rather than a PDF. The url alone catches AITA's
+ * acceptance lists, where "Acceptance List" is a heading ABOVE the links and
+ * the links themselves read "Girls Under 18" — only `/acceptancelist?…` in the
+ * href identifies them.
+ */
+const DOCUMENT_LABEL =
+  /fact\s*sheet|acceptance|entry\s*(?:form|list)|entries|\bdraws?\b|\bresults?\b|schedule|brochure|prospectus|circular|hotel|rules?\b/i;
+/** Chrome that survives stripping — a bare social link is not a tournament document. */
+const NON_DOCUMENT_HOSTS =
+  /(?:^|\.)(?:twitter|x|facebook|instagram|youtube|youtu|linkedin|whatsapp|pinterest|google|goo)\.[a-z.]+$/i;
+
+function classifyDocumentKind(label: string, url: string): EditionDocumentKind {
+  const haystack = `${label} ${url}`;
+  if (/fact\s*sheet/i.test(haystack)) return "factSheet";
+  if (/acceptance/i.test(haystack)) return "acceptanceList";
+  if (/entry|entries|registration/i.test(haystack)) return "entryForm";
+  if (/\bdraws?\b/i.test(haystack)) return "draw";
+  if (/\bresults?\b/i.test(haystack)) return "results";
+  return "other";
+}
+
+/**
+ * Pulls document links straight out of the detail page's HTML.
+ *
+ * Deliberately deterministic and independent of the AI pass: fact sheets are
+ * the single thing this feature exists to surface, so they must still land when
+ * the Gemini quota is exhausted — the failure mode that already bites this
+ * pipeline hardest. Parsed from HTML rather than from the flattened text so the
+ * href is exact, which matters for AITA's signed blob URLs.
+ */
+export function harvestDocuments(html: string, baseUrl: string): EditionDocument[] {
+  const documents: EditionDocument[] = [];
+  const seen = new Set<string>();
+  const anchor = /<a\b[^>]*\bhref\s*=\s*("([^"]*)"|'([^']*)')[^>]*>([\s\S]*?)<\/a>/gi;
+
+  let match: RegExpExecArray | null;
+  while ((match = anchor.exec(html)) !== null) {
+    const href = decodeAttributeEntities((match[2] ?? match[3] ?? "").trim());
+    const label = decodeAttributeEntities(
+      (match[4] ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+    );
+    if (!href || !label) continue;
+
+    let absolute: URL;
+    try {
+      absolute = new URL(href, baseUrl);
+    } catch {
+      continue;
+    }
+    if (absolute.protocol !== "http:" && absolute.protocol !== "https:") continue;
+    if (NON_DOCUMENT_HOSTS.test(absolute.hostname)) continue;
+
+    const url = absolute.toString();
+    if (!DOCUMENT_EXTENSION.test(absolute.pathname) && !DOCUMENT_LABEL.test(`${label} ${url}`)) {
+      continue;
+    }
+    if (seen.has(url)) continue;
+    seen.add(url);
+    documents.push({ label, url, kind: classifyDocumentKind(label, url) });
+  }
+
+  // Rank before capping. Chrome-stripping is imperfect, and whatever nav
+  // survives it sits ABOVE the content in source order — on a raw AITA page the
+  // site-wide Forms menu alone contributes twelve generic PDFs (constitution,
+  // code of conduct, circuit rules), which under a positional cap would push
+  // out the one fact sheet the page exists to publish.
+  const rank: Record<EditionDocumentKind, number> = {
+    factSheet: 0,
+    acceptanceList: 1,
+    entryForm: 2,
+    draw: 3,
+    results: 4,
+    other: 5,
+  };
+  return documents
+    .map((document, index) => ({ document, index }))
+    .sort((a, b) => rank[a.document.kind] - rank[b.document.kind] || a.index - b.index)
+    .slice(0, 12)
+    .map((entry) => entry.document);
+}
+
+/**
+ * True when the page names a date within a week of the one we already hold.
+ *
+ * Guards against a mis-linked or recycled detail page grafting another event's
+ * venue and fact sheet onto this edition. Every candidate reading is tried
+ * (DD-MM-YYYY and MM-DD-YYYY are indistinguishable in the source, and AITA
+ * prints the ambiguous form), so this only rejects a page when NO reading lands
+ * near the calendar date. A page stating no date at all is accepted — plenty of
+ * federation pages omit it, and rejecting those would lose real fact sheets.
+ */
+export function detailPageDateAgrees(text: string, startDate: string): boolean {
+  const expected = new Date(`${startDate}T00:00:00.000Z`).getTime();
+  if (Number.isNaN(expected)) return true;
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+
+  const candidates: number[] = [];
+  for (const [, a, b, c] of text.matchAll(/\b(\d{1,4})[-/.](\d{1,2})[-/.](\d{2,4})\b/g)) {
+    const [x, y, z] = [Number(a), Number(b), Number(c)];
+    // DD-MM-YYYY, MM-DD-YYYY, YYYY-MM-DD — whichever the source meant.
+    candidates.push(
+      Date.UTC(z, y - 1, x),
+      Date.UTC(z, x - 1, y),
+      Date.UTC(x, y - 1, z),
+    );
+  }
+  if (candidates.length === 0) return true;
+  return candidates.some((t) => !Number.isNaN(t) && Math.abs(t - expected) <= weekMs);
+}
+
+function detailPromptRules(): string {
+  return `Return a JSON array with one object per page you could read, each with exactly these keys:
+- "page": the integer from that page's "### PAGE" marker.
+- "officialName": the event's full official title as printed on the page, or null.
+- "organiser": the club, academy or association hosting the event, or null.
+- "venue": the ground/stadium, if named separately from the organiser, or null.
+- "city": city, or null.
+- "state": state or union territory, or null.
+- "category": the age/gender category exactly as printed, e.g. "Under 12 Under 16" or "Men Women", or null.
+
+Rules:
+- Use ONLY what that page states. NEVER carry a value from one page onto another — the pages describe different events that often share a series name.
+- Omit a page entirely if it contains no tournament information.
+- Ignore navigation, news headlines, social feeds and footer/contact text.
+- Do not include dates, links or file names — those are handled separately.
+- Return ONLY the JSON array. No markdown fences, no commentary.`;
+}
+
+function buildDetailBatchPrompt(sportName: string, pages: Array<{ page: number; text: string }>): string {
+  const body = pages.map((p) => `### PAGE ${p.page}\n${p.text}`).join("\n\n");
+  return `Below are individual tournament pages from the official ${sportName} federation website in India. Extract each one's details.\n\n${detailPromptRules()}\n\n${body}`;
+}
+
+/** Runs `worker` over `items` with a fixed number of workers in flight. */
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (cursor < items.length) {
+      const index = cursor++;
+      results[index] = await worker(items[index]!, index);
+    }
+  });
+  await Promise.all(runners);
+  return results;
+}
+
+export interface DetailEnrichmentResult {
+  editions: ValidEdition[];
+  /** Editions that gained at least one document. */
+  documentsFound: number;
+  enriched: number;
+  warnings: string[];
+}
+
+/**
+ * Follows each edition's `detailUrl` and merges what that page adds.
+ *
+ * `name` and `startDate` are never touched: together with sportSlug they are
+ * the TournamentEdition upsert key, so rewriting them here would orphan the
+ * live row instead of updating it. The full title from the detail page is kept
+ * alongside as `officialName`.
+ */
+export async function enrichEditionsWithDetailPages(
+  editions: ValidEdition[],
+  sportSlug: string,
+  { refresh = false }: { refresh?: boolean } = {},
+): Promise<DetailEnrichmentResult> {
+  const warnings: string[] = [];
+  // Editions already read are skipped, so a second run costs only the ones a
+  // failed batch left behind. This is not an optimisation — the AI quota
+  // genuinely runs out mid-run (observed: 4 of 19 batches lost to 429s), and
+  // without it "run it again to fill in the rest" would re-spend the whole
+  // budget on pages already done and never reach the stragglers.
+  // `officialName` is the marker because only the AI pass sets it; documents
+  // are a weaker signal since a page may legitimately publish none.
+  const alreadyRead = refresh ? 0 : editions.filter((e) => e.detailUrl && e.officialName).length;
+  const linked = editions.filter((e) => e.detailUrl && (refresh || !e.officialName));
+
+  if (alreadyRead > 0) {
+    warnings.push(`${alreadyRead} entry(s) already had their details and were skipped.`);
+  }
+  if (linked.length === 0 && alreadyRead > 0) {
+    return { editions, documentsFound: editions.filter((e) => e.documents?.length).length, enriched: 0, warnings };
+  }
+  if (linked.length === 0) {
+    return {
+      editions,
+      documentsFound: 0,
+      enriched: 0,
+      warnings: [
+        "No entry carried a per-tournament link, so there were no detail pages to follow. Re-extract this source first — links are only captured by extractions run after this feature was added.",
+      ],
+    };
+  }
+
+  const targets = linked.slice(0, MAX_DETAIL_PAGES);
+  if (linked.length > targets.length) {
+    warnings.push(
+      `Only the first ${targets.length} of ${linked.length} linked entries were followed this run. Run it again to continue with the rest.`,
+    );
+  }
+
+  // ── Fetch every detail page, harvesting documents as we go ──
+  interface FetchedDetail {
+    edition: ValidEdition;
+    text: string | null;
+    mismatched: boolean;
+  }
+
+  const fetched = await mapWithConcurrency<ValidEdition, FetchedDetail>(
+    targets,
+    DETAIL_FETCH_CONCURRENCY,
+    async (edition) => {
+      const page = await fetchPageHtml(edition.detailUrl!);
+      if (!page) return { edition, text: null, mismatched: false };
+
+      const stripped = stripSiteChrome(page.html);
+      const text = htmlToText(stripped, page.finalUrl).slice(0, DETAIL_TEXT_CHARS);
+
+      if (!detailPageDateAgrees(text, edition.startDate)) {
+        return { edition, text: null, mismatched: true };
+      }
+      const documents = harvestDocuments(stripped, page.finalUrl);
+      if (documents.length) edition.documents = documents;
+      return { edition, text, mismatched: false };
+    },
+  );
+
+  const unreachable = fetched.filter((f) => !f.text && !f.mismatched).length;
+  const mismatched = fetched.filter((f) => f.mismatched).length;
+  if (unreachable) warnings.push(`${unreachable} detail page(s) could not be fetched and were left as-is.`);
+  if (mismatched) {
+    warnings.push(
+      `${mismatched} detail page(s) named a date more than a week from the calendar entry and were skipped as probable mis-links.`,
+    );
+  }
+
+  // Counted across the whole draft, not just this run's slice — after a
+  // partial re-run the admin needs the running total, not "3 of 110".
+  const documentsFound = editions.filter((e) => e.documents?.length).length;
+
+  // ── Read the prose fields the AI is actually needed for ──
+  const readable = fetched
+    .map((f, index) => ({ index, edition: f.edition, text: f.text }))
+    .filter((f): f is { index: number; edition: ValidEdition; text: string } => Boolean(f.text));
+
+  const genAI = getClient();
+  if (!genAI) {
+    warnings.push("No AI credentials configured, so only document links were collected.");
+    return { editions, documentsFound, enriched: 0, warnings };
+  }
+
+  const batches: Array<Array<{ index: number; edition: ValidEdition; text: string }>> = [];
+  for (let i = 0; i < readable.length; i += DETAIL_BATCH_SIZE) {
+    batches.push(readable.slice(i, i + DETAIL_BATCH_SIZE));
+  }
+
+  const sportName = sportNameFromSlug(sportSlug);
+  let enriched = 0;
+  let failedBatches = 0;
+
+  const batchResults = await mapWithConcurrency(batches, DETAIL_BATCH_CONCURRENCY, async (batch) => {
+    const prompt = buildDetailBatchPrompt(
+      sportName,
+      batch.map((b) => ({ page: b.index, text: b.text })),
+    );
+    return { batch, outcome: await jsonExtractionCall(genAI, prompt, "array") };
+  });
+
+  for (const { batch, outcome } of batchResults) {
+    if (!Array.isArray(outcome.data)) {
+      failedBatches++;
+      continue;
+    }
+    const byIndex = new Map(batch.map((b) => [b.index, b.edition]));
+    for (const row of outcome.data as Array<Record<string, unknown>>) {
+      const edition = byIndex.get(Number(row?.page));
+      if (!edition) continue;
+      // The calendar is authoritative for anything it already stated; the
+      // detail page only fills gaps and adds fields the calendar never had.
+      edition.officialName = asString(row.officialName) ?? edition.officialName;
+      edition.organiser = asString(row.organiser) ?? edition.organiser;
+      edition.venue = edition.venue ?? asString(row.venue) ?? asString(row.organiser);
+      edition.city = edition.city ?? asString(row.city);
+      edition.state = asString(row.state) ?? edition.state;
+      edition.category = asString(row.category) ?? edition.category;
+      if (!edition.ageGroups.length) {
+        edition.ageGroups = parseCategoryToAgeGroups(asString(row.category));
+      }
+      enriched++;
+    }
+  }
+
+  if (failedBatches) {
+    warnings.push(
+      `${failedBatches} of ${batches.length} detail batches failed to read (usually AI quota) — their document links were still saved. Run it again to fill in the rest.`,
+    );
+  }
+
+  return { editions, documentsFound, enriched, warnings };
+}
+
+/**
+ * Turns a printed category into age-group tags — "Under 12 Under 16" is two
+ * groups run-on with no delimiter, which is how AITA prints a shared event.
+ * Only used when the calendar gave no age columns to work from.
+ */
+export function parseCategoryToAgeGroups(category: string | undefined): string[] {
+  if (!category) return [];
+  const groups = [...category.matchAll(/under[\s-]*(\d{1,2})/gi)].map((m) => `Under-${m[1]}`);
+  for (const [label] of category.matchAll(/\b(men|women|senior|boys|girls)\b/gi)) {
+    const normalized = label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
+    if (!groups.includes(normalized)) groups.push(normalized);
+  }
+  return [...new Set(groups)];
 }
 
 // ─── Federation / curated-tournament validation (whitelist + required-field gate) ──

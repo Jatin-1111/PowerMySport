@@ -59,6 +59,76 @@ export const createFindSportTrialCheckIn = async (
 };
 
 /**
+ * POST /plan-checkins/find-sport-trial/choice
+ *
+ * The parent picking a sport on the results page — the one point in the flow
+ * where we learn what they actually decided, rather than inferring it from the
+ * highest score. Two writes, deliberately in one call so the profile and the
+ * scheduled nudge can't disagree about which sport this family is trying:
+ *
+ *   1. `chosenSport` on the dependent — the durable record of the decision.
+ *   2. The already-scheduled trial check-in, repointed at that sport.
+ */
+export const recordFindSportChoice = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { dependentId, sport, signals } = req.body;
+    if (!sport || typeof sport !== "string" || !sport.trim()) {
+      res.status(400).json({ success: false, message: "sport is required" });
+      return;
+    }
+    const sportName = sport.trim().slice(0, 60);
+
+    let validDependentId: string | null = null;
+    if (dependentId && mongoose.isValidObjectId(dependentId)) {
+      const updated = await Player.findOneAndUpdate(
+        { _id: dependentId, userId: req.user.id, type: "DEPENDENT" },
+        { $set: { chosenSport: sportName, chosenSportAt: new Date() } },
+      ).lean();
+      if (updated) validDependentId = dependentId;
+    }
+
+    const cleanSignals = Array.isArray(signals)
+      ? signals.filter((s) => typeof s === "string").slice(0, 4).map((s) => s.slice(0, 300))
+      : [];
+    const title = `You picked ${sportName} about ${TRIAL_WEEKS} weeks ago — how did the trial go?`;
+
+    const retargeted = await PlanCheckInService.retargetFindSportTrial({
+      userId: req.user.id,
+      dependentId: validDependentId,
+      sport: sportName,
+      title,
+      signals: cleanSignals,
+    });
+
+    // No check-in to retarget — the parent reached results as a guest and
+    // registered later, or the original scheduling failed. Start the clock now.
+    const checkIn =
+      retargeted ??
+      (await PlanCheckInService.schedule({
+        userId: req.user.id,
+        dependentId: validDependentId,
+        source: "find_sport_trial",
+        sport: sportName,
+        title,
+        signals: cleanSignals,
+        checkInDueAt: new Date(Date.now() + TRIAL_WEEKS * 7 * 24 * 60 * 60 * 1000),
+      }));
+
+    res.status(200).json({ success: true, data: checkIn });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to record sport choice" });
+  }
+};
+
+/**
  * GET /plan-checkins/:id
  * Fetch a single check-in — this is what the emailed link lands on.
  */

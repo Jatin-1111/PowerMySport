@@ -296,7 +296,6 @@ function pronounsFor(gender: WizardAnswers["gender"]) {
   if (gender === "girl") return { poss: "her", possPronoun: "hers", subj: "she", obj: "her", plural: false };
   return { poss: "their", possPronoun: "theirs", subj: "they", obj: "them", plural: true };
 }
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 function buildReasons(
   answers: WizardAnswers,
@@ -304,7 +303,7 @@ function buildReasons(
   child: ReturnType<typeof getChildDimensions>,
 ): TaggedReason[] {
   const name = answers.childName || "Your child";
-  const { poss } = pronounsFor(answers.gender);
+  const { poss, possPronoun } = pronounsFor(answers.gender);
   const reasons: TaggedReason[] = [];
 
   // Personality match reasons.
@@ -319,18 +318,18 @@ function buildReasons(
     if (sport.individual >= 4) {
       reasons.push({ type: "team-individual", text:
         ti !== null && ti <= 2
-          ? `${name}'s preference for competing alone is a natural fit — the result in ${sport.name} rests entirely on ${poss} own performance.`
-          : `${sport.name} is decided by the individual — no teammates to carry a bad day, and no one to share the credit on a good one.`,
+          ? `${name} wants the result to be ${possPronoun} alone. In ${sport.name} it is.`
+          : `${sport.name} is decided by one player — no teammates to carry a bad day.`,
       });
     } else if (sport.individual <= 2) {
       reasons.push({ type: "team-individual", text:
         ti !== null && ti >= 4
-          ? `${name}'s team-oriented nature suits ${sport.name} well — the sport is built around collective effort and shared momentum.`
-          : `${sport.name} is built around collective effort — shared momentum, shared results, and a squad to fall back on.`,
+          ? `${name} plays better with a team, and ${sport.name} is built entirely around one.`
+          : `${sport.name} runs on shared effort, with a squad to fall back on.`,
       });
     } else {
       reasons.push({ type: "team-individual", text:
-        `${sport.name} is a team game with long stretches where the moment belongs to one player alone — it works from either end of that preference.`,
+        `${sport.name} is a team game where the big moments still land on one player. It works either way.`,
       });
     }
   }
@@ -338,22 +337,36 @@ function buildReasons(
   if (answers.energyType && dimMatch(child.explosive, sport.explosive) >= 0.75) {
     if (answers.energyType === "explosive" && sport.explosive >= 4) {
       reasons.push({ type: "energy", text:
-        `${cap(poss)} explosive bursts of energy are exactly what ${sport.name} demands — speed and power define the sport.`,
+        `Speed and power decide ${sport.name} — exactly ${poss} energy pattern.`,
       });
     } else if (answers.energyType === "endurance" && sport.endurance >= 4) {
       reasons.push({ type: "energy", text:
-        `${cap(poss)} ability to sustain effort over time is a key asset in ${sport.name}, which rewards consistent physical output.`,
+        `${sport.name} rewards staying power over long sessions. That's ${poss} strength.`,
       });
     }
   }
 
-  if (
+  // ── Vision ──
+  // Strong tracking, sharp eyesight and the two combined used to fire as three
+  // separate reasons, producing near-identical sentences on the same card. One
+  // vision line per sport, picking the strongest claim that applies.
+  const trackingFits =
     answers.visualTracking === "strong" &&
     sport.visualTracking >= 4 &&
-    dimMatch(child.visualTracking, sport.visualTracking) >= 0.75
-  ) {
+    dimMatch(child.visualTracking, sport.visualTracking) >= 0.75;
+  const sharpEyes = answers.eyesight === "sharp" && sport.visionDemand >= 4;
+
+  if (trackingFits && sharpEyes && child.visualTracking >= 4 && child.eyesightValue >= 4) {
+    reasons.push({ type: "synergy-vision", text:
+      `Sharp eyes and strong tracking together — ${sport.name} rewards the pair more than either alone.`,
+    });
+  } else if (trackingFits) {
     reasons.push({ type: "visual-tracking", text:
-      `Strong visual tracking is a real advantage in ${sport.name} — reacting to a fast-moving object is central to the game.`,
+      `${name} picks up a fast-moving object early — the core skill in ${sport.name}.`,
+    });
+  } else if (sharpEyes) {
+    reasons.push({ type: "eyesight", text:
+      `Clear, uncorrected vision, and ${sport.name} is read at speed.`,
     });
   }
 
@@ -363,7 +376,7 @@ function buildReasons(
     dimMatch(child.reactFast, sport.reactFast) >= 0.75
   ) {
     reasons.push({ type: "decision-style", text:
-      `${name}'s instinct to react fast and trust ${poss} read suits ${sport.name}'s pace — there's rarely time to overthink.`,
+      `${sport.name} moves too fast to overthink. ${name} reacts on instinct.`,
     });
   } else if (
     answers.decisionStyle === "strategic" &&
@@ -371,15 +384,15 @@ function buildReasons(
     dimMatch(child.reactFast, sport.reactFast) >= 0.75
   ) {
     reasons.push({ type: "decision-style", text:
-      `${name}'s strategic thinking style is well-matched to ${sport.name}, where planning several moves ahead makes a real difference.`,
+      `${sport.name} rewards planning over reflex — how ${name} already thinks.`,
     });
   }
 
   if (answers.pressureResponse === "thrives" && sport.pressureTolerance >= 4) {
     reasons.push({ type: "pressure", text:
       sport.individual >= 4
-        ? `${name} thrives under the spotlight — ${sport.name} puts the individual in full view, with no team to share the moment.`
-        : `${name} thrives under the spotlight — ${sport.name} is a team game, but the decisive moments land on one player in front of everyone.`,
+        ? `${sport.name} puts one player in full view. ${name} plays better there.`
+        : `Even in a team, ${sport.name}'s decisive moments land on one player. ${name} wants them.`,
     });
   }
 
@@ -394,38 +407,34 @@ function buildReasons(
       : false;
     if (sport.heightAdvantage === "tall" && isTall) {
       reasons.push({ type: "physical", text:
-        `Being taller than most kids ${poss} age is a genuine structural advantage in ${sport.name}.`,
+        `Taller than most kids ${poss} age — a structural advantage in ${sport.name}.`,
       });
     } else if (sport.heightAdvantage === "short" && isShort) {
       reasons.push({ type: "physical", text:
-        `A compact build is an asset in ${sport.name} — lower centre of gravity and quicker rotation are real advantages.`,
+        `A compact build means a lower centre of gravity and quicker rotation. Both count in ${sport.name}.`,
       });
     } else if (sport.buildPreference === "stocky" && isStocky) {
       reasons.push({ type: "physical", text:
-        `${name}'s strong, stocky build suits the physical demands of ${sport.name}.`,
+        `A strong, stocky build suits the physical demands of ${sport.name}.`,
       });
     }
   }
 
-  // Eyesight reason
-  if (answers.eyesight === "sharp" && sport.visionDemand >= 4) {
+  // Low vision demand — the sharp-eyesight case is handled with tracking above
+  if (answers.eyesight === "limited" && sport.visionDemand <= 2) {
     reasons.push({ type: "eyesight", text:
-      `${name}'s sharp eyesight is a real asset in ${sport.name} — tracking fast-moving objects accurately is central to the sport.`,
-    });
-  } else if (answers.eyesight === "limited" && sport.visionDemand <= 2) {
-    reasons.push({ type: "eyesight", text:
-      `${sport.name} places very little demand on eyesight — ${name} can compete on equal terms regardless of vision.`,
+      `${sport.name} asks almost nothing of eyesight. Vision won't hold ${name} back.`,
     });
   }
 
   // Agility & flexibility reason
   if (answers.agility === "high" && sport.agilityNeed >= 4 && dimMatch(child.agilityValue, sport.agilityNeed) >= 0.75) {
     reasons.push({ type: "agility", text:
-      `${name}'s natural agility and flexibility are a genuine advantage in ${sport.name}, which rewards quick footwork and range of movement.`,
+      `${sport.name} runs on quick footwork and range of movement. ${name} has both.`,
     });
   } else if (answers.agility === "low" && sport.agilityNeed <= 2) {
     reasons.push({ type: "agility", text:
-      `${sport.name} doesn't require high agility — ${name} can succeed here through strength, strategy, and consistency.`,
+      `${sport.name} doesn't ask for agility — strength, strategy and consistency carry it.`,
     });
   }
 
@@ -434,7 +443,7 @@ function buildReasons(
     const childVal = answers.weeklyHours === "1-3" ? 2 : answers.weeklyHours === "4-7" ? 5 : answers.weeklyHours === "8-12" ? 10 : 15;
     if (childVal >= sport.minWeeklyHours) {
       reasons.push({ type: "time", text:
-        `Your available training time comfortably covers what ${sport.name} requires — ${sport.minWeeklyHours}+ hours a week is enough to progress.`,
+        `${sport.name} needs ${sport.minWeeklyHours}+ hours a week. Your time covers it.`,
       });
     }
   }
@@ -442,11 +451,11 @@ function buildReasons(
   // Budget + location reason (always include as a practical anchor)
   if (answers.state && answers.budget) {
     reasons.push({ type: "budget", text:
-      `Your budget covers quality training in ${answers.state} — ${sport.name} is well-supported there at the ${sport.costRange} level.`,
+      `${sport.name} runs ${sport.costRange} in ${answers.state} — inside your budget.`,
     });
   } else if (answers.budget) {
     reasons.push({ type: "budget", text:
-      `Your budget aligns with what quality ${sport.name} training costs — ${sport.costRange} for a good academy.`,
+      `A good ${sport.name} academy runs ${sport.costRange} — inside your budget.`,
     });
   }
 
@@ -455,7 +464,7 @@ function buildReasons(
     const [idealMin, idealMax] = sport.ageWindowIdeal;
     if (answers.age >= idealMin && answers.age <= idealMax) {
       reasons.push({ type: "age-window", text:
-        `At ${answers.age}, ${name} is in the ideal window to start ${sport.name} — early enough to build a strong foundation.`,
+        `At ${answers.age}, ${name} is inside the ideal window to start ${sport.name}.`,
       });
     }
   }
@@ -463,17 +472,12 @@ function buildReasons(
   // Synergy reasons — only fire when the compound actually scored
   if (RACKET_SPORT_NAMES.has(sport.name) && child.explosive >= 4 && child.agilityValue >= 4) {
     reasons.push({ type: "synergy-racket", text:
-      `${name}'s combination of explosive energy and high agility is a particularly powerful pairing for ${sport.name} — elite performance here demands exactly both.`,
-    });
-  }
-  if (child.visualTracking >= 4 && child.eyesightValue >= 4 && sport.visionDemand >= 4) {
-    reasons.push({ type: "synergy-vision", text:
-      `Sharp eyesight combined with strong visual tracking gives ${name} a compound edge in ${sport.name} — the sport rewards this pairing more than either trait alone.`,
+      `Explosive energy plus high agility — ${sport.name} demands exactly that pairing.`,
     });
   }
   if (child.reactFast <= 2 && child.sustainedFocus >= 4 && sport.reactFast <= 2 && sport.sustainedFocus >= 4) {
     reasons.push({ type: "synergy-tactical", text:
-      `${name}'s strategic thinking and deep focus are exactly what ${sport.name} rewards — patience and precision matter far more than reaction speed here.`,
+      `Patience and precision beat reaction speed in ${sport.name}. ${name} has both.`,
     });
   }
 
@@ -482,7 +486,7 @@ function buildReasons(
   const matchingPrior = answers.priorSports.find((ps) => transfersFrom.includes(ps));
   if (matchingPrior) {
     reasons.push({ type: "prior-sport", text:
-      `${name}'s experience in ${matchingPrior} transfers directly to ${sport.name} — the movement patterns and skills overlap more than most parents realise.`,
+      `${matchingPrior} transfers directly to ${sport.name} — the movement patterns overlap.`,
     });
   }
 
@@ -555,24 +559,24 @@ const HOURS_GAP_LABEL: Record<NonNullable<WizardAnswers["weeklyHours"]>, string>
 /** Hard-gate failures, phrased for a parent rather than as a boolean. */
 function findHardBlockers(answers: WizardAnswers, sport: SportProfile): string[] {
   const name = answers.childName || "Your child";
-  const { poss, subj, plural } = pronounsFor(answers.gender);
+  const { poss, plural } = pronounsFor(answers.gender);
   const out: string[] = [];
 
   if (sport.requiresWater && answers.waterComfort === "uncomfortable") {
     out.push(
-      `${name} isn't comfortable in water yet. That has to come first — a few weeks of learn-to-swim sessions before ${sport.name} training makes sense at all.`,
+      `${name} isn't comfortable in water yet. Learn-to-swim comes first — ${sport.name} training makes no sense before that.`,
     );
   }
 
   if (sport.requiresContact && answers.contactComfort === "avoids") {
     out.push(
-      `${sport.name} involves regular physical contact, which ${name} actively prefers to avoid. Forcing that early usually ends the sport rather than the discomfort.`,
+      `${sport.name} involves regular physical contact ${name} actively avoids. Forcing it early usually ends the sport, not the discomfort.`,
     );
   }
 
   if (answers.budget && !budgetCoversMinimum(answers.budget, sport.minBudgetTier)) {
     out.push(
-      `Quality ${sport.name} coaching runs ${sport.costRange}, above the ${BUDGET_GAP_LABEL[answers.budget]} you set. Worth knowing before committing — school and district programmes are the cheaper way in.`,
+      `${sport.name} coaching runs ${sport.costRange} — above the ${BUDGET_GAP_LABEL[answers.budget]} you set. School and district programmes are the cheaper way in.`,
     );
   }
 
@@ -582,7 +586,7 @@ function findHardBlockers(answers: WizardAnswers, sport: SportProfile): string[]
     (answers.ambition === "professional" || answers.ambition === "national")
   ) {
     out.push(
-      `For the national or professional goal you picked, ${answers.age} is past the realistic starting window in ${sport.name} — most kids on that pathway began by ${sport.ageWindowCutoff}. As a sport to play and enjoy, it's still wide open.`,
+      `For the goal you picked, ${answers.age} is past the starting window in ${sport.name} — that pathway begins by ${sport.ageWindowCutoff}. To play and enjoy, still wide open.`,
     );
   }
 
@@ -598,7 +602,7 @@ function findHardBlockers(answers: WizardAnswers, sport: SportProfile): string[]
         : answers.gender === "girl" ? 162 : 172;
     if (answers.height < minH) {
       out.push(
-        `Selection at national level in ${sport.name} is height-driven, and at ${answers.age} ${name} is under the ${minH}cm mark selectors typically work from. ${plural ? "They are" : `${cap(subj)} is`} not out of the sport — just out of that specific pathway, so ${poss} goal may need rethinking.`,
+        `National selection in ${sport.name} is height-driven, and at ${answers.age} ${name} ${plural ? "are" : "is"} under the ${minH}cm mark selectors work from. Not out of the sport — out of that pathway, so ${poss} goal may need rethinking.`,
       );
     }
   }
@@ -618,7 +622,7 @@ function buildGaps(
   child: ReturnType<typeof getChildDimensions>,
 ): string[] {
   const name = answers.childName || "Your child";
-  const { poss, obj, subj, plural } = pronounsFor(answers.gender);
+  const { poss, possPronoun, obj, subj, plural } = pronounsFor(answers.gender);
   const isAre = plural ? "are" : "is";
   const gaps: string[] = [];
 
@@ -626,8 +630,8 @@ function buildGaps(
   if (answers.teamIndividual !== null && dimMatch(child.individual, sport.individual) <= 0.5) {
     gaps.push(
       sport.individual >= 4
-        ? `${name} plays better with a team around ${obj}, and ${sport.name} puts every point squarely on the individual. That's the part to watch in a trial.`
-        : `${name} prefers the result to rest on ${poss} own performance, and ${sport.name} is built around shared effort — wins and losses belong to the group.`,
+        ? `${sport.name} rests entirely on one player, and ${name} plays better with a team around ${obj}. Watch that in a trial.`
+        : `In ${sport.name} wins and losses belong to the group. ${name} wants them to be ${possPronoun}.`,
     );
   }
 
@@ -636,71 +640,73 @@ function buildGaps(
     // Deliberately says "stamina", not "conditioning" — this branch also fires
     // for Chess, where the long sessions are mental rather than physical.
     gaps.push(
-      `${sport.name} rewards sustained effort over long sessions; ${name}'s pattern is short, hard bursts with a breather after. Stamina builds with training, but expect it to be the early grind.`,
+      `${sport.name} rewards long, sustained effort; ${name} works in short bursts. Stamina trains up — expect that to be the early grind.`,
     );
   } else if (answers.energyType === "endurance" && sport.explosive >= 4 && sport.endurance <= 3) {
     gaps.push(
-      `${sport.name} is decided in short explosive bursts, and ${name}'s strength is staying power. Expect speed and power work to be the focus for a while.`,
+      `${sport.name} is decided in short bursts; ${name}'s strength is staying power. Speed work comes first.`,
     );
   }
 
   // Visual tracking
   if (child.visualTracking <= 2 && sport.visualTracking >= 4) {
     gaps.push(
-      `Reacting to a fast-moving object is central to ${sport.name}, and that's currently a weak spot. It is trainable — but expect it to be the first real hurdle.`,
+      `Reading a fast-moving object is central to ${sport.name}, and it's a weak spot today. Trainable, but the first real hurdle.`,
     );
   }
 
   // Decision style
   if (answers.decisionStyle === "strategic" && sport.reactFast >= 4) {
     gaps.push(
-      `${name} likes to watch and plan first. ${sport.name} rarely allows that time — decisions are made at speed, on instinct.`,
+      `${sport.name} rarely allows time to plan — decisions are made at speed. ${name} likes to watch first.`,
     );
   } else if (answers.decisionStyle === "react" && sport.reactFast <= 2) {
+    // Sport-neutral on purpose: this branch fires for Chess and Swimming alike,
+    // so it can't lean on board-game language.
     gaps.push(
-      `${name} acts on instinct and figures it out by doing. ${sport.name} rewards the opposite — patience, planning, and sitting with a position.`,
+      `${sport.name} rewards deliberate, planned play. ${name} acts on instinct.`,
     );
   }
 
   // Focus pattern
   if (answers.focusStyle === "bursts" && sport.sustainedFocus >= 4) {
     gaps.push(
-      `${sport.name} asks for long stretches of unbroken concentration, and ${name} focuses hard in 20–30 minute blocks. Session length is the thing to test.`,
+      `${sport.name} asks for unbroken concentration; ${name} focuses in 20–30 minute blocks. Test session length.`,
     );
   }
 
   // Pressure
   if (answers.pressureResponse === "avoids" && sport.pressureTolerance >= 4) {
     gaps.push(
-      `Competitive ${sport.name} puts the individual in full view with no team to share the moment, and ${name} would rather not be the centre of attention. Fine for recreational play; it becomes the limiting factor at tournament level.`,
+      `${sport.name} puts one player in full view, and ${name} would rather not be. Fine socially; limiting at tournament level.`,
     );
   }
 
   // Repetition tolerance
   if (answers.repetitionTolerance === "low" && sport.repetitionNeed >= 4) {
     gaps.push(
-      `Progress in ${sport.name} comes from repeating the same technical drills for months, and ${name} needs variety to stay motivated. A coach who mixes drills matters more than usual here.`,
+      `${sport.name} progresses through months of the same drills, and ${name} needs variety. Pick a coach who mixes them up.`,
     );
   }
 
   // Contact comfort (soft — the hard case is already a blocker)
   if (answers.contactComfort === "avoids" && sport.contactRequired >= 3 && !sport.requiresContact) {
     gaps.push(
-      `There's regular jostling and body contact in ${sport.name} that ${name} would rather avoid. Not a dealbreaker, but it'll feel uncomfortable at first.`,
+      `${sport.name} involves regular jostling ${name} would rather avoid. Uncomfortable at first, not a dealbreaker.`,
     );
   }
 
   // Agility
   if (child.agilityValue <= 2 && sport.agilityNeed >= 4) {
     gaps.push(
-      `${sport.name} lives on quick footwork and fast changes of direction, which isn't ${name}'s natural strength today. Agility work would need to be a standing part of training.`,
+      `${sport.name} lives on quick footwork, which isn't ${name}'s strength today. Agility drills would need a permanent slot.`,
     );
   }
 
   // Eyesight
   if (answers.eyesight === "limited" && sport.visionDemand >= 4) {
     gaps.push(
-      `${sport.name} depends heavily on sharp vision at speed. Worth an eye check and a word with the coach before starting.`,
+      `${sport.name} depends on sharp vision at speed. Worth an eye check before starting.`,
     );
   }
 
@@ -708,16 +714,16 @@ function buildGaps(
   if (answers.height) {
     if (sport.heightAdvantage === "tall" && child.heightValue <= 2) {
       gaps.push(
-        `Height is a structural advantage in ${sport.name}, and ${name} ${isAre} shorter than average for ${poss} age right now. Worth revisiting as ${subj} ${plural ? "grow" : "grows"} — it's a moving target at this age.`,
+        `Height is a structural advantage in ${sport.name}, and ${name} ${isAre} shorter than average today. Revisit as ${subj} ${plural ? "grow" : "grows"} — it's a moving target at this age.`,
       );
     } else if (sport.heightAdvantage === "short" && child.heightValue >= 4) {
       gaps.push(
-        `${sport.name} favours a compact frame for balance and rotation, and ${name} ${isAre} taller than most kids ${poss} age.`,
+        `${sport.name} favours a compact frame, and ${name} ${isAre} taller than most kids ${poss} age.`,
       );
     }
     if (sport.buildPreference === "lean" && child.buildValue >= 5) {
       gaps.push(
-        `${sport.name} is built around a lean, light frame. Nothing that rules ${name} out — just expect conditioning to carry more weight in training.`,
+        `${sport.name} is built around a lean, light frame. Expect conditioning to carry more of the training.`,
       );
     }
   }
@@ -730,14 +736,14 @@ function buildGaps(
     answers.environment !== sport.environmentPreference
   ) {
     gaps.push(
-      `${sport.name} is played almost entirely ${sport.environmentPreference === "indoor" ? "indoors" : "outdoors"}, and ${name} gravitates the other way. Small thing, but it shapes whether training feels like a chore.`,
+      `${sport.name} is played almost entirely ${sport.environmentPreference === "indoor" ? "indoors" : "outdoors"}, and ${name} gravitates the other way. Small thing that decides whether training feels like a chore.`,
     );
   }
 
   // Weekly time
   if (answers.weeklyHours && timeMatch(answers.weeklyHours, sport) < 1) {
     gaps.push(
-      `Meaningful progress in ${sport.name} needs around ${sport.minWeeklyHours} hours a week; you've set aside ${HOURS_GAP_LABEL[answers.weeklyHours]}. Enough to enjoy it, tight for competing.`,
+      `${sport.name} needs about ${sport.minWeeklyHours} hours a week; you've set aside ${HOURS_GAP_LABEL[answers.weeklyHours]}. Enough to enjoy, tight to compete.`,
     );
   }
 
@@ -745,7 +751,7 @@ function buildGaps(
   const stateTier = getStateInfraTier(answers.state);
   if (answers.state && infraMatch(stateTier, sport.minCityTier) < 1) {
     gaps.push(
-      `Serious ${sport.name} coaching is concentrated in larger metros. From ${answers.state}, expect travel — or a longer search for the right academy.`,
+      `Serious ${sport.name} coaching sits in the big metros. From ${answers.state}, expect travel or a longer academy search.`,
     );
   }
 
@@ -754,7 +760,7 @@ function buildGaps(
     const [, idealMax] = sport.ageWindowIdeal;
     if (answers.age > idealMax && answers.age <= sport.ageWindowCutoff) {
       gaps.push(
-        `Most kids who go far in ${sport.name} start by ${idealMax}; ${name} would be starting at ${answers.age}. Workable, but the competitive pathway is narrower from here.`,
+        `Most who go far in ${sport.name} start by ${idealMax}; ${name} would start at ${answers.age}. Workable, but the competitive path narrows.`,
       );
     }
   }
@@ -768,7 +774,7 @@ function buildGaps(
     sport.specializationIntensity === "high"
   ) {
     gaps.push(
-      `Getting to the top in ${sport.name} in India usually means moving to where the coaching is concentrated. Worth deciding early whether that's on the table for your family.`,
+      `Reaching the top in ${sport.name} in India usually means relocating to the coaching. Worth deciding early if that's on the table.`,
     );
   }
 
@@ -959,11 +965,11 @@ function fallbackStrength(answers: WizardAnswers, sport: SportProfile): string {
   if (answers.age) {
     const [idealMin, idealMax] = sport.ageWindowIdeal;
     if (answers.age >= idealMin && answers.age <= idealMax) {
-      return `At ${answers.age}, ${name} is inside the usual starting window for ${sport.name} — nothing about the timing works against you.`;
+      return `At ${answers.age}, ${name} is inside the usual starting window for ${sport.name}. Timing isn't working against you.`;
     }
   }
   if (sport.minBudgetTier === "under-3k") {
-    return `${sport.name} is one of the cheapest sports to actually try — ${sport.costRange}, with school and district programmes cheaper still.`;
+    return `${sport.name} is among the cheapest sports to try — ${sport.costRange}, cheaper still through school and district programmes.`;
   }
-  return `${sport.name} needs about ${sport.minWeeklyHours} hours a week and costs ${sport.costRange} — a trial class will tell you more than any score can.`;
+  return `${sport.name} runs ${sport.costRange} and about ${sport.minWeeklyHours} hours a week. A trial class tells you more than any score.`;
 }

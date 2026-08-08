@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { SportFitResult, SportResult, WizardAnswers } from "../../types";
 import { JourneyPipeline } from "../JourneyPipeline";
+import { ChooseSportButton } from "./ChooseSportButton";
 import { SportFitCard } from "./SportFitCard";
 import { WhatsNextPanel } from "./WhatsNextPanel";
 
@@ -235,10 +236,16 @@ function SportCard({
   result,
   answers,
   role,
+  chosen,
+  saving,
+  onChoose,
 }: {
   result: SportResult;
   answers: WizardAnswers;
   role: PortfolioRole;
+  chosen: boolean;
+  saving: boolean;
+  onChoose: (sport: string) => void;
 }) {
   const name = answers.childName || "Your child";
   const meta = PORTFOLIO_META[role];
@@ -246,7 +253,9 @@ function SportCard({
 
   return (
     <div
-      className={`relative flex flex-col rounded-2xl border-2 border-t-4 border-slate-100 bg-white ${meta.accentBorder} ${meta.shadow}`}
+      className={`relative flex flex-col rounded-2xl border-2 border-t-4 bg-white ${
+        chosen ? "border-turf-green shadow-md shadow-turf-green/10" : `border-slate-100 ${meta.accentBorder} ${meta.shadow}`
+      }`}
     >
       {/* Role badge */}
       <div className="border-b border-slate-50 px-5 pb-4 pt-5">
@@ -288,11 +297,22 @@ function SportCard({
       </div>
 
       {/* What to watch for in a trial */}
-      <div className="mx-5 mb-5 rounded-xl bg-slate-50 px-3.5 py-3">
+      <div className="mx-5 mb-4 rounded-xl bg-slate-50 px-3.5 py-3">
         <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
           Cost to try: {result.sport.costRange}
         </p>
         <p className="text-xs leading-relaxed text-slate-600">{meta.watchFor(name)}</p>
+      </div>
+
+      {/* The decision — available on our picks too, not just their shortlist */}
+      <div className="px-5 pb-5">
+        <ChooseSportButton
+          sportName={result.sport.name}
+          chosen={chosen}
+          saving={saving}
+          onChoose={onChoose}
+          tone="subtle"
+        />
       </div>
     </div>
   );
@@ -332,6 +352,9 @@ export function ResultsView({
   isLoggedIn = false,
   savedForName,
   dependentId,
+  chosenSport = null,
+  choosingSport = false,
+  onChooseSport,
 }: {
   results: SportResult[];
   /** The parent's own shortlist, scored — leads the page when non-empty. */
@@ -342,6 +365,10 @@ export function ResultsView({
   isLoggedIn?: boolean;
   savedForName?: string;
   dependentId?: string;
+  /** The sport the parent committed to, once they've said so. */
+  chosenSport?: string | null;
+  choosingSport?: boolean;
+  onChooseSport?: (sport: string) => void;
 }) {
   const name = answers.childName || "Your child";
   const hasShortlist = chosenFits.length > 0;
@@ -362,12 +389,19 @@ export function ResultsView({
   // headed by a score — a 77 sitting above an 84 just reads as broken sorting.
   const orderedFits = [...chosenFits].sort((a, b) => b.score - a.score);
 
-  // Everything downstream (trial booking, WhatsApp copy) hangs off the sport
-  // the family is most likely to walk into — the strongest of their own picks
-  // when they made any, our top recommendation otherwise.
+  // Everything downstream (trial booking, WhatsApp copy, the 4-week check-in)
+  // hangs off one sport. An explicit choice outranks everything: until the
+  // parent makes one we fall back to the strongest of their own picks, then to
+  // our top recommendation — but those are inferences, and this isn't.
   const topFit = orderedFits[0];
-  const primarySportName = topFit?.sport.name ?? topResults[0]?.sport.name;
+  const inferredSport = topFit?.sport.name ?? topResults[0]?.sport.name;
+  const primarySportName = chosenSport ?? inferredSport;
   const headlineSport = primarySportName;
+  const chooseProps = (sport: string) => ({
+    chosen: chosenSport === sport,
+    saving: choosingSport,
+    onChoose: onChooseSport ?? (() => {}),
+  });
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 pb-12 duration-300">
@@ -417,14 +451,20 @@ export function ResultsView({
               forward, so the CTA isn't only reachable after a long scroll. */}
           {headlineSport && (
             <div className="w-full shrink-0 rounded-2xl bg-slate-900 p-5 lg:w-[268px]">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-power-orange">
-                {topFit ? "Strongest fit" : "Best fit"}
+              <p
+                className={`text-[10px] font-bold uppercase tracking-[0.18em] ${
+                  chosenSport ? "text-turf-green" : "text-power-orange"
+                }`}
+              >
+                {chosenSport ? "You're starting with" : topFit ? "Strongest fit" : "Best fit"}
               </p>
               <p className="font-title mt-1 text-2xl font-bold leading-tight text-white">
                 {headlineSport}
               </p>
 
-              {topFit && (
+              {/* The score belongs to our verdict — once the parent has made
+                  their own call, leading with our number undercuts it. */}
+              {topFit && !chosenSport && (
                 <div className="mt-3">
                   <div className="flex items-baseline gap-1.5">
                     <span className="font-title text-3xl font-bold tabular-nums leading-none text-white">
@@ -529,6 +569,7 @@ export function ResultsView({
                 eyebrow={
                   orderedFits.length > 1 && i === 0 ? "Best of your picks" : "Your shortlist"
                 }
+                {...chooseProps(fit.sport.name)}
               />
             ))}
           </div>
@@ -549,7 +590,13 @@ export function ResultsView({
 
           <div className={`grid grid-cols-1 items-stretch gap-5 ${PORTFOLIO_GRID[portfolio.length] ?? "sm:grid-cols-2 lg:grid-cols-3"}`}>
             {portfolio.map(({ result, role }) => (
-              <SportCard key={result.sport.id} result={result} answers={answers} role={role} />
+              <SportCard
+                key={result.sport.id}
+                result={result}
+                answers={answers}
+                role={role}
+                {...chooseProps(result.sport.name)}
+              />
             ))}
           </div>
         </section>

@@ -842,6 +842,9 @@ export interface AddDependentPayload {
   wizardCity?: string;
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
   wizardCompletedAt?: string | Date;
+  /** The sport the parent committed to on the results page — a decision, not a score. */
+  chosenSport?: string;
+  chosenSportAt?: string | Date;
 }
 
 function calculateAge(dob: Date): number {
@@ -931,6 +934,9 @@ export const addDependent = async (
     // Wizard results
     sportMatches: payload.sportMatches,
     wizardCompletedAt: payload.wizardCompletedAt ? new Date(payload.wizardCompletedAt) : undefined,
+    // Carried over when a guest picked a sport before registering
+    chosenSport: payload.chosenSport,
+    chosenSportAt: payload.chosenSportAt ? new Date(payload.chosenSportAt) : undefined,
   });
 
   await newDependent.save();
@@ -1018,6 +1024,11 @@ export const updateDependent = async (
   if (payload.wizardCompletedAt !== undefined) {
     const d = new Date(payload.wizardCompletedAt);
     if (!isNaN(d.getTime())) (dependent as any).wizardCompletedAt = d;
+  }
+  if (payload.chosenSport !== undefined) (dependent as any).chosenSport = payload.chosenSport;
+  if (payload.chosenSportAt !== undefined) {
+    const d = new Date(payload.chosenSportAt);
+    if (!isNaN(d.getTime())) (dependent as any).chosenSportAt = d;
   }
 
   await dependent.save();

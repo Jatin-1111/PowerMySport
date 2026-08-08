@@ -102,6 +102,9 @@ export interface Dependent {
   consideringSports?: string[];
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
   wizardCompletedAt?: string;
+  /** The sport the parent committed to on the results page — a decision, not a score. */
+  chosenSport?: string;
+  chosenSportAt?: string;
 }
 
 export interface UserShippingAddress {
