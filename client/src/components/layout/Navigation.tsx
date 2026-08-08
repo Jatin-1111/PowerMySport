@@ -69,7 +69,7 @@ const exploreItems = [
   },
   {
     href: "/guidance",
-    label: "Problem Solver",
+    label: "Powermysport AI",
     description: "AI-powered plan for any sports challenge",
     icon: BrainCircuit,
   },

@@ -113,6 +113,8 @@ export default function HomePage() {
       "Talk to a real sports expert, or reach out to our team directly for hands-on assistance—free, no hard sell.",
     icon: <MessageCircle className="h-6 w-6" />,
     stat: "Free, no commitment",
+    visual: "chat",
+    theme: "violet",
   };
   const screeningStep = {
     label: "Ready for the next step?",
@@ -121,6 +123,19 @@ export default function HomePage() {
       "Bring your child in for a hands-on session with a certified coach—we validate the online result against real movement, strength, and coordination.",
     icon: <Activity className="h-6 w-6" />,
     stat: "Book anytime after your results",
+    visual: "steps",
+    theme: "blue",
+  };
+
+  const trialClassStep = {
+    label: "Ready to get started?",
+    title: "Book a Trial Class",
+    description:
+      "Now that you know which sport suits your child, book a trial class at a verified academy near you. Your child gets to experience the sport first-hand before you commit.",
+    icon: <Building2 className="h-6 w-6" />,
+    stat: "No commitment, cancel anytime",
+    visual: "trial",
+    theme: "emerald",
   };
 
   const discoverFeatures = [
@@ -131,9 +146,12 @@ export default function HomePage() {
         "Answer a few quick questions about your child's age, personality, and physical traits. If you don't already know which sport fits best, our assessment finds it for you.",
       icon: <Sparkles className="h-6 w-6" />,
       stat: "Takes about 5 minutes",
+      visual: "roadmap",
+      theme: "orange",
     },
     screeningStep,
     expertStep,
+    trialClassStep,
   ];
 
   const knownSportFeatures = [
@@ -144,8 +162,11 @@ export default function HomePage() {
         "Tell us your child's sport, age, and experience level—we personalise everything downstream around exactly where they are today.",
       icon: <CheckCircle2 className="h-6 w-6" />,
       stat: "Takes about 5 minutes",
+      visual: "roadmap",
+      theme: "orange",
     },
     expertStep,
+    trialClassStep,
   ];
 
   return (

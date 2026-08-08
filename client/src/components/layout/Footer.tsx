@@ -29,7 +29,7 @@ const navColumns = [
       { label: "How It Works", href: "/how-it-works" },
       { label: "Get Started", href: "/assessment" },
       { label: "Sports Pathways", href: "/roadmap" },
-      { label: "Problem Solver", href: "/guidance" },
+      { label: "Powermysport AI", href: "/guidance" },
       { label: "Experts", href: "/experts" },
       { label: "FAQ", href: "/faq" },
       { label: "Contact", href: "/contact" },

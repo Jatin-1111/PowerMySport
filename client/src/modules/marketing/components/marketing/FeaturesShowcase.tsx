@@ -2,7 +2,7 @@
 
 import { cn } from "@/utils/cn";
 import { AnimatePresence, motion, Variants } from "framer-motion";
-import { ChevronRight } from "lucide-react";
+import { CalendarCheck, ChevronRight } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { SectionLabel } from "./SectionLabel";
 
@@ -32,9 +32,20 @@ interface FeaturesShowcaseProps {
   tracks?: FeatureTrack[];
 }
 
-// ─── Per-feature color palette ─────────────────────────────────────────────────
-const PALETTE = [
-  {
+// ─── Per-feature color palette (keyed so the same feature always gets the same color) ──
+type PaletteEntry = {
+  dot: string;
+  chip: string;
+  iconBg: string;
+  numColor: string;
+  stepHex: string;
+  glowColor: string;
+  progressBar: string;
+  cardAccentFrom: string;
+};
+
+const PALETTE_MAP: Record<string, PaletteEntry> = {
+  orange: {
     dot: "bg-power-orange",
     chip: "bg-orange-100 text-orange-700 ring-orange-200",
     iconBg: "bg-orange-50 text-power-orange ring-1 ring-orange-200",
@@ -44,7 +55,7 @@ const PALETTE = [
     progressBar: "bg-power-orange",
     cardAccentFrom: "from-orange-50/60",
   },
-  {
+  blue: {
     dot: "bg-blue-500",
     chip: "bg-blue-100 text-blue-700 ring-blue-200",
     iconBg: "bg-blue-50 text-blue-600 ring-1 ring-blue-200",
@@ -54,7 +65,7 @@ const PALETTE = [
     progressBar: "bg-blue-500",
     cardAccentFrom: "from-blue-50/60",
   },
-  {
+  violet: {
     dot: "bg-violet-500",
     chip: "bg-violet-100 text-violet-700 ring-violet-200",
     iconBg: "bg-violet-50 text-violet-600 ring-1 ring-violet-200",
@@ -64,7 +75,7 @@ const PALETTE = [
     progressBar: "bg-violet-500",
     cardAccentFrom: "from-violet-50/60",
   },
-  {
+  emerald: {
     dot: "bg-emerald-500",
     chip: "bg-emerald-100 text-emerald-700 ring-emerald-200",
     iconBg: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200",
@@ -74,7 +85,7 @@ const PALETTE = [
     progressBar: "bg-emerald-500",
     cardAccentFrom: "from-emerald-50/60",
   },
-  {
+  amber: {
     dot: "bg-amber-500",
     chip: "bg-amber-100 text-amber-700 ring-amber-200",
     iconBg: "bg-amber-50 text-amber-600 ring-1 ring-amber-200",
@@ -84,7 +95,7 @@ const PALETTE = [
     progressBar: "bg-amber-500",
     cardAccentFrom: "from-amber-50/60",
   },
-  {
+  rose: {
     dot: "bg-rose-500",
     chip: "bg-rose-100 text-rose-700 ring-rose-200",
     iconBg: "bg-rose-50 text-rose-600 ring-1 ring-rose-200",
@@ -94,7 +105,14 @@ const PALETTE = [
     progressBar: "bg-rose-500",
     cardAccentFrom: "from-rose-50/60",
   },
-];
+};
+
+const PALETTE_FALLBACK = Object.values(PALETTE_MAP);
+
+function getPalette(feature: ShowcaseFeature, index: number): PaletteEntry {
+  if (feature.theme && PALETTE_MAP[feature.theme]) return PALETTE_MAP[feature.theme];
+  return PALETTE_FALLBACK[index % PALETTE_FALLBACK.length];
+}
 
 const STEPS = ["01", "02", "03", "04", "05", "06", "07", "08"];
 
@@ -114,7 +132,7 @@ const itemVariants: Variants = {
 // ─── Mini abstract visuals per feature ────────────────────────────────────────
 // Pure CSS / JSX visuals — no images needed.
 
-function MiniRoadmap({ color }: { color: string }) {
+function MiniRoadmap({ color = "bg-power-orange" }: { color?: string }) {
   const nodes = ["Age 7", "Age 9", "Age 11", "Compete"];
   return (
     <div className="flex items-center gap-2">
@@ -140,7 +158,7 @@ function MiniRoadmap({ color }: { color: string }) {
   );
 }
 
-function MiniSteps({ dotColor }: { dotColor: string }) {
+function MiniSteps({ dotColor = "bg-power-orange" }: { dotColor?: string }) {
   const steps = ["First session", "Build basics", "Join a team", "First tournament"];
   return (
     <div className="flex flex-col gap-2">
@@ -162,7 +180,7 @@ function MiniSteps({ dotColor }: { dotColor: string }) {
   );
 }
 
-function MiniChat({ chipCls }: { chipCls: string }) {
+function MiniChat({ chipCls = "bg-orange-100 text-orange-700" }: { chipCls?: string }) {
   const bubbles = [
     { q: "Is tennis right for my 8-year-old?", isUser: true },
     { q: "Yes — here's a personalised 3-month plan", isUser: false },
@@ -187,7 +205,7 @@ function MiniChat({ chipCls }: { chipCls: string }) {
   );
 }
 
-function MiniMilestones({ dotColor }: { dotColor: string }) {
+function MiniMilestones({ dotColor = "bg-power-orange" }: { dotColor?: string }) {
   const items = ["District Level", "State Level", "National Circuit", "Pro Track"];
   return (
     <div className="grid grid-cols-2 gap-2">
@@ -207,7 +225,32 @@ function MiniMilestones({ dotColor }: { dotColor: string }) {
   );
 }
 
-function MiniDashboard({ dotColor }: { dotColor: string }) {
+function MiniTrialClass({ dotColor = "bg-power-orange" }: { dotColor?: string }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3">
+        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white", dotColor)}>
+          <CalendarCheck className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-bold text-slate-700">Trial Session Booked</p>
+          <p className="text-[9px] text-slate-400">Saturday, 10:00 AM · Sunrise Academy</p>
+        </div>
+        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-semibold text-emerald-700">Confirmed</span>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {["Sport Matched", "Screening Done", "Trial Booked"].map((label, i) => (
+          <div key={i} className="flex flex-col items-center gap-1 rounded-lg border border-slate-100 bg-slate-50 px-2 py-2">
+            <div className={cn("h-2 w-2 rounded-full", i <= 2 ? dotColor : "bg-slate-200")} />
+            <span className="text-[8px] font-medium text-slate-500 text-center">{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MiniDashboard({ dotColor = "bg-power-orange" }: { dotColor?: string }) {
   const stats = [
     { label: "Roadmap", val: "Active" },
     { label: "Guidance", val: "3 Q&A" },
@@ -243,7 +286,17 @@ function MiniBudget() {
   );
 }
 
-const VISUALS = [MiniRoadmap, MiniSteps, MiniChat, MiniMilestones, MiniDashboard, MiniBudget];
+const VISUALS_MAP: Record<string, React.FC<{ color?: string; dotColor?: string; chipCls?: string }>> = {
+  roadmap: MiniRoadmap,
+  steps: MiniSteps,
+  chat: MiniChat,
+  trial: MiniTrialClass,
+  milestones: MiniMilestones,
+  dashboard: MiniDashboard,
+  budget: MiniBudget,
+};
+
+const VISUALS_FALLBACK = [MiniRoadmap, MiniSteps, MiniChat, MiniTrialClass, MiniMilestones, MiniDashboard, MiniBudget];
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
@@ -275,8 +328,8 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
   }, [paused, features.length]);
 
   const feature = features[active];
-  const pal = PALETTE[active % PALETTE.length];
-  const Visual = VISUALS[active % VISUALS.length];
+  const pal = getPalette(feature, active);
+  const Visual = (feature.visual && VISUALS_MAP[feature.visual]) || VISUALS_FALLBACK[active % VISUALS_FALLBACK.length];
 
   return (
     <section className="relative py-16 sm:py-20 lg:py-24">
@@ -356,7 +409,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
             </p>
 
             {features.map((f, i) => {
-              const p = PALETTE[i % PALETTE.length];
+              const p = getPalette(f, i);
               const isActive = i === active;
               return (
                 <button
