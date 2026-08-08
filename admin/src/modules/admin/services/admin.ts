@@ -1302,4 +1302,82 @@ export const adminApi = {
     const response = await axiosInstance.post(`/admin/data-sources/${id}/reject`, { reason });
     return response.data;
   },
+
+  // ─── Pathway stage guides ─────────────────────────────────────────────────
+  // Hand-authored JSON, validated server-side against the published format.
+  // `validate` writes nothing, so a file can be checked before it goes live.
+
+  listStageGuides: async (): Promise<ApiResponse<AdminStageGuideRow[]>> => {
+    const response = await axiosInstance.get("/admin/stage-guides");
+    return response.data;
+  },
+
+  getStageGuide: async (
+    sportSlug: string,
+    state?: string | null,
+  ): Promise<ApiResponse<AdminStageGuideDetail>> => {
+    const query = state ? `?state=${encodeURIComponent(state)}` : "";
+    const response = await axiosInstance.get(`/admin/stage-guides/${sportSlug}${query}`);
+    return response.data;
+  },
+
+  validateStageGuide: async (
+    guide: unknown,
+  ): Promise<StageGuideValidationResult> => {
+    const response = await axiosInstance.post("/admin/stage-guides/validate", { guide });
+    return response.data;
+  },
+
+  upsertStageGuide: async (payload: {
+    guide: unknown;
+    state?: string | null;
+    status?: "draft" | "published";
+  }): Promise<ApiResponse<AdminStageGuideSaveResult>> => {
+    const response = await axiosInstance.put("/admin/stage-guides", payload);
+    return response.data;
+  },
+
+  deleteStageGuide: async (
+    sportSlug: string,
+    state?: string | null,
+  ): Promise<ApiResponse<null>> => {
+    const query = state ? `?state=${encodeURIComponent(state)}` : "";
+    const response = await axiosInstance.delete(`/admin/stage-guides/${sportSlug}${query}`);
+    return response.data;
+  },
 };
+
+export interface AdminStageGuideRow {
+  _id: string;
+  sportSlug: string;
+  sportName: string;
+  stateSlug: string | null;
+  status: "draft" | "published";
+  stageCount: number;
+  formatVersion: number;
+  verifiedOn?: string;
+  uploadedAt?: string;
+}
+
+export interface AdminStageGuideDetail extends AdminStageGuideRow {
+  guide: unknown;
+}
+
+export interface AdminStageGuideSaveResult {
+  sportSlug: string;
+  stateSlug: string | null;
+  status: "draft" | "published";
+  stageCount: number;
+}
+
+/** The validate endpoint answers with pathed errors on failure. */
+export interface StageGuideValidationResult {
+  success: boolean;
+  message: string;
+  errors?: string[];
+  data?: {
+    sportSlug: string;
+    stageCount: number;
+    stages: Array<{ number: number; title: string }>;
+  };
+}

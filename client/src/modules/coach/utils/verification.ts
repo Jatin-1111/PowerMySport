@@ -2,6 +2,22 @@ import { Coach } from "@/types";
 
 const COMPLETED_STATUSES = new Set(["PENDING", "REVIEW", "VERIFIED"]);
 
+/**
+ * Legacy coach records can be verified without a `verificationStatus` field, so
+ * always derive the status through here instead of reading the field directly.
+ */
+export const getCoachVerificationStatus = (
+  coach: Coach | null | undefined,
+): string => {
+  if (!coach) {
+    return "UNVERIFIED";
+  }
+
+  return (
+    coach.verificationStatus || (coach.isVerified ? "VERIFIED" : "UNVERIFIED")
+  );
+};
+
 export const isCoachVerificationFlowComplete = (
   coach: Coach | null | undefined,
 ): boolean => {
@@ -9,8 +25,7 @@ export const isCoachVerificationFlowComplete = (
     return false;
   }
 
-  const status =
-    coach.verificationStatus || (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
+  const status = getCoachVerificationStatus(coach);
   const hasBio = Boolean(coach.bio?.trim());
   const hasSports = Array.isArray(coach.sports) && coach.sports.length > 0;
 

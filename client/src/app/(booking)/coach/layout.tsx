@@ -26,8 +26,13 @@ import {
     User,
     Users,
 } from "lucide-react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+
+// Safety net: if the gate ever disagrees with a redirect target again, stop
+// bouncing after this many attempts and show a dead-end instead of looping.
+const MAX_GATE_REDIRECTS = 3;
 
 export default function CoachLayout({
   children,
@@ -39,12 +44,33 @@ export default function CoachLayout({
   const { user, logout } = useAuthStore();
   const [isGateLoading, setIsGateLoading] = useState(true);
   const [isVerificationLocked, setIsVerificationLocked] = useState(false);
+  const [isGateStuck, setIsGateStuck] = useState(false);
   const lastGateToastKeyRef = useRef<string | null>(null);
+  const gateRedirectCountRef = useRef(0);
   const communityUrl = getCommunityAppUrl();
   // undefined = still loading, null = no method, object = has method
   const [coachPayoutMethod, setCoachPayoutMethod] = useState<
     IPayoutMethod | null | undefined
   >(undefined);
+
+  const redirectToVerification = useCallback(
+    (toastKey: string, message: string) => {
+      if (gateRedirectCountRef.current >= MAX_GATE_REDIRECTS) {
+        setIsGateStuck(true);
+        return;
+      }
+
+      gateRedirectCountRef.current += 1;
+
+      if (lastGateToastKeyRef.current !== toastKey) {
+        lastGateToastKeyRef.current = toastKey;
+        toast.error(message);
+      }
+
+      router.replace("/coach/verification");
+    },
+    [router],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -69,13 +95,16 @@ export default function CoachLayout({
 
         setIsVerificationLocked(!isComplete);
 
-        if (!isComplete && pathname !== "/coach/verification") {
-          const toastKey = `incomplete:${pathname}`;
-          if (lastGateToastKeyRef.current !== toastKey) {
-            lastGateToastKeyRef.current = toastKey;
-            toast.error("Coach verification incomplete");
-          }
-          router.replace("/coach/verification");
+        if (isComplete) {
+          // Cleared the gate — forget earlier redirects so a later re-lock
+          // starts from a clean slate.
+          gateRedirectCountRef.current = 0;
+          setIsGateStuck(false);
+        } else if (pathname !== "/coach/verification") {
+          redirectToVerification(
+            `incomplete:${pathname}`,
+            "Coach verification incomplete",
+          );
         }
       } catch {
         if (!isMounted) {
@@ -84,12 +113,10 @@ export default function CoachLayout({
 
         setIsVerificationLocked(true);
         if (pathname !== "/coach/verification") {
-          const toastKey = `fetch-failed:${pathname}`;
-          if (lastGateToastKeyRef.current !== toastKey) {
-            lastGateToastKeyRef.current = toastKey;
-            toast.error("Unable to load coach profile");
-          }
-          router.replace("/coach/verification");
+          redirectToVerification(
+            `fetch-failed:${pathname}`,
+            "Unable to load coach profile",
+          );
         }
       } finally {
         if (isMounted) {
@@ -103,7 +130,7 @@ export default function CoachLayout({
     return () => {
       isMounted = false;
     };
-  }, [pathname, router, user?.role]);
+  }, [pathname, redirectToVerification, user?.role]);
 
   // Silently check payout method for banner
   const loadPayoutStatus = useCallback(async () => {
@@ -197,6 +224,39 @@ export default function CoachLayout({
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <p className="text-slate-600">Checking verification status...</p>
+      </div>
+    );
+  }
+
+  // Gate kept redirecting without ever settling. Stop navigating and show a
+  // dead-end rather than bouncing the coach between pages.
+  if (isGateStuck && pathname !== "/coach/verification") {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+        <div className="max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center">
+          <ShieldCheck className="mx-auto h-8 w-8 text-amber-600" />
+          <h1 className="mt-3 text-lg font-bold text-slate-900">
+            We couldn&apos;t confirm your coach profile
+          </h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Your verification details look incomplete. Open the verification page
+            to finish setting up, or contact support if this keeps happening.
+          </p>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <Link
+              href="/coach/verification"
+              className="rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+            >
+              Go to Verification
+            </Link>
+            <Link
+              href="/"
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Go to Home
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }

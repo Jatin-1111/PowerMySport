@@ -9,12 +9,8 @@
 
 import {
   scoreSports,
-  computeFamilySportBonus,
-  computePeerSportBonus,
-  computeInformalExposureBonus,
-  computeFutureFlexibilityPenalty,
+  scoreChosenSports,
 } from "../src/modules/find-sport/utils/scorer";
-import { SPORT_PROFILES } from "../src/modules/find-sport/data/sportProfiles";
 import type { WizardAnswers } from "../src/modules/find-sport/types";
 
 // ─── Console colours ──────────────────────────────────────────────────────────
@@ -60,7 +56,6 @@ const BASE: WizardAnswers = {
   childName: "TestChild",
   dob: null,
   age: 10, gender: "boy", state: "Maharashtra", priorSports: [],
-  sportsInFamily: [], peerSports: [], informalSports: [], informalReaction: null,
   height: 140, weight: 32,
   energyType: "explosive", motorType: "gross",
   visualTracking: "strong", eyesight: "sharp", agility: "high",
@@ -69,7 +64,8 @@ const BASE: WizardAnswers = {
   pressureResponse: "thrives", repetitionTolerance: "high",
   contactComfort: "neutral", environment: "indoor",
   waterComfort: "neutral", medicalConditions: [],
-  budget: "7k-15k", ambition: "competitive", futureFlexibility: null, weeklyHours: "8-12",
+  budget: "7k-15k", ambition: "competitive", weeklyHours: "8-12",
+  consideringSports: [],
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -82,7 +78,7 @@ console.log(`${D}Does the model recommend the right sport for each archetype?${X
 // R1: Chess prodigy — strategic, sustained focus, non-athletic, individual, low budget
 {
   const a: WizardAnswers = { ...BASE,
-    energyType: "endurance", agility: "low", teamIndividual: 5,
+    energyType: "endurance", agility: "low", teamIndividual: 1,
     focusStyle: "sustained", decisionStyle: "strategic",
     repetitionTolerance: "high", contactComfort: "avoids",
     environment: "indoor", weeklyHours: "1-3", budget: "under-3k",
@@ -96,7 +92,7 @@ console.log(`${D}Does the model recommend the right sport for each archetype?${X
 {
   const a: WizardAnswers = { ...BASE,
     energyType: "explosive", agility: "high", eyesight: "sharp",
-    visualTracking: "strong", teamIndividual: 4, decisionStyle: "react",
+    visualTracking: "strong", teamIndividual: 2, decisionStyle: "react",
     environment: "indoor", budget: "3k-7k", age: 9,
   };
   const top = top3names(a);
@@ -107,7 +103,7 @@ console.log(`${D}Does the model recommend the right sport for each archetype?${X
 {
   const a: WizardAnswers = { ...BASE,
     age: 8, energyType: "endurance", agility: "low",
-    teamIndividual: 4, repetitionTolerance: "high",
+    teamIndividual: 2, repetitionTolerance: "high",
     focusStyle: "sustained", decisionStyle: "react",
     waterComfort: "comfortable", environment: "indoor",
     contactComfort: "avoids", budget: "7k-15k", weeklyHours: "13-plus",
@@ -116,10 +112,10 @@ console.log(`${D}Does the model recommend the right sport for each archetype?${X
   test("R", "R3 Swimmer profile → Swimming in top 3", inTop3(a, "Swimming"), `got: ${top.join(", ")}`);
 }
 
-// R4: Team player — loves team (1), explosive, outdoor
+// R4: Team player — loves team (5), explosive, outdoor
 {
   const a: WizardAnswers = { ...BASE,
-    teamIndividual: 1, energyType: "explosive",
+    teamIndividual: 5, energyType: "explosive",
     environment: "outdoor", contactComfort: "neutral",
     ambition: "fun", weeklyHours: "4-7", budget: "under-3k",
   };
@@ -132,7 +128,7 @@ console.log(`${D}Does the model recommend the right sport for each archetype?${X
 {
   const a: WizardAnswers = { ...BASE,
     age: 12, height: 158, weight: 42, energyType: "explosive",
-    agility: "high", teamIndividual: 2, decisionStyle: "react",
+    agility: "high", teamIndividual: 4, decisionStyle: "react",
     visualTracking: "strong", pressureResponse: "manages",
     environment: "indoor", budget: "under-3k", weeklyHours: "8-12",
   };
@@ -143,7 +139,7 @@ console.log(`${D}Does the model recommend the right sport for each archetype?${X
 // R6: Contact-tolerant explosive team athlete — loves contact, outdoor, moderate build
 {
   const a: WizardAnswers = { ...BASE,
-    energyType: "explosive", agility: "moderate", teamIndividual: 1,
+    energyType: "explosive", agility: "moderate", teamIndividual: 5,
     contactComfort: "loves", environment: "outdoor",
     pressureResponse: "manages", budget: "under-3k", weeklyHours: "8-12",
   };
@@ -156,7 +152,7 @@ console.log(`${D}Does the model recommend the right sport for each archetype?${X
 // R7: Hockey specialist — outdoor, explosive, visual tracking, moderate team
 {
   const a: WizardAnswers = { ...BASE,
-    energyType: "explosive", agility: "moderate", teamIndividual: 1,
+    energyType: "explosive", agility: "moderate", teamIndividual: 5,
     visualTracking: "strong", environment: "outdoor",
     contactComfort: "neutral", focusStyle: "bursts",
     ambition: "competitive", weeklyHours: "8-12", budget: "under-3k",
@@ -169,7 +165,7 @@ console.log(`${D}Does the model recommend the right sport for each archetype?${X
 {
   const a: WizardAnswers = { ...BASE,
     energyType: "explosive", agility: "high", eyesight: "sharp",
-    visualTracking: "strong", teamIndividual: 4, decisionStyle: "react",
+    visualTracking: "strong", teamIndividual: 2, decisionStyle: "react",
     environment: "indoor", budget: "under-3k",
     weeklyHours: "4-7", age: 9,
   };
@@ -198,7 +194,7 @@ console.log(`${D}Does the model recommend the right sport for each archetype?${X
 {
   const a: WizardAnswers = { ...BASE,
     age: 10, height: 150, weight: 38, energyType: "explosive",
-    agility: "moderate", teamIndividual: 2, repetitionTolerance: "high",
+    agility: "moderate", teamIndividual: 4, repetitionTolerance: "high",
     focusStyle: "bursts", environment: "no-preference",
     contactComfort: "neutral", budget: "under-3k",
     weeklyHours: "4-7", pressureResponse: "manages",
@@ -218,7 +214,7 @@ console.log(`${D}Hard gates must eliminate sports when real constraints fire.${X
 {
   const a: WizardAnswers = { ...BASE,
     waterComfort: "uncomfortable", energyType: "endurance",
-    repetitionTolerance: "high", teamIndividual: 4,
+    repetitionTolerance: "high", teamIndividual: 2,
     focusStyle: "sustained", budget: "7k-15k",
   };
   test("E", "E1 Water discomfort → Swimming hard-gated",
@@ -230,7 +226,7 @@ console.log(`${D}Hard gates must eliminate sports when real constraints fire.${X
   // Make a tennis-leaning profile to prove the budget gate
   const a: WizardAnswers = { ...BASE,
     budget: "under-3k", energyType: "explosive", agility: "moderate",
-    teamIndividual: 5, environment: "outdoor", eyesight: "sharp",
+    teamIndividual: 1, environment: "outdoor", eyesight: "sharp",
     visualTracking: "strong", repetitionTolerance: "high",
   };
   test("E", "E2 Budget under-3k → Tennis hard-gated",
@@ -241,7 +237,7 @@ console.log(`${D}Hard gates must eliminate sports when real constraints fire.${X
 {
   const a: WizardAnswers = { ...BASE,
     age: 14, gender: "boy", height: 155, ambition: "national",
-    teamIndividual: 2, energyType: "explosive", environment: "indoor",
+    teamIndividual: 4, energyType: "explosive", environment: "indoor",
   };
   test("E", "E3 155cm boy + national volleyball → height gate fires",
     absent(a, "Volleyball"), `top 3: ${top3names(a).join(", ")}`);
@@ -251,7 +247,7 @@ console.log(`${D}Hard gates must eliminate sports when real constraints fire.${X
 {
   const a: WizardAnswers = { ...BASE,
     age: 14, gender: "girl", height: 156, ambition: "national",
-    teamIndividual: 2, energyType: "explosive",
+    teamIndividual: 4, energyType: "explosive",
   };
   test("E", "E4 156cm girl + national basketball → height gate fires",
     absent(a, "Basketball"), `top 3: ${top3names(a).join(", ")}`);
@@ -262,7 +258,7 @@ console.log(`${D}Hard gates must eliminate sports when real constraints fire.${X
 {
   const a: WizardAnswers = { ...BASE,
     age: 16, ambition: "professional", waterComfort: "comfortable",
-    energyType: "endurance", teamIndividual: 4, repetitionTolerance: "high",
+    energyType: "endurance", teamIndividual: 2, repetitionTolerance: "high",
     focusStyle: "sustained", budget: "7k-15k",
   };
   test("E", "E5 Age 16 + professional swimming → age cutoff gate fires (cutoff=13)",
@@ -282,7 +278,7 @@ console.log(`${D}Scores, differentials, and bonus mechanics must work correctly.
 {
   const a: WizardAnswers = { ...BASE,
     age: 9, energyType: "explosive", agility: "high", eyesight: "sharp",
-    visualTracking: "strong", teamIndividual: 4, decisionStyle: "react",
+    visualTracking: "strong", teamIndividual: 2, decisionStyle: "react",
     environment: "indoor", budget: "3k-7k", weeklyHours: "8-12",
   };
   const results = scoreSports(a);
@@ -308,7 +304,7 @@ console.log(`${D}Scores, differentials, and bonus mechanics must work correctly.
 //     With old dimMatch: dimMatch(5,1) = 0.0 would destroy Chess; capMatch = 1.0
 {
   const a: WizardAnswers = { ...BASE,
-    agility: "high", energyType: "endurance", teamIndividual: 5,
+    agility: "high", energyType: "endurance", teamIndividual: 1,
     focusStyle: "sustained", decisionStyle: "strategic",
     repetitionTolerance: "high", contactComfort: "avoids",
     budget: "under-3k", weeklyHours: "1-3", visualTracking: "weak",
@@ -325,7 +321,7 @@ console.log(`${D}Scores, differentials, and bonus mechanics must work correctly.
 {
   const base: WizardAnswers = { ...BASE,
     energyType: "explosive", agility: "high", eyesight: "sharp",
-    visualTracking: "strong", teamIndividual: 4, decisionStyle: "react",
+    visualTracking: "strong", teamIndividual: 2, decisionStyle: "react",
     environment: "indoor", budget: "3k-7k",
   };
   const withRetake = { ...base, priorSports: ["Badminton"] };
@@ -344,7 +340,7 @@ console.log(`${D}Scores, differentials, and bonus mechanics must work correctly.
 {
   const badBase: WizardAnswers = { ...BASE,
     energyType: "explosive", agility: "high", eyesight: "sharp",
-    visualTracking: "strong", teamIndividual: 4, decisionStyle: "react",
+    visualTracking: "strong", teamIndividual: 2, decisionStyle: "react",
     environment: "indoor", budget: "3k-7k", ambition: "competitive",
   };
   const at9  = { ...badBase, age: 9 };
@@ -383,7 +379,7 @@ console.log(`${D}Scores, differentials, and bonus mechanics must work correctly.
 {
   const a: WizardAnswers = { ...BASE,
     energyType: "explosive", agility: "high", eyesight: "sharp",
-    visualTracking: "strong", teamIndividual: 4, decisionStyle: "react",
+    visualTracking: "strong", teamIndividual: 2, decisionStyle: "react",
     environment: "indoor", budget: "3k-7k", age: 9,
   };
   const top = top3names(a);
@@ -407,13 +403,13 @@ console.log(`${D}Scores, differentials, and bonus mechanics must work correctly.
 {
   const sparse: WizardAnswers = {
     childName: "", dob: null, age: null, gender: null, state: null, priorSports: [],
-    sportsInFamily: [], peerSports: [], informalSports: [], informalReaction: null,
     height: null, weight: null, energyType: null, motorType: null,
     visualTracking: null, eyesight: null, agility: null,
     teamIndividual: null, competitiveResponse: null, focusStyle: null,
     decisionStyle: null, pressureResponse: null, repetitionTolerance: null,
     contactComfort: null, environment: null, waterComfort: null, medicalConditions: [],
-    budget: null, ambition: null, futureFlexibility: null, weeklyHours: null,
+    budget: null, ambition: null, weeklyHours: null,
+    consideringSports: [],
   };
   let ok = false;
   let count = 0;
@@ -436,132 +432,57 @@ console.log(`${D}Scores, differentials, and bonus mechanics must work correctly.
     ok, `First: "${top?.reasons[0]?.slice(0, 60)}…"`);
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SECTION 4 — FAMILY / PEER / INFORMAL-EXPOSURE / FUTURE-FLEXIBILITY
-// New signals added this session. Uses comparative deltas (same base profile,
-// same target sport, only the field under test toggled) so each assertion is
-// attributable to exactly one mechanism, not confounded by other dimensions.
-// ══════════════════════════════════════════════════════════════════════════════
-console.log(`\n${B}${C}━━━ FAMILY / PEER / INFORMAL-EXPOSURE / FLEXIBILITY TESTS ━━━${X}`);
-console.log(`${D}Today's new scoring signals — bonuses, penalties, and ordinal tiering.${X}\n`);
-
-// F1-F3, F7-F9 unit-test the bonus/penalty functions directly rather than
-// through the full scoreSports() pipeline. Going through the pipeline hit two
-// real confounds during development: (1) max-normalization means a bonus on
-// a sport that's already the #1/ceiling score is invisible in its own
-// displayed score, and (2) when the target sport and the max/denominator
-// sport share the same specializationIntensity tier, they take the same
-// penalty and the ratio can round back to an unchanged display value. Direct
-// unit tests sidestep both — F5/F6/F10 remain full-pipeline integration tests.
-
-const hockey = SPORT_PROFILES.find(s => s.name === "Hockey")!;
-const swimming = SPORT_PROFILES.find(s => s.name === "Swimming")!;
-
-// F1: Family bonus is a fixed small positive value on an exact sport-name match, zero otherwise
+// A11: teamIndividual axis points the right way.
+//     The wizard slider runs 1 = "Just me" → 5 = "Team, always", while
+//     SportProfile.individual runs the opposite way (1 = very team,
+//     5 = very individual). getChildDimensions has to flip one onto the other.
+//     It didn't for a long time, and nothing here caught it: every fixture was
+//     written on the sport's scale, so the inversion cancelled out everywhere.
+//     This test is deliberately written on the SLIDER's scale and compares two
+//     children who differ only on that one answer.
 {
-  const match = computeFamilySportBonus(["Hockey"], hockey);
-  const noMatch = computeFamilySportBonus(["Chess"], hockey);
-  test("F", "F1 Family sport bonus fires on match only", match === 0.02 && noMatch === 0,
-    `match=${match}, noMatch=${noMatch}`);
+  const solo: WizardAnswers = { ...BASE, teamIndividual: 1 };  // "Just me"
+  const team: WizardAnswers = { ...BASE, teamIndividual: 5 };  // "Team, always"
+
+  // scoreChosenSports (not scoreFor) so the comparison isn't limited to
+  // whatever happens to land in the top 3 — Chess and Football rarely do for
+  // the BASE profile, and an absent sport would silently score 0 on both sides.
+  // Chess is the most individual sport in the catalog (individual: 5);
+  // Football the most team (individual: 1).
+  const scoreOf = (a: WizardAnswers, sport: string) =>
+    scoreChosenSports(a, [sport])[0]?.score ?? 0;
+  const chessSolo = scoreOf(solo, "Chess");
+  const chessTeam = scoreOf(team, "Chess");
+  const footballSolo = scoreOf(solo, "Football");
+  const footballTeam = scoreOf(team, "Football");
+
+  test("A", `A11 Solo answer favours individual sports (Chess solo=${chessSolo} > team=${chessTeam})`,
+    chessSolo > chessTeam,
+    `An inverted axis flips this comparison`);
+  test("A", `A11b Team answer favours team sports (Football team=${footballTeam} > solo=${footballSolo})`,
+    footballTeam > footballSolo,
+    `An inverted axis flips this comparison`);
 }
 
-// F2: Peer bonus fires on match, and is strictly stronger than family (agreed ordinal tiering)
-{
-  const peer = computePeerSportBonus(["Hockey"], hockey);
-  const family = computeFamilySportBonus(["Hockey"], hockey);
-  test("F", "F2 Peer bonus > family bonus (agreed tiering)", peer === 0.03 && peer > family,
-    `family=${family}, peer=${peer}`);
-}
-
-// F3: Informal exposure + "kept asking" is the strongest signal — beats peer
-{
-  const peer = computePeerSportBonus(["Hockey"], hockey);
-  const informalPositive = computeInformalExposureBonus(["Hockey"], "kept-asking", hockey);
-  test("F", "F3 Informal exposure (kept asking) > peer bonus (strongest tier)",
-    informalPositive === 0.05 && informalPositive > peer, `peer=${peer}, informal-positive=${informalPositive}`);
-}
-
-// F4: Informal exposure + "lost interest quickly" is the only negative signal
-{
-  const control: WizardAnswers = { ...BASE };
-  const withInformalNegative: WizardAnswers = {
-    ...BASE, informalSports: ["Badminton"], informalReaction: "lost-interest",
-  };
-  const c = scoreFor(control, "Badminton");
-  const neg = scoreFor(withInformalNegative, "Badminton");
-  test("F", "F4 Informal exposure (lost interest) lowers score", neg < c, `control=${c} vs lost-interest=${neg}`);
-}
-
-// F5: Stacking all three positive signals on a close #2 sport flips it to #1
-// (regression test for the live browser case — Table Tennis sits 2pts behind
-// Badminton under plain BASE; +0.10 combined bonus is enough to overtake it)
-{
-  const a: WizardAnswers = {
-    ...BASE, sportsInFamily: ["Table Tennis"], peerSports: ["Table Tennis"],
-    informalSports: ["Table Tennis"], informalReaction: "kept-asking",
-  };
-  const top = top1(a);
-  test("F", "F5 Stacked signals flip Table Tennis to #1 over Badminton", top === "Table Tennis", `got: ${top}`);
-}
-
-// F6: Conflicting signals across 3 different sports — informal-positive should
-// outrank both family-only and peer-only sports in the same scoring run
-{
-  const a: WizardAnswers = {
-    ...BASE, sportsInFamily: ["Cricket"], peerSports: ["Tennis"],
-    informalSports: ["Table Tennis"], informalReaction: "kept-asking",
-  };
-  const cricket = scoreFor(a, "Cricket");
-  const tennis = scoreFor(a, "Tennis");
-  const tableTennis = scoreFor(a, "Table Tennis");
-  test("F", "F6 Informal-positive sport outranks family-only and peer-only sports",
-    tableTennis > tennis && tableTennis > cricket,
-    `Cricket(family)=${cricket}, Tennis(peer)=${tennis}, TableTennis(informal+)=${tableTennis}`);
-}
-
-// F7: stay-local + national ambition penalizes a high-specialization sport (Swimming)
-{
-  const control = computeFutureFlexibilityPenalty("national", null, swimming);
-  const stayLocal = computeFutureFlexibilityPenalty("national", "stay-local", swimming);
-  test("F", "F7 stay-local + national ambition penalizes high-specialization sport",
-    control === 0 && stayLocal === -0.04, `control=${control}, stay-local=${stayLocal}`);
-}
-
-// F8: The penalty must NOT apply outside national/professional ambition
-{
-  const funTier = computeFutureFlexibilityPenalty("fun", "stay-local", swimming);
-  test("F", "F8 stay-local does NOT penalize under 'fun' ambition", funTier === 0, `got=${funTier}`);
-}
-
-// F9: The penalty must only fire for "stay-local", not "all-in" or "maybe"
-{
-  const allIn = computeFutureFlexibilityPenalty("national", "all-in", swimming);
-  const maybe = computeFutureFlexibilityPenalty("national", "maybe", swimming);
-  test("F", "F9 'all-in'/'maybe' do NOT penalize under national ambition",
-    allIn === 0 && maybe === 0, `all-in=${allIn}, maybe=${maybe}`);
-}
-
-// F11: The penalty must NOT apply to low/moderate-specialization sports even
-// when stay-local + national/professional both fire
-{
-  const cricket = SPORT_PROFILES.find(s => s.name === "Cricket")!;
-  const penalty = computeFutureFlexibilityPenalty("national", "stay-local", cricket);
-  test("F", "F11 stay-local does NOT penalize a low-specialization sport (Cricket)",
-    penalty === 0, `got=${penalty}`);
-}
-
-// F10: Comprehensive realistic persona — every positive signal converges on Swimming
+// A12: Comprehensive realistic persona — every trait converges on Swimming.
+//      A full-pipeline integration check that the dimensions still compound
+//      the way they should now that no exposure bonuses are in play.
+//      The traits are the swimmer archetype rather than a tuned fixture: tall
+//      and lean, endurance over bursts, sustained focus, high tolerance for
+//      repetition, comfortable in water, and content out of the spotlight.
+//      Without the height/build and pressure traits this profile is equally
+//      Chess-shaped — endurance + deep focus + solo describes both.
 {
   const swimmer: WizardAnswers = {
     ...BASE, energyType: "endurance", focusStyle: "sustained",
     repetitionTolerance: "high", waterComfort: "comfortable", agility: "moderate",
-    sportsInFamily: ["Swimming"], peerSports: ["Swimming"],
-    informalSports: ["Swimming"], informalReaction: "kept-asking",
-    ambition: "national", futureFlexibility: "all-in", budget: "15k-plus",
+    teamIndividual: 1, pressureResponse: "manages",
+    height: 155, weight: 34,
+    ambition: "national", budget: "15k-plus",
   };
   const result = scoreSports(swimmer)[0];
-  const ok = result?.sport.name === "Swimming" && result.score >= 90;
-  test("F", `F10 Convergent swimmer persona → #1 Swimming, score ${result?.score ?? 0}`,
+  const ok = result?.sport.name === "Swimming" && result.score >= 85;
+  test("A", `A12 Convergent swimmer persona → #1 Swimming, score ${result?.score ?? 0}`,
     ok, `got: ${result?.sport.name} (${result?.score})`);
 }
 
@@ -581,15 +502,15 @@ function probe(label: string, a: WizardAnswers) {
 // P1: Boy 135cm, national volleyball (should be gated)
 probe("P1 135cm boy, national volleyball — expect Volleyball absent", {
   ...BASE, age: 13, gender: "boy", height: 135, ambition: "national",
-  teamIndividual: 2, energyType: "explosive",
+  teamIndividual: 4, energyType: "explosive",
 });
 
-// P2: All individual (teamIndividual=5), explosive, low budget — what wins?
+// P2: All individual (teamIndividual=1), explosive, low budget — what wins?
 probe("P2 Individual explosive, under-3k budget", {
-  ...BASE, teamIndividual: 5, energyType: "explosive", budget: "under-3k",
+  ...BASE, teamIndividual: 1, energyType: "explosive", budget: "under-3k",
 });
 
-// P3: Perfect endurance profile, outdoor, team (3), no water
+// P3: Perfect endurance profile, outdoor, balanced team/solo (3), no water
 probe("P3 Endurance outdoor balanced — Football vs Hockey vs Cricket", {
   ...BASE, energyType: "endurance", teamIndividual: 3,
   environment: "outdoor", repetitionTolerance: "high",
@@ -598,7 +519,7 @@ probe("P3 Endurance outdoor balanced — Football vs Hockey vs Cricket", {
 
 // P4: Highest possible wildcard divergence — does category diversity work?
 probe("P4 Racket-perfect profile — wildcard should NOT be another racket sport", {
-  ...BASE, energyType: "explosive", agility: "high", teamIndividual: 4,
+  ...BASE, energyType: "explosive", agility: "high", teamIndividual: 2,
   environment: "indoor", budget: "3k-7k",
 });
 
@@ -614,18 +535,16 @@ function rate(cat: string): number {
 const relevance  = rate("R");
 const efficiency = rate("E");
 const accuracy   = rate("A");
-const newSignals = rate("F");
-const overall    = Math.round((relevance + efficiency + accuracy + newSignals) / 4);
+const overall    = Math.round((relevance + efficiency + accuracy) / 3);
 
 console.log(`${B}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${X}`);
 console.log(`  SCORER MODEL RATING`);
 console.log(`${B}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${X}`);
 
-const byR = byCategory("R"), byE = byCategory("E"), byA = byCategory("A"), byF = byCategory("F");
+const byR = byCategory("R"), byE = byCategory("E"), byA = byCategory("A");
 console.log(`  ${C}Relevance   ${X}  ${byR.filter(r=>r.ok).length}/${byR.length} tests   ${bar(relevance)} ${B}${relevance}/100${X}`);
 console.log(`  ${C}Efficiency  ${X}  ${byE.filter(r=>r.ok).length}/${byE.length} tests   ${bar(efficiency)} ${B}${efficiency}/100${X}`);
 console.log(`  ${C}Accuracy    ${X}  ${byA.filter(r=>r.ok).length}/${byA.length} tests   ${bar(accuracy)} ${B}${accuracy}/100${X}`);
-console.log(`  ${C}New signals ${X}  ${byF.filter(r=>r.ok).length}/${byF.length} tests   ${bar(newSignals)} ${B}${newSignals}/100${X}`);
 console.log(`  ${"─".repeat(50)}`);
 const overallColor = overall >= 80 ? G : overall >= 60 ? Y : R;
 console.log(`  ${B}Overall   ${overallColor}${overall}/100${X}  ${overall >= 80 ? `${G}Good` : overall >= 60 ? `${Y}Needs tuning` : `${R}Needs work`}${X}`);

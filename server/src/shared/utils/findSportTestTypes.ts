@@ -12,10 +12,6 @@ export type WizardAnswers = {
   gender: "boy" | "girl" | "prefer-not" | null;
   state: string | null;
   priorSports: string[];
-  sportsInFamily: string[];
-  peerSports: string[];
-  informalSports: string[];
-  informalReaction: "kept-asking" | "lost-interest" | null;
   height: number | null; // cm
   weight: number | null; // kg
   energyType: "explosive" | "endurance" | null;
@@ -34,7 +30,6 @@ export type WizardAnswers = {
   waterComfort: "comfortable" | "neutral" | "uncomfortable" | null;
   budget: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus" | null;
   ambition: "fun" | "competitive" | "national" | "professional" | null;
-  futureFlexibility: "all-in" | "maybe" | "stay-local" | null;
   weeklyHours: "1-3" | "4-7" | "8-12" | "13-plus" | null;
 };
 

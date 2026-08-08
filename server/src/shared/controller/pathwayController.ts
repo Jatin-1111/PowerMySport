@@ -13,6 +13,7 @@ import {
 import { AnalyticsEvent } from "../../admin/models/AnalyticsEvent";
 import { isSupportedSport, SUPPORTED_SPORTS } from "../constants/supportedSports";
 import { Tournament } from "../models/Tournament";
+import { SportStageGuide } from "../models/SportStageGuide";
 
 const fail = (res: Response, error: unknown, code = 400) =>
   res.status(code).json({
@@ -685,5 +686,70 @@ export const getPersonalNotes = async (
   } catch (error) {
     console.error("Error generating personal notes:", error);
     res.status(500).json({ success: false, message: "Failed to generate personal notes." });
+  }
+};
+
+// ─── GET /api/pathways/stage-guide?sport=tennis&state=Delhi ──────────────────
+//
+// The India-specific, hand-authored stage guide the pathway page renders.
+//
+// Reads ONLY `SportStageGuide` — never SportBasePath/SportStatePath, which feed
+// /resources and the guidance AI. The two surfaces are deliberately independent,
+// so this 404s rather than falling back to resource content and quietly making
+// the two pages say the same thing again.
+//
+// A state-scoped guide wins over the national one when a sport has both.
+export const getStageGuide = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const sportSlug = String(req.query.sport ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+
+    if (!sportSlug) {
+      res.status(400).json({ success: false, message: "sport is required" });
+      return;
+    }
+
+    const stateSlug = String(req.query.state ?? "")
+      .trim()
+      .toLowerCase();
+
+    const candidates = stateSlug ? [stateSlug, null] : [null];
+    for (const scope of candidates) {
+      const doc = await SportStageGuide.findOne({
+        sportSlug,
+        stateSlug: scope,
+        status: "published",
+      })
+        .select("guide stateSlug verifiedOn updatedAt")
+        .lean();
+
+      if (doc) {
+        res.json({
+          success: true,
+          data: {
+            guide: doc.guide,
+            scope: doc.stateSlug ? "state" : "national",
+            verifiedOn: doc.verifiedOn ?? null,
+            updatedAt: doc.updatedAt,
+          },
+        });
+        return;
+      }
+    }
+
+    // Not an error — most sports have no authored guide yet, and the client
+    // falls back to stages derived from the sport's pathway levels.
+    res.status(404).json({
+      success: false,
+      message: `No published stage guide for "${sportSlug}".`,
+    });
+  } catch (error) {
+    console.error("[pathway] getStageGuide failed", error);
+    res.status(500).json({ success: false, message: "Failed to load the stage guide." });
   }
 };

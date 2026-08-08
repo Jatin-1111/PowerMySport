@@ -4,6 +4,10 @@ import ProfilePictureUpload from "@/components/ui/ProfilePictureUpload";
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { coachApi } from "@/modules/coach/services/coach";
+import {
+    getCoachVerificationStatus,
+    isCoachVerificationFlowComplete,
+} from "@/modules/coach/utils/verification";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
 import OpeningHoursInput, {
     getDefaultOpeningHours,
@@ -190,9 +194,7 @@ const getVerificationBadge = (coachData: Coach | null) => {
     };
   }
 
-  const status =
-    coachData.verificationStatus ||
-    (coachData.isVerified ? "VERIFIED" : "UNVERIFIED");
+  const status = getCoachVerificationStatus(coachData);
 
   switch (status) {
     case "VERIFIED":
@@ -223,7 +225,14 @@ const getVerificationBadge = (coachData: Coach | null) => {
   }
 };
 
-const getStatusGuidance = (status: string) => {
+const getStatusGuidance = (status: string, isDataComplete: boolean) => {
+  // Legacy coaches can carry a VERIFIED status while their bio/sports are
+  // missing (historic data loss). They keep their verified badge — they just
+  // need the required details back before the dashboard unlocks.
+  if (status === "VERIFIED" && !isDataComplete) {
+    return "Your account is verified, but required profile details are missing. Complete Steps 1 and 2 to restore your listing — no re-review needed.";
+  }
+
   switch (status) {
     case "PENDING":
       return "Your verification is submitted and pending review. You'll be notified once reviewed.";
@@ -304,18 +313,19 @@ export default function CoachVerificationPage() {
   const hasHydratedDraftRef = useRef(false);
   const hasResolvedInitialStepRef = useRef(false);
 
-  const status = useMemo(() => {
-    if (!coachProfile) {
-      return "UNVERIFIED";
-    }
-
-    return (
-      coachProfile.verificationStatus ||
-      (coachProfile.isVerified ? "VERIFIED" : "UNVERIFIED")
-    );
-  }, [coachProfile]);
+  const status = useMemo(
+    () => getCoachVerificationStatus(coachProfile),
+    [coachProfile],
+  );
 
   const isLockedByReview = status === "PENDING" || status === "REVIEW";
+  // Must match the dashboard gate in coach/layout.tsx exactly. If this page
+  // only checked `status`, a VERIFIED coach with missing bio/sports would be
+  // pushed to /coach/profile while the gate pushed them straight back here.
+  const isVerificationDataComplete = useMemo(
+    () => isCoachVerificationFlowComplete(coachProfile),
+    [coachProfile],
+  );
   const draftStorageKey = useMemo(
     () => getCoachVerificationDraftStorageKey(user?.id),
     [user?.id],
@@ -394,18 +404,24 @@ export default function CoachVerificationPage() {
     return raw === 2 || raw === 3 ? raw : 1;
   }, [coachProfile?.onboardingProgressStep]);
 
-  const maxAccessibleStep: VerificationStep = useMemo(() => {
-    let computed: VerificationStep;
+  const firstIncompleteStep: VerificationStep = useMemo(() => {
     if (!isStep1Complete) {
-      computed = 1;
-    } else if (!isStep2Complete) {
-      computed = 2;
-    } else {
-      computed = 3;
+      return 1;
     }
 
-    return Math.max(computed, serverProgressStep) as VerificationStep;
-  }, [isStep1Complete, isStep2Complete, serverProgressStep]);
+    return isStep2Complete ? 3 : 2;
+  }, [isStep1Complete, isStep2Complete]);
+
+  const maxAccessibleStep: VerificationStep = useMemo(
+    () => Math.max(firstIncompleteStep, serverProgressStep) as VerificationStep,
+    [firstIncompleteStep, serverProgressStep],
+  );
+
+  // A verified coach whose bio/sports are missing is here to restore lost data,
+  // not to re-submit. Their `onboardingProgressStep` still says 3, so resume
+  // hints would drop them on the submission screen instead of the empty fields.
+  const isRestoringVerifiedProfile =
+    status === "VERIFIED" && !isVerificationDataComplete;
 
   const navigateToStep = useCallback(
     (nextStep: VerificationStep, showError = true) => {
@@ -537,12 +553,13 @@ export default function CoachVerificationPage() {
     );
   };
 
-  // Redirect verified coaches to profile page
+  // Redirect verified coaches to profile page — only once their profile data is
+  // complete, otherwise the dashboard gate bounces them back here immediately.
   useEffect(() => {
     if (
       !loading &&
       status === "VERIFIED" &&
-      coachProfile &&
+      isVerificationDataComplete &&
       !requestedStep &&
       !isEditModeFromProfile
     ) {
@@ -551,7 +568,7 @@ export default function CoachVerificationPage() {
   }, [
     loading,
     status,
-    coachProfile,
+    isVerificationDataComplete,
     requestedStep,
     isEditModeFromProfile,
     router,
@@ -748,7 +765,10 @@ export default function CoachVerificationPage() {
       return;
     }
 
-    const requested = requestedStep ?? resumeStepHint ?? maxAccessibleStep;
+    const fallbackStep = isRestoringVerifiedProfile
+      ? firstIncompleteStep
+      : (resumeStepHint ?? maxAccessibleStep);
+    const requested = requestedStep ?? fallbackStep;
     const resolvedStep: VerificationStep =
       requested <= maxAccessibleStep ? requested : maxAccessibleStep;
 
@@ -759,7 +779,14 @@ export default function CoachVerificationPage() {
     }
 
     hasResolvedInitialStepRef.current = true;
-  }, [loading, requestedStep, resumeStepHint, maxAccessibleStep]);
+  }, [
+    loading,
+    requestedStep,
+    resumeStepHint,
+    maxAccessibleStep,
+    isRestoringVerifiedProfile,
+    firstIncompleteStep,
+  ]);
 
   useEffect(() => {
     if (
@@ -807,10 +834,12 @@ export default function CoachVerificationPage() {
   ]);
 
   useEffect(() => {
-    if (status === "PENDING" || status === "REVIEW" || status === "VERIFIED") {
+    // Only drop the local draft once the flow is genuinely done. A VERIFIED
+    // coach who is still missing bio/sports needs their in-progress work kept.
+    if (isVerificationDataComplete) {
       clearCoachVerificationDraft(draftStorageKey);
     }
-  }, [status, draftStorageKey]);
+  }, [isVerificationDataComplete, draftStorageKey]);
 
   const validateFile = (file: File): { valid: boolean; error?: string } => {
     if (file.size > MAX_FILE_SIZE) {
@@ -1157,6 +1186,22 @@ export default function CoachVerificationPage() {
 
       setCoachProfile(step2Response.data);
       localStorage.removeItem("coachServiceMode");
+
+      // An already-verified coach who was only here to restore missing details
+      // is done: step 2 keeps their VERIFIED status, so the gate unlocks and the
+      // redirect effect takes them back to the dashboard. Sending them to step 3
+      // would resubmit for review and un-verify them for no reason.
+      if (
+        getCoachVerificationStatus(step2Response.data) === "VERIFIED" &&
+        isCoachVerificationFlowComplete(step2Response.data) &&
+        !requestedStep &&
+        !isEditModeFromProfile
+      ) {
+        clearCoachVerificationDraft(draftStorageKey);
+        toast.success("Profile details restored. Taking you to your dashboard.");
+        return;
+      }
+
       navigateToStep(3, false);
       toast.success("Step 2 completed. Proceed to final submission.");
     } catch (saveError) {
@@ -1312,7 +1357,9 @@ export default function CoachVerificationPage() {
   }
 
   const badge = getVerificationBadge(coachProfile);
-  const guidance = getStatusGuidance(status);
+  const guidance = getStatusGuidance(status, isVerificationDataComplete);
+  const canShowResumeBanner =
+    showResumeBanner && !isLockedByReview && !isRestoringVerifiedProfile;
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -1346,7 +1393,7 @@ export default function CoachVerificationPage() {
           </div>
         )}
 
-        {showResumeBanner && resumeStepHint && !isLockedByReview && (
+        {canShowResumeBanner && resumeStepHint && (
           <div className="mt-4 flex flex-col gap-3 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-orange-800">
               You can continue where you left off. Resume from Step{" "}

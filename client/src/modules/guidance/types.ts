@@ -162,6 +162,8 @@ export type PlayerProfile = {
   agility?: "high" | "moderate" | "low";
   weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
   wizardCity?: string;
+  /** Sports the parent shortlisted themselves in the assessment (max 3). */
+  consideringSports?: string[];
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
   wizardCompletedAt?: string;
 };

@@ -6,7 +6,7 @@
 // the same source data.
 
 import type { Dependent } from "@/types";
-import { EMPTY_ANSWERS, type SportResult, type WizardAnswers } from "../types";
+import { EMPTY_ANSWERS, type SportFitResult, type SportResult, type WizardAnswers } from "../types";
 
 export function budgetRangeToTier(
   range: WizardAnswers["budget"],
@@ -58,10 +58,33 @@ export function deriveBuild(
   return "average";
 }
 
+/**
+ * sportMatches leads with the sports the parent shortlisted themselves, then
+ * fills any remaining slots with our own recommendations. Downstream consumers
+ * (expert context, roadmap personalisation) read sportMatches[0] as "the sport
+ * this family is pursuing" — after the shortlist pivot that's the parent's own
+ * first pick, not our top suggestion.
+ */
+function mergeSportMatches(
+  scored: SportResult[],
+  chosen: SportFitResult[],
+): Array<{ sport: string; fitLabel: string; score: number }> {
+  const seen = new Set<string>();
+  const out: Array<{ sport: string; fitLabel: string; score: number }> = [];
+  for (const r of [...chosen, ...scored]) {
+    if (seen.has(r.sport.name)) continue;
+    seen.add(r.sport.name);
+    out.push({ sport: r.sport.name, fitLabel: r.fitLabel, score: r.score });
+    if (out.length === 3) break;
+  }
+  return out;
+}
+
 export function buildDependentPayload(
   answers: WizardAnswers,
   scored: SportResult[],
   name?: string,
+  chosen: SportFitResult[] = [],
 ): Partial<Dependent> {
   const genderMap =
     answers.gender === "boy" ? "MALE"
@@ -75,11 +98,6 @@ export function buildDependentPayload(
     gender: genderMap,
     location: answers.state ?? undefined,
     sportsFocus: answers.priorSports.length ? answers.priorSports : undefined,
-    sportsInFamily: answers.sportsInFamily.length ? answers.sportsInFamily : undefined,
-    peerSports: answers.peerSports.length ? answers.peerSports : undefined,
-    informalSports: answers.informalSports.length ? answers.informalSports : undefined,
-    informalReaction: answers.informalReaction ?? undefined,
-    futureFlexibility: answers.futureFlexibility ?? undefined,
     heightCm: answers.height ?? undefined,
     weightKg: answers.weight ?? undefined,
     heightCategory: answers.height ? deriveHeightCategoryFromCm(answers.height, answers.age) : undefined,
@@ -105,9 +123,8 @@ export function buildDependentPayload(
     primaryObjective: answers.ambition ? ambitionToObjective(answers.ambition) : undefined,
     weeklyTimeCommitment: weeklyHoursToNumber(answers.weeklyHours),
     weeklyHoursCategory: answers.weeklyHours ?? undefined,
-    sportMatches: scored
-      .slice(0, 3)
-      .map((r) => ({ sport: r.sport.name, fitLabel: r.fitLabel, score: r.score })),
+    consideringSports: answers.consideringSports.length ? answers.consideringSports : undefined,
+    sportMatches: mergeSportMatches(scored, chosen),
     wizardCompletedAt: new Date().toISOString(),
   };
 }
@@ -122,11 +139,7 @@ export interface WizardSourceProfile {
   gender?: "MALE" | "FEMALE" | "OTHER";
   location?: string;
   sportsFocus?: string[];
-  sportsInFamily?: string[];
-  peerSports?: string[];
-  informalSports?: string[];
-  informalReaction?: "kept-asking" | "lost-interest";
-  futureFlexibility?: "all-in" | "maybe" | "stay-local";
+  consideringSports?: string[];
   heightCm?: number;
   weightKg?: number;
   energyType?: "explosive" | "endurance";
@@ -162,10 +175,7 @@ export function prefillFromPlayer(player: WizardSourceProfile): Partial<WizardAn
   if (player.location) out.state = player.location;
 
   if (player.sportsFocus?.length) out.priorSports = player.sportsFocus;
-  if (player.sportsInFamily?.length) out.sportsInFamily = player.sportsInFamily;
-  if (player.peerSports?.length) out.peerSports = player.peerSports;
-  if (player.informalSports?.length) out.informalSports = player.informalSports;
-  if (player.informalReaction) out.informalReaction = player.informalReaction;
+  if (player.consideringSports?.length) out.consideringSports = player.consideringSports;
 
   // Wizard physical — prefer exact numeric values for round-tripping
   if (player.heightCm) out.height = player.heightCm;
@@ -197,7 +207,6 @@ export function prefillFromPlayer(player: WizardSourceProfile): Partial<WizardAn
     out.budget = map[player.budgetTier] ?? null;
   }
   if (player.ambition) out.ambition = player.ambition;
-  if (player.futureFlexibility) out.futureFlexibility = player.futureFlexibility;
   if (player.eyesight) out.eyesight = player.eyesight;
   if (player.agility) out.agility = player.agility;
   if (player.weeklyHoursCategory) {
@@ -236,10 +245,7 @@ export function dependentToWizardAnswers(
     gender: genderMap,
     state: dep.location ?? null,
     priorSports: dep.sportsFocus ?? [],
-    sportsInFamily: dep.sportsInFamily ?? [],
-    peerSports: dep.peerSports ?? [],
-    informalSports: dep.informalSports ?? [],
-    informalReaction: dep.informalReaction ?? null,
+    consideringSports: dep.consideringSports ?? [],
     height: dep.heightCm ?? null,
     weight: dep.weightKg ?? null,
     energyType: dep.energyType ?? null,
@@ -259,7 +265,6 @@ export function dependentToWizardAnswers(
     medicalConditions: dep.medicalConditions ?? [],
     budget: dep.budgetRange ?? null,
     ambition: dep.ambition ?? null,
-    futureFlexibility: dep.futureFlexibility ?? null,
     weeklyHours: dep.weeklyHoursCategory ?? null,
   };
 }

@@ -1,4 +1,5 @@
 import axiosInstance from "@/lib/api/axios";
+import type { ApiStageGuideResponse } from "@/modules/roadmap/stages/apiFormat";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -447,6 +448,30 @@ export const pathwayApi = {
       });
       const resp = await axiosInstance.get<ApiResponse<ProgressionPlan>>(
         `/pathways/progression?${params.toString()}`,
+      );
+      return resp.data.data ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * The hand-authored, India-specific stage guide for a sport.
+   *
+   * 404 is the normal answer for most sports — only the ones whose guide has
+   * been written and uploaded have one — so a miss returns null and the caller
+   * falls back to stages derived from the pathway levels. Deliberately does NOT
+   * fall back to /resources content: the two surfaces are meant to differ.
+   */
+  getStageGuide: async (
+    sportName: string,
+    state?: string,
+  ): Promise<ApiStageGuideResponse | null> => {
+    try {
+      const q = new URLSearchParams({ sport: sportName });
+      if (state) q.set("state", state);
+      const resp = await axiosInstance.get<ApiResponse<ApiStageGuideResponse>>(
+        `/pathways/stage-guide?${q.toString()}`,
       );
       return resp.data.data ?? null;
     } catch {

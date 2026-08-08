@@ -8,8 +8,8 @@ import { ArrowLeft, ArrowRight, CheckCircle, Clock, Zap, Users, Brain, Heart, Ta
 import { useEffect, useRef, useState } from "react";
 import { PRIOR_SPORTS_OPTIONS } from "../data/sportProfiles";
 import type { WizardAnswers } from "../types";
-import { EMPTY_ANSWERS } from "../types";
-import { scoreSports } from "../utils/scorer";
+import { EMPTY_ANSWERS, MAX_CONSIDERED_SPORTS } from "../types";
+import { scoreChosenSports, scoreSports } from "../utils/scorer";
 import { getDependentAge } from "@/modules/player/utils/dependentAge";
 import { BinaryCards } from "./inputs/BinaryCards";
 import { StateSelector } from "./inputs/StateSelector";
@@ -19,7 +19,7 @@ import { SpectrumSlider } from "./inputs/SpectrumSlider";
 import { ThreeOptionCards } from "./inputs/ThreeOptionCards";
 import { ResultsView } from "./results/ResultsView";
 import { SectionTransition } from "./SectionTransition";
-import type { SportResult } from "../types";
+import type { SportFitResult, SportResult } from "../types";
 import type { PlayerProfile } from "@/modules/guidance/types";
 import {
   buildDependentPayload,
@@ -61,10 +61,7 @@ const STEPS: Step[] = [
   { kind: "question", questionKey: "gender" },
   { kind: "question", questionKey: "state" },
   { kind: "question", questionKey: "priorSports" },
-  { kind: "question", questionKey: "sportsInFamily" },
-  { kind: "question", questionKey: "peerSports" },
-  { kind: "question", questionKey: "informalSports" },
-  { kind: "question", questionKey: "informalReaction" },
+  { kind: "question", questionKey: "consideringSports" },
   { kind: "transition", text: "Good. Let's understand {name} physically.", sub: "7 quick questions." },
   { kind: "question", questionKey: "height" },
   { kind: "question", questionKey: "weight" },
@@ -87,7 +84,6 @@ const STEPS: Step[] = [
   { kind: "question", questionKey: "medicalConditions" },
   { kind: "question", questionKey: "budget" },
   { kind: "question", questionKey: "ambition" },
-  { kind: "question", questionKey: "futureFlexibility" },
   { kind: "question", questionKey: "weeklyHours" },
   { kind: "processing" },
   { kind: "results" },
@@ -96,16 +92,9 @@ const STEPS: Step[] = [
 const QUESTION_STEPS = STEPS.filter((s) => s.kind === "question");
 const TOTAL_QUESTIONS = QUESTION_STEPS.length;
 
-// informalReaction is only meaningful if informalSports had at least one
-// selection — skip over it (in either direction) otherwise, so Back never
-// lands on a question that would just bounce forward again.
-function isStepSkippable(step: Step, answers: WizardAnswers): boolean {
-  return (
-    step.kind === "question" &&
-    step.questionKey === "informalReaction" &&
-    answers.informalSports.length === 0
-  );
-}
+// Every step is unconditional, so navigation is a straight walk in both
+// directions — there is no longer any question shown only in response to a
+// previous answer.
 
 // ─── Left sidebar metadata ────────────────────────────────────────────────────
 
@@ -145,8 +134,6 @@ function getProfileChips(answers: WizardAnswers): { label: string; value: string
   if (answers.gender && answers.gender !== "prefer-not")
     chips.push({ label: "Gender", value: answers.gender === "boy" ? "Boy" : "Girl" });
   if (answers.state) chips.push({ label: "State", value: answers.state });
-  if (answers.sportsInFamily.length > 0) chips.push({ label: "Family", value: "Sport runs in family" });
-  if (answers.informalReaction === "kept-asking") chips.push({ label: "Exposure", value: "Already loves it" });
   if (answers.energyType)
     chips.push({ label: "Energy", value: answers.energyType === "explosive" ? "Explosive" : "Endurance" });
   if (answers.eyesight)
@@ -167,23 +154,42 @@ function getProfileChips(answers: WizardAnswers): { label: string; value: string
     chips.push({ label: "Budget", value: { "under-3k": "< ₹3k/mo", "3k-7k": "₹3–7k/mo", "7k-15k": "₹7–15k/mo", "15k-plus": "₹15k+/mo" }[answers.budget]! });
   if (answers.weeklyHours)
     chips.push({ label: "Training", value: `${answers.weeklyHours} hrs/wk` });
+  if (answers.consideringSports.length > 0)
+    chips.push({ label: "Considering", value: answers.consideringSports.join(", ") });
   return chips;
 }
 
+// ─── Primary sport ──────────────────────────────────────────────────────────
+// The one sport everything downstream (trial booking, check-in nudge) hangs
+// off. The parent's own picks outrank our recommendations — that's what they'll
+// actually walk into a trial class for — and among their picks it's the
+// best-scoring one, matching the sport the results page names in its CTA.
+function primarySport(
+  scored: SportResult[],
+  chosen: SportFitResult[],
+): { name: string; firstNote?: string } | null {
+  const chosenTop: SportFitResult | undefined = [...chosen].sort((a, b) => b.score - a.score)[0];
+  if (chosenTop) return { name: chosenTop.sport.name, firstNote: chosenTop.strengths[0] };
+  const scoredTop: SportResult | undefined = scored[0];
+  if (scoredTop) return { name: scoredTop.sport.name, firstNote: scoredTop.reasons[0] };
+  return null;
+}
+
 // ─── Trial check-in ────────────────────────────────────────────────────────
-// Schedules the 4-week "how did the trial go?" nudge for the top recommended
-// sport. Fire-and-forget — a failure here shouldn't affect the save the
-// parent already saw succeed.
+// Schedules the 4-week "how did the trial go?" nudge for the sport the family
+// is most likely to try. Fire-and-forget — a failure here shouldn't affect the
+// save the parent already saw succeed.
 function scheduleTrialCheckIn(
   dependentId: string | null,
   scored: SportResult[],
+  chosen: SportFitResult[],
   childName: string,
 ): void {
-  const top = scored[0];
+  const top = primarySport(scored, chosen);
   if (!top) return;
   const name = childName || "your child";
   const signals = [
-    top.reasons[0],
+    top.firstNote,
     `Did ${name} ask to play again without being asked?`,
     "Was the cost and time commitment manageable for your family?",
   ].filter((s): s is string => !!s);
@@ -191,7 +197,7 @@ function scheduleTrialCheckIn(
   api
     .post("/plan-checkins/find-sport-trial", {
       dependentId: dependentId || undefined,
-      sport: top.sport.name,
+      sport: top.name,
       signals,
     })
     .catch(() => {});
@@ -241,7 +247,7 @@ function QuestionScreen({
 
   const section: Record<string, string> = {
     dob: "Child", gender: "Child", state: "Child", priorSports: "Child",
-    sportsInFamily: "Child", peerSports: "Child", informalSports: "Child", informalReaction: "Child",
+    consideringSports: "Child",
     height: "Physical", weight: "Physical", energyType: "Physical",
     motorType: "Physical", visualTracking: "Physical",
     eyesight: "Physical", agility: "Physical",
@@ -249,7 +255,7 @@ function QuestionScreen({
     focusStyle: "Personality", decisionStyle: "Personality",
     pressureResponse: "Personality", repetitionTolerance: "Personality",
     contactComfort: "Comfort", environment: "Comfort", waterComfort: "Comfort", medicalConditions: "Comfort",
-    budget: "Practical", ambition: "Practical", futureFlexibility: "Practical", weeklyHours: "Practical",
+    budget: "Practical", ambition: "Practical", weeklyHours: "Practical",
   };
 
   const renderInput = () => {
@@ -305,56 +311,6 @@ function QuestionScreen({
             selected={answers.priorSports}
             onChange={(v) => onAnswer("priorSports", v)}
             noneLabel="None yet"
-          />
-        );
-
-      case "sportsInFamily":
-        return (
-          <MultiSelectPills
-            options={PRIOR_SPORTS_OPTIONS}
-            selected={answers.sportsInFamily}
-            onChange={(v) => onAnswer("sportsInFamily", v)}
-            noneLabel="None of these"
-          />
-        );
-
-      case "peerSports":
-        return (
-          <MultiSelectPills
-            options={PRIOR_SPORTS_OPTIONS}
-            selected={answers.peerSports}
-            onChange={(v) => onAnswer("peerSports", v)}
-            noneLabel="None of these"
-          />
-        );
-
-      case "informalSports":
-        return (
-          <MultiSelectPills
-            options={PRIOR_SPORTS_OPTIONS}
-            selected={answers.informalSports}
-            onChange={(v) => onAnswer("informalSports", v)}
-            noneLabel="None of these"
-          />
-        );
-
-      case "informalReaction":
-        return (
-          <BinaryCards
-            options={[
-              {
-                value: "kept-asking",
-                title: "Kept asking to play again",
-                sub: `${cap} wanted to go back and do it more`,
-              },
-              {
-                value: "lost-interest",
-                title: "Lost interest quickly",
-                sub: "Tried it, but didn't ask to continue",
-              },
-            ]}
-            value={answers.informalReaction}
-            onChange={(v) => autoAdvance("informalReaction", v as WizardAnswers["informalReaction"])}
           />
         );
 
@@ -721,19 +677,6 @@ function QuestionScreen({
           />
         );
 
-      case "futureFlexibility":
-        return (
-          <ThreeOptionCards
-            options={[
-              { value: "all-in", label: "Yes — we'd go all in" },
-              { value: "maybe", label: "Maybe, depends how far" },
-              { value: "stay-local", label: "No — want to stay local and keep costs steady" },
-            ]}
-            value={answers.futureFlexibility}
-            onChange={(v) => { onAnswer("futureFlexibility", v as WizardAnswers["futureFlexibility"]); setTimeout(onNext, 200); }}
-          />
-        );
-
       case "weeklyHours":
         return (
           <FourContextCards
@@ -748,6 +691,17 @@ function QuestionScreen({
           />
         );
 
+      case "consideringSports":
+        return (
+          <MultiSelectPills
+            options={PRIOR_SPORTS_OPTIONS}
+            selected={answers.consideringSports}
+            onChange={(v) => onAnswer("consideringSports", v)}
+            noneLabel="No — help me decide"
+            max={MAX_CONSIDERED_SPORTS}
+          />
+        );
+
       default:
         return null;
     }
@@ -758,10 +712,7 @@ function QuestionScreen({
     gender: `Is ${name} a boy or a girl?`,
     state: "Which state are you based in?",
     priorSports: `Has ${name} tried any sport formally before?`,
-    sportsInFamily: `Has anyone in ${name}'s immediate family played any of these sports seriously (school/college level or higher)?`,
-    peerSports: `Do any of ${name}'s close friends play these sports seriously?`,
-    informalSports: `Has ${name} played any of these sports casually — not lessons, just for fun (park, backyard, with friends)?`,
-    informalReaction: `Did ${name} ask to keep playing, or lose interest quickly?`,
+    consideringSports: `Are there sports you're already considering for ${name}?`,
     height: `How tall is ${name}?`,
     weight: `How much does ${name} weigh?`,
     energyType: `In a game of tag or running around with friends, what does ${name} usually do?`,
@@ -781,8 +732,11 @@ function QuestionScreen({
     medicalConditions: `Does ${name} have any medical conditions or physical limitations we should know about?`,
     budget: "What can your family realistically invest in training each month?",
     ambition: "What is your honest goal for this sport journey?",
-    futureFlexibility: `If ${name} shows real talent and wants to go further, would your family be open to relocating or significantly increasing investment?`,
     weeklyHours: `How many hours per week can ${name} dedicate to sport training?`,
+  };
+
+  const questionSubs: Partial<Record<string, string>> = {
+    consideringSports: `Pick up to ${MAX_CONSIDERED_SPORTS}, or skip and let us suggest. We'll score each one honestly against everything you tell us next — where ${name} fits, and where ${pn} ${isPlural ? "don't" : "doesn't"}.`,
   };
 
   const needsNextButton =
@@ -791,18 +745,14 @@ function QuestionScreen({
     questionKey === "height" ||
     questionKey === "weight" ||
     questionKey === "priorSports" ||
-    questionKey === "sportsInFamily" ||
-    questionKey === "peerSports" ||
-    questionKey === "informalSports" ||
     questionKey === "medicalConditions" ||
+    questionKey === "consideringSports" ||
     questionKey === "teamIndividual";
 
   const canAdvance = () => {
     if (questionKey === "dob") return !!answers.dob && answers.age !== null;
     if (questionKey === "priorSports") return true;
-    if (questionKey === "sportsInFamily") return true;
-    if (questionKey === "peerSports") return true;
-    if (questionKey === "informalSports") return true;
+    if (questionKey === "consideringSports") return true;
     if (questionKey === "medicalConditions") return true;
     if (questionKey === "state") return !!answers.state;
     if (questionKey === "height") return true; // default pre-filled from age
@@ -820,6 +770,11 @@ function QuestionScreen({
         <h2 className="font-title text-xl font-bold text-slate-900 leading-snug">
           {questions[questionKey] ?? ""}
         </h2>
+        {questionSubs[questionKey] && (
+          <p className="text-sm text-slate-500 leading-relaxed mt-2">
+            {questionSubs[questionKey]}
+          </p>
+        )}
       </div>
 
       {renderInput()}
@@ -867,10 +822,15 @@ export function WizardShell() {
   const [direction, setDirection] = useState(1);
   const [answers, setAnswers] = useState<WizardAnswers>({ ...EMPTY_ANSWERS });
   const [results, setResults] = useState<SportResult[]>([]);
+  const [chosenFits, setChosenFits] = useState<SportFitResult[]>([]);
   const [nameInput, setNameInput] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
   // Holds wizard data to auto-import once we confirm the user has no children yet
-  const pendingImport = useRef<{ answers: WizardAnswers; scored: SportResult[] } | null>(null);
+  const pendingImport = useRef<{
+    answers: WizardAnswers;
+    scored: SportResult[];
+    chosen: SportFitResult[];
+  } | null>(null);
 
   // Child profile selection
   const [players, setPlayers] = useState<PlayerProfile[]>([]);
@@ -892,14 +852,16 @@ export function WizardShell() {
       setAnswers(restored);
       if (restored.childName) setNameInput(restored.childName);
       const scored = scoreSports(restored);
-      if (scored.length === 0) return;
+      const chosen = scoreChosenSports(restored);
+      if (scored.length === 0 && chosen.length === 0) return;
       setResults(scored);
+      setChosenFits(chosen);
       setStepIndex(STEPS.length - 1);
 
       // Logged-in user: defer the child profile creation until after the
       // players fetch confirms they have no existing children (newly registered).
       if (token) {
-        pendingImport.current = { answers: saved.answers, scored };
+        pendingImport.current = { answers: restored, scored, chosen };
         setSavedStatus("saving");
       }
     } catch {}
@@ -920,13 +882,13 @@ export function WizardShell() {
 
         if (dependents.length === 0 && pendingImport.current) {
           // Newly registered user — create child profile from their guest session
-          const { answers: a, scored } = pendingImport.current;
+          const { answers: a, scored, chosen } = pendingImport.current;
           pendingImport.current = null;
           const childName = a.childName?.trim() || "My Child";
           api
             .post<{ success: boolean; data: { _id: string } }>(
               "/auth/dependents",
-              buildDependentPayload(a, scored, childName),
+              buildDependentPayload(a, scored, childName, chosen),
             )
             .then((r) => {
               if (r.data?.data?._id) setSelectedDependentId(r.data.data._id);
@@ -983,14 +945,14 @@ export function WizardShell() {
     if (currentStep.kind === "question") {
       const sectionMap: Record<string, string> = {
         dob: "Child", gender: "Child", state: "Child", priorSports: "Child",
-        sportsInFamily: "Child", peerSports: "Child", informalSports: "Child", informalReaction: "Child",
+        consideringSports: "Child",
         height: "Physical", weight: "Physical", energyType: "Physical",
         motorType: "Physical", visualTracking: "Physical", eyesight: "Physical", agility: "Physical",
         teamIndividual: "Personality", competitiveResponse: "Personality",
         focusStyle: "Personality", decisionStyle: "Personality",
         pressureResponse: "Personality", repetitionTolerance: "Personality",
         contactComfort: "Comfort", environment: "Comfort", waterComfort: "Comfort", medicalConditions: "Comfort",
-        budget: "Practical", ambition: "Practical", futureFlexibility: "Practical", weeklyHours: "Practical",
+        budget: "Practical", ambition: "Practical", weeklyHours: "Practical",
       };
       return sectionMap[currentStep.questionKey] ?? "";
     }
@@ -1010,24 +972,12 @@ export function WizardShell() {
 
   const goNext = () => {
     setDirection(1);
-    setStepIndex((i) => {
-      let next = Math.min(i + 1, STEPS.length - 1);
-      while (next < STEPS.length - 1 && isStepSkippable(STEPS[next], answers)) {
-        next += 1;
-      }
-      return next;
-    });
+    setStepIndex((i) => Math.min(i + 1, STEPS.length - 1));
   };
 
   const goBack = () => {
     setDirection(-1);
-    setStepIndex((i) => {
-      let prev = Math.max(i - 1, 0);
-      while (prev > 0 && isStepSkippable(STEPS[prev], answers)) {
-        prev -= 1;
-      }
-      return prev;
-    });
+    setStepIndex((i) => Math.max(i - 1, 0));
   };
 
   const setAnswer = <K extends keyof WizardAnswers>(key: K, value: WizardAnswers[K]) => {
@@ -1038,6 +988,7 @@ export function WizardShell() {
     setAnswers({ ...EMPTY_ANSWERS });
     setNameInput("");
     setResults([]);
+    setChosenFits([]);
     setSavedStatus("idle");
     setStepIndex(0);
   };
@@ -1047,17 +998,22 @@ export function WizardShell() {
     if (currentStep.kind === "processing") {
       const timer = setTimeout(async () => {
         const scored = scoreSports(answers);
+        const chosen = scoreChosenSports(answers);
         setResults(scored);
+        setChosenFits(chosen);
 
         // Save to profile if logged in with a selected dependent (update)
         if (token && selectedDependentId) {
           setSavedStatus("saving");
           const displayName = players.find((p) => p._id === selectedDependentId)?.name.split(" ")[0] ?? answers.childName;
           try {
-            await api.put(`/auth/dependents/${selectedDependentId}`, buildDependentPayload(answers, scored));
+            await api.put(
+              `/auth/dependents/${selectedDependentId}`,
+              buildDependentPayload(answers, scored, undefined, chosen),
+            );
             setSavedForName(displayName || undefined);
             setSavedStatus("saved");
-            scheduleTrialCheckIn(selectedDependentId, scored, displayName || answers.childName);
+            scheduleTrialCheckIn(selectedDependentId, scored, chosen, displayName || answers.childName);
           } catch {
             setSavedStatus("error");
           }
@@ -1068,12 +1024,12 @@ export function WizardShell() {
           try {
             const res = await api.post<{ success: boolean; data: { _id: string } }>(
               "/auth/dependents",
-              buildDependentPayload(answers, scored, childName),
+              buildDependentPayload(answers, scored, childName, chosen),
             );
             if (res.data?.data?._id) setSelectedDependentId(res.data.data._id);
             setSavedForName(childName);
             setSavedStatus("saved");
-            scheduleTrialCheckIn(res.data?.data?._id ?? null, scored, childName);
+            scheduleTrialCheckIn(res.data?.data?._id ?? null, scored, chosen, childName);
           } catch {
             setSavedStatus("error");
           }
@@ -1084,9 +1040,10 @@ export function WizardShell() {
               "pms_wizard_results",
               JSON.stringify({
                 answers,
-                results: scored
-                  .slice(0, 3)
-                  .map((r) => ({ sport: r.sport.name, fitLabel: r.fitLabel, score: r.score })),
+                results: [
+                  ...chosen.map((r) => ({ sport: r.sport.name, fitLabel: r.fitLabel, score: r.score })),
+                  ...scored.map((r) => ({ sport: r.sport.name, fitLabel: r.fitLabel, score: r.score })),
+                ].slice(0, 3),
                 savedAt: new Date().toISOString(),
               }),
             );
@@ -1239,7 +1196,18 @@ export function WizardShell() {
         )}
 
         {/* Content */}
-        <div className={`flex-1 px-5 py-8 lg:py-10 w-full mx-auto ${isFullScreen ? "max-w-5xl lg:px-10 xl:px-14" : "max-w-2xl lg:px-10 xl:px-16 lg:mx-0"}`}>
+        {/* The results step is a report, not a single question — it needs the
+            extra track width for side-by-side fit/gap columns and a 3-up card
+            row. Welcome and processing stay narrower. */}
+        <div
+          className={`flex-1 px-5 py-8 lg:py-10 w-full mx-auto ${
+            currentStep.kind === "results"
+              ? "max-w-6xl lg:px-10 xl:px-12"
+              : isFullScreen
+                ? "max-w-5xl lg:px-10 xl:px-14"
+                : "max-w-2xl lg:px-10 xl:px-16 lg:mx-0"
+          }`}
+        >
           <div
             key={stepIndex}
             className={`animate-in fade-in duration-200 ${direction >= 0 ? "slide-in-from-right-8" : "slide-in-from-left-8"}`}
@@ -1497,6 +1465,7 @@ export function WizardShell() {
             {currentStep.kind === "results" && (
               <ResultsView
                 results={results}
+                chosenFits={chosenFits}
                 answers={answers}
                 onRetake={retake}
                 savedStatus={savedStatus}

@@ -1,4 +1,5 @@
-import type { FitLabel, SportProfile, SportResult, WizardAnswers } from "../types";
+import type { FitLabel, SportFitResult, SportProfile, SportResult, WizardAnswers } from "../types";
+import { MAX_CONSIDERED_SPORTS } from "../types";
 import { SPORT_PROFILES } from "../data/sportProfiles";
 import { getStateInfraTier } from "../data/stateInfraTier";
 
@@ -6,7 +7,12 @@ import { getStateInfraTier } from "../data/stateInfraTier";
 
 function getChildDimensions(a: WizardAnswers) {
   return {
-    individual: a.teamIndividual ?? 3,
+    // The two scales run in opposite directions and must be reconciled here:
+    // the wizard's answer is 1 = "Just me" → 5 = "Team, always" (SpectrumSlider),
+    // while SportProfile.individual is 1 = very team → 5 = very individual.
+    // Feeding the answer across unflipped matched team-preferring children to
+    // the most solo sports and vice versa.
+    individual: 6 - (a.teamIndividual ?? 3),
     explosive: a.energyType === "explosive" ? 5 : a.energyType === "endurance" ? 1 : 3,
     endurance: a.energyType === "endurance" ? 5 : a.energyType === "explosive" ? 1 : 3,
     visualTracking: a.visualTracking === "strong" ? 5 : a.visualTracking === "moderate" ? 3 : 1,
@@ -269,50 +275,6 @@ function computePriorSportBonus(priorSports: string[], sport: SportProfile): num
   return priorSports.some((ps) => transfersFrom.includes(ps)) ? 0.025 : 0;
 }
 
-// ─── Family / peer / informal-exposure bonuses ───────────────────────────────
-// Direct sport-name match only — unlike computePriorSportBonus, these don't use
-// the transfer map: a parent playing cricket isn't evidence of transferable
-// skill to football, it's evidence of interest/access in cricket specifically.
-// Ordinal tiering (agreed in design discussion, strongest to weakest):
-// informal exposure + kept asking > peer match > family match > neutral >
-// informal exposure + lost interest quickly (the only signal with a genuine
-// negative case, since it's the only one built from the child's own reaction).
-
-export function computeFamilySportBonus(sportsInFamily: string[], sport: SportProfile): number {
-  return sportsInFamily.includes(sport.name) ? 0.02 : 0;
-}
-
-export function computePeerSportBonus(peerSports: string[], sport: SportProfile): number {
-  return peerSports.includes(sport.name) ? 0.03 : 0;
-}
-
-export function computeInformalExposureBonus(
-  informalSports: string[],
-  informalReaction: WizardAnswers["informalReaction"],
-  sport: SportProfile,
-): number {
-  if (!informalSports.includes(sport.name)) return 0;
-  if (informalReaction === "kept-asking") return 0.05;
-  if (informalReaction === "lost-interest") return -0.03;
-  return 0;
-}
-
-// ─── Future flexibility penalty ──────────────────────────────────────────────
-// Down-weights sports that structurally demand relocation/heavy investment to
-// progress once a family says they wouldn't go that far — but only once
-// ambition is already national/professional (a "fun"-tier parent doesn't care
-// about elite-pathway demands, so there's nothing to penalize there).
-
-export function computeFutureFlexibilityPenalty(
-  ambition: WizardAnswers["ambition"],
-  futureFlexibility: WizardAnswers["futureFlexibility"],
-  sport: SportProfile,
-): number {
-  if (ambition !== "national" && ambition !== "professional") return 0;
-  if (futureFlexibility !== "stay-local") return 0;
-  return sport.specializationIntensity === "high" ? -0.04 : 0;
-}
-
 // ─── Reasons generator ────────────────────────────────────────────────────────
 
 interface TaggedReason {
@@ -330,9 +292,9 @@ interface TaggedReason {
 // only when the parent didn't specify (same fallback rule as the wizard's
 // own question prompts).
 function pronounsFor(gender: WizardAnswers["gender"]) {
-  if (gender === "boy") return { poss: "his", possPronoun: "his" };
-  if (gender === "girl") return { poss: "her", possPronoun: "hers" };
-  return { poss: "their", possPronoun: "theirs" };
+  if (gender === "boy") return { poss: "his", possPronoun: "his", subj: "he", obj: "him", plural: false };
+  if (gender === "girl") return { poss: "her", possPronoun: "hers", subj: "she", obj: "her", plural: false };
+  return { poss: "their", possPronoun: "theirs", subj: "they", obj: "them", plural: true };
 }
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -342,39 +304,33 @@ function buildReasons(
   child: ReturnType<typeof getChildDimensions>,
 ): TaggedReason[] {
   const name = answers.childName || "Your child";
-  const { poss, possPronoun } = pronounsFor(answers.gender);
+  const { poss } = pronounsFor(answers.gender);
   const reasons: TaggedReason[] = [];
 
-  // Family/peer/informal-exposure reasons — pushed first so they win the
-  // final cut when they fire, matching their weight as the strongest signals
-  // in the score (especially informal exposure, direct behavioral evidence
-  // from the child rather than a proxy).
-  if (answers.informalSports.includes(sport.name) && answers.informalReaction === "kept-asking") {
-    reasons.push({ type: "informal-positive", text:
-      `${name} has already played ${sport.name} casually and asked to keep going — that's a stronger signal than almost anything else here.`,
-    });
-  }
-  if (answers.peerSports.includes(sport.name)) {
-    reasons.push({ type: "peer", text:
-      `${name} already has friends playing ${sport.name} — having that social circle in place makes sticking with a new sport much easier.`,
-    });
-  }
-  if (answers.sportsInFamily.includes(sport.name)) {
-    reasons.push({ type: "family", text:
-      `${sport.name} already runs in the family — that usually means real know-how and support close at hand.`,
-    });
-  }
-
-  // Personality match reasons
+  // Personality match reasons.
+  // The claim about the child comes from the child's own answer, not from
+  // whichever sport is being scored — scoring the same kid against several
+  // sports and inferring their disposition from each one produced cards that
+  // flatly contradicted each other. When the answer sits mid-scale there's no
+  // preference to assert, so describe the sport instead.
   const indMatch = dimMatch(child.individual, sport.individual);
   if (indMatch >= 0.75) {
+    const ti = answers.teamIndividual;
     if (sport.individual >= 4) {
       reasons.push({ type: "team-individual", text:
-        `${name}'s preference for individual competition is a natural fit — every point in ${sport.name} is entirely ${possPronoun} to win or lose.`,
+        ti !== null && ti <= 2
+          ? `${name}'s preference for competing alone is a natural fit — the result in ${sport.name} rests entirely on ${poss} own performance.`
+          : `${sport.name} is decided by the individual — no teammates to carry a bad day, and no one to share the credit on a good one.`,
+      });
+    } else if (sport.individual <= 2) {
+      reasons.push({ type: "team-individual", text:
+        ti !== null && ti >= 4
+          ? `${name}'s team-oriented nature suits ${sport.name} well — the sport is built around collective effort and shared momentum.`
+          : `${sport.name} is built around collective effort — shared momentum, shared results, and a squad to fall back on.`,
       });
     } else {
       reasons.push({ type: "team-individual", text:
-        `${name}'s team-oriented nature suits ${sport.name} well — the sport is built around collective effort and shared momentum.`,
+        `${sport.name} is a team game with long stretches where the moment belongs to one player alone — it works from either end of that preference.`,
       });
     }
   }
@@ -421,7 +377,9 @@ function buildReasons(
 
   if (answers.pressureResponse === "thrives" && sport.pressureTolerance >= 4) {
     reasons.push({ type: "pressure", text:
-      `${name} thrives under the spotlight — ${sport.name} puts the individual in full view, with no team to share the moment.`,
+      sport.individual >= 4
+        ? `${name} thrives under the spotlight — ${sport.name} puts the individual in full view, with no team to share the moment.`
+        : `${name} thrives under the spotlight — ${sport.name} is a team game, but the decisive moments land on one player in front of everyone.`,
     });
   }
 
@@ -571,9 +529,266 @@ function passesHardGates(answers: WizardAnswers, sport: SportProfile): boolean {
   return true;
 }
 
+// ─── Blockers & gaps (parent-chosen sports only) ─────────────────────────────
+// Our own recommendations are filtered by passesHardGates() — a sport the
+// family can't afford or that needs water a scared child won't enter simply
+// never gets suggested. A sport the PARENT put on their shortlist can't be
+// handled that way: silently dropping it reads as a bug, and the honest
+// answer ("here's the wall you'd hit") is the useful one. So the same gates
+// are re-expressed as plain-language blockers, and the softer mismatches as
+// gaps, both shown alongside what genuinely fits.
+
+const BUDGET_GAP_LABEL: Record<NonNullable<WizardAnswers["budget"]>, string> = {
+  "under-3k": "under ₹3,000/month",
+  "3k-7k": "₹3,000–7,000/month",
+  "7k-15k": "₹7,000–15,000/month",
+  "15k-plus": "₹15,000+/month",
+};
+
+const HOURS_GAP_LABEL: Record<NonNullable<WizardAnswers["weeklyHours"]>, string> = {
+  "1-3": "1–3 hours a week",
+  "4-7": "4–7 hours a week",
+  "8-12": "8–12 hours a week",
+  "13-plus": "13+ hours a week",
+};
+
+/** Hard-gate failures, phrased for a parent rather than as a boolean. */
+function findHardBlockers(answers: WizardAnswers, sport: SportProfile): string[] {
+  const name = answers.childName || "Your child";
+  const { poss, subj, plural } = pronounsFor(answers.gender);
+  const out: string[] = [];
+
+  if (sport.requiresWater && answers.waterComfort === "uncomfortable") {
+    out.push(
+      `${name} isn't comfortable in water yet. That has to come first — a few weeks of learn-to-swim sessions before ${sport.name} training makes sense at all.`,
+    );
+  }
+
+  if (sport.requiresContact && answers.contactComfort === "avoids") {
+    out.push(
+      `${sport.name} involves regular physical contact, which ${name} actively prefers to avoid. Forcing that early usually ends the sport rather than the discomfort.`,
+    );
+  }
+
+  if (answers.budget && !budgetCoversMinimum(answers.budget, sport.minBudgetTier)) {
+    out.push(
+      `Quality ${sport.name} coaching runs ${sport.costRange}, above the ${BUDGET_GAP_LABEL[answers.budget]} you set. Worth knowing before committing — school and district programmes are the cheaper way in.`,
+    );
+  }
+
+  if (
+    answers.age &&
+    answers.age > sport.ageWindowCutoff &&
+    (answers.ambition === "professional" || answers.ambition === "national")
+  ) {
+    out.push(
+      `For the national or professional goal you picked, ${answers.age} is past the realistic starting window in ${sport.name} — most kids on that pathway began by ${sport.ageWindowCutoff}. As a sport to play and enjoy, it's still wide open.`,
+    );
+  }
+
+  const eliteAmbition = answers.ambition === "national" || answers.ambition === "professional";
+  if (
+    (sport.name === "Basketball" || sport.name === "Volleyball") &&
+    eliteAmbition &&
+    answers.age && answers.age >= 13 && answers.height
+  ) {
+    const minH =
+      sport.name === "Basketball"
+        ? answers.gender === "girl" ? 160 : 168
+        : answers.gender === "girl" ? 162 : 172;
+    if (answers.height < minH) {
+      out.push(
+        `Selection at national level in ${sport.name} is height-driven, and at ${answers.age} ${name} is under the ${minH}cm mark selectors typically work from. ${plural ? "They are" : `${cap(subj)} is`} not out of the sport — just out of that specific pathway, so ${poss} goal may need rethinking.`,
+      );
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Soft mismatches — the honest "where it'll be harder" half of a fit report.
+ * Deliberately mirrors buildReasons(): the same dimensions, read from the
+ * opposite end, so a parent never sees a trait praised in one card and
+ * ignored in another.
+ */
+function buildGaps(
+  answers: WizardAnswers,
+  sport: SportProfile,
+  child: ReturnType<typeof getChildDimensions>,
+): string[] {
+  const name = answers.childName || "Your child";
+  const { poss, obj, subj, plural } = pronounsFor(answers.gender);
+  const isAre = plural ? "are" : "is";
+  const gaps: string[] = [];
+
+  // Team vs individual
+  if (answers.teamIndividual !== null && dimMatch(child.individual, sport.individual) <= 0.5) {
+    gaps.push(
+      sport.individual >= 4
+        ? `${name} plays better with a team around ${obj}, and ${sport.name} puts every point squarely on the individual. That's the part to watch in a trial.`
+        : `${name} prefers the result to rest on ${poss} own performance, and ${sport.name} is built around shared effort — wins and losses belong to the group.`,
+    );
+  }
+
+  // Energy pattern
+  if (answers.energyType === "explosive" && sport.endurance >= 4 && sport.explosive <= 3) {
+    // Deliberately says "stamina", not "conditioning" — this branch also fires
+    // for Chess, where the long sessions are mental rather than physical.
+    gaps.push(
+      `${sport.name} rewards sustained effort over long sessions; ${name}'s pattern is short, hard bursts with a breather after. Stamina builds with training, but expect it to be the early grind.`,
+    );
+  } else if (answers.energyType === "endurance" && sport.explosive >= 4 && sport.endurance <= 3) {
+    gaps.push(
+      `${sport.name} is decided in short explosive bursts, and ${name}'s strength is staying power. Expect speed and power work to be the focus for a while.`,
+    );
+  }
+
+  // Visual tracking
+  if (child.visualTracking <= 2 && sport.visualTracking >= 4) {
+    gaps.push(
+      `Reacting to a fast-moving object is central to ${sport.name}, and that's currently a weak spot. It is trainable — but expect it to be the first real hurdle.`,
+    );
+  }
+
+  // Decision style
+  if (answers.decisionStyle === "strategic" && sport.reactFast >= 4) {
+    gaps.push(
+      `${name} likes to watch and plan first. ${sport.name} rarely allows that time — decisions are made at speed, on instinct.`,
+    );
+  } else if (answers.decisionStyle === "react" && sport.reactFast <= 2) {
+    gaps.push(
+      `${name} acts on instinct and figures it out by doing. ${sport.name} rewards the opposite — patience, planning, and sitting with a position.`,
+    );
+  }
+
+  // Focus pattern
+  if (answers.focusStyle === "bursts" && sport.sustainedFocus >= 4) {
+    gaps.push(
+      `${sport.name} asks for long stretches of unbroken concentration, and ${name} focuses hard in 20–30 minute blocks. Session length is the thing to test.`,
+    );
+  }
+
+  // Pressure
+  if (answers.pressureResponse === "avoids" && sport.pressureTolerance >= 4) {
+    gaps.push(
+      `Competitive ${sport.name} puts the individual in full view with no team to share the moment, and ${name} would rather not be the centre of attention. Fine for recreational play; it becomes the limiting factor at tournament level.`,
+    );
+  }
+
+  // Repetition tolerance
+  if (answers.repetitionTolerance === "low" && sport.repetitionNeed >= 4) {
+    gaps.push(
+      `Progress in ${sport.name} comes from repeating the same technical drills for months, and ${name} needs variety to stay motivated. A coach who mixes drills matters more than usual here.`,
+    );
+  }
+
+  // Contact comfort (soft — the hard case is already a blocker)
+  if (answers.contactComfort === "avoids" && sport.contactRequired >= 3 && !sport.requiresContact) {
+    gaps.push(
+      `There's regular jostling and body contact in ${sport.name} that ${name} would rather avoid. Not a dealbreaker, but it'll feel uncomfortable at first.`,
+    );
+  }
+
+  // Agility
+  if (child.agilityValue <= 2 && sport.agilityNeed >= 4) {
+    gaps.push(
+      `${sport.name} lives on quick footwork and fast changes of direction, which isn't ${name}'s natural strength today. Agility work would need to be a standing part of training.`,
+    );
+  }
+
+  // Eyesight
+  if (answers.eyesight === "limited" && sport.visionDemand >= 4) {
+    gaps.push(
+      `${sport.name} depends heavily on sharp vision at speed. Worth an eye check and a word with the coach before starting.`,
+    );
+  }
+
+  // Physical build / height
+  if (answers.height) {
+    if (sport.heightAdvantage === "tall" && child.heightValue <= 2) {
+      gaps.push(
+        `Height is a structural advantage in ${sport.name}, and ${name} ${isAre} shorter than average for ${poss} age right now. Worth revisiting as ${subj} ${plural ? "grow" : "grows"} — it's a moving target at this age.`,
+      );
+    } else if (sport.heightAdvantage === "short" && child.heightValue >= 4) {
+      gaps.push(
+        `${sport.name} favours a compact frame for balance and rotation, and ${name} ${isAre} taller than most kids ${poss} age.`,
+      );
+    }
+    if (sport.buildPreference === "lean" && child.buildValue >= 5) {
+      gaps.push(
+        `${sport.name} is built around a lean, light frame. Nothing that rules ${name} out — just expect conditioning to carry more weight in training.`,
+      );
+    }
+  }
+
+  // Environment
+  if (
+    answers.environment &&
+    answers.environment !== "no-preference" &&
+    sport.environmentPreference !== "either" &&
+    answers.environment !== sport.environmentPreference
+  ) {
+    gaps.push(
+      `${sport.name} is played almost entirely ${sport.environmentPreference === "indoor" ? "indoors" : "outdoors"}, and ${name} gravitates the other way. Small thing, but it shapes whether training feels like a chore.`,
+    );
+  }
+
+  // Weekly time
+  if (answers.weeklyHours && timeMatch(answers.weeklyHours, sport) < 1) {
+    gaps.push(
+      `Meaningful progress in ${sport.name} needs around ${sport.minWeeklyHours} hours a week; you've set aside ${HOURS_GAP_LABEL[answers.weeklyHours]}. Enough to enjoy it, tight for competing.`,
+    );
+  }
+
+  // Infrastructure
+  const stateTier = getStateInfraTier(answers.state);
+  if (answers.state && infraMatch(stateTier, sport.minCityTier) < 1) {
+    gaps.push(
+      `Serious ${sport.name} coaching is concentrated in larger metros. From ${answers.state}, expect travel — or a longer search for the right academy.`,
+    );
+  }
+
+  // Age window (short of the hard cutoff — that case is a blocker)
+  if (answers.age) {
+    const [, idealMax] = sport.ageWindowIdeal;
+    if (answers.age > idealMax && answers.age <= sport.ageWindowCutoff) {
+      gaps.push(
+        `Most kids who go far in ${sport.name} start by ${idealMax}; ${name} would be starting at ${answers.age}. Workable, but the competitive pathway is narrower from here.`,
+      );
+    }
+  }
+
+  // Relocation / specialisation reality check.
+  // We no longer ask whether the family would relocate, so this states the
+  // structural fact and leaves the judgement to them rather than asserting
+  // what they'd be willing to do.
+  if (
+    (answers.ambition === "national" || answers.ambition === "professional") &&
+    sport.specializationIntensity === "high"
+  ) {
+    gaps.push(
+      `Getting to the top in ${sport.name} in India usually means moving to where the coaching is concentrated. Worth deciding early whether that's on the table for your family.`,
+    );
+  }
+
+  return gaps;
+}
+
 // ─── Main scorer ──────────────────────────────────────────────────────────────
 
-export function scoreSports(answers: WizardAnswers): SportResult[] {
+/** Fit-label thresholds — shared by recommendations and parent-chosen sports. */
+function fitLabelFor(score: number): FitLabel {
+  return score >= 88 ? "Strong fit" : score >= 70 ? "Good fit" : "Worth exploring";
+}
+
+/**
+ * Everything needed to score any sport for this child, computed once per run.
+ * Shared by scoreSports() (which then filters by hard gate and ranks) and
+ * scoreChosenSports() (which scores exactly the sports the parent named), so
+ * both report numbers off the identical engine.
+ */
+function scoringContext(answers: WizardAnswers) {
   const ambitionKey =
     answers.ambition === "fun"
       ? "fun"
@@ -584,40 +799,57 @@ export function scoreSports(answers: WizardAnswers): SportResult[] {
           : "professional";
 
   const weights = WEIGHTS[ambitionKey];
-  const child = getChildDimensions(answers);
-  const stateInfraTier = getStateInfraTier(answers.state);
+  return {
+    weights,
+    ceiling: weightCeiling(weights),
+    child: getChildDimensions(answers),
+    stateInfraTier: getStateInfraTier(answers.state),
+  };
+}
 
-  const scored = SPORT_PROFILES.filter((sport) => passesHardGates(answers, sport)).map((sport) => {
-    const dims =
-      weights.individual * dimMatch(child.individual, sport.individual) +
-      weights.explosive * dimMatch(child.explosive, sport.explosive) +
-      weights.endurance * dimMatch(child.endurance, sport.endurance) +
-      weights.visualTracking * capMatch(child.visualTracking, sport.visualTracking) +
-      weights.reactFast * dimMatch(child.reactFast, sport.reactFast) +
-      weights.sustainedFocus * dimMatch(child.sustainedFocus, sport.sustainedFocus) +
-      weights.pressureTolerance * dimMatch(child.pressureTolerance, sport.pressureTolerance) +
-      weights.repetitionNeed * capMatch(child.repetitionNeed, sport.repetitionNeed) +
-      weights.contactRequired * dimMatch(child.contactRequired, sport.contactRequired) +
-      weights.eyesight * capMatch(child.eyesightValue, sport.visionDemand) +
-      weights.agility * capMatch(child.agilityValue, sport.agilityNeed);
+function rawScoreFor(
+  answers: WizardAnswers,
+  sport: SportProfile,
+  ctx: ReturnType<typeof scoringContext>,
+): number {
+  const { weights, child, stateInfraTier } = ctx;
 
-    const physScore = weights.physicalMatch * physicalMatch(child, sport);
-    const envScore = weights.environment * envMatch(answers.environment, sport.environmentPreference);
-    const ageScore = weights.age * ageMatch(answers.age, sport, answers.ambition);
-    const timeScore = weights.timeMatch * timeMatch(answers.weeklyHours, sport);
-    const infraScore = weights.infrastructure * infraMatch(stateInfraTier, sport.minCityTier);
-    const synergyScore = computeSynergyBonus(child, sport);
-    const priorScore = computePriorSportBonus(answers.priorSports, sport);
-    const familyScore = computeFamilySportBonus(answers.sportsInFamily, sport);
-    const peerScore = computePeerSportBonus(answers.peerSports, sport);
-    const informalScore = computeInformalExposureBonus(answers.informalSports, answers.informalReaction, sport);
-    const flexibilityScore = computeFutureFlexibilityPenalty(answers.ambition, answers.futureFlexibility, sport);
+  const dims =
+    weights.individual * dimMatch(child.individual, sport.individual) +
+    weights.explosive * dimMatch(child.explosive, sport.explosive) +
+    weights.endurance * dimMatch(child.endurance, sport.endurance) +
+    weights.visualTracking * capMatch(child.visualTracking, sport.visualTracking) +
+    weights.reactFast * dimMatch(child.reactFast, sport.reactFast) +
+    weights.sustainedFocus * dimMatch(child.sustainedFocus, sport.sustainedFocus) +
+    weights.pressureTolerance * dimMatch(child.pressureTolerance, sport.pressureTolerance) +
+    weights.repetitionNeed * capMatch(child.repetitionNeed, sport.repetitionNeed) +
+    weights.contactRequired * dimMatch(child.contactRequired, sport.contactRequired) +
+    weights.eyesight * capMatch(child.eyesightValue, sport.visionDemand) +
+    weights.agility * capMatch(child.agilityValue, sport.agilityNeed);
 
-    const total = dims + physScore + envScore + ageScore + timeScore + infraScore + synergyScore + priorScore
-      + familyScore + peerScore + informalScore + flexibilityScore;
+  const physScore = weights.physicalMatch * physicalMatch(child, sport);
+  const envScore = weights.environment * envMatch(answers.environment, sport.environmentPreference);
+  const ageScore = weights.age * ageMatch(answers.age, sport, answers.ambition);
+  const timeScore = weights.timeMatch * timeMatch(answers.weeklyHours, sport);
+  const infraScore = weights.infrastructure * infraMatch(stateInfraTier, sport.minCityTier);
+  const synergyScore = computeSynergyBonus(child, sport);
+  const priorScore = computePriorSportBonus(answers.priorSports, sport);
 
-    return { sport, rawScore: total };
-  });
+  return dims + physScore + envScore + ageScore + timeScore + infraScore + synergyScore + priorScore;
+}
+
+function normalisedScore(rawScore: number, ceiling: number): number {
+  return Math.max(0, Math.min(100, Math.round((rawScore / ceiling) * 100)));
+}
+
+export function scoreSports(answers: WizardAnswers): SportResult[] {
+  const ctx = scoringContext(answers);
+  const { child, ceiling } = ctx;
+
+  const scored = SPORT_PROFILES.filter((sport) => passesHardGates(answers, sport)).map((sport) => ({
+    sport,
+    rawScore: rawScoreFor(answers, sport, ctx),
+  }));
 
   if (scored.length === 0) return [];
 
@@ -625,12 +857,10 @@ export function scoreSports(answers: WizardAnswers): SportResult[] {
   // ambition tier (a mathematically perfect dimension match), not the child's
   // own best-scoring sport. A "70" means "70% of a perfect match" for anyone,
   // not just "70% as good as this child's #1 option" — comparable across
-  // children. Bonuses (synergy/prior-sport/family/peer/informal) are genuine
-  // extra credit that can push a strong-but-imperfect match up to 100; the
-  // flexibility penalty can pull a score down with nothing propping it back up.
-  const ceiling = weightCeiling(weights);
+  // children. Bonuses (synergy, prior-sport transfer) are genuine extra credit
+  // that can push a strong-but-imperfect match up to 100.
   const normalised = scored
-    .map((s) => ({ ...s, score: Math.min(100, Math.round((s.rawScore / ceiling) * 100)) }))
+    .map((s) => ({ ...s, score: normalisedScore(s.rawScore, ceiling) }))
     .sort((a, b) => b.score - a.score);
 
   // Pick top 2
@@ -651,8 +881,7 @@ export function scoreSports(answers: WizardAnswers): SportResult[] {
   // (sparse/contradictory answers) profiles land 78-81, and genuinely poor
   // wildcard picks dip into the 60s. 80/60 (carried over from max-normalization,
   // where the #1 pick was always ~100) called almost everything "Strong fit".
-  const fitLabel = (score: number): FitLabel =>
-    score >= 88 ? "Strong fit" : score >= 70 ? "Good fit" : "Worth exploring";
+  // (Thresholds live in fitLabelFor, shared with parent-chosen sports.)
 
   // Cross-card reason dedup: dimensionally-similar sports (e.g. Badminton and
   // Table Tennis) satisfy the same reason conditions in the same order, which
@@ -670,9 +899,71 @@ export function scoreSports(answers: WizardAnswers): SportResult[] {
     return {
       sport: s.sport,
       score: s.score,
-      fitLabel: fitLabel(s.score),
+      fitLabel: fitLabelFor(s.score),
       reasons: chosen.map((r) => r.text),
       isWildcard: i === 2 && s === wildcard,
     };
   });
+}
+
+// ─── Parent-chosen sports ─────────────────────────────────────────────────────
+
+/**
+ * Scores the sports the parent shortlisted — in the order they picked them,
+ * capped at MAX_CONSIDERED_SPORTS — and returns a two-sided report per sport.
+ *
+ * Deliberately does NOT apply passesHardGates(): the parent asked about these
+ * specific sports, so a gate failure is information to deliver, not grounds to
+ * drop the card. The score is the same absolute 0–100 as our recommendations,
+ * which makes the two sections directly comparable on the page.
+ */
+export function scoreChosenSports(
+  answers: WizardAnswers,
+  chosenNames: string[] = answers.consideringSports,
+): SportFitResult[] {
+  if (!chosenNames?.length) return [];
+
+  const ctx = scoringContext(answers);
+  const { child, ceiling } = ctx;
+
+  // Dedupe while preserving the parent's own ordering, then resolve to profiles.
+  const sports = Array.from(new Set(chosenNames))
+    .slice(0, MAX_CONSIDERED_SPORTS)
+    .map((n) => SPORT_PROFILES.find((s) => s.name === n))
+    .filter((s): s is SportProfile => Boolean(s));
+
+  return sports.map((sport) => {
+    const score = normalisedScore(rawScoreFor(answers, sport, ctx), ceiling);
+    const blockers = findHardBlockers(answers, sport);
+    const strengths = buildReasons(answers, sport, child).map((r) => r.text).slice(0, 4);
+
+    return {
+      sport,
+      score,
+      fitLabel: fitLabelFor(score),
+      strengths: strengths.length ? strengths : [fallbackStrength(answers, sport)],
+      // Blockers lead — a wall the family would hit outranks a soft mismatch.
+      gaps: [...blockers, ...buildGaps(answers, sport, child)].slice(0, 4),
+      hasBlocker: blockers.length > 0,
+    };
+  });
+}
+
+/**
+ * Every card needs at least one honest positive. When no scoring reason fires
+ * (a sparse profile, or a genuinely poor match), fall back to something true
+ * from the sport data rather than inventing praise.
+ */
+function fallbackStrength(answers: WizardAnswers, sport: SportProfile): string {
+  const name = answers.childName || "Your child";
+  if (answers.age) {
+    const [idealMin, idealMax] = sport.ageWindowIdeal;
+    if (answers.age >= idealMin && answers.age <= idealMax) {
+      return `At ${answers.age}, ${name} is inside the usual starting window for ${sport.name} — nothing about the timing works against you.`;
+    }
+  }
+  if (sport.minBudgetTier === "under-3k") {
+    return `${sport.name} is one of the cheapest sports to actually try — ${sport.costRange}, with school and district programmes cheaper still.`;
+  }
+  return `${sport.name} needs about ${sport.minWeeklyHours} hours a week and costs ${sport.costRange} — a trial class will tell you more than any score can.`;
 }

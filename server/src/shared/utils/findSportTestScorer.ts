@@ -12,7 +12,12 @@ import { SPORT_PROFILES } from "./findSportTestData";
 
 function getChildDimensions(a: WizardAnswers) {
   return {
-    individual: a.teamIndividual ?? 3,
+    // The two scales run in opposite directions and must be reconciled here:
+    // the wizard's answer is 1 = "Just me" → 5 = "Team, always" (SpectrumSlider),
+    // while SportProfile.individual is 1 = very team → 5 = very individual.
+    // Feeding the answer across unflipped matched team-preferring children to
+    // the most solo sports and vice versa.
+    individual: 6 - (a.teamIndividual ?? 3),
     explosive: a.energyType === "explosive" ? 5 : a.energyType === "endurance" ? 1 : 3,
     endurance: a.energyType === "endurance" ? 5 : a.energyType === "explosive" ? 1 : 3,
     visualTracking: a.visualTracking === "strong" ? 5 : a.visualTracking === "moderate" ? 3 : 1,
@@ -262,50 +267,6 @@ function computePriorSportBonus(priorSports: string[], sport: SportProfile): num
   return priorSports.some((ps) => transfersFrom.includes(ps)) ? 0.025 : 0;
 }
 
-// ─── Family / peer / informal-exposure bonuses ───────────────────────────────
-// Direct sport-name match only — unlike computePriorSportBonus, these don't use
-// the transfer map: a parent playing cricket isn't evidence of transferable
-// skill to football, it's evidence of interest/access in cricket specifically.
-// Ordinal tiering (agreed in design discussion, strongest to weakest):
-// informal exposure + kept asking > peer match > family match > neutral >
-// informal exposure + lost interest quickly (the only signal with a genuine
-// negative case, since it's the only one built from the child's own reaction).
-
-export function computeFamilySportBonus(sportsInFamily: string[], sport: SportProfile): number {
-  return sportsInFamily.includes(sport.name) ? 0.02 : 0;
-}
-
-export function computePeerSportBonus(peerSports: string[], sport: SportProfile): number {
-  return peerSports.includes(sport.name) ? 0.03 : 0;
-}
-
-export function computeInformalExposureBonus(
-  informalSports: string[],
-  informalReaction: WizardAnswers["informalReaction"],
-  sport: SportProfile,
-): number {
-  if (!informalSports.includes(sport.name)) return 0;
-  if (informalReaction === "kept-asking") return 0.05;
-  if (informalReaction === "lost-interest") return -0.03;
-  return 0;
-}
-
-// ─── Future flexibility penalty ──────────────────────────────────────────────
-// Down-weights sports that structurally demand relocation/heavy investment to
-// progress once a family says they wouldn't go that far — but only once
-// ambition is already national/professional (a "fun"-tier parent doesn't care
-// about elite-pathway demands, so there's nothing to penalize there).
-
-export function computeFutureFlexibilityPenalty(
-  ambition: WizardAnswers["ambition"],
-  futureFlexibility: WizardAnswers["futureFlexibility"],
-  sport: SportProfile,
-): number {
-  if (ambition !== "national" && ambition !== "professional") return 0;
-  if (futureFlexibility !== "stay-local") return 0;
-  return sport.specializationIntensity === "high" ? -0.04 : 0;
-}
-
 // ─── Reasons generator ────────────────────────────────────────────────────────
 
 interface TaggedReason {
@@ -327,36 +288,30 @@ function buildReasons(
   const name = answers.childName || "Your child";
   const reasons: TaggedReason[] = [];
 
-  // Family/peer/informal-exposure reasons — pushed first so they win the
-  // final cut when they fire, matching their weight as the strongest signals
-  // in the score (especially informal exposure, direct behavioral evidence
-  // from the child rather than a proxy).
-  if (answers.informalSports.includes(sport.name) && answers.informalReaction === "kept-asking") {
-    reasons.push({ type: "informal-positive", text:
-      `${name} has already played ${sport.name} casually and asked to keep going — that's a stronger signal than almost anything else here.`,
-    });
-  }
-  if (answers.peerSports.includes(sport.name)) {
-    reasons.push({ type: "peer", text:
-      `${name} already has friends playing ${sport.name} — having that social circle in place makes sticking with a new sport much easier.`,
-    });
-  }
-  if (answers.sportsInFamily.includes(sport.name)) {
-    reasons.push({ type: "family", text:
-      `${sport.name} already runs in the family — that usually means real know-how and support close at hand.`,
-    });
-  }
-
-  // Personality match reasons
+  // Personality match reasons.
+  // The claim about the child comes from the child's own answer, not from
+  // whichever sport is being scored — scoring the same kid against several
+  // sports and inferring their disposition from each one produced cards that
+  // flatly contradicted each other. When the answer sits mid-scale there's no
+  // preference to assert, so describe the sport instead.
   const indMatch = dimMatch(child.individual, sport.individual);
   if (indMatch >= 0.75) {
+    const ti = answers.teamIndividual;
     if (sport.individual >= 4) {
       reasons.push({ type: "team-individual", text:
-        `${name}'s preference for individual competition is a natural fit — every point in ${sport.name} is entirely theirs to win or lose.`,
+        ti !== null && ti <= 2
+          ? `${name}'s preference for competing alone is a natural fit — the result in ${sport.name} rests entirely on their own performance.`
+          : `${sport.name} is decided by the individual — no teammates to carry a bad day, and no one to share the credit on a good one.`,
+      });
+    } else if (sport.individual <= 2) {
+      reasons.push({ type: "team-individual", text:
+        ti !== null && ti >= 4
+          ? `${name}'s team-oriented nature suits ${sport.name} well — the sport is built around collective effort and shared momentum.`
+          : `${sport.name} is built around collective effort — shared momentum, shared results, and a squad to fall back on.`,
       });
     } else {
       reasons.push({ type: "team-individual", text:
-        `${name}'s team-oriented nature suits ${sport.name} well — the sport is built around collective effort and shared momentum.`,
+        `${sport.name} is a team game with long stretches where the moment belongs to one player alone — it works from either end of that preference.`,
       });
     }
   }
@@ -403,7 +358,9 @@ function buildReasons(
 
   if (answers.pressureResponse === "thrives" && sport.pressureTolerance >= 4) {
     reasons.push({ type: "pressure", text:
-      `${name} thrives under the spotlight — ${sport.name} puts the individual in full view, with no team to share the moment.`,
+      sport.individual >= 4
+        ? `${name} thrives under the spotlight — ${sport.name} puts the individual in full view, with no team to share the moment.`
+        : `${name} thrives under the spotlight — ${sport.name} is a team game, but the decisive moments land on one player in front of everyone.`,
     });
   }
 
@@ -588,13 +545,8 @@ export function scoreSports(answers: WizardAnswers): SportResult[] {
     const timeScore = weights.timeMatch * timeMatch(answers.weeklyHours, sport);
     const synergyScore = computeSynergyBonus(child, sport);
     const priorScore = computePriorSportBonus(answers.priorSports, sport);
-    const familyScore = computeFamilySportBonus(answers.sportsInFamily, sport);
-    const peerScore = computePeerSportBonus(answers.peerSports, sport);
-    const informalScore = computeInformalExposureBonus(answers.informalSports, answers.informalReaction, sport);
-    const flexibilityScore = computeFutureFlexibilityPenalty(answers.ambition, answers.futureFlexibility, sport);
 
-    const total = dims + physScore + envScore + ageScore + timeScore + synergyScore + priorScore
-      + familyScore + peerScore + informalScore + flexibilityScore;
+    const total = dims + physScore + envScore + ageScore + timeScore + synergyScore + priorScore;
 
     return { sport, rawScore: total };
   });
@@ -605,9 +557,8 @@ export function scoreSports(answers: WizardAnswers): SportResult[] {
   // ambition tier (a mathematically perfect dimension match), not the child's
   // own best-scoring sport. A "70" means "70% of a perfect match" for anyone,
   // not just "70% as good as this child's #1 option" — comparable across
-  // children. Bonuses (synergy/prior-sport/family/peer/informal) are genuine
-  // extra credit that can push a strong-but-imperfect match up to 100; the
-  // flexibility penalty can pull a score down with nothing propping it back up.
+  // children. Bonuses (synergy, prior-sport transfer) are genuine extra credit
+  // that can push a strong-but-imperfect match up to 100.
   const ceiling = weightCeiling(weights);
   const normalised = scored
     .map((s) => ({ ...s, score: Math.min(100, Math.round((s.rawScore / ceiling) * 100)) }))

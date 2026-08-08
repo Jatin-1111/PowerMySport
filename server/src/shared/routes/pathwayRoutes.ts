@@ -15,6 +15,7 @@ import {
   getCuratedTournaments,
   getProgressionPlan,
   getPersonalNotes,
+  getStageGuide,
 } from "../controller/pathwayController";
 import { authMiddleware } from "../../middleware/auth";
 
@@ -87,6 +88,11 @@ router.delete(
   authMiddleware,
   deletePathwayExpertVerify,
 );
+
+// GET /api/pathways/stage-guide?sport=tennis&state=Delhi
+// The hand-authored India stage guide. Public and cacheable — it holds no
+// personal data and is identical for every reader of a sport/state.
+router.get("/stage-guide", pathwayRateLimiter, getStageGuide);
 
 // ── Admin / internal routes ───────────────────────────────────────────────────
 // These require no extra middleware in development.

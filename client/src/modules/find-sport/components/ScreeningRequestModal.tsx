@@ -37,7 +37,7 @@ export function ScreeningRequestModal({ childName, sport, city, dependentId, onC
       setDone(true);
       onSuccess?.();
     } catch {
-      setError("Something went wrong. Please try WhatsApp instead.");
+      setError("Something went wrong. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }

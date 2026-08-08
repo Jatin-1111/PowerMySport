@@ -8,10 +8,10 @@ export type WizardAnswers = {
   gender: "boy" | "girl" | "prefer-not" | null;
   state: string | null;
   priorSports: string[];
-  sportsInFamily: string[];
-  peerSports: string[];
-  informalSports: string[];
-  informalReaction: "kept-asking" | "lost-interest" | null;
+  // The parent's own shortlist (up to 3). Scored and reported back with an
+  // explicit fit/gap breakdown rather than being silently replaced by our
+  // recommendations.
+  consideringSports: string[];
   // Section B — Physical
   height: number | null; // cm
   weight: number | null; // kg
@@ -35,9 +35,11 @@ export type WizardAnswers = {
   // Section E — Practical
   budget: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus" | null;
   ambition: "fun" | "competitive" | "national" | "professional" | null;
-  futureFlexibility: "all-in" | "maybe" | "stay-local" | null;
   weeklyHours: "1-3" | "4-7" | "8-12" | "13-plus" | null;
 };
+
+/** Hard cap on how many sports a parent can put on their own shortlist. */
+export const MAX_CONSIDERED_SPORTS = 3;
 
 export const EMPTY_ANSWERS: WizardAnswers = {
   childName: "",
@@ -46,10 +48,7 @@ export const EMPTY_ANSWERS: WizardAnswers = {
   gender: null,
   state: null,
   priorSports: [],
-  sportsInFamily: [],
-  peerSports: [],
-  informalSports: [],
-  informalReaction: null,
+  consideringSports: [],
   height: null,
   weight: null,
   energyType: null,
@@ -69,7 +68,6 @@ export const EMPTY_ANSWERS: WizardAnswers = {
   medicalConditions: [],
   budget: null,
   ambition: null,
-  futureFlexibility: null,
   weeklyHours: null,
 };
 
@@ -118,6 +116,22 @@ export type SportResult = {
   fitLabel: FitLabel;
   reasons: string[];          // 2–3 specific sentences referencing the child
   isWildcard: boolean;
+};
+
+/**
+ * A sport the parent chose themselves, scored on the same engine as our
+ * recommendations but reported two-sided: what genuinely fits, and what
+ * doesn't. Unlike SportResult these are never filtered out by hard gates —
+ * a sport the family is already considering has to be answered, not hidden,
+ * so a gate failure surfaces as a blocker instead of a silent omission.
+ */
+export type SportFitResult = {
+  sport: SportProfile;
+  score: number;              // 0–100, same scale as SportResult
+  fitLabel: FitLabel;
+  strengths: string[];        // where the child fits
+  gaps: string[];             // where they don't — blockers first
+  hasBlocker: boolean;        // a hard gate (budget/water/contact/age) failed
 };
 
 export type WizardStep =

@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   LifeBuoy,
   Landmark,
+  ListOrdered,
   Map,
   Menu,
   MessageSquareWarning,
@@ -218,6 +219,11 @@ export default function AdminLayout({
             href: "/admin/sport-pathways",
             label: "Sport Pathways",
             icon: Map,
+          },
+          {
+            href: "/admin/stage-guides",
+            label: "Stage Guides",
+            icon: ListOrdered,
           },
           {
             href: "/admin/screenings",

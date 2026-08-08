@@ -17,7 +17,6 @@ import {
     CalendarClock,
     Compass,
     HeartPulse,
-    Home,
     Target,
     Users,
 } from "lucide-react";
@@ -118,15 +117,6 @@ const LABELS: Record<string, Record<string, string>> = {
     club: "Club training",
     academy: "Academy training",
     private: "Private coaching",
-  },
-  informalReaction: {
-    "kept-asking": "Kept asking to play more",
-    "lost-interest": "Lost interest quickly",
-  },
-  futureFlexibility: {
-    "all-in": "All-in on this sport",
-    maybe: "Open, undecided",
-    "stay-local": "Prefers to stay local",
   },
 };
 
@@ -348,14 +338,6 @@ export default function ExpertSessionPlayerDetailPage() {
       player.waterComfort ||
       player.personalityTags?.length,
   );
-  const hasBackground = Boolean(
-    player.sportsInFamily?.length ||
-      player.peerSports?.length ||
-      player.informalSports?.length ||
-      player.informalReaction ||
-      player.futureFlexibility,
-  );
-
   return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <Link
@@ -648,40 +630,6 @@ export default function ExpertSessionPlayerDetailPage() {
             </StaggerItem>
           )}
 
-          {/* Background & exposure */}
-          {hasBackground && (
-            <StaggerItem>
-              <Section
-                icon={<Home className="h-4.5 w-4.5" />}
-                tint="bg-teal-50 text-teal-600"
-                title="Background & Exposure"
-              >
-                <TagList
-                  label="Played seriously by immediate family"
-                  values={player.sportsInFamily}
-                />
-                <TagList
-                  label="Played seriously by close friends"
-                  values={player.peerSports}
-                />
-                <TagList
-                  label="Tried casually, just for fun"
-                  values={player.informalSports}
-                />
-                <Field
-                  label="Kept asking to play again, or lost interest?"
-                  value={labelFor("informalReaction", player.informalReaction)}
-                />
-                <Field
-                  label="Open to relocating / investing more if talent shows?"
-                  value={labelFor(
-                    "futureFlexibility",
-                    player.futureFlexibility,
-                  )}
-                />
-              </Section>
-            </StaggerItem>
-          )}
         </StaggerContainer>
       </div>
   );

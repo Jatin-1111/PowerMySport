@@ -20,13 +20,16 @@
 
 import { MacroLevel } from "@/modules/sports/config/macroLevels";
 import { Archetype } from "@/modules/sports/config/sportArchetypes";
+import { pathwayApi } from "@/modules/sports/services/pathway";
 import { Info, ListOrdered, Sparkles } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { hasResourcePage, resourceHref, stageAnchor } from "@/modules/resources/config";
 
 import { stageGuideFor } from "../../stages";
+import type { ApiStageGuide } from "../../stages/apiFormat";
 import { deriveStageGuide } from "../../stages/derive";
+import { stageGuideFromApi } from "../../stages/fromApi";
 import { RoadmapPersona } from "../../utils/persona";
 import { GuideCallout } from "./GuideCallout";
 import { StageGuideView } from "./StageGuideView";
@@ -59,17 +62,60 @@ interface PathwayStagesSectionProps {
 
 export function PathwayStagesSection({
   sportName,
+  state,
   macroLevels,
   persona,
   currentRawLevel,
   onStageChange,
 }: PathwayStagesSectionProps) {
-  const authored = useMemo(() => stageGuideFor(sportName), [sportName]);
+  // ── Where the stages come from, best first ──
+  //   1. An uploaded guide for this sport (and state, if one exists) — the
+  //      hand-authored India content, and the only source that will grow.
+  //   2. The bundled handbook, for sports written before uploads existed.
+  //   3. Stages derived from the sport's own pathway levels, so every sport
+  //      renders something.
+  //
+  // The fetch result is stored WITH the sport it was fetched for, and ignored
+  // at render when they no longer match. That beats clearing the state as the
+  // effect starts: clearing is a render-phase setState, and it would still show
+  // the previous sport's guide for a frame before blanking it.
+  const requestKey = `${sportName}|${state ?? ""}`;
+  const [loaded, setLoaded] = useState<{
+    key: string;
+    guide: ApiStageGuide | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!sportName) return;
+    let cancelled = false;
+    void pathwayApi
+      .getStageGuide(sportName, state)
+      .then((res) => {
+        if (!cancelled) setLoaded({ key: requestKey, guide: res?.guide ?? null });
+      })
+      .catch(() => {
+        if (!cancelled) setLoaded({ key: requestKey, guide: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [requestKey, sportName, state]);
+
+  const uploaded = loaded?.key === requestKey ? loaded.guide : null;
+
+  const fromUpload = useMemo(() => stageGuideFromApi(uploaded), [uploaded]);
+  const bundled = useMemo(() => stageGuideFor(sportName), [sportName]);
   const derived = useMemo(
-    () => (authored ? undefined : deriveStageGuide(sportName, macroLevels)),
-    [authored, sportName, macroLevels],
+    () => deriveStageGuide(sportName, macroLevels),
+    [sportName, macroLevels],
   );
-  const guide = authored ?? derived;
+  const guide = fromUpload ?? bundled ?? derived;
+  const source: "uploaded" | "bundled" | "derived" = fromUpload
+    ? "uploaded"
+    : bundled
+      ? "bundled"
+      : "derived";
+  const authored = source !== "derived";
 
   const hasGuide = hasResourcePage(sportName);
   const currentStage = guide?.stages.find((s) => s.rawLevel === currentRawLevel);
@@ -108,7 +154,8 @@ export function PathwayStagesSection({
           >
             {authored ? (
               <>
-                <Sparkles className="h-3 w-3" /> Researched guide
+                <Sparkles className="h-3 w-3" />
+                {source === "uploaded" ? "Researched guide" : "Researched guide (bundled)"}
               </>
             ) : (
               <>

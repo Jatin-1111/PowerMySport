@@ -1,0 +1,354 @@
+{
+  "formatVersion": 1,
+  "sport": { "slug": "tennis", "name": "Tennis" },
+  "governingBody": {
+    "name": "All India Tennis Association",
+    "acronym": "AITA",
+    "website": "https://www.aitatennis.com"
+  },
+  "progressMetric": {
+    "label": "UTR",
+    "description": "Universal Tennis Rating — a 1–16 scale that compares your child directly against any player in the world, including the draw you are thinking of entering."
+  },
+  "intro": "How tennis actually works in India: the AITA age-group ladder, what each rung costs a family, the money available at each one, and where the ladder leads.",
+  "verifiedOn": "2026-08-06",
+  "sources": [
+    {
+      "label": "PowerMySport Tennis Pathway handbook",
+      "publishedOn": "2026-01-15"
+    },
+    { "label": "AITA — rules and age categories", "url": "https://www.aitatennis.com" },
+    {
+      "label": "Khelo India Athlete Scheme, Ministry of Youth Affairs & Sports",
+      "url": "https://kheloindia.gov.in"
+    }
+  ],
+  "stages": [
+    {
+      "key": "discover",
+      "number": 1,
+      "title": "Discover Tennis",
+      "shortDescription": "Explore if tennis is right for your child",
+      "summary": "The honest question, before you spend anything on it.",
+      "goal": "Find out whether your child enjoys the game enough to keep at it for years.",
+      "age": { "fromYears": 3, "toYears": 8, "label": "3 – 8 years" },
+      "duration": "A few months of trying it",
+      "cost": {
+        "minInr": 30000,
+        "maxInr": 80000,
+        "label": "₹30,000 – ₹80,000 a year",
+        "note": "Recreational beginner level. Indicative and variable by city and academy — not a quote."
+      },
+      "standard": "Unrated",
+      "india": {
+        "ageCategories": [],
+        "schoolRoute": "Most Indian children meet tennis at school or a local club rather than an academy. Both are a fine place to start and cost far less."
+      },
+      "gates": { "administrative": [], "competitive": [] },
+      "parentGuidance": {
+        "dos": [
+          "Judge it on whether they look forward to going",
+          "Keep other sports going alongside"
+        ],
+        "avoid": [
+          "Specialising in one sport this early",
+          "Buying an adult racquet because it will last longer"
+        ],
+        "questionsForCoach": [
+          "Do you use the ITF Tennis10s ball stages?",
+          "How many children per coach in a session?"
+        ]
+      },
+      "readinessChecklist": [
+        "Your child asks to go back",
+        "The coach is experienced with young children",
+        "Racquet length and ball colour suit their size"
+      ],
+      "outcomes": [
+        "A sport they can play socially for life",
+        "Coordination and balance that transfer to any sport"
+      ],
+      "movingUp": {
+        "toStageKey": "getting-started",
+        "criteria": ["They enjoy it and want to keep going"],
+        "typicalDuration": "A season"
+      },
+      "notes": [
+        "The single best predictor of how far a child goes is whether they enjoy it. A child who looks forward to practice improves for years; one who was pushed stops."
+      ],
+      "funding": []
+    },
+    {
+      "key": "getting-started",
+      "number": 2,
+      "title": "Getting Started",
+      "shortDescription": "Learn the basics and build a strong start",
+      "summary": "Coaching on a smaller court, with a slower ball and first rallies.",
+      "goal": "Rally in week one rather than month six, and build the coordination everything later rests on.",
+      "age": { "fromYears": 4, "toYears": 8, "label": "4 – 8 years" },
+      "duration": "2–3 years",
+      "cost": {
+        "minInr": 30000,
+        "maxInr": 80000,
+        "label": "₹30,000 – ₹80,000 a year"
+      },
+      "standard": "Unrated",
+      "india": {
+        "ageCategories": [],
+        "schoolRoute": "School and SGFI tennis is the cheapest match practice in India, and teaches scoring and nerves with no ranking riding on it.",
+        "competitionTiers": [
+          {
+            "name": "Club and academy in-house events",
+            "level": "club",
+            "whoCanEnter": "Anyone enrolled at the club",
+            "whenHeld": "Through the year"
+          }
+        ]
+      },
+      "gates": {
+        "administrative": ["None — just enrol"],
+        "competitive": ["None"]
+      },
+      "parentGuidance": {
+        "dos": [
+          "Send them rested and hydrated",
+          "Watch quietly and let the coach coach",
+          "Ask what they enjoyed, not whether they won"
+        ],
+        "avoid": [
+          "Coaching from outside the court",
+          "Comparing your child with others",
+          "Increasing training volume quickly"
+        ],
+        "questionsForCoach": ["When should we move up a ball colour?"]
+      },
+      "readinessChecklist": [
+        "Technique is sound across the basic strokes",
+        "They move confidently around the court",
+        "Training is balanced against school and free play"
+      ],
+      "outcomes": ["A technical base that holds up on a full court"],
+      "movingUp": {
+        "toStageKey": "first-ranking",
+        "criteria": ["Rallying consistently on the orange court"],
+        "typicalDuration": "After 2–3 years of red and orange ball"
+      },
+      "funding": []
+    },
+    {
+      "key": "first-ranking",
+      "number": 3,
+      "title": "First AITA Ranking",
+      "shortDescription": "Register with AITA and earn first ranking points",
+      "summary": "AITA Talent Series — U-10 and U-12, and the first points on the board.",
+      "goal": "Enter ranked Indian tennis with a plan, and learn what a ranking does and does not measure.",
+      "age": { "fromYears": 7, "toYears": 12, "label": "7 – 12 years" },
+      "duration": "1–2 years",
+      "cost": {
+        "minInr": 150000,
+        "maxInr": 300000,
+        "label": "₹1.5L – ₹3L a year",
+        "note": "Coaching, entries and domestic travel."
+      },
+      "standard": "First AITA ranking",
+      "india": {
+        "ageCategories": ["U-10", "U-12"],
+        "registration": {
+          "body": "All India Tennis Association (AITA)",
+          "requirements": [
+            "AITA membership",
+            "Verified age proof",
+            "Registration through your state tennis association"
+          ],
+          "earliestAge": "U-10 opens at age 7; most families register between 9 and 11",
+          "officialUrl": "https://www.aitatennis.com"
+        },
+        "stateAssociationRole": "Your state association processes registration and hosts most Talent Series events. It is the first door, not the national body.",
+        "competitionTiers": [
+          {
+            "name": "AITA Talent Series",
+            "level": "state",
+            "organiser": "State association under AITA",
+            "whoCanEnter": "AITA-registered players in the age category",
+            "whenHeld": "Through the season"
+          },
+          {
+            "name": "SGFI school nationals",
+            "level": "school",
+            "organiser": "School Games Federation of India",
+            "whoCanEnter": "Through your school, no AITA ranking needed"
+          }
+        ],
+        "rankingSystem": {
+          "name": "AITA age-group ranking",
+          "howPointsWork": [
+            "Points come from the tournament category, the round reached and match results",
+            "Higher-category tournaments award more points for the same result",
+            "Consistency over a season moves a ranking more than one good week"
+          ],
+          "whatItUnlocks": [
+            "Direct acceptance instead of qualifying",
+            "Better seedings",
+            "Stronger opposition"
+          ],
+          "whatItDoesNotMeasure": [
+            "Long-term potential",
+            "Technical quality",
+            "Physical development"
+          ]
+        }
+      },
+      "gates": {
+        "administrative": ["AITA membership and verified age proof"],
+        "competitive": [
+          "Can serve, rally and score a match unaided — and handle losing one",
+          "Roughly UTR 3"
+        ]
+      },
+      "funding": [
+        {
+          "name": "Academy scholarships",
+          "body": "Private academies (RoundGlass, MS Star, IMG and similar)",
+          "kind": "academy_scholarship",
+          "eligibility": "Awarded on the academy's own trials, typically from this level",
+          "benefit": "Can waive coaching or residential fees outright",
+          "howToApply": "Apply directly to the academy and attend its trial"
+        }
+      ],
+      "parentGuidance": {
+        "dos": ["Build an annual calendar with school exams in it first"],
+        "avoid": [
+          "Entering every available tournament",
+          "Travelling long distances for low-value events",
+          "Measuring success only through ranking"
+        ],
+        "questionsForCoach": ["What is the objective of this tournament beyond winning?"]
+      },
+      "readinessChecklist": [
+        "Registered with AITA, age proof verified",
+        "Competing in age-appropriate events rather than the biggest draw",
+        "Training-to-competition balance roughly 70/30"
+      ],
+      "outcomes": ["A ranking that opens age-group draws across India"],
+      "academics": {
+        "note": "Tournament weeks and school terms collide from here. Put exam dates in the calendar before you enter anything."
+      },
+      "movingUp": {
+        "toStageKey": "national-ranking",
+        "criteria": ["Consistent quarter-finals at Talent Series level"],
+        "typicalDuration": "1–2 years"
+      }
+    },
+    {
+      "key": "national-ranking",
+      "number": 4,
+      "title": "National Ranking",
+      "shortDescription": "Compete nationally and climb the AITA ladder",
+      "summary": "AITA Championship and Super Series — U-14 to U-18, and a national ranking.",
+      "goal": "Build a national ranking that holds up, and secure the funding before the costs arrive.",
+      "age": { "fromYears": 12, "toYears": 18, "label": "12 – 18 years" },
+      "duration": "2–4 years",
+      "cost": {
+        "minInr": 300000,
+        "maxInr": 1200000,
+        "label": "₹3L – ₹12L a year",
+        "note": "Rises steeply with travel. This is where most families stop for cost reasons rather than talent reasons."
+      },
+      "standard": "UTR 6–11",
+      "india": {
+        "ageCategories": ["U-14", "U-16", "U-18"],
+        "competitionTiers": [
+          {
+            "name": "AITA Championship Series",
+            "level": "national",
+            "organiser": "AITA",
+            "whoCanEnter": "AITA-ranked players in the age category"
+          },
+          {
+            "name": "AITA Super Series and Nationals",
+            "level": "national",
+            "organiser": "AITA",
+            "whoCanEnter": "Top-ranked players in the age group"
+          }
+        ],
+        "rankingSystem": {
+          "name": "AITA national age-group ranking",
+          "howPointsWork": [],
+          "whatItUnlocks": [
+            "AITA nomination for ITF junior events",
+            "University sports-quota seats",
+            "Khelo India consideration"
+          ],
+          "whatItDoesNotMeasure": []
+        },
+        "stateAssociationRole": "State nomination still matters for some national draws."
+      },
+      "gates": {
+        "administrative": ["AITA nomination for ITF events"],
+        "competitive": [
+          "AITA age-group ranking inside the top 100 to progress",
+          "Top 20 in India for international entry"
+        ]
+      },
+      "funding": [
+        {
+          "name": "Khelo India Athlete Scheme",
+          "body": "Sports Authority of India / Ministry of Youth Affairs & Sports",
+          "kind": "government_scheme",
+          "eligibility": "Selection typically happens around national age-group level",
+          "benefit": "Reported at roughly ₹6 lakh a year covering training, equipment, diet and education for as long as the athlete stays in the scheme",
+          "approxAnnualValueInr": 600000,
+          "howToApply": "Selection is via Khelo India trials and national performance",
+          "officialUrl": "https://kheloindia.gov.in",
+          "verifiedOn": "2026-01-15"
+        },
+        {
+          "name": "Corporate sponsorship",
+          "body": "Private sponsors and CSR programmes",
+          "kind": "sponsorship",
+          "eligibility": "A national ranking is the track record sponsors want before committing",
+          "benefit": "Varies; the only funding that scales with the player's own story"
+        }
+      ],
+      "parentGuidance": {
+        "dos": ["Chase the funding before the costs arrive, not after"],
+        "avoid": [
+          "Playing too many tournaments and training too little",
+          "Ignoring recovery and sleep",
+          "Neglecting academics",
+          "Overspending without a structured annual budget"
+        ],
+        "questionsForCoach": ["What is the written long-term development plan?"]
+      },
+      "readinessChecklist": [
+        "Understands the AITA tournament structure and where they sit in it",
+        "A sustainable national ranking built on consistency",
+        "An annual tournament, travel and recovery calendar",
+        "Academics, training and rest genuinely in balance"
+      ],
+      "outcomes": [
+        "Enough to open a university seat or a coaching career, whatever happens next",
+        "A few hundred children in the country are here in any age group"
+      ],
+      "risks": {
+        "commonInjuries": [],
+        "burnoutSigns": [
+          "Dreading practice",
+          "Recurring niggles that never fully settle"
+        ]
+      },
+      "academics": {
+        "boardExamNote": "Class 10 and 12 board years fall inside the peak competition years. Plan a reduced tournament load around them rather than discovering the clash in January.",
+        "quotaRoutes": [
+          "Indian university sports quota on a documented AITA age-group ranking",
+          "Fee concessions and hostel places, which differ by university"
+        ]
+      },
+      "movingUp": {
+        "criteria": ["Top 20 in India in the age group"],
+        "typicalDuration": "2–4 years",
+        "warning": "Entry to the bottom rung of professional tennis needs only an IPIN and an entry fee. The players in that draw sit around UTR 13. Entering early means first-round losses for zero points, at roughly ₹2–4 lakh a year in travel and entries — the gate in tennis is competitive, not administrative."
+      }
+    }
+  ]
+}

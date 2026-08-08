@@ -13,10 +13,6 @@ const wizardAnswersSchema = z.object({
   gender: z.enum(["boy", "girl", "prefer-not"]).nullable().default(null),
   state: z.string().nullable().default(null),
   priorSports: z.array(z.string()).default([]),
-  sportsInFamily: z.array(z.string()).default([]),
-  peerSports: z.array(z.string()).default([]),
-  informalSports: z.array(z.string()).default([]),
-  informalReaction: z.enum(["kept-asking", "lost-interest"]).nullable().default(null),
   height: z.number().nullable().default(null),
   weight: z.number().nullable().default(null),
   energyType: z.enum(["explosive", "endurance"]).nullable().default(null),
@@ -35,7 +31,6 @@ const wizardAnswersSchema = z.object({
   waterComfort: z.enum(["comfortable", "neutral", "uncomfortable"]).nullable().default(null),
   budget: z.enum(["under-3k", "3k-7k", "7k-15k", "15k-plus"]).nullable().default(null),
   ambition: z.enum(["fun", "competitive", "national", "professional"]).nullable().default(null),
-  futureFlexibility: z.enum(["all-in", "maybe", "stay-local"]).nullable().default(null),
   weeklyHours: z.enum(["1-3", "4-7", "8-12", "13-plus"]).nullable().default(null),
 });
 

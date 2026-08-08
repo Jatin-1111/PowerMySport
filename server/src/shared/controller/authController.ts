@@ -194,6 +194,7 @@ export const getProfile = async (
         environment: p.environment,
         waterComfort: p.waterComfort,
         // Wizard practical
+        consideringSports: p.consideringSports || [],
         budgetRange: p.budgetRange,
         ambition: p.ambition,
         weeklyHoursCategory: p.weeklyHoursCategory,
