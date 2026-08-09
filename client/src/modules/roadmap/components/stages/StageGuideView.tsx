@@ -19,7 +19,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  ClipboardList,
   MessageCircleQuestion,
   Pin,
   Users,
@@ -223,10 +222,13 @@ export function StageGuideView({
         </div>
       </aside>
 
-      {/* ── The stage ── */}
+      {/* ── The stage ──
+             self-start, or the grid stretches the panel to the rail's height and
+             a short tab (Resources on an early stage) renders a bordered white
+             box with hundreds of empty pixels under the content. */}
       <div
         ref={panelRef}
-        className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+        className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:self-start"
       >
         <header className="border-b border-slate-100 px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -341,7 +343,7 @@ export function StageGuideView({
                Every tile here leads somewhere that exists. The mockup's "Watch
                Guide" tile is deliberately absent: there is no video, and a tile
                that does nothing is worse than a tile that isn't there. */}
-        <div className="grid gap-2 border-t border-slate-100 px-4 py-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
+        <div className="grid gap-2 border-t border-slate-100 px-4 py-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-3">
           {guideHref && (
             <Link
               href={guideHref}
@@ -358,23 +360,11 @@ export function StageGuideView({
               </span>
             </Link>
           )}
-          {tabs.some((t) => t.id === "resources") && (
-            <button
-              type="button"
-              onClick={() => setTab("resources")}
-              className="flex items-center gap-2.5 rounded-xl border border-slate-200 px-3 py-2.5 text-left transition hover:border-slate-400 hover:bg-slate-50"
-            >
-              <ClipboardList className="h-4 w-4 shrink-0 text-emerald-600" />
-              <span>
-                <span className="block text-[13.5px] font-bold text-slate-800">
-                  Parent checklist
-                </span>
-                <span className="block text-[12px] text-slate-500">
-                  Before you move on
-                </span>
-              </span>
-            </button>
-          )}
+          {/* No "Parent checklist" tile. It only did setTab("resources") — a
+              tile duplicating a tab sitting visibly above it — and the label
+              promised a checklist while the Resources tab is mostly funding and
+              academics. Next to "Full guide" it also read as a second link to
+              the same place. */}
           <Link
             href="/experts"
             className="flex items-center gap-2.5 rounded-xl border border-slate-200 px-3 py-2.5 transition hover:border-slate-400 hover:bg-slate-50"

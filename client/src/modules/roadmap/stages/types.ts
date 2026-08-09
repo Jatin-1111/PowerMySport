@@ -74,7 +74,12 @@ export interface StageGuide {
 export const STAGE_TAB_LABELS: Record<StageTabId, string> = {
   overview: "Overview",
   topics: "Key Topics",
-  expect: "What to Expect",
+  // Every producer fills this tab with what a rung DEMANDS — the two gates and
+  // the criteria to move up (fromApi), what selectors look for (derive), what a
+  // late start or a given build actually costs you (tennis). "What to Expect"
+  // read as a promise about the experience and made requirement lists look
+  // misfiled.
+  expect: "What It Takes",
   tips: "Tips for Parents",
   resources: "Resources",
 };
