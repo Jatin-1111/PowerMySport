@@ -43,8 +43,17 @@ const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$
  * Defaults to the current list. `date` pins it to a historical snapshot, which
  * is the query the source itself can only answer by making you download a PDF.
  */
+/**
+ * Which sport's lists a request is about. Defaults to tennis so every existing
+ * caller keeps working unchanged — the documents have carried `sportSlug` since
+ * the mirror was built, but nothing sent it until the URLs grew a sport segment.
+ */
+const sportOf = (req: Request): string =>
+  String(req.query.sport ?? "tennis").trim().toLowerCase() || "tennis";
+
 export const listRankings = async (req: Request, res: Response): Promise<void> => {
   try {
+    const sportSlug = sportOf(req);
     const category = String(req.query.category ?? "").trim();
     const subcategory = String(req.query.subcategory ?? "").trim();
     if (!category || !subcategory) {
@@ -61,7 +70,7 @@ export const listRankings = async (req: Request, res: Response): Promise<void> =
       Math.max(1, Number.parseInt(String(req.query.limit ?? "") , 10) || DEFAULT_PAGE_SIZE),
     );
 
-    const filter: Record<string, unknown> = { category, subcategory };
+    const filter: Record<string, unknown> = { sportSlug, category, subcategory };
 
     const date = String(req.query.date ?? "").trim();
     if (date) {
@@ -98,6 +107,7 @@ export const listRankings = async (req: Request, res: Response): Promise<void> =
         .lean(),
       RankingEntry.countDocuments(filter),
       RankingSnapshot.findOne({
+        sportSlug,
         category,
         subcategory,
         status: "published",
@@ -127,9 +137,10 @@ export const listRankings = async (req: Request, res: Response): Promise<void> =
  * Which combos exist, what each one's current list is dated, and which states
  * appear in it — everything a filter UI needs in one call.
  */
-export const getRankingMeta = async (_req: Request, res: Response): Promise<void> => {
+export const getRankingMeta = async (req: Request, res: Response): Promise<void> => {
   try {
     const snapshots = await RankingSnapshot.find({
+      sportSlug: sportOf(req),
       status: "published",
       isLatestForCombo: true,
     })
@@ -190,6 +201,7 @@ export const listRankingDates = async (req: Request, res: Response): Promise<voi
     }
 
     const snapshots = await RankingSnapshot.find({
+      sportSlug: sportOf(req),
       category,
       subcategory,
       status: "published",
@@ -234,12 +246,13 @@ export const getPlayerRankingHistory = async (
       return;
     }
 
-    const current = await RankingEntry.find({ regNo, isLatest: true })
+    const sportSlug = sportOf(req);
+    const current = await RankingEntry.find({ sportSlug, regNo, isLatest: true })
       .select(PUBLIC_ENTRY_FIELDS)
       .lean();
 
     if (current.length === 0) {
-      const everRanked = await RankingEntry.exists({ regNo });
+      const everRanked = await RankingEntry.exists({ sportSlug, regNo });
       if (!everRanked) {
         res.status(404).json({ success: false, message: "Player not found." });
         return;
@@ -248,7 +261,7 @@ export const getPlayerRankingHistory = async (
 
     // Capped: a player with five years of weekly history across four combos
     // would otherwise return well over a thousand points.
-    const history = await RankingEntry.find({ regNo })
+    const history = await RankingEntry.find({ sportSlug, regNo })
       .sort({ asOnDate: -1 })
       .limit(600)
       .select("category subcategory asOnDate rank totalPoints")

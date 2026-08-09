@@ -18,3 +18,32 @@ export const NOINDEX_METADATA: Metadata = {
     googleBot: { index: false, follow: false },
   },
 };
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
+
+/**
+ * BreadcrumbList structured data.
+ *
+ * Worth the few lines wherever a section is more than one level deep: it is how
+ * Google renders the hierarchy in a result instead of a bare URL, and it tells
+ * it that `/rankings/tennis/boys/u-14` sits under `/rankings/tennis` rather than
+ * being a top-level page that happens to have slashes in it.
+ *
+ * Paths are site-relative; the absolute URL is built here so a caller can never
+ * emit a hardcoded host — the wrong-host canonical was a real bug on this site
+ * once and is not worth repeating.
+ */
+export function breadcrumbJsonLd(
+  trail: { name: string; path: string }[],
+): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: trail.map((crumb, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: crumb.name,
+      item: `${SITE_URL}${crumb.path}`,
+    })),
+  };
+}

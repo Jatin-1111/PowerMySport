@@ -11,13 +11,19 @@
 
 import {
   Backpack,
+  Brain,
+  Building2,
   CalendarDays,
   CheckCircle2,
   Dumbbell,
+  Eye,
+  Footprints,
   HeartPulse,
   MessageSquare,
   Package,
   Salad,
+  Stethoscope,
+  Target,
   TrendingUp,
   TriangleAlert,
   Users,
@@ -41,6 +47,107 @@ export function StageExtrasSection({
 }) {
   return (
     <>
+      {extras.academy && (
+        <Section
+          id={`${anchor}-academy`}
+          title="Choosing where they train"
+          intro={extras.academy.intro}
+        >
+          <div className="grid gap-3 lg:grid-cols-2">
+            {extras.academy.criteria.map((c) => (
+              <Panel
+                key={c.what}
+                title={c.what}
+                icon={<Building2 className="h-3.5 w-3.5" />}
+              >
+                <p className="text-sm leading-relaxed text-slate-700">{c.why}</p>
+              </Panel>
+            ))}
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            {extras.academy.observe?.length ? (
+              <Panel
+                title="Watch a session and ask yourself"
+                icon={<Eye className="h-3.5 w-3.5" />}
+                tone="info"
+              >
+                <BulletList items={extras.academy.observe} tone="info" />
+              </Panel>
+            ) : null}
+            {extras.academy.ask?.length ? (
+              <Panel title="Ask before you pay" tone="good">
+                <BulletList items={extras.academy.ask} tone="good" />
+              </Panel>
+            ) : null}
+          </div>
+
+          {extras.academy.note && (
+            <Callout tone="info" icon={<Eye className="h-4 w-4" />}>
+              {extras.academy.note}
+            </Callout>
+          )}
+        </Section>
+      )}
+
+      {extras.technique && (
+        <Section
+          id={`${anchor}-technique`}
+          title="What they're actually learning to do"
+          intro={extras.technique.intro}
+        >
+          <div className="grid gap-3 lg:grid-cols-2">
+            {extras.technique.strokes?.length ? (
+              <Panel title="The strokes" icon={<Target className="h-3.5 w-3.5" />}>
+                <BulletList items={extras.technique.strokes} />
+              </Panel>
+            ) : null}
+            {extras.technique.refinements?.length ? (
+              <Panel title="Beyond just hitting it" tone="info">
+                <BulletList items={extras.technique.refinements} tone="info" />
+              </Panel>
+            ) : null}
+          </div>
+
+          {extras.technique.matchAwareness?.length ? (
+            <Panel title="Starting to read the point" tone="good">
+              <BulletList items={extras.technique.matchAwareness} tone="good" />
+            </Panel>
+          ) : null}
+
+          {extras.technique.footwork && (
+            <Panel
+              title="Footwork — how they get to the ball"
+              icon={<Footprints className="h-3.5 w-3.5" />}
+            >
+              <div className="grid gap-3 lg:grid-cols-2">
+                {extras.technique.footwork.movement?.length ? (
+                  <div>
+                    <p className="mb-1.5 text-[11px] font-black uppercase tracking-widest text-slate-400">
+                      Movement skills
+                    </p>
+                    <BulletList items={extras.technique.footwork.movement} />
+                  </div>
+                ) : null}
+                {extras.technique.footwork.drills?.length ? (
+                  <div>
+                    <p className="mb-1.5 text-[11px] font-black uppercase tracking-widest text-slate-400">
+                      How it's trained
+                    </p>
+                    <BulletList items={extras.technique.footwork.drills} />
+                  </div>
+                ) : null}
+              </div>
+              {extras.technique.footwork.note && (
+                <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                  {extras.technique.footwork.note}
+                </p>
+              )}
+            </Panel>
+          )}
+        </Section>
+      )}
+
       {extras.gear && (
         <Section
           id={`${anchor}-gear`}
@@ -128,6 +235,36 @@ export function StageExtrasSection({
         </Section>
       )}
 
+      {extras.injuries && (
+        <Section
+          id={`${anchor}-injuries`}
+          title="Staying in one piece"
+          intro={extras.injuries.intro}
+        >
+          <div className="grid gap-3 lg:grid-cols-2">
+            <Panel
+              title="What tends to go wrong"
+              icon={<Stethoscope className="h-3.5 w-3.5" />}
+              tone="danger"
+            >
+              <BulletList items={extras.injuries.common} tone="danger" />
+            </Panel>
+            <Panel title="What prevents it" tone="good">
+              <BulletList items={extras.injuries.prevention} tone="good" />
+            </Panel>
+          </div>
+          {extras.injuries.note && (
+            <Callout
+              tone="caution"
+              icon={<TriangleAlert className="h-4 w-4" />}
+              title="Persistent pain is not something to push through"
+            >
+              {extras.injuries.note}
+            </Callout>
+          )}
+        </Section>
+      )}
+
       {extras.body && (
         <Section
           id={`${anchor}-body`}
@@ -177,6 +314,41 @@ export function StageExtrasSection({
               <BulletList items={extras.body.recovery} tone="info" />
             </Panel>
           ) : null}
+
+          {extras.body.mind && (
+            <Panel
+              title="The mental side, trained like anything else"
+              icon={<Brain className="h-3.5 w-3.5" />}
+              tone="info"
+            >
+              {extras.body.mind.intro && (
+                <p className="mb-3 text-sm leading-relaxed text-slate-700">
+                  {extras.body.mind.intro}
+                </p>
+              )}
+              <div className="grid gap-3 lg:grid-cols-2">
+                <div>
+                  <p className="mb-1.5 text-[11px] font-black uppercase tracking-widest text-slate-400">
+                    What it builds
+                  </p>
+                  <BulletList items={extras.body.mind.builds} tone="info" />
+                </div>
+                {extras.body.mind.whenToSeek?.length ? (
+                  <div>
+                    <p className="mb-1.5 text-[11px] font-black uppercase tracking-widest text-slate-400">
+                      Worth doing when
+                    </p>
+                    <BulletList items={extras.body.mind.whenToSeek} tone="info" />
+                  </div>
+                ) : null}
+              </div>
+              {extras.body.mind.note && (
+                <p className="mt-3 border-t border-sky-100 pt-3 text-[13px] leading-relaxed text-slate-600">
+                  {extras.body.mind.note}
+                </p>
+              )}
+            </Panel>
+          )}
 
           {extras.body.supportTeam?.length ? (
             <Panel title="Who's around them by now" icon={<Users className="h-3.5 w-3.5" />}>

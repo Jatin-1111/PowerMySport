@@ -97,11 +97,15 @@ async function get<T>(path: string, revalidate: number): Promise<T | null> {
   }
 }
 
-export function fetchRankingMeta(): Promise<RankingMeta | null> {
-  return get<RankingMeta>("/rankings/meta", 3600);
+// `sport` is threaded through every call and defaults to tennis. The API has
+// carried `sportSlug` on its documents since the mirror was built; sending it
+// explicitly is what lets a second federation land without touching callers.
+export function fetchRankingMeta(sport = "tennis"): Promise<RankingMeta | null> {
+  return get<RankingMeta>(`/rankings/meta?sport=${encodeURIComponent(sport)}`, 3600);
 }
 
 export function fetchRankings(params: {
+  sport?: string;
   category: string;
   subcategory: string;
   state?: string;
@@ -110,6 +114,7 @@ export function fetchRankings(params: {
   page?: number;
 }): Promise<RankingListResult | null> {
   const query = new URLSearchParams({
+    sport: params.sport ?? "tennis",
     category: params.category,
     subcategory: params.subcategory,
     limit: String(PAGE_SIZE),
@@ -133,13 +138,21 @@ export interface RankingDate {
 export function fetchRankingDates(
   category: string,
   subcategory: string,
+  sport = "tennis",
 ): Promise<RankingDate[] | null> {
-  const query = new URLSearchParams({ category, subcategory });
+  const query = new URLSearchParams({ sport, category, subcategory });
   return get<RankingDate[]>(`/rankings/dates?${query.toString()}`, 1800);
 }
 
-export function fetchPlayer(regNo: string): Promise<PlayerResult | null> {
-  return get<PlayerResult>(`/rankings/players/${encodeURIComponent(regNo)}`, 1800);
+export function fetchPlayer(
+  regNo: string,
+  sport = "tennis",
+): Promise<PlayerResult | null> {
+  const query = new URLSearchParams({ sport });
+  return get<PlayerResult>(
+    `/rankings/players/${encodeURIComponent(regNo)}?${query.toString()}`,
+    1800,
+  );
 }
 
 /** "2026-07-27T00:00:00.000Z" -> "27 Jul 2026" */

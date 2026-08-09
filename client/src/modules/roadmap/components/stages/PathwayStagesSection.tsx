@@ -179,6 +179,7 @@ export function PathwayStagesSection({
         key={`${guide.sport}|${guide.stages.length}`}
         guide={guide}
         sportName={sportName}
+        state={state}
         currentRawLevel={currentRawLevel}
         onStageChange={(rawLevel) => {
           if (!onStageChange) return;

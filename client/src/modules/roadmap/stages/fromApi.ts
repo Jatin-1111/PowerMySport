@@ -220,6 +220,9 @@ export function stageGuideFromApi(
   return {
     sport: api.sport?.name ?? "",
     resourceSlug: api.sport?.slug,
+    ...(api.stateGroups?.groups?.length
+      ? { stateGroups: api.stateGroups }
+      : {}),
     stages,
   };
 }

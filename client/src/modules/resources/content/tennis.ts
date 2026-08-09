@@ -73,6 +73,45 @@ export const TENNIS_GUIDE: SportGuide = {
     ],
     lateStart:
       "Starting after ten is completely fine for a lifetime of playing, and many do. It does make the very top of the international game progressively harder to reach — but that is one outcome out of several on this page, not the only one worth having.",
+    skills: {
+      technical: [
+        "Forehand",
+        "Backhand",
+        "Serve",
+        "Volley",
+        "Overhead smash",
+        "Return of serve",
+        "Spin generation",
+        "Ball control",
+      ],
+      tactical: [
+        "Point construction",
+        "Court positioning",
+        "Shot selection",
+        "Pattern recognition",
+        "Reading an opponent",
+      ],
+      physical: [
+        "Speed",
+        "Agility",
+        "Balance",
+        "Coordination",
+        "Reaction time",
+        "Endurance",
+        "Strength",
+        "Flexibility",
+      ],
+      mental: [
+        "Concentration",
+        "Confidence",
+        "Emotional control",
+        "Resilience",
+        "Patience",
+        "A competitive mindset",
+      ],
+    },
+    skillsNote:
+      "No child starts with any of these. They are what good coaching builds, over years — which is why judging a seven-year-old on the list is pointless, and why a coach who only works on strokes is doing a quarter of the job.",
     physical: [
       "Good hand-eye coordination",
       "Quick reaction time",
@@ -134,6 +173,95 @@ export const TENNIS_GUIDE: SportGuide = {
   stages: {
     // ── Level 1 · Foundation (handbook stages 2 and 3, ages 4–10) ──
     1: {
+      academy: {
+        intro:
+          "You are choosing an environment, not just a coach. The right one builds confidence and keeps a child coming back; the wrong one is the most common reason children quit before they have really started.",
+        criteria: [
+          {
+            what: "Qualified coaches",
+            why: "Look for recognised certification and real experience with young children. Teaching a five-year-old is a different job from coaching a teenager, and being a strong player is not the same as being able to teach one.",
+          },
+          {
+            what: "Age-appropriate grouping",
+            why: "Children should train with others of similar age and ability, in sessions built around games and movement rather than repetitive drills.",
+          },
+          {
+            what: "A safe set-up",
+            why: "Safe playing surfaces, child-sized equipment, enough supervision, first-aid arrangements, drinking water and clean facilities. Ask to see all of it.",
+          },
+          {
+            what: "A positive learning culture",
+            why: "How mistakes are treated tells you more than the facilities do. A good atmosphere on an ordinary court beats a poor one on an excellent court.",
+          },
+          {
+            what: "A development philosophy",
+            why: "Ask what their long-term approach is. Academies that push early results over development produce children who peak at eleven and stop at fourteen.",
+          },
+        ],
+        observe: [
+          "Are the children smiling?",
+          "Is the coach encouraging rather than correcting constantly?",
+          "Are mistakes treated as part of learning?",
+          "Is every child actually involved, or are some standing in a queue?",
+        ],
+        ask: [
+          "What is your long-term player development approach?",
+          "How do you assess progress, and how often?",
+          "How do you communicate with parents?",
+          "When do children here start competing, and why then?",
+          "How many years have you coached children this age?",
+        ],
+        note:
+          "Watch a full session before you enrol. Ten minutes on a court tells you more than any brochure, and any academy worth joining will let you.",
+      },
+      technique: {
+        intro:
+          "Technique built now tends to stay for life, and is far easier to develop than to correct later. This is the stage to buy sound mechanics rather than early wins.",
+        strokes: [
+          "Forehand",
+          "Backhand",
+          "Serve",
+          "Volley",
+          "Overhead smash",
+          "Return of serve",
+        ],
+        refinements: [
+          "Correct grip selection",
+          "A consistent contact point",
+          "Balanced body position",
+          "Efficient swing mechanics",
+          "Control of direction and depth",
+          "An introduction to topspin and slice",
+          "The ability to rally consistently",
+        ],
+        matchAwareness: [
+          "Keeping the ball in play",
+          "Recovering to the centre after each shot",
+          "Basic shot selection",
+          "Playing into open space",
+          "Noticing what an opponent is weak at",
+        ],
+        footwork: {
+          movement: [
+            "Split step",
+            "Side shuffle",
+            "Crossover step",
+            "Moving forward",
+            "Moving backward",
+            "Recovery steps",
+            "Court positioning",
+          ],
+          drills: [
+            "Ladder drills",
+            "Cone exercises",
+            "Multi-directional movement",
+            "Reaction games",
+            "Balance exercises",
+          ],
+          note:
+            "Many experienced coaches rate footwork as the most important skill in tennis, and it should be trained inside tennis drills rather than separately. A technically perfect stroke is worth nothing if the player cannot get to the ball in balance.",
+        },
+      },
       gear: {
         intro:
           "Modern tennis uses the ITF Tennis10s progression: modified balls and smaller courts matched to a child's size, so they can rally in week one instead of month six. Progress through the colours on skill, not birthday.",
@@ -371,7 +499,55 @@ export const TENNIS_GUIDE: SportGuide = {
         note:
           "Strength (lower body, core, upper body), speed (first-step acceleration, court coverage, recovery), power (medicine ball, plyometrics, jump training) and endurance across consecutive tournament days. Always age-appropriate and supervised by someone qualified.",
       },
+      injuries: {
+        intro:
+          "Training volume rises sharply here, and so does injury risk. Prevention is cheaper than treatment in every sense — a season lost to a back injury costs more than the physio would have.",
+        common: [
+          "Shoulder overuse",
+          "Tennis elbow",
+          "Wrist injuries",
+          "Lower back pain",
+          "Knee pain",
+          "Ankle sprains",
+          "Muscle strains",
+        ],
+        prevention: [
+          "A structured warm-up, every session",
+          "A proper cool-down",
+          "Training loads that increase progressively, not in jumps",
+          "Good technique — bad mechanics are an injury waiting to happen",
+          "Appropriate footwear, replaced when the grip goes",
+          "Strength training",
+          "Flexibility and mobility work",
+          "Adequate sleep",
+          "A tournament calendar with recovery built in",
+        ],
+        note:
+          "Never let a child play through persistent pain to protect a ranking. Early assessment is what stops a niggle becoming the injury that ends a season.",
+      },
       body: {
+        mind: {
+          intro:
+            "Plenty of players have the strokes and still cannot produce them at 4-4 in the third. Mental skills are trainable, and by this stage they are the difference between two technically similar juniors.",
+          builds: [
+            "Confidence",
+            "Emotional regulation",
+            "Concentration",
+            "Pre-match routines",
+            "Recovering between matches",
+            "Goal setting",
+            "Stress management",
+            "Performing under pressure",
+          ],
+          whenToSeek: [
+            "Building resilience, before it is needed",
+            "Making performance more consistent",
+            "Improving how the player communicates with coach and parents",
+            "Preparing for a specific important tournament",
+          ],
+          note:
+            "This is not something you call in when a child is struggling. Mental skills training is ordinary performance work at this level, and treating it as a last resort is what makes players reluctant to ask for it.",
+        },
         recovery: [
           "Quality sleep, hydration and balanced nutrition, every day",
           "Stretching, mobility work and active recovery",

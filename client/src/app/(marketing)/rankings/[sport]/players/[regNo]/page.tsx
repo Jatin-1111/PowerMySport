@@ -2,7 +2,11 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { NOINDEX_METADATA } from "@/lib/seo";
 import { fetchPlayer, formatAsOn } from "@/modules/rankings/api";
 import { RankTrajectory } from "@/modules/rankings/RankTrajectory";
-import { comboHref, comboLabel } from "@/modules/rankings/config";
+import {
+  comboHref,
+  comboLabel,
+  getRankingSport,
+} from "@/modules/rankings/config";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -34,12 +38,14 @@ export const metadata: Metadata = {
 export default async function PlayerRankingPage({
   params,
 }: {
-  params: Promise<{ regNo: string }>;
+  params: Promise<{ sport: string; regNo: string }>;
 }) {
-  const { regNo } = await params;
+  const { sport: sportSlug, regNo } = await params;
+  const sport = getRankingSport(sportSlug);
+  if (!sport) notFound();
   if (!/^\d{4,8}$/.test(regNo)) notFound();
 
-  const data = await fetchPlayer(regNo);
+  const data = await fetchPlayer(regNo, sport.slug);
   if (!data) notFound();
 
   const { player, current, history } = data;
@@ -66,7 +72,7 @@ export default async function PlayerRankingPage({
       <header>
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{name}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          AITA registration {player.regNo}
+          {sport.federation.acronym} registration {player.regNo}
           {player.state && (
             <>
               <span className="mx-1.5" aria-hidden>
@@ -98,7 +104,7 @@ export default async function PlayerRankingPage({
               return (
                 <li key={entry._id}>
                   <Link
-                    href={comboHref(combo)}
+                    href={comboHref(sport.slug, combo)}
                     className="block rounded-lg border bg-card p-4 shadow-sm transition-colors hover:border-power-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2"
                   >
                     <span className="text-sm text-muted-foreground">

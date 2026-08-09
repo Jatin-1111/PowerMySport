@@ -1,6 +1,10 @@
 import type { MetadataRoute } from "next";
 
-import { LIVE_COMBOS, comboHref } from "@/modules/rankings/config";
+import {
+  RANKING_SPORTS,
+  comboHref,
+  rankingSportHref,
+} from "@/modules/rankings/config";
 import { RESOURCE_SPORTS } from "@/modules/resources/config";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
@@ -78,20 +82,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-  // ── Ranking list pages (/rankings/[category]/[subcategory]) ──
-  // Twelve fixed lists, refreshed weekly from AITA. Filtered and paginated
+  // ── Ranking pages (/rankings/[sport] and its lists) ──
+  // A hub per mirrored sport, plus that sport's fixed lists, refreshed weekly
+  // from the federation. Filtered and paginated
   // views are deliberately absent: they all canonicalise to these twelve, and
   // listing `?state=` permutations would submit hundreds of near-duplicates.
   //
   // Per-player pages are absent on purpose too — they are noindex, because most
   // of the people on these lists are children. See the note in
   // app/(marketing)/rankings/players/[regNo]/page.tsx.
-  const rankingEntries: MetadataRoute.Sitemap = LIVE_COMBOS.map((combo) => ({
-    url: `${siteUrl}${comboHref(combo)}`,
-    lastModified: now,
-    changeFrequency: "weekly" as const,
-    priority: 0.8,
-  }));
+  const rankingEntries: MetadataRoute.Sitemap = RANKING_SPORTS.flatMap((sport) => [
+    {
+      url: `${siteUrl}${rankingSportHref(sport.slug)}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    },
+    ...sport.combos.map((combo) => ({
+      url: `${siteUrl}${comboHref(sport.slug, combo)}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    })),
+  ]);
 
   return [
     {

@@ -97,10 +97,18 @@ export interface ApiStage {
   notes?: string[];
 }
 
+/** Zones or regions, where registering in one limits where a player may compete. */
+export interface ApiStateGrouping {
+  label: string;
+  note?: string;
+  groups: Array<{ name: string; states: string[] }>;
+}
+
 export interface ApiStageGuide {
   formatVersion: number;
   sport: { slug: string; name: string };
   state?: string;
+  stateGroups?: ApiStateGrouping;
   governingBody?: { name: string; acronym?: string; website?: string };
   progressMetric?: { label: string; description?: string };
   intro?: string;

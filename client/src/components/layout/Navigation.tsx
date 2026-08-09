@@ -75,8 +75,8 @@ const exploreItems = [
   },
   {
     href: "/rankings",
-    label: "Tennis Rankings",
-    description: "Official AITA lists, searchable by state and player",
+    label: "Rankings",
+    description: "Official federation lists, searchable by state and player",
     icon: ListOrdered,
   },
 ];

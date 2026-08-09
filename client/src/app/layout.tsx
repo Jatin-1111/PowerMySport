@@ -10,7 +10,7 @@ import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
 const siteDescription =
-  "PowerMySport helps parents plan their child's sports Journey. Get AI-powered sport pathways, personalised guidance, and 1:1 sessions with verified experts — free to explore, state-specific for India.";
+  "PowerMySport helps parents plan their child's sports journey. AI-powered sport pathways, searchable federation rankings, personalised guidance and 1:1 sessions with verified experts — free to explore, state-specific for India.";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -44,6 +44,13 @@ export const metadata: Metadata = {
     "sports expert consultation",
     "book sports expert India",
     "state-specific sports pathway",
+    // Rankings — high-intent and highest-volume of anything here. Parents search
+    // the federation acronym and the age bracket, not "youth sports guidance".
+    "AITA rankings",
+    "AITA tennis ranking list",
+    "tennis rankings India",
+    "junior tennis ranking India",
+    "AITA player registration number",
     // Brand
     "PowerMySport",
     "powermysport.com",

@@ -4,7 +4,15 @@
 // started by explaining a ladder to a parent who hadn't yet decided whether to
 // step onto it. Sits above the stages for exactly that reason.
 
-import { HandCoins, HeartHandshake, Scale, ThumbsDown, ThumbsUp, Timer } from "lucide-react";
+import {
+  HandCoins,
+  HeartHandshake,
+  Scale,
+  Target,
+  ThumbsDown,
+  ThumbsUp,
+  Timer,
+} from "lucide-react";
 
 import type { SportGuide } from "../../content/types";
 import {
@@ -106,6 +114,34 @@ export function DecideSection({
             </Panel>
           </div>
         </Section>
+
+        {decide.skills && (
+          <Section
+            id={`${id}-skills`}
+            title="What the sport asks them to learn"
+            intro="Tennis is four sports at once, and parents reliably hear only the first column. The tactical and mental ones are what decide matches from about twelve onwards."
+          >
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <Panel title="Technical" icon={<Target className="h-3.5 w-3.5" />}>
+                <BulletList items={decide.skills.technical} />
+              </Panel>
+              <Panel title="Tactical" tone="info">
+                <BulletList items={decide.skills.tactical} tone="info" />
+              </Panel>
+              <Panel title="Physical">
+                <BulletList items={decide.skills.physical} />
+              </Panel>
+              <Panel title="Mental" tone="good">
+                <BulletList items={decide.skills.mental} tone="good" />
+              </Panel>
+            </div>
+            {decide.skillsNote && (
+              <p className="text-sm leading-relaxed text-slate-600">
+                {decide.skillsNote}
+              </p>
+            )}
+          </Section>
+        )}
 
         <Section
           id={`${id}-cost`}

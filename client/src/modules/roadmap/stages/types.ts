@@ -64,10 +64,22 @@ export interface GuideStage {
   tabs: StageTab[];
 }
 
+/**
+ * Where the family's own state sits in the federation's map, already resolved.
+ * The reader knows which state was picked, so it can answer "which zone am I in"
+ * rather than telling a parent to go and look it up.
+ */
+export interface StateGrouping {
+  label: string;
+  note?: string;
+  groups: { name: string; states: string[] }[];
+}
+
 export interface StageGuide {
   sport: string;
   /** Slug for the deep guide at /resources/[sport], when one exists. */
   resourceSlug?: string;
+  stateGroups?: StateGrouping;
   stages: GuideStage[];
 }
 

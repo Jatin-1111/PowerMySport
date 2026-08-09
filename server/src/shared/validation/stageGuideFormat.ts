@@ -208,6 +208,31 @@ const StageSchema = z.object({
   notes: z.array(nonEmpty("Note")).default([]),
 });
 
+/**
+ * How a federation carves the country up, when where you register limits where
+ * you may play. AITA runs four zones and a Talent Series is open only to players
+ * registered in that zone; AICF and several others do the same thing.
+ *
+ * Structured rather than prose because the reader knows which state the family
+ * picked, and "you are in North Zone, these are the states you can play in" is a
+ * different sentence from "look up which zone you are in".
+ */
+const StateGroupingSchema = z.object({
+  /** What the federation calls them — "AITA zone", "region". */
+  label: nonEmpty("Grouping label"),
+  /** What belonging to one actually restricts or allows. */
+  note: z.string().trim().optional(),
+  groups: z
+    .array(
+      z.object({
+        name: nonEmpty("Group name"),
+        /** State and UT names, matching the client's canonical list. */
+        states: z.array(nonEmpty("State")).min(1, "A group needs at least one state"),
+      }),
+    )
+    .min(1, "At least one group"),
+});
+
 export const StageGuideSchema = z
   .object({
     /** Bump only on a breaking change; the reader refuses versions it can't read. */
@@ -231,6 +256,8 @@ export const StageGuideSchema = z
         website: url.optional(),
       })
       .optional(),
+    /** Zones or regions, where registration in one limits where a player competes. */
+    stateGroups: StateGroupingSchema.optional(),
     /** The sport's own yardstick — UTR, AICF/FIDE rating, BWF points. */
     progressMetric: z
       .object({

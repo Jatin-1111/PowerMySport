@@ -59,6 +59,8 @@ const colorFor = (i: number) => STAGE_COLORS[i % STAGE_COLORS.length];
 interface StageGuideViewProps {
   guide: StageGuide;
   sportName: string;
+  /** The family's state, so the federation's zone can be resolved for them. */
+  state?: string;
   /** Raw level (1–5) the child sits on, 0 when unknown. Marks "You are here". */
   currentRawLevel: number;
   /** Keeps the outer explorer's stage index in sync for the other tabs. */
@@ -128,9 +130,26 @@ function StageListItem({
   );
 }
 
+/**
+ * Which zone the family's own state sits in. Returns nothing when the state is
+ * unknown or belongs to no group — several UTs sit outside AITA's four zones,
+ * and a wrong zone is worse than no zone when it decides where a child may play.
+ */
+function resolveStateGroup(
+  groups: StageGuide["stateGroups"],
+  state: string | undefined,
+) {
+  if (!groups || !state) return null;
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
+  const target = norm(state);
+  const hit = groups.groups.find((g) => g.states.some((s) => norm(s) === target));
+  return hit ? { label: groups.label, note: groups.note, group: hit } : null;
+}
+
 export function StageGuideView({
   guide,
   sportName,
+  state,
   currentRawLevel,
   onStageChange,
 }: StageGuideViewProps) {
@@ -178,6 +197,8 @@ export function StageGuideView({
         ? resourceHref(sportName, stageAnchor(stage.rawLevel))
         : resourceHref(sportName)
       : null;
+
+  const zone = resolveStateGroup(guide.stateGroups, state);
 
   const stageList = (
     <div className="space-y-1">
@@ -261,6 +282,29 @@ export function StageGuideView({
               </div>
             )}
           </div>
+          {/* Resolved for the family rather than described to them: we know which
+              state they picked, so telling them to go and look up their own zone
+              was work we could have done. Hidden when the state belongs to no
+              group — several UTs sit outside the four zones. */}
+          {zone && (
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-3">
+              <p className="text-[11px] font-black uppercase tracking-widest text-amber-700">
+                Your {zone.label} · {state}
+              </p>
+              <p className="mt-1 text-[14px] font-extrabold text-amber-950">
+                {zone.group.name}
+              </p>
+              <p className="mt-1 text-[13px] leading-relaxed text-amber-900/80">
+                Your child can enter zone-restricted events in{" "}
+                {zone.group.states.join(", ")} — and nowhere else.
+              </p>
+              {zone.note && (
+                <p className="mt-1.5 text-[12.5px] leading-relaxed text-amber-900/70">
+                  {zone.note}
+                </p>
+              )}
+            </div>
+          )}
         </header>
 
         {/* Tabs */}

@@ -20,6 +20,23 @@ const nextConfig: NextConfig = {
         destination: "/federations/:slug",
         permanent: true,
       },
+      // Rankings moved under a sport segment so a second federation does not
+      // have to inherit tennis-shaped URLs. These are indexed pages, so the old
+      // paths 301 rather than 404.
+      //
+      // ORDER MATTERS. `/rankings/players/12345` and `/rankings/boys/u-14` are
+      // both two segments, so the player rule has to be declared first or the
+      // category rule swallows it and sends players to a nonsense URL.
+      {
+        source: "/rankings/players/:regNo",
+        destination: "/rankings/tennis/players/:regNo",
+        permanent: true,
+      },
+      {
+        source: "/rankings/:category(boys|girls|men|women)/:subcategory",
+        destination: "/rankings/tennis/:category/:subcategory",
+        permanent: true,
+      },
     ];
   },
   async rewrites() {
