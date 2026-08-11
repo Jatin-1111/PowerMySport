@@ -1,11 +1,15 @@
 import { IPayment } from "../types/index";
 
 /**
- * Calculate split payment amounts for venue and optional coach
+ * Calculate split payment amounts for venue, optional coach and optional academy
  * @param venuePrice - Price charged by the venue
- * @param coachPrice - Optional price charged by the coach
  * @param venueOwnerId - User ID of the venue owner
+ * @param coachPrice - Optional price charged by the coach
  * @param coachUserId - Optional user ID of the coach
+ * @param payerUserId - User ID of the paying player/parent
+ * @param totalAmount - Full booking total the payer is charged
+ * @param academyPrice - Optional price charged by the academy
+ * @param academyOwnerUserId - Optional user ID of the academy owner
  * @returns Array of payment objects
  */
 export const calculateSplitAmounts = (
@@ -15,6 +19,8 @@ export const calculateSplitAmounts = (
   coachUserId?: string,
   payerUserId?: string,
   totalAmount?: number,
+  academyPrice?: number,
+  academyOwnerUserId?: string,
 ): IPayment[] => {
   const payments: IPayment[] = [];
 
@@ -36,6 +42,18 @@ export const calculateSplitAmounts = (
     });
   }
 
+  // Academy payee. Without this entry an academy booking collects the full
+  // amount from the parent and releaseCompletedBookingPayments() has nothing
+  // to release — money in, nothing owed out.
+  if (academyPrice && academyOwnerUserId) {
+    payments.push({
+      userId: academyOwnerUserId,
+      userType: "Academy",
+      amount: academyPrice,
+      status: "PENDING",
+    });
+  }
+
   // Add the player (payer) entry so that getBookingPaymentAmount()
   // and updatePaymentStatus() can locate the payer by userId.
   // For single bookings the player pays the full totalAmount.
@@ -43,7 +61,8 @@ export const calculateSplitAmounts = (
     payments.push({
       userId: payerUserId,
       userType: "Player",
-      amount: totalAmount ?? venuePrice + (coachPrice || 0),
+      amount:
+        totalAmount ?? venuePrice + (coachPrice || 0) + (academyPrice || 0),
       status: "PENDING",
     });
   }

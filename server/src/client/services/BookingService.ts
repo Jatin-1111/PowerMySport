@@ -31,6 +31,11 @@ import {
   calculateSplitAmounts,
 } from "../../utils/payment";
 import { generateDynamicSlots } from "../../utils/booking";
+import { recordBookingEventFor } from "./BookingEventService";
+import type {
+  BookingEventActorType,
+  BookingEventChannel,
+} from "../models/BookingEvent";
 import { emitSlotLocked } from "../sockets/bookingSocket";
 import { NotificationService } from "./NotificationService";
 import { ScheduledNotificationService } from "./ScheduledNotificationService";
@@ -304,8 +309,53 @@ const hasConflictingCoachBooking = async (
   return Boolean(conflicts);
 };
 
+/**
+ * Academies are capacity-based, not exclusive: up to `maxBatchSize` students
+ * can hold the same slot. Returns true while there is still room.
+ */
+const hasAcademyCapacity = async (
+  academyId: string,
+  date: Date,
+  startTime: string,
+  endTime: string,
+  maxBatchSize?: number,
+  session?: ClientSession,
+): Promise<boolean> => {
+  const capacity =
+    typeof maxBatchSize === "number" && maxBatchSize > 0 ? maxBatchSize : 1;
+
+  const { start, end } = toDayRange(date);
+  const query = Booking.countDocuments({
+    academyId,
+    date: {
+      $gte: start,
+      $lt: end,
+    },
+    status: {
+      $in: [
+        "PENDING_CONFIRMATION",
+        "PENDING_INVITES",
+        "CONFIRMED",
+        "IN_PROGRESS",
+      ],
+    },
+    $or: [
+      { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
+      { startTime: { $lt: endTime }, endTime: { $gte: endTime } },
+      { startTime: { $gte: startTime }, endTime: { $lte: endTime } },
+    ],
+  });
+
+  if (session) {
+    query.session(session);
+  }
+
+  const taken = await query;
+  return taken < capacity;
+};
+
 const acquireResourceSlotLock = async (
-  resourceType: "VENUE_SLOT" | "COACH_SLOT",
+  resourceType: "VENUE_SLOT" | "COACH_SLOT" | "ACADEMY_SLOT",
   resourceId: string,
   date: Date,
   startTime: string,
@@ -398,6 +448,40 @@ const createBookingAtomically = async (
           if (hasCoachConflict) {
             throw new Error(
               "Coach is not available for the selected time slot",
+            );
+          }
+        }
+
+        if (payload.academyId) {
+          // Serialize concurrent bookers on the same academy slot so the
+          // capacity count below and the insert that follows can't interleave
+          // and oversubscribe the batch.
+          await acquireResourceSlotLock(
+            "ACADEMY_SLOT",
+            payload.academyId,
+            payload.date,
+            payload.startTime,
+            session,
+          );
+
+          // Re-read maxBatchSize inside the transaction rather than trusting
+          // the value read during pricing — the academy may have been edited.
+          const academy = await Academy.findById(payload.academyId)
+            .select("maxBatchSize")
+            .session(session);
+
+          const academyHasRoom = await hasAcademyCapacity(
+            payload.academyId,
+            payload.date,
+            payload.startTime,
+            payload.endTime,
+            academy?.maxBatchSize,
+            session,
+          );
+
+          if (!academyHasRoom) {
+            throw new Error(
+              "This academy batch is already full for the selected time slot",
             );
           }
         }
@@ -990,6 +1074,7 @@ export const initiateBooking = async (
     }
 
     let academyPrice = 0;
+    let academyOwnerIdStr: string | undefined;
 
     if (payload.academyId) {
       if (!mongoose.Types.ObjectId.isValid(payload.academyId)) {
@@ -1002,6 +1087,55 @@ export const initiateBooking = async (
       if (!academy.isApproved) {
         throw new Error("Academy is not approved for bookings");
       }
+
+      // The academy must have a linked owner account, otherwise the booking
+      // collects money with no payee to release it to (and nobody who can
+      // confirm the session). Better to decline than to sell an unpayable slot.
+      if (!academy.ownerId) {
+        throw new Error(
+          "This academy is not yet set up to accept bookings. Please contact support.",
+        );
+      }
+      academyOwnerIdStr = academy.ownerId.toString();
+
+      if (!payload.sport || !academy.sports.includes(payload.sport)) {
+        throw new Error("Selected sport is not offered by this academy");
+      }
+
+      // Validate the booking falls within the academy's operating hours —
+      // same rule venues already enforce.
+      if (academy.operatingHours) {
+        const hoursCheck = isWithinOpeningHours(
+          payload.date,
+          normalizedStartTime,
+          normalizedEndTime,
+          academy.operatingHours,
+        );
+
+        if (!hoursCheck.isValid) {
+          throw new Error(
+            (hoursCheck.message || "").replace(/^Venue/, "Academy") ||
+              "Booking time is outside academy operating hours",
+          );
+        }
+      }
+
+      // Academies are capacity-based rather than exclusive: maxBatchSize
+      // students may share the same slot. Reject once the batch is full.
+      const academyAvailable = await hasAcademyCapacity(
+        payload.academyId,
+        payload.date,
+        normalizedStartTime,
+        normalizedEndTime,
+        academy.maxBatchSize,
+      );
+
+      if (!academyAvailable) {
+        throw new Error(
+          "This academy batch is already full for the selected time slot",
+        );
+      }
+
       // sessionRatePerHour is stored in paise — convert to rupees
       const rateInRupees = (academy.sessionRatePerHour || 0) / 100;
       if (rateInRupees <= 0) {
@@ -1086,6 +1220,8 @@ export const initiateBooking = async (
         coachUserIdStr,
         payload.userId,
         totalAmount,
+        academyPrice > 0 ? academyPrice : undefined,
+        academyOwnerIdStr,
       );
 
       console.log(
@@ -1201,6 +1337,30 @@ export const initiateBooking = async (
         discountAmount,
       );
     }
+
+    await recordBookingEventFor(booking, {
+      type: "CREATED",
+      toStatus: booking.status,
+      actorType: "USER",
+      actorUserId: payload.userId,
+      channel: "CLIENT_WEB",
+      amountPaise: toPaise(totalAmount),
+      summary: `Booking created for ${payload.sport} on ${getDateKey(payload.date)} ${normalizedStartTime}-${normalizedEndTime}`,
+      metadata: {
+        sport: payload.sport,
+        date: getDateKey(payload.date),
+        startTime: normalizedStartTime,
+        endTime: normalizedEndTime,
+        venuePricePaise: toPaise(venuePrice),
+        coachPricePaise: toPaise(coachPrice),
+        academyPricePaise: toPaise(academyPrice),
+        serviceFeePaise: toPaise(serviceFee),
+        taxPaise: toPaise(taxAmount),
+        discountPaise: toPaise(discountAmount),
+        ...(validPromoCode ? { promoCode: validPromoCode } : {}),
+        bookingType: "INDIVIDUAL",
+      },
+    });
 
     return {
       booking,
@@ -1708,6 +1868,19 @@ export const processBookingRefund = async (
   } catch (error) {
     booking.refundStatus = "REJECTED";
     await booking.save();
+
+    await recordBookingEventFor(booking, {
+      type: "REFUND_FAILED",
+      actorType: "SYSTEM",
+      channel: "SYSTEM",
+      summary: `Refund could not be initiated at ${refundPercentage}% — marked REJECTED`,
+      metadata: {
+        refundPercentage,
+        reason,
+        error: error instanceof Error ? error.message : String(error),
+      },
+    });
+
     throw error;
   }
 
@@ -1716,6 +1889,24 @@ export const processBookingRefund = async (
   }
   booking.refundStatus = refundResult.refundStatus;
   await booking.save();
+
+  await recordBookingEventFor(booking, {
+    type:
+      refundResult.refundStatus === "REJECTED"
+        ? "REFUND_FAILED"
+        : refundResult.refundStatus === "PROCESSED"
+          ? "REFUND_COMPLETED"
+          : "REFUND_INITIATED",
+    actorType: "SYSTEM",
+    channel: "SYSTEM",
+    amountPaise: toPaise(refundResult.refundAmount),
+    summary: `Refund ${refundResult.refundStatus.toLowerCase()} at ${refundPercentage}%`,
+    metadata: {
+      refundPercentage,
+      reason,
+      refundStatus: refundResult.refundStatus,
+    },
+  });
 
   return {
     booking,
@@ -1920,6 +2111,28 @@ export const cancelBooking = async (
     },
     { new: true },
   );
+
+  if (updatedBooking) {
+    await recordBookingEventFor(updatedBooking, {
+      type: "CANCELLED",
+      fromStatus: booking.status,
+      toStatus: "CANCELLED",
+      actorType: "USER",
+      actorUserId: requesterId,
+      channel: "CLIENT_WEB",
+      amountPaise: toPaise(refundAmount),
+      summary: `Cancelled by organizer ${hoursUntilBooking > 0 ? `${Math.round(hoursUntilBooking)}h before start` : "after start time"} — ${refundPercentage}% refund band`,
+      metadata: {
+        reason: cancellationReason || "Cancelled by user",
+        refundPercentage,
+        hoursUntilBooking: Math.round(hoursUntilBooking * 100) / 100,
+        // The policy that was applied, snapshotted. If the 48/24h bands ever
+        // change, this records which rules this cancellation was judged by.
+        policy: "48h=100%, 24-48h=50%, <24h=0%",
+        totalAmountPaise: toPaise(booking.totalAmount),
+      },
+    });
+  }
 
   // Send cancellation notifications to all participants
   if (updatedBooking) {
@@ -2141,6 +2354,22 @@ export const checkInBookingByCode = async (
   if (!updatedBooking) {
     throw new Error("Cannot check-in. Booking status changed, please retry");
   }
+
+  await recordBookingEventFor(updatedBooking, {
+    type: "CHECKED_IN",
+    fromStatus: "CONFIRMED",
+    toStatus: "IN_PROGRESS",
+    actorType: requesterRole === "Admin" ? "ADMIN" : "PROVIDER",
+    actorUserId: requesterUserId,
+    channel: requesterRole === "Admin" ? "ADMIN_PANEL" : "PROVIDER_WEB",
+    summary: "Checked in with the booking's check-in code",
+    metadata: {
+      requesterRole,
+      minutesFromScheduledStart: Math.round(
+        (now.getTime() - bookingDateTime.getTime()) / 60000,
+      ),
+    },
+  });
 
   NotificationService.send({
     userId: updatedBooking.userId.toString(),
@@ -2500,11 +2729,24 @@ const sendBookingPaymentConfirmation = async (
   }
 };
 
+/**
+ * `context` attributes the resulting audit event to the surface that drove it
+ * — the same payment can be confirmed by the user's browser returning from
+ * PhonePe, by the webhook, or by a reconciliation job, and the log is much
+ * less useful if all three look identical. Defaults to the gateway/webhook
+ * pairing since that is the authoritative path.
+ */
 export const updatePaymentStatus = async (
   bookingId: string,
   payerUserId: string,
   status: "PAID" | "PENDING" | "FAILED",
   session?: ClientSession,
+  context?: {
+    actorType?: BookingEventActorType;
+    channel?: BookingEventChannel;
+    actorUserId?: string;
+    metadata?: Record<string, unknown>;
+  },
 ): Promise<BookingDocument> => {
   const bookingQuery = Booking.findById(bookingId);
   if (session) {
@@ -2557,12 +2799,60 @@ export const updatePaymentStatus = async (
     await booking.save();
   }
 
+  const payerShare = booking.payments?.find(
+    (payment) => payment.userId.toString() === payerUserId,
+  );
+  const eventActorType = context?.actorType ?? "GATEWAY";
+  const eventChannel = context?.channel ?? "WEBHOOK";
+
+  if (status === "PAID") {
+    await recordBookingEventFor(booking, {
+      type: "PAYMENT_CONFIRMED",
+      toStatus: booking.status,
+      actorType: eventActorType,
+      actorUserId: context?.actorUserId ?? payerUserId,
+      channel: eventChannel,
+      amountPaise: toPaise(payerShare?.amount ?? booking.totalAmount),
+      summary: booking.paymentConfirmedAt
+        ? "Payment confirmed — booking fully paid"
+        : "Payment received for one share — awaiting remaining shares",
+      metadata: {
+        payerUserId,
+        fullyPaid: Boolean(booking.paymentConfirmedAt),
+        ...(context?.metadata ?? {}),
+      },
+    });
+  }
+
   if (status === "PAID" && booking.paymentConfirmedAt && !wasPaymentConfirmed) {
     await sendBookingPaymentConfirmation(bookingId);
   }
 
   // Send payment status notification and delete booking if failed
   if (status === "FAILED") {
+    // Recorded BEFORE the delete below. The booking document is about to be
+    // destroyed outright, so this event is the only durable trace that it
+    // ever existed — which is much of the point of having an audit log.
+    await recordBookingEventFor(booking, {
+      type: "PAYMENT_FAILED",
+      fromStatus: booking.status,
+      actorType: eventActorType,
+      actorUserId: context?.actorUserId ?? payerUserId,
+      channel: eventChannel,
+      amountPaise: toPaise(payerShare?.amount ?? booking.totalAmount),
+      summary:
+        "Payment failed — booking document hard-deleted by updatePaymentStatus",
+      metadata: {
+        payerUserId,
+        bookingDeleted: true,
+        sport: booking.sport,
+        date: getDateKey(booking.date),
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        ...(context?.metadata ?? {}),
+      },
+    });
+
     // Automatically delete the booking if payment fails
     // This removes unpaid bookings from showing up for coaches/venues/players
     if (session) {
@@ -2828,6 +3118,25 @@ export const initiateGroupBooking = async (
     await session.commitTransaction();
     session.endSession();
 
+    // Recorded after commit — initiateBooking already logged CREATED, so this
+    // captures the conversion to a group booking and who was invited.
+    await recordBookingEventFor(booking, {
+      type: "INVITE_SENT",
+      toStatus: booking.status,
+      actorType: "USER",
+      actorUserId: payload.userId,
+      channel: "CLIENT_WEB",
+      amountPaise: toPaise(booking.totalAmount),
+      summary: `Group booking — ${invitees.length} invitation(s) sent, ${payload.paymentType} payment`,
+      metadata: {
+        bookingType: "GROUP",
+        paymentType: payload.paymentType,
+        splitMethod: booking.splitMethod,
+        inviteeIds: invitees.map((invitee) => invitee._id.toString()),
+        inviteeCount: invitees.length,
+      },
+    });
+
     return { booking };
   } catch (error) {
     await session.abortTransaction();
@@ -2952,6 +3261,8 @@ export const respondToBookingInvitation = async (
         p.userId.toString() !== booking.organizerId.toString(),
     );
 
+    const statusBeforeResponse = booking.status;
+
     // Update booking status if all have responded
     if (allResponded) {
       if (anyAccepted || booking.participants.length === 1) {
@@ -2969,6 +3280,36 @@ export const respondToBookingInvitation = async (
 
     await session.commitTransaction();
     session.endSession();
+
+    await recordBookingEventFor(booking, {
+      type: "INVITE_RESPONDED",
+      fromStatus: statusBeforeResponse,
+      toStatus: booking.status,
+      actorType: "USER",
+      actorUserId: userId,
+      channel: "CLIENT_WEB",
+      summary: `Invitee ${accept ? "accepted" : "declined"} the group booking invitation${
+        allResponded ? " — all invitations now resolved" : ""
+      }`,
+      metadata: {
+        invitationId,
+        accepted: accept,
+        allResponded,
+        anyAccepted,
+        // A decline on a SPLIT booking redistributes everyone's share, so the
+        // resulting split is worth capturing at the moment it changed.
+        ...(!accept && booking.paymentType === "SPLIT"
+          ? {
+              redistributedSplit: booking.payments
+                .filter((payment) => payment.userType === "Player")
+                .map((payment) => ({
+                  userId: payment.userId.toString(),
+                  amountPaise: toPaise(payment.amount),
+                })),
+            }
+          : {}),
+      },
+    });
 
     // Send notifications after successful transaction
     const invitee = await User.findById(userId);
@@ -3101,8 +3442,19 @@ export const confirmBookingByProvider = async (
     throw new Error("Payment has not been confirmed yet");
   }
 
+  const previousStatus = booking.status;
   booking.status = "CONFIRMED";
   await booking.save();
+
+  await recordBookingEventFor(booking, {
+    type: "PROVIDER_CONFIRMED",
+    fromStatus: previousStatus,
+    toStatus: "CONFIRMED",
+    actorType: "PROVIDER",
+    actorUserId: providerUserId,
+    channel: "PROVIDER_WEB",
+    summary: "Provider accepted the booking",
+  });
 
   const venue = await Venue.findById(booking.venueId).select("name");
   const participantIds = getBookingParticipantIds(booking);
@@ -3204,10 +3556,34 @@ export const rescheduleBookingByCoach = async (
     );
   }
 
+  const previousSlot = {
+    date: getDateKey(booking.date),
+    startTime: booking.startTime,
+    endTime: booking.endTime,
+  };
+
   booking.date = newDate;
   booking.startTime = newStartTime;
   booking.endTime = newEndTime;
   await booking.save();
+
+  await recordBookingEventFor(booking, {
+    type: "RESCHEDULED",
+    fromStatus: booking.status,
+    toStatus: booking.status,
+    actorType: "PROVIDER",
+    actorUserId: coachUserId,
+    channel: "PROVIDER_WEB",
+    summary: `Coach moved the session from ${previousSlot.date} ${previousSlot.startTime}-${previousSlot.endTime} to ${getDateKey(newDate)} ${newStartTime}-${newEndTime}`,
+    metadata: {
+      from: previousSlot,
+      to: {
+        date: getDateKey(newDate),
+        startTime: newStartTime,
+        endTime: newEndTime,
+      },
+    },
+  });
 
   return booking;
 };
@@ -3239,10 +3615,25 @@ export const rejectBookingByProvider = async (
     throw new Error("Not authorized to reject this booking");
   }
 
+  const statusBeforeRejection = booking.status;
   booking.status = "CANCELLED";
   booking.cancelledAt = new Date();
   booking.cancellationReason = reason || "Rejected by provider";
   await booking.save();
+
+  await recordBookingEventFor(booking, {
+    type: "PROVIDER_REJECTED",
+    fromStatus: statusBeforeRejection,
+    toStatus: "CANCELLED",
+    actorType: "PROVIDER",
+    actorUserId: providerUserId,
+    channel: "PROVIDER_WEB",
+    summary: "Provider declined the booking — full refund owed",
+    metadata: {
+      reason: booking.cancellationReason,
+      wasPaid: Boolean(booking.paymentConfirmedAt),
+    },
+  });
 
   let refundAmount = 0;
   let refundStatus: "PENDING" | "PROCESSED" | "REJECTED" | undefined;
@@ -3372,6 +3763,31 @@ export const coverUnpaidShares = async (
 
   await booking.save();
 
+  // A split being reassigned changes who owes what — the "why" behind an
+  // organizer's share suddenly growing is otherwise unrecoverable.
+  await recordBookingEventFor(booking, {
+    type: "STATUS_CHANGED",
+    fromStatus: booking.status,
+    toStatus: booking.status,
+    actorType: "USER",
+    actorUserId: organizerId,
+    channel: "CLIENT_WEB",
+    amountPaise: toPaise(totalUnpaid),
+    summary: `Organizer absorbed ${unpaidPlayerPayments.length} unpaid share(s)`,
+    metadata: {
+      change: "SPLIT_REASSIGNED",
+      coveredUserIds,
+      coveredCount: unpaidPlayerPayments.length,
+      organizerShareAfterPaise: toPaise(
+        booking.payments.find(
+          (payment) =>
+            payment.userId.toString() === organizerId &&
+            payment.userType === "Player",
+        )?.amount ?? 0,
+      ),
+    },
+  });
+
   // Send notifications to users whose payments were covered
   const venue = await Venue.findById(booking.venueId).select("name");
   const organizer = await User.findById(organizerId).select("name");
@@ -3458,10 +3874,46 @@ export const cleanupStaleBookingLocks = async (): Promise<number> => {
 export const cleanupExpiredBookings = async (): Promise<number> => {
   const now = new Date();
 
-  const result = await Booking.deleteMany({
+  const filter = {
     status: { $in: ["PENDING_CONFIRMATION", "PENDING_INVITES"] },
     paymentConfirmedAt: { $exists: false },
     expiresAt: { $lt: now },
+  } as const;
+
+  // Read before deleting: these documents are removed outright, so without an
+  // event the abandoned checkout leaves no trace at all — and the aggregate of
+  // these events is the checkout-abandonment signal.
+  const expiring = await Booking.find(filter).select(
+    "_id venueId coachId academyId status sport date startTime endTime totalAmount organizerId expiresAt",
+  );
+
+  if (expiring.length === 0) {
+    return 0;
+  }
+
+  for (const booking of expiring) {
+    await recordBookingEventFor(booking, {
+      type: "EXPIRED",
+      fromStatus: booking.status,
+      actorType: "SYSTEM",
+      channel: "CRON",
+      amountPaise: toPaise(booking.totalAmount),
+      occurredAt: booking.expiresAt ?? now,
+      summary:
+        "Unpaid booking passed its hold expiry and was deleted by the cleanup job",
+      metadata: {
+        bookingDeleted: true,
+        organizerId: booking.organizerId?.toString(),
+        sport: booking.sport,
+        date: getDateKey(booking.date),
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+      },
+    });
+  }
+
+  const result = await Booking.deleteMany({
+    _id: { $in: expiring.map((booking) => booking._id) },
   });
 
   return result.deletedCount || 0;
@@ -3558,6 +4010,12 @@ export const reconcileBookingPaymentFromWebhookPayload = async (
       transaction.bookingId.toString(),
       transaction.userId.toString(),
       "PAID",
+      undefined,
+      {
+        actorType: "GATEWAY",
+        channel: "WEBHOOK",
+        metadata: { merchantOrderId, gatewayState: state, source: "webhook" },
+      },
     );
     console.info(
       `[BookingWebhook] Payment confirmed for booking ${transaction.bookingId}, merchantOrderId=${merchantOrderId}`,
@@ -3568,6 +4026,12 @@ export const reconcileBookingPaymentFromWebhookPayload = async (
       transaction.bookingId.toString(),
       transaction.userId.toString(),
       "FAILED",
+      undefined,
+      {
+        actorType: "GATEWAY",
+        channel: "WEBHOOK",
+        metadata: { merchantOrderId, gatewayState: state, source: "webhook" },
+      },
     );
     console.info(
       `[BookingWebhook] Payment failed for booking ${transaction.bookingId}, merchantOrderId=${merchantOrderId}`,

@@ -31,7 +31,7 @@ export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
 export type BookingStatus =
   "CONFIRMED" | "IN_PROGRESS" | "COMPLETED" | "NO_SHOW" | "CANCELLED";
 
-export type PaymentUserType = "VenueLister" | "Coach";
+export type PaymentUserType = "VenueLister" | "Coach" | "Academy";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
 
 export interface IPayment {

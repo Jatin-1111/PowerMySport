@@ -391,6 +391,34 @@ export interface AdminPhonePeRefundStatus {
   transactions: AdminPhonePeRefundTransaction[];
 }
 
+/** One entry in a booking's append-only lifecycle log. */
+export interface BookingEvent {
+  _id: string;
+  subjectType: "BOOKING" | "EXPERT_SESSION";
+  subjectId: string;
+  providerType: "VENUE" | "COACH" | "ACADEMY" | "EXPERT";
+  providerId?: string;
+  type: string;
+  fromStatus?: string;
+  toStatus?: string;
+  actorType: "USER" | "PROVIDER" | "ADMIN" | "SYSTEM" | "GATEWAY";
+  /** Populated to a user object server-side when the actor is a real account. */
+  actorUserId?: { _id: string; name?: string; email?: string; role?: string } | string;
+  channel:
+    | "CLIENT_WEB"
+    | "PROVIDER_WEB"
+    | "ADMIN_PANEL"
+    | "CRON"
+    | "WEBHOOK"
+    | "SYSTEM";
+  /** PAISE, matching the server. Divide by 100 to display rupees. */
+  amountPaise?: number;
+  summary?: string;
+  metadata?: Record<string, unknown>;
+  occurredAt: string;
+  createdAt: string;
+}
+
 export interface PayoutSummary {
   vendorId: string;
   vendorRole: "VenueLister" | "Coach" | "Expert";
@@ -657,6 +685,19 @@ export const adminApi = {
   ): Promise<ApiResponse<AdminPhonePeRefundStatus>> => {
     const response = await axiosInstance.get(
       `/admin/refunds/${bookingId}/status`,
+    );
+    return response.data;
+  },
+
+  /**
+   * Append-only lifecycle timeline. Resolves across both bookings and expert
+   * sessions, so the same call works for either kind of id.
+   */
+  getBookingTimeline: async (
+    subjectId: string,
+  ): Promise<ApiResponse<BookingEvent[]>> => {
+    const response = await axiosInstance.get(
+      `/admin/bookings/${subjectId}/timeline`,
     );
     return response.data;
   },

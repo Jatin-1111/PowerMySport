@@ -47,18 +47,46 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
         continue;
       }
 
-      // Only release payee entries (VENUE_LISTER / COACH).
+      // Only release payee entries (VENUE_LISTER / COACH / ACADEMY).
       // The PLAYER entry is already marked PAID by updatePaymentStatus().
+      const released: Array<{ userId: string; userType: string; amountPaise: number }> =
+        [];
       booking.payments = booking.payments.map((payment: any) => {
         if (payment.status === "PENDING" && payment.userType !== "Player") {
           payment.status = "PAID";
           payment.paidAt = now;
+          released.push({
+            userId: payment.userId?.toString(),
+            userType: payment.userType,
+            amountPaise: Math.round((payment.amount ?? 0) * 100),
+          });
         }
         return payment;
       });
 
       await booking.save();
       releasedCount++;
+
+      if (released.length > 0) {
+        const { recordBookingEventFor } = await import(
+          "../client/services/BookingEventService"
+        );
+        await recordBookingEventFor(booking, {
+          type: "PAYOUT_RELEASED",
+          toStatus: booking.status,
+          actorType: "SYSTEM",
+          channel: "CRON",
+          amountPaise: released.reduce(
+            (sum, payee) => sum + payee.amountPaise,
+            0,
+          ),
+          summary: `Payout released to ${released.length} payee(s), 24h after completion`,
+          metadata: {
+            payees: released,
+            confirmedTransactionId: confirmedTx._id.toString(),
+          },
+        });
+      }
     }
 
     if (releasedCount > 0) {
@@ -138,12 +166,49 @@ export const retryPendingBookingRefunds = async (): Promise<void> => {
           succeeded++;
         }
         // If INITIATED — pollPendingRefunds will confirm and flip to PROCESSED.
+
+        const { recordBookingEventFor } = await import(
+          "../client/services/BookingEventService"
+        );
+        await recordBookingEventFor(booking, {
+          type:
+            refundState === "COMPLETED"
+              ? "REFUND_COMPLETED"
+              : "REFUND_INITIATED",
+          actorType: "SYSTEM",
+          channel: "CRON",
+          amountPaise,
+          summary: `Refund retry succeeded (${refundState})`,
+          metadata: {
+            refundMerchantId,
+            refundState,
+            transactionId: transaction._id.toString(),
+            trigger: "refund_retry_job",
+          },
+        });
       } catch (err) {
         console.error(
           `❌ Refund retry failed for booking ${booking._id}:`,
           err,
         );
         // Leave refundStatus as PENDING — try again next run.
+
+        const { recordBookingEventFor } = await import(
+          "../client/services/BookingEventService"
+        );
+        await recordBookingEventFor(booking, {
+          type: "REFUND_FAILED",
+          actorType: "SYSTEM",
+          channel: "CRON",
+          amountPaise,
+          summary: "Refund retry failed — will attempt again next run",
+          metadata: {
+            refundMerchantId,
+            transactionId: transaction._id.toString(),
+            trigger: "refund_retry_job",
+            error: err instanceof Error ? err.message : String(err),
+          },
+        });
       }
     }
 

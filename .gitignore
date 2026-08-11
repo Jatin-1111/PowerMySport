@@ -18,3 +18,5 @@ PROJECT_CONTEXT.md
 asset
 logs
 docs
+# One-off migration audit reports (see server/src/migrations/20_*, 21_*)
+migration-*.json

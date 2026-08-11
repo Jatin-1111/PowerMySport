@@ -6,6 +6,7 @@ import {
   type AdminPhonePeRefundStatus,
 } from "@/modules/admin/services/admin";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
+import { BookingTimeline } from "@/modules/admin/components/BookingTimeline";
 import { statsApi } from "@/modules/analytics/services/stats";
 import { Card } from "@/modules/shared/ui/Card";
 import {
@@ -496,6 +497,10 @@ export default function AdminBookingsPage() {
                 label="Created"
                 value={formatDate(selectedBooking.createdAt)}
               />
+            </DetailSection>
+
+            <DetailSection title="History">
+              <BookingTimeline subjectId={getBookingId(selectedBooking)} />
             </DetailSection>
 
             <DetailSection title="Payment">

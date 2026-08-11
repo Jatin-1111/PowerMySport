@@ -16,6 +16,8 @@ import {
   initiatePhonePeRefund,
 } from "../../shared/services/PhonePeService";
 import { NotificationService } from "./NotificationService";
+import { recordExpertSessionEvent } from "./BookingEventService";
+import type { BookingEventChannel } from "../models/BookingEvent";
 import { PathwayExpertVerification } from "../../shared/models/PathwayExpertVerification";
 import {
   computeOpenSlots,
@@ -902,11 +904,41 @@ export const initiateExpertSession = async (params: {
     },
   );
 
+  await recordExpertSessionEvent(session, {
+    type: "CREATED",
+    toStatus: session.status,
+    actorType: "USER",
+    actorUserId: params.userId,
+    channel: "CLIENT_WEB",
+    amountPaise: toPaise(expert.sessionFee),
+    summary: `Expert session held for ${new Date(scheduledAt).toISOString()} (${resolvedMode})`,
+    metadata: {
+      merchantOrderId,
+      mode: resolvedMode,
+      scheduledAt: new Date(scheduledAt).toISOString(),
+      durationMinutes: expert.sessionDurationMinutes || 60,
+      holdExpiresAt: session.holdExpiresAt?.toISOString(),
+      hasPlayer: Boolean(playerId),
+      hasClientNote: Boolean(params.clientNote?.trim()),
+    },
+  });
+
   const payment = await initiatePhonePePayment({
     merchantOrderId,
     amount: toPaise(expert.sessionFee),
     redirectUrl: `${frontendUrl()}/experts/sessions/${session._id}`,
     ...(params.userPhone ? { userPhone: params.userPhone } : {}),
+  });
+
+  await recordExpertSessionEvent(session, {
+    type: "PAYMENT_INITIATED",
+    toStatus: session.status,
+    actorType: "USER",
+    actorUserId: params.userId,
+    channel: "CLIENT_WEB",
+    amountPaise: toPaise(expert.sessionFee),
+    summary: "PhonePe payment initiated for expert session",
+    metadata: { merchantOrderId, method: "PHONEPE" },
   });
 
   return {
@@ -922,8 +954,17 @@ export const initiateExpertSession = async (params: {
  */
 const applyExpertPaymentSuccess = async (
   session: ExpertSessionDocument,
+  /**
+   * Which surface drove this. Both the webhook and the client-side reconcile
+   * land here, and a log that can't tell them apart hides whether the gateway
+   * callback is actually working.
+   */
+  source: { channel: BookingEventChannel; actorUserId?: string } = {
+    channel: "WEBHOOK",
+  },
 ): Promise<ExpertSessionDocument> => {
   const wasPaid = session.paymentStatus === "COMPLETED";
+  const statusBefore = session.status;
   session.paymentStatus = "COMPLETED";
   if (!wasPaid) session.paidAt = new Date();
   session.set("holdExpiresAt", undefined);
@@ -931,6 +972,28 @@ const applyExpertPaymentSuccess = async (
     session.status = session.scheduledAt ? "SCHEDULED" : "PAID";
   }
   await session.save();
+
+  // Only on the real transition — this function is deliberately idempotent and
+  // is called repeatedly by reconcile/webhook, so logging unconditionally would
+  // fill the timeline with duplicate confirmations.
+  if (!wasPaid) {
+    await recordExpertSessionEvent(session, {
+      type: "PAYMENT_CONFIRMED",
+      fromStatus: statusBefore,
+      toStatus: session.status,
+      actorType: "GATEWAY",
+      ...(source.actorUserId ? { actorUserId: source.actorUserId } : {}),
+      channel: source.channel,
+      amountPaise: toPaise(session.amount),
+      summary: "Expert session payment confirmed",
+      metadata: {
+        merchantOrderId: session.merchantOrderId,
+        scheduledAt: session.scheduledAt
+          ? new Date(session.scheduledAt).toISOString()
+          : null,
+      },
+    });
+  }
 
   if (!wasPaid) {
     const when = session.scheduledAt
@@ -981,7 +1044,10 @@ export const reconcileExpertSession = async (params: {
   const status = await getPhonePeOrderStatus(session.merchantOrderId);
   const state = (status.state || "").toUpperCase();
   if (["COMPLETED", "SUCCESS", "PAYMENT_SUCCESS"].includes(state)) {
-    return applyExpertPaymentSuccess(session);
+    return applyExpertPaymentSuccess(session, {
+      channel: "CLIENT_WEB",
+      actorUserId: params.userId,
+    });
   } else if (["FAILED", "PAYMENT_ERROR", "PAYMENT_DECLINED"].includes(state)) {
     session.paymentStatus = "FAILED";
     if (session.status === "PENDING_PAYMENT") {
@@ -1013,6 +1079,12 @@ export const scheduleExpertSession = async (params: {
   if (!expert) throw new Error("Expert not found");
 
   const when = new Date(params.scheduledAt);
+  const previousSlot = session.scheduledAt
+    ? new Date(session.scheduledAt).toISOString()
+    : null;
+  const previousStatus = session.status;
+  const previousMode = session.mode;
+
   await withExpertSlotLock(
     expert,
     when,
@@ -1024,6 +1096,25 @@ export const scheduleExpertSession = async (params: {
       await session.save({ session: dbSession });
     },
   );
+
+  await recordExpertSessionEvent(session, {
+    type: "RESCHEDULED",
+    fromStatus: previousStatus,
+    toStatus: session.status,
+    actorType: "USER",
+    actorUserId: params.userId,
+    channel: "CLIENT_WEB",
+    summary: previousSlot
+      ? `Client moved the session from ${previousSlot} to ${when.toISOString()}`
+      : `Client scheduled the session for ${when.toISOString()}`,
+    metadata: {
+      from: previousSlot,
+      to: when.toISOString(),
+      ...(params.mode && params.mode !== previousMode
+        ? { modeChangedFrom: previousMode, modeChangedTo: params.mode }
+        : {}),
+    },
+  });
 
   const expertUserId = (expert.userId as mongoose.Types.ObjectId).toString();
   notify(
@@ -1084,11 +1175,32 @@ export const completeExpertSession = async (params: {
   }
   const momNotes = assertValidMom(params.momNotes);
   const now = new Date();
+  const statusBeforeCompletion = session.status;
   session.status = "COMPLETED";
   session.completedAt = now;
   session.momNotes = momNotes;
   session.momAddedAt = now;
   await session.save();
+
+  await recordExpertSessionEvent(session, {
+    type: "COMPLETED",
+    fromStatus: statusBeforeCompletion,
+    toStatus: "COMPLETED",
+    actorType: params.isAdmin ? "ADMIN" : "PROVIDER",
+    actorUserId: params.actorUserId,
+    channel: params.isAdmin ? "ADMIN_PANEL" : "PROVIDER_WEB",
+    amountPaise: toPaise(session.amount),
+    summary: "Expert marked the session complete and filed minutes of meeting",
+    metadata: {
+      momLength: momNotes.length,
+      scheduledAt: session.scheduledAt
+        ? new Date(session.scheduledAt).toISOString()
+        : null,
+      // Completion starts the 24h payout clock, so this is the anchor event
+      // for any later "why hasn't the expert been paid" question.
+      payoutEligibleAt: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+    },
+  });
 
   notify(
     session.userId,
@@ -1125,8 +1237,24 @@ export const updateExpertSessionMom = async (params: {
   if (session.status !== "COMPLETED") {
     throw new Error("Notes can only be edited on a completed session");
   }
+  const previousMomLength = session.momNotes?.length ?? 0;
   session.momNotes = assertValidMom(params.momNotes);
   await session.save();
+
+  await recordExpertSessionEvent(session, {
+    type: "MOM_ADDED",
+    toStatus: session.status,
+    actorType: params.isAdmin ? "ADMIN" : "PROVIDER",
+    actorUserId: params.actorUserId,
+    channel: params.isAdmin ? "ADMIN_PANEL" : "PROVIDER_WEB",
+    summary: "Minutes of meeting revised after completion",
+    metadata: {
+      revision: true,
+      previousLength: previousMomLength,
+      newLength: session.momNotes.length,
+    },
+  });
+
   return session;
 };
 
@@ -1151,8 +1279,23 @@ export const setSessionMeetingLink = async (params: {
   if (link && !/^https?:\/\//i.test(link)) {
     throw new Error("Meeting link must be a valid URL");
   }
+  const hadLink = Boolean(session.meetingLink);
   session.meetingLink = link;
   await session.save();
+
+  await recordExpertSessionEvent(session, {
+    type: "MEETING_LINK_SET",
+    toStatus: session.status,
+    actorType: params.isAdmin ? "ADMIN" : "PROVIDER",
+    actorUserId: params.actorUserId,
+    channel: params.isAdmin ? "ADMIN_PANEL" : "PROVIDER_WEB",
+    summary: link
+      ? `Meeting link ${hadLink ? "updated" : "added"}`
+      : "Meeting link cleared",
+    // The URL itself is deliberately not stored — it is a live join link, and
+    // an append-only log is the wrong place to keep one indefinitely.
+    metadata: { replaced: hadLink, cleared: !link },
+  });
 
   notify(
     session.userId,
@@ -1201,11 +1344,30 @@ export const respondToExpertSession = async (params: {
   }
   const tz = expert.timezone || "Asia/Kolkata";
 
+  const statusBeforeResponse = session.status;
+  const actorTypeForResponse = params.isAdmin ? "ADMIN" : "PROVIDER";
+  const channelForResponse = params.isAdmin ? "ADMIN_PANEL" : "PROVIDER_WEB";
+
   if (params.action === "ACCEPT") {
     session.expertAcceptance = "ACCEPTED";
     session.expertRespondedAt = new Date();
     if (session.scheduledAt) session.status = "SCHEDULED";
     await session.save();
+
+    await recordExpertSessionEvent(session, {
+      type: "PROVIDER_CONFIRMED",
+      fromStatus: statusBeforeResponse,
+      toStatus: session.status,
+      actorType: actorTypeForResponse,
+      actorUserId: params.expertUserId,
+      channel: channelForResponse,
+      summary: "Expert accepted the client's chosen time",
+      metadata: {
+        // Time-to-accept is the expert SLA metric; derivable from CREATED.
+        respondedAt: session.expertRespondedAt?.toISOString(),
+      },
+    });
+
     notify(
       session.userId,
       "BOOKING_CONFIRMED",
@@ -1241,6 +1403,27 @@ export const respondToExpertSession = async (params: {
       }
     }
     await session.save();
+
+    await recordExpertSessionEvent(session, {
+      type: "PROVIDER_REJECTED",
+      fromStatus: statusBeforeResponse,
+      toStatus: "CANCELLED",
+      actorType: actorTypeForResponse,
+      actorUserId: params.expertUserId,
+      channel: channelForResponse,
+      amountPaise: toPaise(session.amount),
+      summary:
+        session.paymentStatus === "COMPLETED"
+          ? "Expert declined a PAID session — manual refund required"
+          : "Expert declined an unpaid session",
+      metadata: {
+        reason: session.cancelReason,
+        refundStatus: session.refundStatus,
+        cancellationNoticeHours: session.cancellationNoticeHours,
+        wasPaid: session.paymentStatus === "COMPLETED",
+      },
+    });
+
     notify(
       session.userId,
       "BOOKING_CANCELLED",
@@ -1258,6 +1441,9 @@ export const respondToExpertSession = async (params: {
   if (!params.scheduledAt)
     throw new Error("A new time is required to reschedule");
   const when = new Date(params.scheduledAt);
+  const previousScheduledAt = session.scheduledAt
+    ? new Date(session.scheduledAt).toISOString()
+    : null;
   await withExpertSlotLock(
     expert,
     when,
@@ -1270,6 +1456,22 @@ export const respondToExpertSession = async (params: {
       await session.save({ session: dbSession });
     },
   );
+
+  await recordExpertSessionEvent(session, {
+    type: "RESCHEDULED",
+    fromStatus: statusBeforeResponse,
+    toStatus: session.status,
+    actorType: actorTypeForResponse,
+    actorUserId: params.expertUserId,
+    channel: channelForResponse,
+    summary: `Expert moved the session to ${when.toISOString()}`,
+    metadata: {
+      from: previousScheduledAt,
+      to: when.toISOString(),
+      initiatedBy: "EXPERT",
+    },
+  });
+
   notify(
     session.userId,
     "BOOKING_STATUS_UPDATED",
@@ -1316,6 +1518,7 @@ export const cancelExpertSession = async (params: {
     : isExpert
       ? "EXPERT"
       : "CLIENT";
+  const statusForCancelEvent = session.status;
   const cancelledAt = new Date();
   session.status = "CANCELLED";
   session.cancelledAt = cancelledAt;
@@ -1333,7 +1536,36 @@ export const cancelExpertSession = async (params: {
       );
     }
   }
+  const statusBeforeCancel = statusForCancelEvent;
   await session.save();
+
+  await recordExpertSessionEvent(session, {
+    type: "CANCELLED",
+    fromStatus: statusBeforeCancel,
+    toStatus: "CANCELLED",
+    actorType: isAdmin ? "ADMIN" : isExpert ? "PROVIDER" : "USER",
+    actorUserId: params.actorUserId,
+    channel: isAdmin
+      ? "ADMIN_PANEL"
+      : isExpert
+        ? "PROVIDER_WEB"
+        : "CLIENT_WEB",
+    amountPaise: toPaise(session.amount),
+    summary: `Cancelled by ${by}${
+      session.paymentStatus === "COMPLETED"
+        ? " — paid session, manual refund required"
+        : ""
+    }`,
+    metadata: {
+      cancelledBy: by,
+      reason: session.cancelReason,
+      refundStatus: session.refundStatus,
+      // Notice given is what admin uses to judge a late cancellation; there is
+      // no automatic forfeit, so the number needs to survive in the record.
+      cancellationNoticeHours: session.cancellationNoticeHours,
+      wasPaid: session.paymentStatus === "COMPLETED",
+    },
+  });
 
   const expertUserId = expert?.userId?.toString();
   // Notify the other party.
@@ -1411,6 +1643,20 @@ export const reviewExpertSession = async (params: {
   session.reviewedAt = new Date();
   await session.save();
 
+  await recordExpertSessionEvent(session, {
+    type: "REVIEW_SUBMITTED",
+    toStatus: session.status,
+    actorType: "USER",
+    actorUserId: params.userId,
+    channel: "CLIENT_WEB",
+    summary: `Client left a ${params.rating}-star review`,
+    metadata: {
+      rating: params.rating,
+      anonymous: Boolean(params.anonymous),
+      hasWrittenReview: Boolean(session.review),
+    },
+  });
+
   await recomputeExpertRating(session.expertId);
 
   const expertUserId = await expertUserIdOf(session.expertId);
@@ -1468,6 +1714,20 @@ export const markSessionRefundDone = async (sessionId: string) => {
 
   session.refundStatus = "MANUAL_DONE";
   await session.save();
+
+  await recordExpertSessionEvent(session, {
+    type: "REFUND_COMPLETED",
+    toStatus: session.status,
+    actorType: "ADMIN",
+    channel: "ADMIN_PANEL",
+    amountPaise: toPaise(session.amount),
+    summary: "Admin marked the manual refund as done",
+    metadata: {
+      merchantOrderId: session.merchantOrderId,
+      refundStatus: "MANUAL_DONE",
+    },
+  });
+
   notify(
     session.userId,
     "PAYMENT_REFUND",
@@ -1492,6 +1752,17 @@ export const markSessionPayoutDone = async (sessionId: string) => {
   session.payoutStatus = "PAID";
   session.payoutPaidAt = new Date();
   await session.save();
+
+  await recordExpertSessionEvent(session, {
+    type: "PAYOUT_RELEASED",
+    toStatus: session.status,
+    actorType: "ADMIN",
+    channel: "ADMIN_PANEL",
+    amountPaise: toPaise(session.amount),
+    summary: "Admin released the expert payout early, ahead of the 24h auto-release",
+    metadata: { manual: true, payoutPaidAt: session.payoutPaidAt?.toISOString() },
+  });
+
   const expertUserId = await expertUserIdOf(session.expertId);
   if (expertUserId) {
     notify(
@@ -1719,7 +1990,7 @@ export const reconcileExpertSessionPaymentFromWebhookPayload = async (
   session.callbackPayload = payload;
   if (["COMPLETED", "SUCCESS", "PAYMENT_SUCCESS"].includes(upper)) {
     await session.save();
-    await applyExpertPaymentSuccess(session);
+    await applyExpertPaymentSuccess(session, { channel: "WEBHOOK" });
     console.info(
       `[ExpertWebhook] payment confirmed for session ${session._id}`,
     );
@@ -1762,7 +2033,7 @@ export const expireUnpaidExpertHolds = async (): Promise<number> => {
       const status = await getPhonePeOrderStatus(session.merchantOrderId);
       const state = (status.state || "").toUpperCase();
       if (["COMPLETED", "SUCCESS", "PAYMENT_SUCCESS"].includes(state)) {
-        await applyExpertPaymentSuccess(session);
+        await applyExpertPaymentSuccess(session, { channel: "CRON" });
         continue;
       }
     } catch (err) {
@@ -1784,7 +2055,24 @@ export const expireUnpaidExpertHolds = async (): Promise<number> => {
         },
       },
     );
-    if (updated) count += 1;
+    if (updated) {
+      count += 1;
+      await recordExpertSessionEvent(session, {
+        type: "EXPIRED",
+        fromStatus: "PENDING_PAYMENT",
+        toStatus: "CANCELLED",
+        actorType: "SYSTEM",
+        channel: "CRON",
+        occurredAt: session.holdExpiresAt ?? now,
+        amountPaise: toPaise(session.amount),
+        summary:
+          "Unpaid hold expired — cancelled after confirming with PhonePe that no payment was captured",
+        metadata: {
+          merchantOrderId: session.merchantOrderId,
+          holdExpiresAt: session.holdExpiresAt?.toISOString(),
+        },
+      });
+    }
   }
   return count;
 };
@@ -1972,6 +2260,16 @@ export const releaseExpertSessionPayouts = async (): Promise<number> => {
     );
     if (updated) {
       count += 1;
+      await recordExpertSessionEvent(s, {
+        type: "PAYOUT_RELEASED",
+        toStatus: "COMPLETED",
+        actorType: "SYSTEM",
+        channel: "CRON",
+        amountPaise: toPaise(s.amount),
+        summary: "Expert payout auto-released 24h after completion",
+        metadata: { manual: false, payoutPaidAt: now.toISOString() },
+      });
+
       const expertUserId = await expertUserIdOf(s.expertId);
       if (expertUserId) {
         notify(

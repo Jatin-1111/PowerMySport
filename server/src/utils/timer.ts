@@ -2,6 +2,7 @@ import { Booking } from "../client/models/Booking";
 import { BookingPaymentTransaction } from "../client/models/BookingPayment";
 import { initiateRefund } from "../client/services/RefundService";
 import { NotificationService } from "../client/services/NotificationService";
+import { recordBookingEventFor } from "../client/services/BookingEventService";
 
 /**
  * Set booking expiration time (10 minutes from now)
@@ -47,6 +48,21 @@ export const expireOldBookings = async (): Promise<number> => {
         if (!updated) continue;
         expiredCount++;
 
+        await recordBookingEventFor(booking, {
+          type: "EXPIRED",
+          fromStatus: "PENDING_CONFIRMATION",
+          toStatus: "EXPIRED",
+          actorType: "SYSTEM",
+          channel: "CRON",
+          occurredAt: booking.expiresAt ?? now,
+          summary:
+            "Hold expired — venue/coach did not confirm before the deadline",
+          metadata: {
+            organizerId: booking.organizerId?.toString(),
+            expiresAt: booking.expiresAt?.toISOString(),
+          },
+        });
+
         // Refund any payment already collected — the parent shouldn't be
         // charged for a slot the venue/coach never confirmed.
         const transaction = await BookingPaymentTransaction.findOne({
@@ -62,6 +78,20 @@ export const expireOldBookings = async (): Promise<number> => {
               reason:
                 "Booking expired — not confirmed by the venue/coach in time",
             });
+
+            await recordBookingEventFor(booking, {
+              type: "REFUND_INITIATED",
+              actorType: "SYSTEM",
+              channel: "CRON",
+              amountPaise: transaction.amount,
+              summary: "Auto-refund initiated for an expired unconfirmed booking",
+              metadata: {
+                transactionId: transaction._id.toString(),
+                merchantOrderId: transaction.merchantOrderId,
+                trigger: "expiry_auto_refund",
+              },
+            });
+
             console.log(
               `Auto-refunded expired booking ${booking._id} (transaction ${transaction._id})`,
             );
@@ -93,6 +123,27 @@ export const expireOldBookings = async (): Promise<number> => {
               `Failed to auto-refund expired booking ${booking._id}:`,
               refundError,
             );
+
+            // This is exactly the case that needs a durable trace: the booking
+            // is EXPIRED, the customer is owed money, and nothing else records
+            // that the automated attempt failed.
+            await recordBookingEventFor(booking, {
+              type: "REFUND_FAILED",
+              actorType: "SYSTEM",
+              channel: "CRON",
+              amountPaise: transaction.amount,
+              summary:
+                "Auto-refund for an expired booking failed — needs manual follow-up",
+              metadata: {
+                transactionId: transaction._id.toString(),
+                merchantOrderId: transaction.merchantOrderId,
+                trigger: "expiry_auto_refund",
+                error:
+                  refundError instanceof Error
+                    ? refundError.message
+                    : String(refundError),
+              },
+            });
           }
         }
       } catch (error) {

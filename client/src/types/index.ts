@@ -30,7 +30,7 @@ export type BookingStatus =
   | "CANCELLED"
   | "EXPIRED";
 
-export type PaymentUserType = "Player" | "VenueLister" | "Coach";
+export type PaymentUserType = "Player" | "VenueLister" | "Coach" | "Academy";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
 
 export interface IPayment {
@@ -340,7 +340,7 @@ export type ParticipantStatus = "INVITED" | "ACCEPTED" | "DECLINED";
 
 export interface BookingPayment {
   userId: string;
-  userType: "VenueLister" | "Coach" | "Player";
+  userType: "VenueLister" | "Coach" | "Academy" | "Player";
   amount: number;
   status: "PENDING" | "PAID" | "FAILED";
   paidAt?: string;

@@ -10,6 +10,8 @@
     "start": "node dist/server.js",
     "migrate": "ts-node src/migrations/index.ts",
     "migrate:venue-images": "ts-node src/migrations/10_migrate_venue_images.ts",
+    "migrate:wallet-paise": "ts-node src/migrations/20_fix_wallet_transaction_paise.ts",
+    "migrate:backfill-booking-events": "ts-node src/migrations/21_backfill_booking_created_events.ts",
     "migrate:admin-permissions": "ts-node src/scripts/migrateAdminPermissions.ts",
     "community:players-public": "ts-node src/scripts/makePlayerProfilesPublic.ts",
     "seed:sports": "ts-node src/scripts/seedSports.ts",
@@ -31,6 +33,9 @@
     "test:coach-subscriptions": "npm run build && node --test dist/tests/coachSubscriptionRoutes.integration.test.js",
     "test:security": "npm run build && node --test --test-force-exit dist/tests/security.unit.test.js dist/tests/security.integration.test.js",
     "test:email": "npm run build && node --test dist/tests/email.unit.test.js",
+    "test:wallet-paise": "npm run build && node --test dist/tests/walletPaiseMigration.test.js",
+    "test:booking-events": "npm run build && node --test --test-force-exit dist/tests/bookingEvent.integration.test.js",
+    "test:backfill-events": "npm run build && node --test --test-force-exit dist/tests/backfillBookingEvents.integration.test.js",
     "email:verify": "ts-node src/scripts/verifyEmail.ts",
     "email:test-all": "ts-node src/scripts/testAllEmails.ts"
   },

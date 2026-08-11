@@ -16,6 +16,7 @@ import {
   guessPlaceOfSupply,
 } from "../../shared/utils/invoiceGst";
 import { extractPhonePePaymentMethodLabel } from "../../shared/utils/paymentMethod";
+import { recordBookingEventFor } from "../services/BookingEventService";
 import { WalletService } from "../services/WalletService";
 import {
   cancelBooking,
@@ -1182,6 +1183,22 @@ export const initiatePhonePePaymentForBooking = async (
       status: "PENDING",
     });
 
+    await recordBookingEventFor(booking, {
+      type: "PAYMENT_INITIATED",
+      toStatus: booking.status,
+      actorType: "USER",
+      actorUserId: userId,
+      channel: "CLIENT_WEB",
+      amountPaise: amountInPaise,
+      summary: "PhonePe payment initiated",
+      metadata: {
+        merchantOrderId,
+        method: "PHONEPE",
+        transactionId: transaction._id.toString(),
+        isSplitPayer: isSplitPayer && !isOrganizer,
+      },
+    });
+
     const paymentPayload: {
       merchantOrderId: string;
       amount: number;
@@ -1288,6 +1305,16 @@ export const handlePhonePeCallback = async (
         transaction.bookingId.toString(),
         transaction.userId.toString(),
         "PAID",
+        undefined,
+        {
+          actorType: "GATEWAY",
+          channel: "WEBHOOK",
+          metadata: {
+            merchantOrderId: transaction.merchantOrderId,
+            gatewayState: payload.state,
+            source: "phonepe_callback",
+          },
+        },
       );
     } else if (payload.state === "FAILED") {
       transaction.status = "FAILED";
@@ -1295,6 +1322,16 @@ export const handlePhonePeCallback = async (
         transaction.bookingId.toString(),
         transaction.userId.toString(),
         "FAILED",
+        undefined,
+        {
+          actorType: "GATEWAY",
+          channel: "WEBHOOK",
+          metadata: {
+            merchantOrderId: transaction.merchantOrderId,
+            gatewayState: payload.state,
+            source: "phonepe_callback",
+          },
+        },
       );
     }
 
@@ -1380,6 +1417,18 @@ export const verifyPhonePeOrderStatus = async (
         transaction.bookingId.toString(),
         transaction.userId.toString(),
         "PAID",
+        undefined,
+        {
+          actorType: "GATEWAY",
+          channel: "CLIENT_WEB",
+          metadata: {
+            merchantOrderId,
+            gatewayState: status.state,
+            // The user's browser polled this after returning from PhonePe,
+            // rather than the webhook arriving first.
+            source: "phonepe_status_poll",
+          },
+        },
       );
     } else if (status.state === "FAILED" && transaction.status !== "FAILED") {
       transaction.status = "FAILED";
@@ -1387,6 +1436,16 @@ export const verifyPhonePeOrderStatus = async (
         transaction.bookingId.toString(),
         transaction.userId.toString(),
         "FAILED",
+        undefined,
+        {
+          actorType: "GATEWAY",
+          channel: "CLIENT_WEB",
+          metadata: {
+            merchantOrderId,
+            gatewayState: status.state,
+            source: "phonepe_status_poll",
+          },
+        },
       );
     }
 
@@ -1739,18 +1798,40 @@ export const payBookingWithWallet = async (
 
     const merchantOrderId = `WALLET-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-    // Create payment transaction
+    // Create payment transaction.
+    // BookingPaymentTransaction.amount is denominated in PAISE — the PhonePe
+    // path stores Math.round(amount * 100), and every downstream reader
+    // (RefundService.initiateRefund, timer.ts expireOldBookings, the refund
+    // retry job in scheduledJobs.ts) divides by 100 to get rupees. Storing
+    // the raw rupee figure here made wallet-paid bookings refund and report
+    // 100x too small.
     await BookingPaymentTransaction.create({
       bookingId: booking._id,
       userId: user.id,
       merchantOrderId,
-      amount,
+      amount: Math.round(amount * 100),
       status: "COMPLETED",
       state: "COMPLETED",
     });
 
+    await recordBookingEventFor(booking, {
+      type: "PAYMENT_INITIATED",
+      toStatus: booking.status,
+      actorType: "USER",
+      actorUserId: user.id,
+      channel: "CLIENT_WEB",
+      amountPaise: Math.round(amount * 100),
+      summary: "Wallet debited for booking payment",
+      metadata: { merchantOrderId, method: "WALLET" },
+    });
+
     // Update booking status
-    await updatePaymentStatus(bookingId, user.id, "PAID");
+    await updatePaymentStatus(bookingId, user.id, "PAID", undefined, {
+      actorType: "USER",
+      actorUserId: user.id,
+      channel: "CLIENT_WEB",
+      metadata: { merchantOrderId, method: "WALLET" },
+    });
 
     res.status(200).json({
       success: true,

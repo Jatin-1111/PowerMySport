@@ -26,6 +26,7 @@ import {
   getRoleTemplatesData,
 } from "../services/AdminService";
 import { recordAuditLog, listAuditLogs } from "../services/AuditLogService";
+import { BookingEventService } from "../../client/services/BookingEventService";
 import {
   getCoachById,
   listCoachVerificationRequests,
@@ -1716,6 +1717,48 @@ export const listDisputes = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to fetch disputes",
+    });
+  }
+};
+
+/**
+ * Full audit timeline for one booking or expert session.
+ * GET /api/admin/bookings/:subjectId/timeline
+ *
+ * The subject id is looked up across both BOOKING and EXPERT_SESSION on
+ * purpose: support staff paste an id from a URL or an email and shouldn't have
+ * to know which of the two systems it belongs to. `subjectType` is returned on
+ * each event so the caller can still tell them apart.
+ */
+export const getBookingTimeline = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const subjectId = String(
+      (req.params as Record<string, unknown>).subjectId ?? "",
+    );
+
+    if (!subjectId) {
+      res.status(400).json({ success: false, message: "subjectId is required" });
+      return;
+    }
+
+    const events =
+      await BookingEventService.getTimelineByIdAcrossSubjects(subjectId);
+
+    res.status(200).json({
+      success: true,
+      message: "Booking timeline retrieved successfully",
+      data: events,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch booking timeline",
     });
   }
 };

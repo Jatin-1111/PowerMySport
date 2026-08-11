@@ -20,6 +20,7 @@ import {
   getAdminProfile,
   handleDispute,
   listDisputes,
+  getBookingTimeline,
   listWebhookErrors,
   retryWebhookError,
   reconcileOrderAdmin,
@@ -273,6 +274,16 @@ router.get(
   adminMiddleware,
   requirePermission("disputes:view"),
   listDisputes,
+);
+
+// Append-only lifecycle timeline for a booking or expert session.
+// Read-only, so it sits behind bookings:view rather than bookings:manage.
+router.get(
+  "/bookings/:subjectId/timeline",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:view"),
+  getBookingTimeline,
 );
 router.post(
   "/disputes/:bookingId",

@@ -879,7 +879,9 @@ function CheckoutPageContent() {
             metadata: { total, paymentMethod, isGroupBooking, paymentType },
           })
           .catch(() => {});
-        router.replace(`/dashboard/bookings/${bookingId}?success=true`);
+        router.replace(
+          `/dashboard/my-bookings?success=true&bookingId=${bookingId}`,
+        );
         return;
       }
 

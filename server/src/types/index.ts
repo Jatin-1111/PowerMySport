@@ -327,7 +327,7 @@ export interface IPendingVenue {
 // ============================================
 // BOOKING TYPES
 // ============================================
-export type PaymentUserType = "VenueLister" | "Coach" | "Player";
+export type PaymentUserType = "VenueLister" | "Coach" | "Academy" | "Player";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
 
 export interface IPayment {

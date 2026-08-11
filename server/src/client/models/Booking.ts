@@ -9,7 +9,7 @@ export type ParticipantStatus = "INVITED" | "ACCEPTED" | "DECLINED";
 
 export interface BookingPayment {
   userId: mongoose.Types.ObjectId;
-  userType: "VenueLister" | "Coach" | "Player";
+  userType: "VenueLister" | "Coach" | "Academy" | "Player";
   amount: number;
   status: "PENDING" | "PAID" | "FAILED";
   paidAt?: Date;
@@ -196,7 +196,7 @@ const bookingSchema = new Schema<BookingDocument>(
         },
         userType: {
           type: String,
-          enum: ["VenueLister", "Coach", "Player"],
+          enum: ["VenueLister", "Coach", "Academy", "Player"],
           required: true,
         },
         amount: {
@@ -279,6 +279,9 @@ bookingSchema.index({ venueId: 1, date: 1, startTime: 1, endTime: 1 });
 
 // Index for coach booking conflicts
 bookingSchema.index({ coachId: 1, date: 1, startTime: 1, endTime: 1 });
+
+// Index for academy batch-capacity counts
+bookingSchema.index({ academyId: 1, date: 1, startTime: 1, endTime: 1 });
 
 // Index for expiration cleanup job
 bookingSchema.index({ expiresAt: 1, status: 1 });
