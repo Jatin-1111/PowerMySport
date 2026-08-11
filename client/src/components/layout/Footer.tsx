@@ -49,6 +49,7 @@ const navColumns = [
     title: "Legal",
     links: [
       { label: "Terms of Service", href: "/terms" },
+      { label: "Partner Terms", href: "/partner-terms" },
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Refund Policy", href: "/refund-policy" },
       { label: "Health Waiver", href: "/health-waiver" },
@@ -104,9 +105,9 @@ export const Footer: React.FC = () => {
             </Link>
 
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
-              India&apos;s first sports guidance platform for parents - AI-powered
-              pathways, personalised guidance, and verified expert sessions to
-              plan your child&apos;s sports journey.
+              India&apos;s first sports guidance platform for parents -
+              AI-powered pathways, personalised guidance, and verified expert
+              sessions to plan your child&apos;s sports journey.
             </p>
 
             {/* Quick contact */}

@@ -26,7 +26,11 @@ import {
 import Link from "next/link";
 import { useCallback, useMemo, useRef, useState } from "react";
 
-import { hasResourcePage, resourceHref, stageAnchor } from "@/modules/resources/config";
+import {
+  hasResourcePage,
+  resourceHref,
+  stageAnchor,
+} from "@/modules/resources/config";
 
 import {
   STAGE_TAB_LABELS,
@@ -87,9 +91,7 @@ function StageListItem({
       onClick={onSelect}
       aria-current={active ? "step" : undefined}
       className={`flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition ${
-        active
-          ? "bg-slate-900 shadow-sm"
-          : "hover:bg-slate-100"
+        active ? "bg-slate-900 shadow-sm" : "hover:bg-slate-100"
       }`}
     >
       <span
@@ -125,7 +127,9 @@ function StageListItem({
           </span>
         )}
       </span>
-      {active && <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-500" />}
+      {active && (
+        <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-500" />
+      )}
     </button>
   );
 }
@@ -142,7 +146,9 @@ function resolveStateGroup(
   if (!groups || !state) return null;
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
   const target = norm(state);
-  const hit = groups.groups.find((g) => g.states.some((s) => norm(s) === target));
+  const hit = groups.groups.find((g) =>
+    g.states.some((s) => norm(s) === target),
+  );
   return hit ? { label: groups.label, note: groups.note, group: hit } : null;
 }
 
@@ -188,8 +194,7 @@ export function StageGuideView({
     [stage],
   );
 
-  const activeTab =
-    stage.tabs.find((t) => t.id === tab) ?? stage.tabs[0];
+  const activeTab = stage.tabs.find((t) => t.id === tab) ?? stage.tabs[0];
 
   const guideHref =
     guide.resourceSlug && hasResourcePage(sportName)
@@ -198,7 +203,11 @@ export function StageGuideView({
         : resourceHref(sportName)
       : null;
 
-  const zone = resolveStateGroup(guide.stateGroups, state);
+  // Not on the first stage. Stage one of any sport answers "is this our sport at
+  // all", and a parent who has not decided whether their child likes tennis does
+  // not need a federation's zone map — it is the first jargon they meet and it
+  // buys them nothing until there is something to register for.
+  const zone = index > 0 ? resolveStateGroup(guide.stateGroups, state) : null;
 
   const stageList = (
     <div className="space-y-1">
@@ -418,7 +427,9 @@ export function StageGuideView({
               <span className="block text-[13.5px] font-bold text-slate-800">
                 Ask an expert
               </span>
-              <span className="block text-[12px] text-slate-500">Get guidance</span>
+              <span className="block text-[12px] text-slate-500">
+                Get guidance
+              </span>
             </span>
           </Link>
           <a

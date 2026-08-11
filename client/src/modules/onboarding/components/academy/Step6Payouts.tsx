@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import type {
-    AcademyPayoutFrequency,
-    AcademyStep6Payload,
+  AcademyPayoutFrequency,
+  AcademyStep6Payload,
 } from "@/modules/onboarding/types/academy";
 import { Button } from "@/modules/shared/ui/Button";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 interface Step6PayoutsProps {
@@ -359,6 +360,20 @@ export default function Step6Payouts({
 
         {/* Terms Agreement */}
         <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+          <p className="text-sm text-blue-900 mb-3">
+            PowerMySport charges a platform commission of{" "}
+            <strong>15% of your listed fee</strong> on every completed booking
+            made through the Platform (plus GST on the commission). There is no
+            joining or listing fee. Full details are in the{" "}
+            <Link
+              href="/partner-terms"
+              target="_blank"
+              className="text-orange-600 underline hover:no-underline"
+            >
+              Partner Terms
+            </Link>
+            .
+          </p>
           <label className="flex items-start gap-3 cursor-pointer">
             <Checkbox
               checked={formData.agreedToTerms}
@@ -372,8 +387,23 @@ export default function Step6Payouts({
               className="mt-1"
             />
             <span className="text-sm text-blue-900">
-              I agree to PowerMySport Terms & Conditions and confirm all
-              information is accurate
+              I agree to the{" "}
+              <Link
+                href="/partner-terms"
+                target="_blank"
+                className="text-orange-600 underline hover:no-underline"
+              >
+                Partner Terms (Experts &amp; Academies)
+              </Link>
+              , including the 15% platform commission, and the{" "}
+              <Link
+                href="/terms"
+                target="_blank"
+                className="text-orange-600 underline hover:no-underline"
+              >
+                Terms of Service
+              </Link>
+              . I confirm all information provided is accurate.
             </span>
           </label>
           {fieldErrors.agreedToTerms && (

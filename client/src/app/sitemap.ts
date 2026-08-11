@@ -91,20 +91,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Per-player pages are absent on purpose too — they are noindex, because most
   // of the people on these lists are children. See the note in
   // app/(marketing)/rankings/players/[regNo]/page.tsx.
-  const rankingEntries: MetadataRoute.Sitemap = RANKING_SPORTS.flatMap((sport) => [
-    {
-      url: `${siteUrl}${rankingSportHref(sport.slug)}`,
-      lastModified: now,
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    },
-    ...sport.combos.map((combo) => ({
-      url: `${siteUrl}${comboHref(sport.slug, combo)}`,
-      lastModified: now,
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    })),
-  ]);
+  const rankingEntries: MetadataRoute.Sitemap = RANKING_SPORTS.flatMap(
+    (sport) => [
+      {
+        url: `${siteUrl}${rankingSportHref(sport.slug)}`,
+        lastModified: now,
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+      },
+      ...sport.combos.map((combo) => ({
+        url: `${siteUrl}${comboHref(sport.slug, combo)}`,
+        lastModified: now,
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+      })),
+    ],
+  );
 
   return [
     {
@@ -214,6 +216,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${siteUrl}/terms`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${siteUrl}/partner-terms`,
       lastModified: now,
       changeFrequency: "yearly",
       priority: 0.3,

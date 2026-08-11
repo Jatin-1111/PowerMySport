@@ -21,6 +21,7 @@ export default function robots(): MetadataRoute.Robots {
           "/careers",
           "/privacy",
           "/terms",
+          "/partner-terms",
           "/refund-policy",
           "/cookies",
           "/content-policy",

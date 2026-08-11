@@ -1,7 +1,10 @@
 "use client";
 
 import { authApi } from "@/modules/auth/services/auth";
-import { expertApi, type ExpertAvailabilityWindow } from "@/modules/expert/services/expert";
+import {
+  expertApi,
+  type ExpertAvailabilityWindow,
+} from "@/modules/expert/services/expert";
 import { ExpertPhotoUpload } from "@/modules/expert/components/ExpertPhotoUpload";
 import {
   TaxPayoutInfoStep,
@@ -112,7 +115,9 @@ export default function ExpertOnboardingPage() {
 
   // Step 3 — Session Setup
   const [sessionFee, setSessionFee] = useState("");
-  const [sessionMode, setSessionMode] = useState<"ONLINE" | "IN_PERSON" | "BOTH">("ONLINE");
+  const [sessionMode, setSessionMode] = useState<
+    "ONLINE" | "IN_PERSON" | "BOTH"
+  >("ONLINE");
   const [inPersonAddress, setInPersonAddress] = useState("");
   const [sessionDurationMinutes, setSessionDurationMinutes] = useState("60");
 
@@ -122,7 +127,10 @@ export default function ExpertOnboardingPage() {
   const [newBlackout, setNewBlackout] = useState("");
 
   // Step 5 — Tax & Payout
-  const [taxPayout, setTaxPayout] = useState<TaxPayoutInfoValue>(EMPTY_TAX_PAYOUT_INFO);
+  const [taxPayout, setTaxPayout] = useState<TaxPayoutInfoValue>(
+    EMPTY_TAX_PAYOUT_INFO,
+  );
+  const [agreedToPartnerTerms, setAgreedToPartnerTerms] = useState(false);
 
   const stepAnnouncerRef = useRef<HTMLParagraphElement>(null);
   const prevStepRef = useRef(step);
@@ -147,52 +155,56 @@ export default function ExpertOnboardingPage() {
 
   useEffect(() => {
     // Load existing profile — if already PENDING or APPROVED, show status screen
-    expertApi.getMyProfile().then((res) => {
-      if (res.success && res.data) {
-        const p = res.data;
-        if (p.verificationStatus === "APPROVED") {
-          router.replace("/expert/dashboard");
-          return;
+    expertApi
+      .getMyProfile()
+      .then((res) => {
+        if (res.success && res.data) {
+          const p = res.data;
+          if (p.verificationStatus === "APPROVED") {
+            router.replace("/expert/dashboard");
+            return;
+          }
+          if (p.verificationStatus === "PENDING") {
+            setSubmitted(true);
+            setLoading(false);
+            return;
+          }
+          // Pre-fill from any saved draft
+          setPhotoUrl(p.photoUrl || "");
+          setPhotoKey(p.photoKey || "");
+          setBio(p.bio || "");
+          setAchievements(p.achievements || "");
+          setCity(p.city || "");
+          setLanguages(p.languages || []);
+          setSports(p.sports || []);
+          setExpertise(p.expertise || []);
+          setSessionFee(p.sessionFee > 0 ? String(p.sessionFee) : "");
+          setSessionMode(p.sessionMode || "ONLINE");
+          setInPersonAddress(p.inPersonAddress || "");
+          setSessionDurationMinutes(String(p.sessionDurationMinutes || 60));
+          setWindows(p.weeklyAvailability || []);
+          setBlackout(p.blackoutDates || []);
+          const primaryPayout =
+            p.payoutMethods?.find((m) => m.isDefault) || p.payoutMethods?.[0];
+          setTaxPayout({
+            panNumber: p.panNumber || "",
+            gstNumber: p.gstNumber || "",
+            payoutType: primaryPayout?.type || "BANK_TRANSFER",
+            accountHolderName: primaryPayout?.accountHolderName || "",
+            accountNumber: primaryPayout?.accountNumber || "",
+            confirmAccountNumber: primaryPayout?.accountNumber || "",
+            ifscCode: primaryPayout?.ifscCode || "",
+            bankName: primaryPayout?.bankName || "",
+            upiId: primaryPayout?.upiId || "",
+          });
+          // If rejected, show rejection reason
+          if (p.verificationStatus === "REJECTED") {
+            setStep(1);
+          }
         }
-        if (p.verificationStatus === "PENDING") {
-          setSubmitted(true);
-          setLoading(false);
-          return;
-        }
-        // Pre-fill from any saved draft
-        setPhotoUrl(p.photoUrl || "");
-        setPhotoKey(p.photoKey || "");
-        setBio(p.bio || "");
-        setAchievements(p.achievements || "");
-        setCity(p.city || "");
-        setLanguages(p.languages || []);
-        setSports(p.sports || []);
-        setExpertise(p.expertise || []);
-        setSessionFee(p.sessionFee > 0 ? String(p.sessionFee) : "");
-        setSessionMode(p.sessionMode || "ONLINE");
-        setInPersonAddress(p.inPersonAddress || "");
-        setSessionDurationMinutes(String(p.sessionDurationMinutes || 60));
-        setWindows(p.weeklyAvailability || []);
-        setBlackout(p.blackoutDates || []);
-        const primaryPayout =
-          p.payoutMethods?.find((m) => m.isDefault) || p.payoutMethods?.[0];
-        setTaxPayout({
-          panNumber: p.panNumber || "",
-          gstNumber: p.gstNumber || "",
-          payoutType: primaryPayout?.type || "BANK_TRANSFER",
-          accountHolderName: primaryPayout?.accountHolderName || "",
-          accountNumber: primaryPayout?.accountNumber || "",
-          confirmAccountNumber: primaryPayout?.accountNumber || "",
-          ifscCode: primaryPayout?.ifscCode || "",
-          bankName: primaryPayout?.bankName || "",
-          upiId: primaryPayout?.upiId || "",
-        });
-        // If rejected, show rejection reason
-        if (p.verificationStatus === "REJECTED") {
-          setStep(1);
-        }
-      }
-    }).catch(() => {}).finally(() => setLoading(false));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [router]);
 
   // ── Availability helpers ─────────────────────────────────────────────────
@@ -201,20 +213,26 @@ export default function ExpertOnboardingPage() {
     setWindows((w) => [...w, { dayOfWeek, start: "09:00", end: "10:00" }]);
 
   const updateWindow = (idx: number, key: "start" | "end", val: string) =>
-    setWindows((w) => w.map((item, i) => (i === idx ? { ...item, [key]: val } : item)));
+    setWindows((w) =>
+      w.map((item, i) => (i === idx ? { ...item, [key]: val } : item)),
+    );
 
   const removeWindow = (idx: number) =>
     setWindows((w) => w.filter((_, i) => i !== idx));
 
   const addBlackout = () => {
     if (!newBlackout) return;
-    setBlackout((b) => (b.includes(newBlackout) ? b : [...b, newBlackout].sort()));
+    setBlackout((b) =>
+      b.includes(newBlackout) ? b : [...b, newBlackout].sort(),
+    );
     setNewBlackout("");
   };
 
   // ── Save draft to server silently ────────────────────────────────────────
 
-  const saveDraft = async (patch: Parameters<typeof expertApi.updateMyProfile>[0]) => {
+  const saveDraft = async (
+    patch: Parameters<typeof expertApi.updateMyProfile>[0],
+  ) => {
     try {
       await expertApi.updateMyProfile(patch);
     } catch {
@@ -242,7 +260,14 @@ export default function ExpertOnboardingPage() {
         const nameRes = await authApi.updateProfile({ name: name.trim() });
         if (nameRes.success && nameRes.data) setUser(nameRes.data);
       }
-      await saveDraft({ bio, achievements, city, languages, photoUrl: photoUrl || undefined, photoKey: photoKey || undefined });
+      await saveDraft({
+        bio,
+        achievements,
+        city,
+        languages,
+        photoUrl: photoUrl || undefined,
+        photoKey: photoKey || undefined,
+      });
     }
     if (step === 2) {
       if (sports.length === 0) {
@@ -261,7 +286,10 @@ export default function ExpertOnboardingPage() {
         toast.error("Enter a valid session fee");
         return;
       }
-      if ((sessionMode === "IN_PERSON" || sessionMode === "BOTH") && !inPersonAddress.trim()) {
+      if (
+        (sessionMode === "IN_PERSON" || sessionMode === "BOTH") &&
+        !inPersonAddress.trim()
+      ) {
         toast.error("In-person address is required");
         return;
       }
@@ -292,6 +320,10 @@ export default function ExpertOnboardingPage() {
     const taxPayoutError = validateTaxPayoutInfo(taxPayout);
     if (taxPayoutError) {
       toast.error(taxPayoutError);
+      return;
+    }
+    if (!agreedToPartnerTerms) {
+      toast.error("Please accept the Partner Terms to submit for review");
       return;
     }
     setSubmitting(true);
@@ -343,8 +375,8 @@ export default function ExpertOnboardingPage() {
           </h1>
           <p className="mt-2 leading-relaxed text-slate-600 dark:text-slate-400">
             Our team is reviewing your profile. We&apos;ll email you at{" "}
-            <strong>{user?.email}</strong> once it&apos;s approved. This
-            usually takes 1–2 business days.
+            <strong>{user?.email}</strong> once it&apos;s approved. This usually
+            takes 1–2 business days.
           </p>
           <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-300">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
@@ -353,8 +385,7 @@ export default function ExpertOnboardingPage() {
                 ExpertLayout redirects any non-APPROVED expert straight back
                 here) — don't promise access this screen can't deliver. */}
             Your profile is locked for editing until this review finishes —
-            there&apos;s nothing else to do right now except wait for our
-            email.
+            there&apos;s nothing else to do right now except wait for our email.
           </div>
           <Button
             variant="secondary"
@@ -371,71 +402,87 @@ export default function ExpertOnboardingPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-4 sm:py-6">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-power-orange/30 bg-power-orange/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-power-orange">
-            <ShieldCheck className="h-3.5 w-3.5" /> Expert Onboarding
-          </span>
-          <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-            Set Up Your Expert Profile
-          </h1>
-          <p
-            ref={stepAnnouncerRef}
-            tabIndex={-1}
-            className="mt-2 text-sm text-slate-500 outline-none dark:text-slate-400"
-          >
-            Step {step} of {STEPS.length} — complete your profile to submit for review
-          </p>
-        </div>
-
-        {/* Step indicators — completed steps are clickable to jump back */}
-        <nav aria-label="Onboarding steps" className="mb-8 flex items-center justify-between">
-          {STEPS.map((s, i) => (
-            <div key={s.id} className="flex flex-1 items-center">
-              <button
-                type="button"
-                onClick={() => step > s.id && setStep(s.id)}
-                disabled={s.id >= step}
-                aria-current={step === s.id ? "step" : undefined}
-                aria-label={`Step ${s.id}: ${s.title}${
-                  step > s.id ? " (completed — go back to this step)" : step === s.id ? " (current)" : ""
-                }`}
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 ${
-                  step > s.id
-                    ? "cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600"
-                    : step === s.id
-                      ? "bg-power-orange text-white shadow-lg shadow-power-orange/30"
-                      : "bg-white text-slate-400 shadow-[0_2px_8px_rgb(0,0,0,0.05)] dark:bg-slate-800"
-                }`}
-              >
-                {step > s.id ? <CheckCircle2 className="h-5 w-5" aria-hidden="true" /> : s.id}
-              </button>
-              <p aria-hidden="true" className={`ml-2 hidden text-xs font-semibold sm:block ${
-                step === s.id ? "text-power-orange" : "text-slate-400"
-              }`}>
-                {s.title}
-              </p>
-              {i < STEPS.length - 1 && (
-                <div className={`mx-2 h-px flex-1 transition-colors ${step > s.id ? "bg-emerald-300" : "bg-slate-200 dark:bg-slate-700"}`} />
-              )}
-            </div>
-          ))}
-        </nav>
-
-        {/* Single form wrapper so pressing Enter in any field advances the
-            wizard (or submits on the last step) like a native form. */}
-        <form
-          noValidate
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (step < STEPS.length) {
-              goNext();
-            } else {
-              handleSubmit();
-            }
-          }}
+      {/* Header */}
+      <div className="mb-8 text-center">
+        <span className="inline-flex items-center gap-2 rounded-full border border-power-orange/30 bg-power-orange/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-power-orange">
+          <ShieldCheck className="h-3.5 w-3.5" /> Expert Onboarding
+        </span>
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+          Set Up Your Expert Profile
+        </h1>
+        <p
+          ref={stepAnnouncerRef}
+          tabIndex={-1}
+          className="mt-2 text-sm text-slate-500 outline-none dark:text-slate-400"
         >
+          Step {step} of {STEPS.length} — complete your profile to submit for
+          review
+        </p>
+      </div>
 
+      {/* Step indicators — completed steps are clickable to jump back */}
+      <nav
+        aria-label="Onboarding steps"
+        className="mb-8 flex items-center justify-between"
+      >
+        {STEPS.map((s, i) => (
+          <div key={s.id} className="flex flex-1 items-center">
+            <button
+              type="button"
+              onClick={() => step > s.id && setStep(s.id)}
+              disabled={s.id >= step}
+              aria-current={step === s.id ? "step" : undefined}
+              aria-label={`Step ${s.id}: ${s.title}${
+                step > s.id
+                  ? " (completed — go back to this step)"
+                  : step === s.id
+                    ? " (current)"
+                    : ""
+              }`}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 ${
+                step > s.id
+                  ? "cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600"
+                  : step === s.id
+                    ? "bg-power-orange text-white shadow-lg shadow-power-orange/30"
+                    : "bg-white text-slate-400 shadow-[0_2px_8px_rgb(0,0,0,0.05)] dark:bg-slate-800"
+              }`}
+            >
+              {step > s.id ? (
+                <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                s.id
+              )}
+            </button>
+            <p
+              aria-hidden="true"
+              className={`ml-2 hidden text-xs font-semibold sm:block ${
+                step === s.id ? "text-power-orange" : "text-slate-400"
+              }`}
+            >
+              {s.title}
+            </p>
+            {i < STEPS.length - 1 && (
+              <div
+                className={`mx-2 h-px flex-1 transition-colors ${step > s.id ? "bg-emerald-300" : "bg-slate-200 dark:bg-slate-700"}`}
+              />
+            )}
+          </div>
+        ))}
+      </nav>
+
+      {/* Single form wrapper so pressing Enter in any field advances the
+            wizard (or submits on the last step) like a native form. */}
+      <form
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (step < STEPS.length) {
+            goNext();
+          } else {
+            handleSubmit();
+          }
+        }}
+      >
         {/* Step 1 — Identity */}
         {step === 1 && (
           <SlideUp key={1} className="space-y-5">
@@ -485,7 +532,9 @@ export default function ExpertOnboardingPage() {
                     onChange={(e) => setBio(e.target.value)}
                     maxLength={4000}
                   />
-                  <p className="mt-1 text-right text-xs text-slate-400">{bio.length}/4000</p>
+                  <p className="mt-1 text-right text-xs text-slate-400">
+                    {bio.length}/4000
+                  </p>
                 </div>
 
                 <div>
@@ -501,13 +550,16 @@ export default function ExpertOnboardingPage() {
                     onChange={(e) => setAchievements(e.target.value)}
                   />
                   <p className="mt-1 text-xs text-slate-500">
-                    This is your primary trust signal with clients — be specific.
+                    This is your primary trust signal with clients — be
+                    specific.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="expert-city" className={label}>City</label>
+                    <label htmlFor="expert-city" className={label}>
+                      City
+                    </label>
                     <input
                       id="expert-city"
                       autoComplete="address-level2"
@@ -518,8 +570,14 @@ export default function ExpertOnboardingPage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="expert-languages" className={label}>Languages</label>
-                    <LanguagesMultiSelect id="expert-languages" value={languages} onChange={setLanguages} />
+                    <label htmlFor="expert-languages" className={label}>
+                      Languages
+                    </label>
+                    <LanguagesMultiSelect
+                      id="expert-languages"
+                      value={languages}
+                      onChange={setLanguages}
+                    />
                   </div>
                 </div>
               </div>
@@ -550,11 +608,17 @@ export default function ExpertOnboardingPage() {
               </div>
               <div>
                 <label htmlFor="expert-expertise" className={label}>
-                  Expertise / Specialisations <span className="text-red-500">*</span>
+                  Expertise / Specialisations{" "}
+                  <span className="text-red-500">*</span>
                 </label>
-                <ExpertiseMultiSelect id="expert-expertise" value={expertise} onChange={setExpertise} />
+                <ExpertiseMultiSelect
+                  id="expert-expertise"
+                  value={expertise}
+                  onChange={setExpertise}
+                />
                 <p className="mt-1 text-xs text-slate-500">
-                  e.g. Batting technique, Penalty kicks, Serve & return, Mental conditioning…
+                  e.g. Batting technique, Penalty kicks, Serve & return, Mental
+                  conditioning…
                 </p>
               </div>
             </div>
@@ -589,7 +653,9 @@ export default function ExpertOnboardingPage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="expert-session-length" className={label}>Session Length</label>
+                  <label htmlFor="expert-session-length" className={label}>
+                    Session Length
+                  </label>
                   <select
                     id="expert-session-length"
                     className={field}
@@ -597,7 +663,9 @@ export default function ExpertOnboardingPage() {
                     onChange={(e) => setSessionDurationMinutes(e.target.value)}
                   >
                     {[30, 45, 60, 75, 90, 120].map((m) => (
-                      <option key={m} value={m}>{m} minutes</option>
+                      <option key={m} value={m}>
+                        {m} minutes
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -609,7 +677,11 @@ export default function ExpertOnboardingPage() {
                 </span>
                 {/* Native-radio keyboard behaviour: one tab stop, arrows move
                     and select. */}
-                <div role="radiogroup" aria-labelledby="session-mode-label" className="grid grid-cols-3 gap-2">
+                <div
+                  role="radiogroup"
+                  aria-labelledby="session-mode-label"
+                  className="grid grid-cols-3 gap-2"
+                >
                   {SESSION_MODES.map((mode, idx) => (
                     <button
                       key={mode}
@@ -625,8 +697,13 @@ export default function ExpertOnboardingPage() {
                         let next = -1;
                         if (e.key === "ArrowRight" || e.key === "ArrowDown") {
                           next = (idx + 1) % SESSION_MODES.length;
-                        } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                          next = (idx - 1 + SESSION_MODES.length) % SESSION_MODES.length;
+                        } else if (
+                          e.key === "ArrowLeft" ||
+                          e.key === "ArrowUp"
+                        ) {
+                          next =
+                            (idx - 1 + SESSION_MODES.length) %
+                            SESSION_MODES.length;
                         }
                         if (next >= 0) {
                           e.preventDefault();
@@ -640,7 +717,11 @@ export default function ExpertOnboardingPage() {
                           : "border-slate-200 bg-slate-50 text-slate-600 hover:border-power-orange/50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                       }`}
                     >
-                      {mode === "ONLINE" ? "Online" : mode === "IN_PERSON" ? "In-person" : "Both"}
+                      {mode === "ONLINE"
+                        ? "Online"
+                        : mode === "IN_PERSON"
+                          ? "In-person"
+                          : "Both"}
                     </button>
                   ))}
                 </div>
@@ -661,7 +742,8 @@ export default function ExpertOnboardingPage() {
                   />
                   <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
                     <MapPin className="h-3 w-3" />
-                    Only shared with clients who have an active booking — never shown on the public listing.
+                    Only shared with clients who have an active booking — never
+                    shown on the public listing.
                   </p>
                 </div>
               )}
@@ -696,7 +778,9 @@ export default function ExpertOnboardingPage() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="flex w-16 items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${hasSlots ? "bg-emerald-500" : "bg-slate-300"}`} />
+                        <span
+                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${hasSlots ? "bg-emerald-500" : "bg-slate-300"}`}
+                        />
                         {day}
                       </span>
                       <button
@@ -717,15 +801,21 @@ export default function ExpertOnboardingPage() {
                               aria-label={`${day} slot ${slotIdx + 1} start time`}
                               className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange/40 dark:border-slate-700 dark:bg-slate-800"
                               value={w.start}
-                              onChange={(e) => updateWindow(i, "start", e.target.value)}
+                              onChange={(e) =>
+                                updateWindow(i, "start", e.target.value)
+                              }
                             />
-                            <span className="text-slate-400" aria-hidden="true">–</span>
+                            <span className="text-slate-400" aria-hidden="true">
+                              –
+                            </span>
                             <input
                               type="time"
                               aria-label={`${day} slot ${slotIdx + 1} end time`}
                               className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange/40 dark:border-slate-700 dark:bg-slate-800"
                               value={w.end}
-                              onChange={(e) => updateWindow(i, "end", e.target.value)}
+                              onChange={(e) =>
+                                updateWindow(i, "end", e.target.value)
+                              }
                             />
                             <button
                               type="button"
@@ -766,7 +856,9 @@ export default function ExpertOnboardingPage() {
                     }
                   }}
                 />
-                <Button type="button" variant="secondary" onClick={addBlackout}>Add</Button>
+                <Button type="button" variant="secondary" onClick={addBlackout}>
+                  Add
+                </Button>
               </div>
               {blackout.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -778,18 +870,22 @@ export default function ExpertOnboardingPage() {
                       {d}
                       <button
                         type="button"
-                        onClick={() => setBlackout((b) => b.filter((x) => x !== d))}
+                        onClick={() =>
+                          setBlackout((b) => b.filter((x) => x !== d))
+                        }
                         aria-label={`Remove blackout date ${d}`}
                         className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                       >
-                        <Trash2 className="h-3 w-3 text-slate-400 hover:text-red-500" aria-hidden="true" />
+                        <Trash2
+                          className="h-3 w-3 text-slate-400 hover:text-red-500"
+                          aria-hidden="true"
+                        />
                       </button>
                     </span>
                   ))}
                 </div>
               )}
             </div>
-
           </SlideUp>
         )}
 
@@ -800,12 +896,49 @@ export default function ExpertOnboardingPage() {
               value={taxPayout}
               onChange={(patch) => setTaxPayout((v) => ({ ...v, ...patch }))}
             />
-            <div className="mt-5 flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+            <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+              <p className="mb-3 text-sm text-slate-600 dark:text-slate-300">
+                PowerMySport charges a platform commission of{" "}
+                <strong className="text-slate-900 dark:text-slate-100">
+                  15% of your session fee
+                </strong>{" "}
+                on every completed session booked through the Platform (plus GST
+                on the commission). There is no joining or listing fee. On a
+                &#8377;1,000 session you receive &#8377;823 after commission and
+                GST, before any applicable TDS.
+              </p>
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={agreedToPartnerTerms}
+                  onChange={(e) => setAgreedToPartnerTerms(e.target.checked)}
+                  disabled={submitting}
+                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded accent-power-orange disabled:opacity-50"
+                />
+                <span className="text-sm text-slate-700 dark:text-slate-300">
+                  I agree to the{" "}
+                  <a
+                    href="/partner-terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-power-orange underline hover:no-underline"
+                  >
+                    Partner Terms (Experts &amp; Academies)
+                  </a>
+                  , including the 15% platform commission, and confirm that the
+                  credentials and information I have provided are accurate.
+                  <span className="ml-1 text-red-500">*</span>
+                </span>
+              </label>
+            </div>
+            <div className="mt-4 flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
                 <AlertCircle className="h-4 w-4" />
               </div>
               <p className="pt-1">
-                <strong>Submitting for review</strong> — our team will verify your profile before it goes live. You&apos;ll receive an email notification once approved (typically 1–2 business days).
+                <strong>Submitting for review</strong> — our team will verify
+                your profile before it goes live. You&apos;ll receive an email
+                notification once approved (typically 1–2 business days).
               </p>
             </div>
           </SlideUp>
@@ -814,7 +947,12 @@ export default function ExpertOnboardingPage() {
         {/* Navigation */}
         <div className="mt-6 flex items-center justify-between">
           {step > 1 ? (
-            <Button type="button" variant="secondary" onClick={goBack} icon={<ArrowLeft className="h-4 w-4" />}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={goBack}
+              icon={<ArrowLeft className="h-4 w-4" />}
+            >
               Back
             </Button>
           ) : (
@@ -823,21 +961,16 @@ export default function ExpertOnboardingPage() {
 
           {step < STEPS.length ? (
             <Button type="submit" variant="primary">
-              Continue <ChevronRight className="ml-1 h-4 w-4" aria-hidden="true" />
+              Continue{" "}
+              <ChevronRight className="ml-1 h-4 w-4" aria-hidden="true" />
             </Button>
           ) : (
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={submitting}
-            >
+            <Button type="submit" variant="primary" disabled={submitting}>
               {submitting ? "Submitting…" : "Submit for Review"}
             </Button>
           )}
         </div>
-
-        </form>
-
+      </form>
     </div>
   );
 }
