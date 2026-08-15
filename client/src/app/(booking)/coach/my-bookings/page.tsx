@@ -30,7 +30,8 @@ const PAGE_SIZE = 10;
 
 const getStatusBadgeClass = (status: Booking["status"]) => {
   switch (status) {
-    case "PENDING_CONFIRMATION":
+    case "AWAITING_PAYMENT":
+    case "AWAITING_PROVIDER":
       return "bg-amber-100 text-amber-700 border border-amber-300";
     case "PENDING_INVITES":
       return "bg-indigo-100 text-indigo-700 border border-indigo-300";
@@ -384,7 +385,7 @@ export default function CoachBookingsPage() {
                         </p>
                       </div>
 
-                      {booking.status === "PENDING_CONFIRMATION" && (
+                      {booking.status === "AWAITING_PROVIDER" && (
                         <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
                           <Button
                             variant="primary"

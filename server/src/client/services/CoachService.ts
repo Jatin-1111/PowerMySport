@@ -510,7 +510,8 @@ export const checkCoachAvailability = async (
     }
 
     // Check for existing bookings
-    // Only active bookings block slots: PENDING_CONFIRMATION, PENDING_INVITES, CONFIRMED, IN_PROGRESS
+    // Only active bookings block slots: AWAITING_PAYMENT, AWAITING_PROVIDER,
+    // PENDING_INVITES, CONFIRMED, IN_PROGRESS
     const existingBooking = await Booking.findOne({
       coachId,
       date: {
@@ -519,7 +520,8 @@ export const checkCoachAvailability = async (
       },
       status: {
         $in: [
-          "PENDING_CONFIRMATION",
+          "AWAITING_PAYMENT",
+          "AWAITING_PROVIDER",
           "PENDING_INVITES",
           "CONFIRMED",
           "IN_PROGRESS",

@@ -39,6 +39,33 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
+
+  /* ── Ranking analytics charts ─────────────────────────────────────────────
+     A separate, deliberately ordered categorical set rather than --chart-1..5:
+     those flip hue between light and dark (chart-1 goes orange -> violet), so a
+     stacked series would repaint itself when the theme changes.
+
+     The slot ORDER is the colourblind-safety mechanism and must not be
+     rearranged — adjacent slots are what a stacked bar puts side by side.
+     Validated against the card surfaces this actually renders on (#ffffff and
+     #171717): worst adjacent CVD ΔE 9.1 light / 8.4 dark, worst adjacent
+     normal-vision ΔE 19.6 / 19.3. Three light slots fall under 3:1 against
+     white, so these charts always ship visible values, never colour alone. */
+  --rank-series-1: #2a78d6;
+  --rank-series-2: #eb6834;
+  --rank-series-3: #1baf7a;
+  --rank-series-4: #eda100;
+  --rank-series-5: #e87ba4;
+  --rank-series-6: #008300;
+  /* Single-series magnitude (the tier ladder, state bars). Slot 2, so the one
+     accent in these panels is also a validated member of the same set. */
+  --rank-accent: #eb6834;
+  --rank-track: oklch(0.94 0 0);
+  /* Movement cues. Text-weight steps: a chip reading "up 12" has to pass text
+     contrast, which brand green at #22C55E does not on white. */
+  --rank-delta-up: #006300;
+  --rank-delta-down: #b3261e;
+
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -107,6 +134,25 @@
   --radius-4xl: calc(var(--radius) + 16px);
 
   --animate-scroll: scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite;
+
+  /* ── Ranking analytics colours ────────────────────────────────────────────
+     These MUST be registered here, not only declared in `:root`. Tailwind v4
+     strips custom properties it cannot see referenced from generated CSS, and a
+     variable used only from an inline `style` attribute in JSX is invisible to
+     it — the bars rendered fully transparent until these lines existed.
+     Registering them also means the charts use ordinary utilities
+     (`bg-rank-accent`, `text-rank-delta-up`, and `/20` opacity modifiers)
+     instead of inline styles. */
+  --color-rank-series-1: var(--rank-series-1);
+  --color-rank-series-2: var(--rank-series-2);
+  --color-rank-series-3: var(--rank-series-3);
+  --color-rank-series-4: var(--rank-series-4);
+  --color-rank-series-5: var(--rank-series-5);
+  --color-rank-series-6: var(--rank-series-6);
+  --color-rank-accent: var(--rank-accent);
+  --color-rank-track: var(--rank-track);
+  --color-rank-delta-up: var(--rank-delta-up);
+  --color-rank-delta-down: var(--rank-delta-down);
 }
 
 @keyframes scroll {
@@ -139,6 +185,20 @@
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
+
+  /* The same six hues, re-stepped for the dark card surface — not an automatic
+     flip. Every slot clears 3:1 against #171717. */
+  --rank-series-1: #3987e5;
+  --rank-series-2: #d95926;
+  --rank-series-3: #199e70;
+  --rank-series-4: #c98500;
+  --rank-series-5: #d55181;
+  --rank-series-6: #008300;
+  --rank-accent: #d95926;
+  --rank-track: oklch(0.32 0 0);
+  --rank-delta-up: #0ca30c;
+  --rank-delta-down: #f2938c;
+
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);

@@ -4,6 +4,7 @@ import { RankingSnapshot, RankingSnapshotDocument } from "../../models/RankingSn
 import { s3Service } from "../S3Service";
 import { AitaRankingSource, aitaRankingSource } from "./AitaRankingSource";
 import { parseRankingPdf } from "./rankingPdfParser";
+import { recomputeSnapshotInsights } from "./recomputeSnapshotInsights";
 import { resolveStateCode } from "./stateCodes";
 import { AitaCategory, LIVE_COMBOS, ParseResult, SENTINEL_COMBO } from "./types";
 
@@ -538,6 +539,28 @@ export class AitaRankingIngestService {
           _id: { $ne: snapshot._id },
         },
         { $set: { isLatestForCombo: false } },
+      );
+    }
+
+    // Derived analytics — movement against last week, state ranks, benchmark
+    // tiers, state distribution, points-by-source bands. Computed here rather
+    // than per request because every public read wants all of it.
+    //
+    // Known limitation: this measures against whatever the preceding published
+    // list is *right now*. Backfilling an older week after newer ones are live
+    // leaves those newer weeks comparing against the wrong baseline, so the
+    // backfill migration exists to re-run a combo's whole chain in date order.
+    // A forward-only sweep never hits that, because it only ever adds the
+    // newest list.
+    try {
+      await recomputeSnapshotInsights(snapshot._id);
+    } catch (error) {
+      // The rows are already correct and published; analytics are additive. A
+      // failure here must not turn a good ingest into a failed one.
+      log.warn(
+        `[aita-rankings] insight computation failed for ${snapshot.category}/` +
+          `${snapshot.subcategory} ${toIsoDate(snapshot.asOnDate)}:`,
+        error instanceof Error ? error.message : error,
       );
     }
 

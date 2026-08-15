@@ -671,7 +671,8 @@ export const getCoachAvailability = async (
       },
       status: {
         $in: [
-          "PENDING_CONFIRMATION",
+          "AWAITING_PAYMENT",
+          "AWAITING_PROVIDER",
           "PENDING_INVITES",
           "CONFIRMED",
           "IN_PROGRESS",

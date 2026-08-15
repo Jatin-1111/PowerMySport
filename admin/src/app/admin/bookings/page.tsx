@@ -31,7 +31,7 @@ interface PaginationData {
 }
 
 type BookingActionType = "REFUND" | "DISPUTE";
-type BookingTabType = "ALL" | "VENUE" | "Coach";
+type BookingTabType = "ALL" | "VENUE" | "Coach" | "ACADEMY";
 const REFUND_ACTIONS_ENABLED = true;
 const DISPUTE_ACTIONS_ENABLED = false;
 
@@ -40,7 +40,48 @@ const getBookingId = (booking: Booking): string => {
   return booking.id || fallback._id || "";
 };
 
-const isCoachBooking = (booking: Booking): boolean => !!booking.coachId;
+/**
+ * The server now stores providerType on every booking and derives it from the
+ * ids on write, so this is the one place that needs to know the precedence —
+ * and only as a fallback for documents that predate the field.
+ *
+ * Previously this page decided the bucket with `!!booking.coachId`, which
+ * silently counted every academy booking as a venue booking.
+ */
+type ProviderType = NonNullable<Booking["providerType"]>;
+
+const providerTypeOf = (booking: Booking): ProviderType => {
+  if (booking.providerType) return booking.providerType;
+  if (booking.academyId) return "ACADEMY";
+  if (booking.coachId) return "COACH";
+  return "VENUE";
+};
+
+const PROVIDER_LABEL: Record<ProviderType, string> = {
+  VENUE: "VENUE",
+  COACH: "Coach",
+  ACADEMY: "Academy",
+  EXPERT: "Expert",
+};
+
+const PROVIDER_TONE: Record<
+  ProviderType,
+  "purple" | "blue" | "green" | "orange"
+> = {
+  VENUE: "purple",
+  COACH: "blue",
+  ACADEMY: "green",
+  EXPERT: "orange",
+};
+
+/** Whichever party the booking is actually against. */
+const partyNameOf = (booking: Booking): string => {
+  const type = providerTypeOf(booking);
+  if (type === "COACH") return booking.coachName || "Unknown coach";
+  if (type === "ACADEMY") return booking.academyName || "Unknown academy";
+  if (type === "EXPERT") return booking.expertName || "Unknown expert";
+  return booking.venueName || "Unknown venue";
+};
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -208,8 +249,10 @@ export default function AdminBookingsPage() {
     () =>
       bookings.filter((booking) => {
         if (activeTab === "ALL") return true;
-        if (activeTab === "Coach") return isCoachBooking(booking);
-        return !!booking.venueId && !booking.coachId;
+        if (activeTab === "Coach") return providerTypeOf(booking) === "COACH";
+        if (activeTab === "ACADEMY")
+          return providerTypeOf(booking) === "ACADEMY";
+        return providerTypeOf(booking) === "VENUE";
       }),
     [bookings, activeTab],
   );
@@ -217,8 +260,9 @@ export default function AdminBookingsPage() {
   const bookingCounts = useMemo(
     () => ({
       all: bookings.length,
-      coach: bookings.filter((b) => isCoachBooking(b)).length,
-      venue: bookings.filter((b) => !!b.venueId && !b.coachId).length,
+      coach: bookings.filter((b) => providerTypeOf(b) === "COACH").length,
+      venue: bookings.filter((b) => providerTypeOf(b) === "VENUE").length,
+      academy: bookings.filter((b) => providerTypeOf(b) === "ACADEMY").length,
     }),
     [bookings],
   );
@@ -238,8 +282,8 @@ export default function AdminBookingsPage() {
       header: "Type",
       render: (b) => (
         <StatusBadge
-          status={isCoachBooking(b) ? "Coach" : "VENUE"}
-          tone={isCoachBooking(b) ? "blue" : "purple"}
+          status={PROVIDER_LABEL[providerTypeOf(b)]}
+          tone={PROVIDER_TONE[providerTypeOf(b)]}
           dot={false}
         />
       ),
@@ -263,14 +307,10 @@ export default function AdminBookingsPage() {
     },
     {
       key: "party",
-      header: "Coach / Venue",
+      header: "Provider",
       render: (b) => (
         <div>
-          <p className="text-slate-800">
-            {isCoachBooking(b)
-              ? b.coachName || "Unknown coach"
-              : b.venueName || "Unknown venue"}
-          </p>
+          <p className="text-slate-800">{partyNameOf(b)}</p>
           {b.sport && <p className="text-xs text-slate-500">{b.sport}</p>}
         </div>
       ),
@@ -338,6 +378,7 @@ export default function AdminBookingsPage() {
             ["ALL", "All Bookings", bookingCounts.all],
             ["VENUE", "Venue Bookings", bookingCounts.venue],
             ["Coach", "Coach Bookings", bookingCounts.coach],
+            ["ACADEMY", "Academy Bookings", bookingCounts.academy],
           ] as [BookingTabType, string, number][]
         ).map(([tab, label, count]) => (
           <button
@@ -376,7 +417,9 @@ export default function AdminBookingsPage() {
             ? "Bookings will appear here once players start booking."
             : activeTab === "VENUE"
               ? "Venue bookings will appear here once players book venues."
-              : "Coach bookings will appear here once players book coaches."
+              : activeTab === "ACADEMY"
+                ? "Academy bookings will appear here once players book academies."
+                : "Coach bookings will appear here once players book coaches."
         }
         onRowClick={openBooking}
         pagination={{
@@ -393,15 +436,14 @@ export default function AdminBookingsPage() {
             columns={[
               { header: "Booking ID", value: (b) => getBookingId(b) },
               { header: "Status", value: (b) => b.status },
-              { header: "Type", value: (b) => (b.coachId ? "Coach" : "VENUE") },
+              {
+                header: "Type",
+                value: (b) => PROVIDER_LABEL[providerTypeOf(b)],
+              },
               { header: "Date", value: (b) => b.date },
               { header: "Start Time", value: (b) => b.startTime },
               { header: "End Time", value: (b) => b.endTime },
-              {
-                header: "Venue/Coach",
-                value: (b) =>
-                  b.coachId ? b.coachName || "" : b.venueName || "",
-              },
+              { header: "Provider", value: (b) => partyNameOf(b) },
               { header: "Player", value: (b) => b.playerName || "" },
               { header: "Total Amount (INR)", value: (b) => b.totalAmount },
             ]}
@@ -456,19 +498,19 @@ export default function AdminBookingsPage() {
                 label="Type"
                 value={
                   <StatusBadge
-                    status={isCoachBooking(selectedBooking) ? "Coach" : "VENUE"}
-                    tone={isCoachBooking(selectedBooking) ? "blue" : "purple"}
+                    status={PROVIDER_LABEL[providerTypeOf(selectedBooking)]}
+                    tone={PROVIDER_TONE[providerTypeOf(selectedBooking)]}
                     dot={false}
                   />
                 }
               />
               <DetailRow
-                label={isCoachBooking(selectedBooking) ? "Coach" : "Venue"}
-                value={
-                  isCoachBooking(selectedBooking)
-                    ? selectedBooking.coachName || "Unknown coach"
-                    : selectedBooking.venueName || "Unknown venue"
+                label={
+                  PROVIDER_LABEL[providerTypeOf(selectedBooking)] === "VENUE"
+                    ? "Venue"
+                    : PROVIDER_LABEL[providerTypeOf(selectedBooking)]
                 }
+                value={partyNameOf(selectedBooking)}
               />
               <DetailRow
                 label="Player"

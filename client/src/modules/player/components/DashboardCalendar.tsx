@@ -59,7 +59,8 @@ const MONTH_NAMES = [
 
 const BOOKING_STATUS_COLORS: Record<string, string> = {
   CONFIRMED: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  PENDING_CONFIRMATION: "bg-amber-50 text-amber-700 border-amber-200",
+  AWAITING_PAYMENT: "bg-amber-50 text-amber-700 border-amber-200",
+  AWAITING_PROVIDER: "bg-amber-50 text-amber-700 border-amber-200",
   PENDING_INVITES: "bg-indigo-50 text-indigo-700 border-indigo-200",
   IN_PROGRESS: "bg-yellow-50 text-yellow-700 border-yellow-200",
   COMPLETED: "bg-slate-50 text-slate-600 border-slate-200",

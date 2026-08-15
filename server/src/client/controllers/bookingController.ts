@@ -1735,9 +1735,11 @@ export const payBookingWithWallet = async (
       return;
     }
 
-    // Must be PENDING_CONFIRMATION or PENDING_INVITES
+    // Only a booking still awaiting payment can be paid for. AWAITING_PROVIDER
+    // means the money already landed, so accepting another payment there would
+    // charge the customer twice.
     if (
-      booking.status !== "PENDING_CONFIRMATION" &&
+      booking.status !== "AWAITING_PAYMENT" &&
       booking.status !== "PENDING_INVITES"
     ) {
       res.status(400).json({

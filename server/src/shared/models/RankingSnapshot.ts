@@ -64,6 +64,34 @@ export interface RankingSnapshotDocument extends Document {
   /** Why a run stopped, when status is `quarantined` or `failed`. */
   failureReason?: string;
 
+  // ── Derived analytics ──────────────────────────────────────────────────────
+  // Computed once at publish time from the rows of this list; see
+  // `services/aita/rankingInsights.ts`. Stored on the snapshot rather than
+  // aggregated per request because every public read wants them and the
+  // collection runs to hundreds of thousands of rows on a shared-tier cluster.
+  //
+  /** The as-on date the rows' `prevRank` was measured against. */
+  comparedTo?: Date;
+  /** Points needed to sit inside the top 1/10/25/50/100/250/500/1000. */
+  benchmarks?: Array<{ rank: number; points: number }>;
+  /** Ranked players per state, and each state's share of the national top 100. */
+  stateCounts?: Array<{ state: string; count: number; inTop100: number }>;
+  /** Average points by source for the top 10 / 11–100 / 101 and below. */
+  bandProfiles?: Array<{
+    label: string;
+    from: number;
+    to: number | null;
+    playerCount: number;
+    averageTotal: number;
+    composition: Array<{
+      label: string;
+      average: number;
+      isDeduction: boolean;
+      /** Printed on the sheet but not scored — the raw doubles column. */
+      isInformational?: boolean;
+    }>;
+  }>;
+
   fetchedAt?: Date;
   parsedAt?: Date;
   publishedAt?: Date;
@@ -84,6 +112,49 @@ const diagnosticsSchema = new Schema(
     unknownStateRows: { type: Number, default: 0 },
     unparsedLines: { type: [String], default: [] },
     warnings: { type: [String], default: [] },
+  },
+  { _id: false },
+);
+
+/** Same reason as `diagnosticsSchema` — nested schemas cannot be inlined here. */
+const benchmarkSchema = new Schema(
+  {
+    rank: { type: Number, required: true },
+    points: { type: Number, required: true },
+  },
+  { _id: false },
+);
+
+const stateCountSchema = new Schema(
+  {
+    state: { type: String, required: true },
+    count: { type: Number, required: true },
+    inTop100: { type: Number, default: 0 },
+  },
+  { _id: false },
+);
+
+const bandProfileSchema = new Schema(
+  {
+    label: { type: String, required: true },
+    from: { type: Number, required: true },
+    // `null` is the open-ended tail band, so the field is nullable rather than
+    // absent — `default: null` keeps "unbounded" from reading as "not computed".
+    to: { type: Number, default: null },
+    playerCount: { type: Number, required: true },
+    averageTotal: { type: Number, default: 0 },
+    composition: {
+      type: [
+        {
+          _id: false,
+          label: { type: String, required: true },
+          average: { type: Number, default: 0 },
+          isDeduction: { type: Boolean, default: false },
+          isInformational: { type: Boolean, default: false },
+        },
+      ],
+      default: [],
+    },
   },
   { _id: false },
 );
@@ -118,6 +189,11 @@ const rankingSnapshotSchema = new Schema<RankingSnapshotDocument>(
     columns: { type: [String], default: undefined },
     diagnostics: { type: diagnosticsSchema, default: undefined },
     failureReason: { type: String },
+
+    comparedTo: { type: Date },
+    benchmarks: { type: [benchmarkSchema], default: undefined },
+    stateCounts: { type: [stateCountSchema], default: undefined },
+    bandProfiles: { type: [bandProfileSchema], default: undefined },
 
     fetchedAt: { type: Date },
     parsedAt: { type: Date },

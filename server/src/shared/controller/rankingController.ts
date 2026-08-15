@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { RankingEntry } from "../models/RankingEntry";
 import { RankingSnapshot } from "../models/RankingSnapshot";
 import { AitaRankingIngestService } from "../services/aita/AitaRankingIngestService";
+import { nextTierFor, TOP_BAND, type Benchmark } from "../services/aita/rankingInsights";
 import { LIVE_COMBOS } from "../services/aita/types";
 
 /**
@@ -21,7 +22,28 @@ import { LIVE_COMBOS } from "../services/aita/types";
 /** Fields safe to send to a browser. Deliberately enumerated, not `-dob`. */
 const PUBLIC_ENTRY_FIELDS =
   "rank regNo givenName familyName fullName birthYear state stateCode " +
-  "points totalPoints category subcategory asOnDate";
+  "points totalPoints category subcategory asOnDate prevRank stateRank";
+
+/**
+ * The derived analytics a snapshot carries. Sent with every list because they
+ * are what turns a rank into something a reader can act on — the tier a player
+ * is chasing, how many of their state are ahead of them, what the point mix
+ * looks like at the top — and because they are a few hundred bytes against a
+ * fifty-row table.
+ */
+const SNAPSHOT_INSIGHT_FIELDS =
+  "asOnDate columns rowCount sourceUrl publishedAt comparedTo benchmarks " +
+  "stateCounts bandProfiles";
+
+/**
+ * `prevRank` is what the pipeline stores; `rankDelta` is what a reader wants.
+ * Derived on the way out rather than stored twice — one of them would go stale.
+ * Positive means the player moved up.
+ */
+const withMovement = <T extends { rank: number; prevRank?: number }>(entry: T) => ({
+  ...entry,
+  rankDelta: typeof entry.prevRank === "number" ? entry.prevRank - entry.rank : null,
+});
 
 const MAX_PAGE_SIZE = 200;
 const DEFAULT_PAGE_SIZE = 50;
@@ -113,14 +135,35 @@ export const listRankings = async (req: Request, res: Response): Promise<void> =
         status: "published",
         ...(date ? { asOnDate: new Date(date) } : { isLatestForCombo: true }),
       })
-        .select("asOnDate columns rowCount sourceUrl publishedAt")
+        .select(SNAPSHOT_INSIGHT_FIELDS)
         .lean(),
     ]);
+
+    // How many ranked players share each row's state, so "#18 in Maharashtra"
+    // can be read as "#18 of 214" rather than an unscaled number. Comes off the
+    // snapshot aggregate — the alternative is a count query per distinct state
+    // on the page.
+    const stateSizes = new Map<string, number>(
+      ((snapshot?.stateCounts ?? []) as Array<{ state: string; count: number }>).map(
+        (bucket) => [bucket.state, bucket.count],
+      ),
+    );
+
+    const benchmarks = (snapshot?.benchmarks ?? []) as Benchmark[];
 
     res.json({
       success: true,
       data: {
-        entries,
+        entries: entries.map((entry) => ({
+          ...withMovement(entry),
+          stateSize: entry.state ? stateSizes.get(entry.state) ?? null : null,
+          // Computed here rather than in the browser so the rule for "which
+          // rung is next" lives in exactly one place.
+          nextTier:
+            benchmarks.length > 0
+              ? nextTierFor(entry.rank, entry.totalPoints, benchmarks)
+              : null,
+        })),
         // The source page this list came from, so a parent can check us against
         // AITA rather than taking our word for it.
         snapshot: snapshot ?? null,
@@ -267,6 +310,26 @@ export const getPlayerRankingHistory = async (
       .select("category subcategory asOnDate rank totalPoints")
       .lean();
 
+    // The lists the player currently sits in, for the context each standing
+    // needs: how long the list is, what the rungs above them cost, how many of
+    // their state are ranked at all.
+    const snapshots =
+      current.length > 0
+        ? await RankingSnapshot.find({
+            sportSlug,
+            status: "published",
+            isLatestForCombo: true,
+            $or: current.map((entry) => ({
+              category: entry.category,
+              subcategory: entry.subcategory,
+            })),
+          })
+            .select(
+              "category subcategory rowCount benchmarks stateCounts bandProfiles comparedTo",
+            )
+            .lean()
+        : [];
+
     const profile = current[0] ?? null;
     res.json({
       success: true,
@@ -281,7 +344,10 @@ export const getPlayerRankingHistory = async (
               state: profile.state ?? null,
             }
           : { regNo },
-        current,
+        current: current.map((entry) => ({
+          ...withMovement(entry),
+          insight: buildPlayerInsight(entry, snapshots, history),
+        })),
         history,
       },
     });
@@ -289,6 +355,81 @@ export const getPlayerRankingHistory = async (
     fail(res, err, 500);
   }
 };
+
+/**
+ * The context one standing needs to mean something.
+ *
+ * A rank is a position in a field whose size the reader cannot see, so the
+ * useful facts are all relative: what share of the field is ahead, how many of
+ * the player's own state are, what the next rung costs, and whether this week is
+ * their best. None of it is new data — it is the stored list read sideways.
+ */
+function buildPlayerInsight(
+  entry: {
+    category: string;
+    subcategory: string;
+    rank: number;
+    totalPoints: number;
+    state?: string;
+  },
+  snapshots: Array<{
+    category: string;
+    subcategory: string;
+    rowCount?: number;
+    benchmarks?: Benchmark[];
+    stateCounts?: Array<{ state: string; count: number }>;
+    bandProfiles?: unknown[];
+  }>,
+  history: Array<{ category: string; subcategory: string; asOnDate: Date; rank: number }>,
+) {
+  const snapshot = snapshots.find(
+    (s) => s.category === entry.category && s.subcategory === entry.subcategory,
+  );
+  const listSize = typeof snapshot?.rowCount === "number" ? snapshot.rowCount : null;
+
+  // Every week we hold for this player in *this* list. Not a career total: the
+  // mirror goes back twelve months, and a number that looks like a career and
+  // is not would be the wrong kind of wrong.
+  const own = history.filter(
+    (point) => point.category === entry.category && point.subcategory === entry.subcategory,
+  );
+
+  let careerHigh: { rank: number; asOnDate: Date } | null = null;
+  for (const point of own) {
+    if (!careerHigh || point.rank < careerHigh.rank) {
+      careerHigh = { rank: point.rank, asOnDate: point.asOnDate };
+    }
+  }
+
+  return {
+    listSize,
+    stateSize: entry.state
+      ? (snapshot?.stateCounts ?? []).find((b) => b.state === entry.state)?.count ?? null
+      : null,
+    // "Top 25%" rather than "#412 of 1,648" — the same fact, in the form a
+    // reader can actually hold. Rounded up so a player is never told they are
+    // in a better band than they are.
+    percentile:
+      listSize && listSize > 0
+        ? Math.max(1, Math.ceil((entry.rank / listSize) * 100))
+        : null,
+    nextTier:
+      snapshot?.benchmarks && snapshot.benchmarks.length > 0
+        ? nextTierFor(entry.rank, entry.totalPoints, snapshot.benchmarks)
+        : null,
+    careerHigh,
+    weeksTracked: own.length,
+    // Meaningless on a list shorter than the band itself, so it is withheld
+    // rather than reported as a technically-true 100%.
+    weeksInTop100:
+      listSize !== null && listSize >= TOP_BAND
+        ? own.filter((point) => point.rank <= TOP_BAND).length
+        : null,
+    // The list's own point-source mix, so a player's breakdown can be read
+    // against the players above them rather than in isolation.
+    bands: snapshot?.bandProfiles ?? [],
+  };
+}
 
 /**
  * GET /api/rankings/health

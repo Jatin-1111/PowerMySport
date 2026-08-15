@@ -12,6 +12,9 @@
     "migrate:venue-images": "ts-node src/migrations/10_migrate_venue_images.ts",
     "migrate:wallet-paise": "ts-node src/migrations/20_fix_wallet_transaction_paise.ts",
     "migrate:backfill-booking-events": "ts-node src/migrations/21_backfill_booking_created_events.ts",
+    "migrate:provider-type": "ts-node src/migrations/22_backfill_booking_provider_type.ts",
+    "migrate:ranking-insights": "ts-node src/migrations/24_backfill_ranking_insights.ts",
+    "migrate:split-pending": "ts-node src/migrations/23_split_pending_confirmation_status.ts",
     "migrate:admin-permissions": "ts-node src/scripts/migrateAdminPermissions.ts",
     "community:players-public": "ts-node src/scripts/makePlayerProfilesPublic.ts",
     "seed:sports": "ts-node src/scripts/seedSports.ts",
@@ -36,8 +39,13 @@
     "test:wallet-paise": "npm run build && node --test dist/tests/walletPaiseMigration.test.js",
     "test:booking-events": "npm run build && node --test --test-force-exit dist/tests/bookingEvent.integration.test.js",
     "test:backfill-events": "npm run build && node --test --test-force-exit dist/tests/backfillBookingEvents.integration.test.js",
+    "test:status-split": "npm run build && node --test --test-force-exit dist/tests/bookingStatusSplit.integration.test.js",
     "email:verify": "ts-node src/scripts/verifyEmail.ts",
-    "email:test-all": "ts-node src/scripts/testAllEmails.ts"
+    "email:test-all": "ts-node src/scripts/testAllEmails.ts",
+    "test:expert-mapping": "npm run build && node --test dist/tests/expertSessionMapping.test.js",
+    "test:expert-lifecycle": "npm run build && node --test --test-force-exit dist/tests/expertSessionLifecycle.integration.test.js",
+    "migrate:expert-sessions": "ts-node src/migrations/25_migrate_expert_sessions_to_bookings.ts",
+    "test:expert-migration": "npm run build && node --test --test-force-exit dist/tests/expertSessionMigration.integration.test.js"
   },
   "keywords": [],
   "author": "",
@@ -102,5 +110,15 @@
     "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+  "nodemonConfig": {
+    "watch": [
+      "src"
+    ],
+    "ext": "ts,json",
+    "ignore": [
+      "src/**/*.test.ts",
+      "migration-reports/**"
+    ]
   }
 }

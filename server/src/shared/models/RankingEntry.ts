@@ -58,6 +58,24 @@ export interface RankingEntryDocument extends Document {
   points: Array<{ label: string; value: number }>;
   totalPoints: number;
 
+  /**
+   * Rank in the immediately preceding published list for this combo. Absent
+   * means new to this list — either a first-ever ranking or a player who has
+   * just aged up into it. `RankingSnapshot.comparedTo` records which date this
+   * was measured against, so "no baseline at all" (the oldest list we hold)
+   * stays distinguishable from "new entry".
+   *
+   * Stored rather than joined: the movement arrow appears on every row of every
+   * list, and computing it per request means a second full-list read plus a
+   * merge on a shared-tier cluster.
+   */
+  prevRank?: number;
+  /**
+   * Rank within the player's own state in this same list — the fact the source
+   * PDF cannot answer. Absent when the state code did not map.
+   */
+  stateRank?: number;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -102,6 +120,9 @@ const rankingEntrySchema = new Schema<RankingEntryDocument>(
       default: [],
     },
     totalPoints: { type: Number, default: 0 },
+
+    prevRank: { type: Number },
+    stateRank: { type: Number },
   },
   { timestamps: true },
 );

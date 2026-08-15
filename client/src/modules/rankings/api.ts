@@ -32,6 +32,54 @@ export interface RankingEntry {
   category: string;
   subcategory: string;
   asOnDate: string;
+
+  // ── Derived, computed when the list was ingested ──────────────────────────
+  /** Rank in the previous published list. Absent = new to this list. */
+  prevRank?: number;
+  /** Positive means the player moved up. Null when there is nothing to compare. */
+  rankDelta: number | null;
+  /** Rank within their own state, and how many of that state are ranked at all. */
+  stateRank?: number;
+  stateSize?: number | null;
+  /** The next rung up and what it costs. Null when already inside the top tier. */
+  nextTier?: RankingTier | null;
+}
+
+/** Points needed to sit inside the top `rank` of this list. */
+export interface RankingBenchmark {
+  rank: number;
+  points: number;
+}
+
+export interface RankingTier extends RankingBenchmark {
+  /** Points still needed to reach it. Always positive. */
+  gap: number;
+}
+
+export interface RankingStateCount {
+  state: string;
+  count: number;
+  inTop100: number;
+}
+
+export interface RankingBandProfile {
+  label: string;
+  from: number;
+  to: number | null;
+  playerCount: number;
+  averageTotal: number;
+  composition: Array<{
+    label: string;
+    average: number;
+    isDeduction: boolean;
+    /**
+     * Printed on the sheet but not scored — the raw doubles column, whose 25%
+     * sibling is the one in the total. Optional because snapshots written before
+     * the ingest computed it do not carry it, and these payloads are cached for
+     * half an hour after any deploy.
+     */
+    isInformational?: boolean;
+  }>;
 }
 
 export interface RankingSnapshotMeta {
@@ -40,6 +88,11 @@ export interface RankingSnapshotMeta {
   rowCount?: number;
   sourceUrl?: string;
   publishedAt?: string;
+  /** The week the movement figures on each row are measured against. */
+  comparedTo?: string;
+  benchmarks?: RankingBenchmark[];
+  stateCounts?: RankingStateCount[];
+  bandProfiles?: RankingBandProfile[];
 }
 
 export interface RankingListResult {
@@ -69,6 +122,32 @@ export interface PlayerHistoryPoint {
   totalPoints: number;
 }
 
+/** The context one standing needs to mean something. Computed by the API. */
+export interface PlayerInsight {
+  /** How many players are on this list. Null when the snapshot is missing. */
+  listSize: number | null;
+  /** How many from the player's state are ranked on it. */
+  stateSize: number | null;
+  /** "Top 25%" — already rounded up, so it never flatters. */
+  percentile: number | null;
+  nextTier: RankingTier | null;
+  careerHigh: { rank: number; asOnDate: string } | null;
+  /** Weeks we hold this player on this list. Not a career total. */
+  weeksTracked: number;
+  /** Null on lists shorter than 100 players, where the band means nothing. */
+  weeksInTop100: number | null;
+  /**
+   * Optional on purpose. These responses are cached for half an hour, so the
+   * first thirty minutes after any deploy serve payloads written by the previous
+   * version — a field the UI treats as guaranteed is a 500 on a live page.
+   */
+  bands?: RankingBandProfile[];
+}
+
+export interface PlayerCurrentEntry extends RankingEntry {
+  insight: PlayerInsight;
+}
+
 export interface PlayerResult {
   player: {
     regNo: string;
@@ -78,7 +157,7 @@ export interface PlayerResult {
     birthYear?: number | null;
     state?: string | null;
   };
-  current: RankingEntry[];
+  current: PlayerCurrentEntry[];
   history: PlayerHistoryPoint[];
 }
 
@@ -155,15 +234,9 @@ export function fetchPlayer(
   );
 }
 
-/** "2026-07-27T00:00:00.000Z" -> "27 Jul 2026" */
-export function formatAsOn(value: string | null | undefined): string {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
+/**
+ * Re-exported, not defined here. The implementation moved to `insights.ts` so
+ * that client components can format a date without dragging these fetchers and
+ * the ranking config into the browser bundle.
+ */
+export { formatAsOn } from "./insights";

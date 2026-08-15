@@ -89,8 +89,12 @@ const loadAlreadyBackfilled = async (
   return new Set(existing.map((event) => event.subjectId.toString()));
 };
 
-export const up = async (options: { apply?: boolean } = {}) => {
+export const up = async (
+  options: { apply?: boolean; report?: boolean } = {},
+) => {
   const apply = Boolean(options.apply);
+  // See migration 25: only the CLI writes report files.
+  const writeReport = Boolean(options.report);
 
   console.log(
     `Starting migration 21: backfill CREATED events (${apply ? "APPLY" : "DRY RUN"})...`,
@@ -300,9 +304,14 @@ export const up = async (options: { apply?: boolean } = {}) => {
     }
   }
 
-  if (apply && inserted > 0) {
+  if (apply && writeReport && inserted > 0) {
+    // Written to a dedicated directory rather than the package root: nodemon
+    // watches *.json under server/, so dropping report files there restarted
+    // the dev server on every migration or test run.
+    const reportDir = path.join(process.cwd(), "migration-reports");
+    fs.mkdirSync(reportDir, { recursive: true });
     const reportPath = path.join(
-      process.cwd(),
+      reportDir,
       `migration-21-backfill-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
     );
     fs.writeFileSync(
@@ -356,7 +365,7 @@ if (require.main === module) {
     .connect(MONGODB_URI)
     .then(async () => {
       console.log("Connected to MongoDB");
-      await up({ apply });
+      await up({ apply, report: true });
     })
     .then(() => mongoose.disconnect())
     .then(() => process.exit(0))

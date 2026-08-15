@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { deriveBookingProviderType } from "../models/Booking";
 import {
   BookingEvent,
   BookingEventActorType,
@@ -57,40 +58,39 @@ const toObjectId = (
 /**
  * Derive the provider dimensions from a Booking document.
  *
- * A booking can carry more than one of venue/coach/academy (a coached session
- * at a venue). Coach wins over venue because the coach is the party whose
- * acceptance and payout the lifecycle actually turns on; academy wins outright
- * because academy bookings are the academy's to manage.
+ * The type itself comes from `deriveBookingProviderType` on the model — the
+ * same function the pre-validate hook uses — so the event log and the stored
+ * `providerType` cannot disagree about what kind of booking this is. This
+ * function only adds the matching provider id.
+ *
+ * Prefers the booking's stored `providerType` when present, falling back to
+ * deriving it: events are recorded for legacy documents too, and those predate
+ * the field.
  */
 export const providerDimensionsForBooking = (booking: {
   venueId?: unknown;
   coachId?: unknown;
   academyId?: unknown;
+  providerType?: unknown;
 }): {
   providerType: BookingEventProviderType;
   providerId?: mongoose.Types.ObjectId;
 } => {
-  if (booking.academyId) {
-    return {
-      providerType: "ACADEMY",
-      ...(toObjectId(String(booking.academyId))
-        ? { providerId: toObjectId(String(booking.academyId))! }
-        : {}),
-    };
-  }
-  if (booking.coachId) {
-    return {
-      providerType: "COACH",
-      ...(toObjectId(String(booking.coachId))
-        ? { providerId: toObjectId(String(booking.coachId))! }
-        : {}),
-    };
-  }
+  const providerType = (booking.providerType as BookingEventProviderType) ||
+    deriveBookingProviderType(booking);
+
+  const sourceId =
+    providerType === "ACADEMY"
+      ? booking.academyId
+      : providerType === "COACH"
+        ? booking.coachId
+        : booking.venueId;
+
+  const providerId = sourceId ? toObjectId(String(sourceId)) : undefined;
+
   return {
-    providerType: "VENUE",
-    ...(toObjectId(String(booking.venueId))
-      ? { providerId: toObjectId(String(booking.venueId))! }
-      : {}),
+    providerType,
+    ...(providerId ? { providerId } : {}),
   };
 };
 

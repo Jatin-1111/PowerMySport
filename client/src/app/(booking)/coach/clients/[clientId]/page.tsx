@@ -104,7 +104,8 @@ function getBookingStatusClass(status: Booking["status"]): string {
       return "bg-emerald-100 text-emerald-700 border border-emerald-200";
     case "COMPLETED":
       return "bg-emerald-100 text-emerald-700 border border-emerald-200";
-    case "PENDING_CONFIRMATION":
+    case "AWAITING_PAYMENT":
+    case "AWAITING_PROVIDER":
     case "PENDING_INVITES":
       return "bg-amber-100 text-amber-700 border border-amber-200";
     case "IN_PROGRESS":

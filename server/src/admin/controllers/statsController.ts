@@ -1044,6 +1044,10 @@ export const getAllBookings = async (
         path: "coachId",
         populate: { path: "userId", select: "name email" },
       })
+      // Academy bookings were previously indistinguishable from venue bookings
+      // here — unpopulated and unnamed — so the admin panel bucketed them as
+      // venue bookings and had no way to show which academy they were for.
+      .populate({ path: "academyId", select: "name" })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -1101,6 +1105,10 @@ export const getAllBookings = async (
         coachRecord?.userId && typeof coachRecord.userId === "object"
           ? (coachRecord.userId as { name?: string; email?: string })
           : null;
+      const academyRecord =
+        plain.academyId && typeof plain.academyId === "object"
+          ? (plain.academyId as { name?: string })
+          : null;
 
       return {
         ...plain,
@@ -1108,6 +1116,7 @@ export const getAllBookings = async (
         userId: toId(plain.userId),
         venueId: normalizeEntity(plain.venueId),
         coachId: normalizeEntity(plain.coachId),
+        academyId: normalizeEntity(plain.academyId),
         playerName: playerRecord?.name || playerRecord?.email || "",
         venueName: venueRecord?.name || "",
         coachName:
@@ -1115,6 +1124,7 @@ export const getAllBookings = async (
           coachUserRecord?.email ||
           coachRecord?.name ||
           "",
+        academyName: academyRecord?.name || "",
       };
     });
 

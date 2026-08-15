@@ -22,7 +22,8 @@ export type UserRole =
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
 export type BookingStatus =
   | "PENDING_INVITES"
-  | "PENDING_CONFIRMATION"
+  | "AWAITING_PAYMENT"
+  | "AWAITING_PROVIDER"
   | "CONFIRMED"
   | "IN_PROGRESS"
   | "COMPLETED"

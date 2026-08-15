@@ -227,7 +227,8 @@ export default function VenueBookingsPage() {
                         booking.status === "IN_PROGRESS" ||
                         booking.status === "COMPLETED"
                           ? "bg-emerald-100 text-emerald-700 border border-emerald-300"
-                          : booking.status === "PENDING_CONFIRMATION"
+                          : booking.status === "AWAITING_PROVIDER" ||
+                              booking.status === "AWAITING_PAYMENT"
                             ? "bg-amber-100 text-amber-700 border border-amber-300"
                             : booking.status === "PENDING_INVITES"
                               ? "bg-indigo-100 text-indigo-700 border border-indigo-300"
@@ -307,7 +308,7 @@ export default function VenueBookingsPage() {
                   <p className="text-2xl font-bold text-power-orange">
                     ₹{booking.totalAmount}
                   </p>
-                  {booking.status === "PENDING_CONFIRMATION" && (
+                  {booking.status === "AWAITING_PROVIDER" && (
                     <div className="mt-3 flex flex-col gap-2">
                       <Button
                         variant="primary"

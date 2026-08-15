@@ -28,8 +28,21 @@ export interface RoleTemplate {
 }
 
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
+/**
+ * Mirrors the server's BookingStatus. This previously listed only five of the
+ * states the API actually returns — PENDING_INVITES and EXPIRED bookings were
+ * reaching this app while the type declared them impossible.
+ */
 export type BookingStatus =
-  "CONFIRMED" | "IN_PROGRESS" | "COMPLETED" | "NO_SHOW" | "CANCELLED";
+  | "PENDING_INVITES"
+  | "AWAITING_PAYMENT"
+  | "AWAITING_PROVIDER"
+  | "CONFIRMED"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "NO_SHOW"
+  | "CANCELLED"
+  | "EXPIRED";
 
 export type PaymentUserType = "VenueLister" | "Coach" | "Academy";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
@@ -213,6 +226,16 @@ export interface Booking {
   coachId?: string | Coach; // Can be populated
   coach?: Coach; // Populated coach data
   coachName?: string;
+  academyId?: string;
+  academyName?: string;
+  expertId?: string;
+  expertName?: string;
+  /**
+   * Server-derived provider discriminator. Optional only because bookings
+   * created before the field existed may not carry it — consumers should fall
+   * back to the ids rather than assume VENUE.
+   */
+  providerType?: "VENUE" | "COACH" | "ACADEMY" | "EXPERT";
   sport?: string;
   date: string;
   startTime: string;

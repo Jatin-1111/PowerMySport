@@ -206,7 +206,8 @@ const hasConflictingVenueBooking = async (
     },
     status: {
       $in: [
-        "PENDING_CONFIRMATION",
+        "AWAITING_PAYMENT",
+        "AWAITING_PROVIDER",
         "PENDING_INVITES",
         "CONFIRMED",
         "IN_PROGRESS",
@@ -230,7 +231,7 @@ const hasConflictingVenueBooking = async (
     if (
       userId &&
       conflicts.userId.toString() === userId &&
-      (conflicts.status === "PENDING_CONFIRMATION" ||
+      (conflicts.status === "AWAITING_PAYMENT" ||
         conflicts.status === "PENDING_INVITES") &&
       !conflicts.paymentConfirmedAt
     ) {
@@ -266,7 +267,8 @@ const hasConflictingCoachBooking = async (
     },
     status: {
       $in: [
-        "PENDING_CONFIRMATION",
+        "AWAITING_PAYMENT",
+        "AWAITING_PROVIDER",
         "PENDING_INVITES",
         "CONFIRMED",
         "IN_PROGRESS",
@@ -290,7 +292,7 @@ const hasConflictingCoachBooking = async (
     if (
       userId &&
       conflicts.userId.toString() === userId &&
-      (conflicts.status === "PENDING_CONFIRMATION" ||
+      (conflicts.status === "AWAITING_PAYMENT" ||
         conflicts.status === "PENDING_INVITES") &&
       !conflicts.paymentConfirmedAt
     ) {
@@ -333,7 +335,8 @@ const hasAcademyCapacity = async (
     },
     status: {
       $in: [
-        "PENDING_CONFIRMATION",
+        "AWAITING_PAYMENT",
+        "AWAITING_PROVIDER",
         "PENDING_INVITES",
         "CONFIRMED",
         "IN_PROGRESS",
@@ -522,7 +525,7 @@ const createBookingAtomically = async (
           ...(payload.discountAmount
             ? { discountAmount: payload.discountAmount }
             : {}),
-          status: "PENDING_CONFIRMATION",
+          status: "AWAITING_PAYMENT",
           expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes expiry
           checkInCode: payload.checkInCode,
           // Awaiting provider confirmation before booking is confirmed
@@ -796,7 +799,7 @@ export const initiateBooking = async (
       },
       startTime: normalizedStartTime,
       endTime: normalizedEndTime,
-      status: "PENDING_CONFIRMATION",
+      status: "AWAITING_PAYMENT",
     };
     if (payload.coachId) cleanupQuery.coachId = payload.coachId;
     if (payload.venueId) cleanupQuery.venueId = payload.venueId;
@@ -1312,7 +1315,7 @@ export const initiateBooking = async (
             ...(bookingPayload.discountAmount
               ? { discountAmount: bookingPayload.discountAmount }
               : {}),
-            status: "PENDING_CONFIRMATION",
+            status: "AWAITING_PAYMENT",
             expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes expiry
             checkInCode: bookingPayload.checkInCode,
             // Awaiting provider confirmation before booking is confirmed
@@ -1427,7 +1430,8 @@ export const getVenueBookings = async (
     venueId,
     status: {
       $in: [
-        "PENDING_CONFIRMATION",
+        "AWAITING_PAYMENT",
+        "AWAITING_PROVIDER",
         "PENDING_INVITES",
         "CONFIRMED",
         "IN_PROGRESS",
@@ -1471,7 +1475,8 @@ export const getVenueBookingsForDate = async (
     },
     status: {
       $in: [
-        "PENDING_CONFIRMATION",
+        "AWAITING_PAYMENT",
+        "AWAITING_PROVIDER",
         "PENDING_INVITES",
         "CONFIRMED",
         "IN_PROGRESS",
@@ -1501,7 +1506,8 @@ export const getVenueListerBookings = async (
     venueId: { $in: venueIds },
     status: {
       $in: [
-        "PENDING_CONFIRMATION",
+        "AWAITING_PAYMENT",
+        "AWAITING_PROVIDER",
         "PENDING_INVITES",
         "CONFIRMED",
         "IN_PROGRESS",
@@ -1553,7 +1559,8 @@ export const getCoachBookings = async (
     coachId: coach._id,
     status: {
       $in: [
-        "PENDING_CONFIRMATION",
+        "AWAITING_PAYMENT",
+        "AWAITING_PROVIDER",
         "PENDING_INVITES",
         "CONFIRMED",
         "IN_PROGRESS",
@@ -1657,7 +1664,7 @@ const getBookingLifecycleRecipients = async (
 
 const sendBookingLifecycleEmails = async (
   booking: BookingDocument,
-  state: "PENDING_CONFIRMATION" | "CONFIRMED" | "CANCELLED",
+  state: "AWAITING_PROVIDER" | "CONFIRMED" | "CANCELLED",
   extra: {
     refundAmount?: number;
     refundPercentage?: number;
@@ -2048,7 +2055,8 @@ export const cancelBooking = async (
     organizerId: requesterId,
     status: {
       $in: [
-        "PENDING_CONFIRMATION",
+        "AWAITING_PAYMENT",
+        "AWAITING_PROVIDER",
         "PENDING_INVITES",
         "CONFIRMED",
         "IN_PROGRESS",
@@ -2091,7 +2099,8 @@ export const cancelBooking = async (
       organizerId: requesterId,
       status: {
         $in: [
-          "PENDING_CONFIRMATION",
+          "AWAITING_PAYMENT",
+          "AWAITING_PROVIDER",
           "PENDING_INVITES",
           "CONFIRMED",
           "IN_PROGRESS",
@@ -2456,7 +2465,8 @@ const checkCoachAvailabilityForBooking = async (
     },
     status: {
       $in: [
-        "PENDING_CONFIRMATION",
+        "AWAITING_PAYMENT",
+        "AWAITING_PROVIDER",
         "PENDING_INVITES",
         "CONFIRMED",
         "IN_PROGRESS",
@@ -2508,7 +2518,7 @@ export const confirmMockPaymentSuccess = async (
     {
       _id: bookingId,
       userId,
-      status: { $in: ["PENDING_CONFIRMATION", "CONFIRMED"] },
+      status: { $in: ["AWAITING_PROVIDER", "CONFIRMED"] },
       confirmationEmailSentAt: { $exists: false },
     },
     {
@@ -2522,7 +2532,7 @@ export const confirmMockPaymentSuccess = async (
       emailClaimedBooking,
       emailClaimedBooking.status === "CONFIRMED"
         ? "CONFIRMED"
-        : "PENDING_CONFIRMATION",
+        : "AWAITING_PROVIDER",
     );
   }
 
@@ -2641,7 +2651,7 @@ const sendBookingPaymentConfirmation = async (
       emailClaimedBooking,
       emailClaimedBooking.status === "CONFIRMED"
         ? "CONFIRMED"
-        : "PENDING_CONFIRMATION",
+        : "AWAITING_PROVIDER",
     );
   }
 
@@ -2791,6 +2801,16 @@ export const updatePaymentStatus = async (
         .every((payment) => payment.status === "PAID"))
   ) {
     booking.paymentConfirmedAt = new Date();
+
+    // The booking is now fully paid, so it moves from "we are waiting on the
+    // customer" to "we are waiting on the provider". This transition is the
+    // reason AWAITING_PAYMENT and AWAITING_PROVIDER are separate states: it
+    // used to be expressed only by paymentConfirmedAt appearing on a booking
+    // whose status never changed, which meant every consumer had to know to
+    // check a timestamp to understand what the booking was waiting for.
+    if (booking.status === "AWAITING_PAYMENT") {
+      booking.status = "AWAITING_PROVIDER";
+    }
   }
 
   if (session) {
@@ -3267,7 +3287,7 @@ export const respondToBookingInvitation = async (
     if (allResponded) {
       if (anyAccepted || booking.participants.length === 1) {
         // At least one person accepted, or organizer booking alone after declines
-        booking.status = "PENDING_CONFIRMATION";
+        booking.status = "AWAITING_PAYMENT";
       } else {
         // Everyone declined
         booking.status = "CANCELLED";
@@ -3341,7 +3361,7 @@ export const respondToBookingInvitation = async (
       );
 
       // If booking is now pending confirmation, notify all accepted participants
-      if (booking.status === "PENDING_CONFIRMATION") {
+      if (booking.status === "AWAITING_PAYMENT") {
         const acceptedParticipants = booking.participants.filter(
           (p) =>
             p.status === "ACCEPTED" &&
@@ -3426,7 +3446,7 @@ export const confirmBookingByProvider = async (
     throw new Error("Booking not found");
   }
 
-  if (booking.status !== "PENDING_CONFIRMATION") {
+  if (booking.status !== "AWAITING_PROVIDER") {
     throw new Error("Booking is not awaiting confirmation");
   }
 
@@ -3546,7 +3566,14 @@ export const rescheduleBookingByCoach = async (
     _id: { $ne: booking._id },
     coachId: coach._id,
     date: newDate,
-    status: { $in: ["CONFIRMED", "IN_PROGRESS", "PENDING_CONFIRMATION"] },
+    status: {
+      $in: [
+        "CONFIRMED",
+        "IN_PROGRESS",
+        "AWAITING_PAYMENT",
+        "AWAITING_PROVIDER",
+      ],
+    },
     $or: [{ startTime: { $lt: newEndTime }, endTime: { $gt: newStartTime } }],
   });
 
@@ -3603,7 +3630,7 @@ export const rejectBookingByProvider = async (
     throw new Error("Booking not found");
   }
 
-  if (booking.status !== "PENDING_CONFIRMATION") {
+  if (booking.status !== "AWAITING_PROVIDER") {
     throw new Error("Booking is not awaiting confirmation");
   }
 
@@ -3875,7 +3902,9 @@ export const cleanupExpiredBookings = async (): Promise<number> => {
   const now = new Date();
 
   const filter = {
-    status: { $in: ["PENDING_CONFIRMATION", "PENDING_INVITES"] },
+    // AWAITING_PROVIDER is intentionally absent: those bookings are PAID,
+    // and deleting one would destroy the record of money owed back.
+    status: { $in: ["AWAITING_PAYMENT", "PENDING_INVITES"] },
     paymentConfirmedAt: { $exists: false },
     expiresAt: { $lt: now },
   } as const;

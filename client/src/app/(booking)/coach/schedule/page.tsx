@@ -139,7 +139,8 @@ function bookingsForDay(day: Date, bookings: Booking[]): Booking[] {
 
 
 const STATUS_LABEL: Record<string, string> = {
-  PENDING_CONFIRMATION: "Awaiting Approval",
+  AWAITING_PAYMENT: "Awaiting Payment",
+  AWAITING_PROVIDER: "Awaiting Approval",
   CONFIRMED: "Confirmed",
   IN_PROGRESS: "In Progress",
   COMPLETED: "Completed",
@@ -149,7 +150,8 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_BADGE: Record<string, string> = {
-  PENDING_CONFIRMATION: "bg-amber-50 text-amber-700 border border-amber-200",
+  AWAITING_PAYMENT: "bg-slate-50 text-slate-600 border border-slate-200",
+  AWAITING_PROVIDER: "bg-amber-50 text-amber-700 border border-amber-200",
   CONFIRMED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
   IN_PROGRESS: "bg-indigo-50 text-indigo-700 border border-indigo-200",
   COMPLETED: "bg-slate-100 text-slate-600 border border-slate-200",
@@ -159,7 +161,8 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const BOOKING_BLOCK: Record<string, string> = {
-  PENDING_CONFIRMATION: "bg-amber-100 border-amber-300 text-amber-800",
+  AWAITING_PAYMENT: "bg-slate-100 border-slate-300 text-slate-700",
+  AWAITING_PROVIDER: "bg-amber-100 border-amber-300 text-amber-800",
   CONFIRMED: "bg-emerald-100 border-emerald-300 text-emerald-800",
   IN_PROGRESS: "bg-indigo-100 border-indigo-300 text-blue-800",
   COMPLETED: "bg-slate-100 border-slate-200 text-slate-600",
@@ -212,7 +215,7 @@ function SessionModal({
       ? ((booking.userId as { name?: string }).name ?? "Player")
       : "Player";
 
-  const isPending = booking.status === "PENDING_CONFIRMATION";
+  const isPending = booking.status === "AWAITING_PROVIDER";
   const isConfirmed = booking.status === "CONFIRMED";
   const isLoading = (id: string) => actionLoading === id;
   const today = toISODate(new Date());
@@ -978,8 +981,10 @@ export default function CoachSchedulePage() {
   const blockedDates = calendarData?.blockedDates ?? [];
   const bufferTime = calendarData?.travelBufferTime ?? 0;
 
+  // Only paid bookings are actionable by the coach — an AWAITING_PAYMENT
+  // booking is still the customer's to complete, not the coach's to approve.
   const pendingBookings = bookings.filter(
-    (b) => b.status === "PENDING_CONFIRMATION",
+    (b) => b.status === "AWAITING_PROVIDER",
   );
 
   const today = toISODate(new Date());

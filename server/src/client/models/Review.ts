@@ -4,7 +4,7 @@ export interface ReviewDocument extends Document {
   bookingId?: mongoose.Types.ObjectId; // For venues/coaches
   orderId?: mongoose.Types.ObjectId; // For products
   userId: mongoose.Types.ObjectId; // Reviewer (player)
-  targetType: "VENUE" | "Coach" | "PRODUCT";
+  targetType: "VENUE" | "Coach" | "ACADEMY" | "EXPERT" | "PRODUCT";
   targetId: mongoose.Types.ObjectId;
 
   // Ratings (1-5)
@@ -18,6 +18,13 @@ export interface ReviewDocument extends Document {
   helpfulCount: number;
   reportCount: number;
   isHidden: boolean; // Hidden by moderators
+  /**
+   * The reviewer asked not to be named publicly. Carried over from
+   * ExpertSession.reviewAnonymous when expert reviews moved off the session
+   * document — without it, unifying reviews would silently expose reviewers
+   * who had opted out.
+   */
+  isAnonymous?: boolean;
   moderationStatus: "PENDING" | "APPROVED" | "FLAGGED" | "REMOVED";
   moderationNotes?: string;
   reports: Array<{
@@ -47,7 +54,9 @@ const reviewSchema = new Schema<ReviewDocument>(
     },
     targetType: {
       type: String,
-      enum: ["VENUE", "Coach", "PRODUCT"],
+      // ACADEMY and EXPERT added when expert reviews moved off ExpertSession —
+      // reviews for every provider type now live in this one collection.
+      enum: ["VENUE", "Coach", "ACADEMY", "EXPERT", "PRODUCT"],
       required: true,
     },
     targetId: {
@@ -75,6 +84,10 @@ const reviewSchema = new Schema<ReviewDocument>(
     reportCount: {
       type: Number,
       default: 0,
+    },
+    isAnonymous: {
+      type: Boolean,
+      default: false,
     },
     isHidden: {
       type: Boolean,

@@ -25,13 +25,16 @@ export const expireOldBookings = async (): Promise<number> => {
   try {
     const now = new Date();
 
-    // NOTE: bookings awaiting venue/coach confirmation are created with
-    // status "PENDING_CONFIRMATION" (see BookingService.initiateBooking) —
-    // this previously queried the non-existent status "PENDING_PAYMENT",
-    // which is not a valid enum value on the Booking model, so this job
-    // silently matched zero documents on every run since it was written.
+    // Both pre-confirmation states can lapse, and both are expired here — this
+    // is the same set the single PENDING_CONFIRMATION state used to cover, so
+    // behaviour is unchanged by the split. The refund block below is what
+    // distinguishes them in practice: an AWAITING_PAYMENT booking has no
+    // settled transaction to refund, an AWAITING_PROVIDER one does.
+    //
+    // (This job previously queried a status of "PENDING_PAYMENT", which was
+    // never a valid enum value, so it silently matched nothing on every run.)
     const expiredCandidates = await Booking.find({
-      status: "PENDING_CONFIRMATION",
+      status: { $in: ["AWAITING_PAYMENT", "AWAITING_PROVIDER"] },
       expiresAt: { $lte: now },
     });
 
@@ -42,7 +45,10 @@ export const expireOldBookings = async (): Promise<number> => {
         // Guard the status in the filter too, in case something else raced
         // this booking to CONFIRMED/CANCELLED between the find() and here.
         const updated = await Booking.findOneAndUpdate(
-          { _id: booking._id, status: "PENDING_CONFIRMATION" },
+          {
+            _id: booking._id,
+            status: { $in: ["AWAITING_PAYMENT", "AWAITING_PROVIDER"] },
+          },
           { $set: { status: "EXPIRED" } },
         );
         if (!updated) continue;
@@ -50,13 +56,15 @@ export const expireOldBookings = async (): Promise<number> => {
 
         await recordBookingEventFor(booking, {
           type: "EXPIRED",
-          fromStatus: "PENDING_CONFIRMATION",
+          fromStatus: booking.status,
           toStatus: "EXPIRED",
           actorType: "SYSTEM",
           channel: "CRON",
           occurredAt: booking.expiresAt ?? now,
           summary:
-            "Hold expired — venue/coach did not confirm before the deadline",
+            booking.status === "AWAITING_PROVIDER"
+              ? "Paid hold expired — provider did not confirm before the deadline"
+              : "Unpaid hold expired — payment was never completed",
           metadata: {
             organizerId: booking.organizerId?.toString(),
             expiresAt: booking.expiresAt?.toISOString(),

@@ -35,7 +35,8 @@ const STATUS_TONE: Record<string, StatusTone> = {
   COMPLETED: "green",
   IN_PROGRESS: "blue",
   PENDING: "amber",
-  PENDING_CONFIRMATION: "amber",
+  AWAITING_PAYMENT: "amber",
+  AWAITING_PROVIDER: "amber",
   PENDING_INVITES: "amber",
   PENDING_PAYMENT: "amber",
   CANCELLED: "red",
@@ -67,7 +68,7 @@ interface StatusBadgeProps {
 
 /**
  * Semantic, colour-coded status pill used across all admin list/detail views.
- * Pass a raw status string (e.g. "PENDING_CONFIRMATION") and it renders a
+ * Pass a raw status string (e.g. "AWAITING_PROVIDER") and it renders a
  * human-readable, consistently-coloured badge.
  */
 export function StatusBadge({

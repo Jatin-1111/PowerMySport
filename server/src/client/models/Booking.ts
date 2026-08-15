@@ -2,6 +2,12 @@ import mongoose, { Document, Schema } from "mongoose";
 import { BookingStatus } from "../../types/index";
 import { notifyUserDataUpdated } from "../sockets/friendSocket";
 
+/**
+ * The provider dimension of a booking. Shared with BookingEvent.providerType,
+ * and the discriminator the unified booking model is built around.
+ */
+export type BookingProviderType = "VENUE" | "COACH" | "ACADEMY" | "EXPERT";
+
 export type BookingType = "INDIVIDUAL" | "GROUP";
 export type PaymentType = "SINGLE" | "SPLIT";
 export type SplitMethod = "EQUAL" | "CUSTOM";
@@ -9,10 +15,59 @@ export type ParticipantStatus = "INVITED" | "ACCEPTED" | "DECLINED";
 
 export interface BookingPayment {
   userId: mongoose.Types.ObjectId;
-  userType: "VenueLister" | "Coach" | "Academy" | "Player";
+  userType: "VenueLister" | "Coach" | "Academy" | "Expert" | "Player";
   amount: number;
   status: "PENDING" | "PAID" | "FAILED";
   paidAt?: Date;
+}
+
+/**
+ * Expert-consultation state.
+ *
+ * Kept as a nested subdocument rather than ~12 flat fields because the other
+ * three provider types never use any of it — flattening would put a dozen
+ * always-null columns on every venue and coach booking, and make it impossible
+ * to tell at a glance which fields belong to which provider type.
+ *
+ * What is deliberately NOT here: anything the unified Booking already models.
+ * `scheduledAt`, `durationMinutes`, `providerAcceptance`, `providerRespondedAt`,
+ * `completedAt`, `cancelledBy` and `cancellationNoticeHours` all began as
+ * expert-only fields and were promoted to the core, because every provider type
+ * needs them. Reviews are excluded too: they belong in the shared `Review`
+ * model, not inline on the booking the way ExpertSession stored them.
+ */
+export interface BookingExpertDetails {
+  /**
+   * The _id of the ExpertSession this booking was migrated from. Present only
+   * on migrated records; it is the marker migration 25 uses to stay idempotent
+   * and to identify exactly what it created if it has to be rolled back.
+   */
+  legacySessionId?: string;
+  /** ONLINE sessions carry a meeting link; IN_PERSON ones use the expert's address. */
+  mode?: "ONLINE" | "IN_PERSON";
+  meetingLink?: string;
+  /** Free-text context the parent supplied when booking. */
+  clientNote?: string;
+  /** Minutes of meeting — required before an expert session can be COMPLETED. */
+  momNotes?: string;
+  /** First submission time, preserved even if momNotes is revised later. */
+  momAddedAt?: Date;
+  /** True when a job closed the session out rather than the expert. */
+  autoCompleted?: boolean;
+  /**
+   * Manual-refund tracking. Expert refunds are processed by hand by finance,
+   * which the shared `refundStatus` (PENDING/PROCESSED/REJECTED, gateway-driven)
+   * does not express.
+   */
+  manualRefundStatus?: "NONE" | "REQUIRED" | "MANUAL_DONE";
+  /** Gateway ids. Expert sessions carry these inline as well as on the transaction. */
+  merchantOrderId?: string;
+  phonepeOrderId?: string;
+  // One-shot reminder dedup timestamps.
+  momReminderSentAt?: Date;
+  reviewReminderSentAt?: Date;
+  meetingLinkNudgeSentAt?: Date;
+  startReminderSentAt?: Date;
 }
 
 export interface BookingParticipant {
@@ -28,6 +83,22 @@ export interface BookingDocument extends Document {
   venueId?: mongoose.Types.ObjectId;
   coachId?: mongoose.Types.ObjectId;
   academyId?: mongoose.Types.ObjectId;
+  /** Set for providerType EXPERT. */
+  expertId?: mongoose.Types.ObjectId;
+  /**
+   * Which kind of provider this booking is against.
+   *
+   * Derived from venueId/coachId/academyId by a pre-validate hook rather than
+   * set by callers, so it can never drift from the ids it summarizes. It is
+   * stored rather than computed on read because every consumer currently
+   * re-derives it with its own slightly different rule — the admin panel, for
+   * instance, buckets academy bookings as venue bookings because it only ever
+   * checks `coachId`.
+   *
+   * EXPERT is declared here ahead of the ExpertSession merge so the discriminator
+   * does not need widening again later.
+   */
+  providerType: BookingProviderType;
   sport: string;
   date: Date;
   startTime: string;
@@ -45,8 +116,44 @@ export interface BookingDocument extends Document {
   participantAge?: number;
   paymentConfirmedAt?: Date;
   confirmationEmailSentAt?: Date;
+
+  /**
+   * When the session actually starts, as a true instant.
+   *
+   * `date` + `startTime` are an IST wall-clock pair, which is fine for
+   * slot-based providers but cannot express a timezone. Expert sessions have
+   * always been stored as an instant, and that is the better representation,
+   * so it is promoted here. For VENUE/COACH/ACADEMY it is derived from
+   * date+startTime; for EXPERT it is authoritative and date/startTime/endTime
+   * are derived from it, so the existing slot and listing queries keep working.
+   */
+  scheduledAt?: Date;
+  /** Session length in minutes. Derived from startTime/endTime for slot providers. */
+  durationMinutes?: number;
+
+  /**
+   * Whether the provider has accepted this booking. Previously expert-only
+   * (`expertAcceptance`); promoted because venues and academies need exactly
+   * the same concept — and because time-to-accept and decline rate are the
+   * provider SLA metrics the platform currently cannot report on for any role.
+   */
+  providerAcceptance?: "PENDING" | "ACCEPTED" | "DECLINED";
+  providerRespondedAt?: Date;
+
+  /** Set when the booking reaches COMPLETED — the anchor for the payout window. */
+  completedAt?: Date;
+
   cancelledAt?: Date;
   cancellationReason?: string;
+  /** Which party cancelled. Was expert-only; every role needs it for disputes. */
+  cancelledBy?: "CLIENT" | "PROVIDER" | "ADMIN" | "SYSTEM";
+  /**
+   * Hours of notice before the session when a paid booking was cancelled
+   * (negative if cancelled after it started). Informational: admin uses it to
+   * judge a late cancellation. The app never auto-forfeits on it.
+   */
+  cancellationNoticeHours?: number;
+
   refundAmount?: number;
   refundStatus?: "PENDING" | "PROCESSED" | "REJECTED";
   payments: BookingPayment[];
@@ -56,6 +163,8 @@ export interface BookingDocument extends Document {
   participants: BookingParticipant[];
   paymentType: PaymentType;
   splitMethod?: SplitMethod;
+  /** Present only when providerType is EXPERT. */
+  expert?: BookingExpertDetails;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -79,6 +188,15 @@ const bookingSchema = new Schema<BookingDocument>(
     academyId: {
       type: Schema.Types.ObjectId,
       ref: "Academy",
+    },
+    expertId: {
+      type: Schema.Types.ObjectId,
+      ref: "Expert",
+    },
+    providerType: {
+      type: String,
+      enum: ["VENUE", "COACH", "ACADEMY", "EXPERT"],
+      required: true,
     },
     sport: {
       type: String,
@@ -134,7 +252,8 @@ const bookingSchema = new Schema<BookingDocument>(
       type: String,
       enum: [
         "PENDING_INVITES",
-        "PENDING_CONFIRMATION",
+        "AWAITING_PAYMENT",
+        "AWAITING_PROVIDER",
         "CONFIRMED",
         "IN_PROGRESS",
         "COMPLETED",
@@ -142,11 +261,11 @@ const bookingSchema = new Schema<BookingDocument>(
         "NO_SHOW",
         "EXPIRED",
       ],
-      default: "PENDING_CONFIRMATION",
+      default: "AWAITING_PAYMENT",
     },
     expiresAt: {
       type: Date,
-      required: false, // Only set for PENDING_CONFIRMATION bookings — see utils/timer.ts
+      required: false, // Only set while the hold is live — see utils/timer.ts
     },
     checkInCode: {
       type: String,
@@ -172,12 +291,36 @@ const bookingSchema = new Schema<BookingDocument>(
     confirmationEmailSentAt: {
       type: Date,
     },
+    scheduledAt: {
+      type: Date,
+    },
+    durationMinutes: {
+      type: Number,
+      min: 0,
+    },
+    providerAcceptance: {
+      type: String,
+      enum: ["PENDING", "ACCEPTED", "DECLINED"],
+    },
+    providerRespondedAt: {
+      type: Date,
+    },
+    completedAt: {
+      type: Date,
+    },
     cancelledAt: {
       type: Date,
     },
     cancellationReason: {
       type: String,
       trim: true,
+    },
+    cancelledBy: {
+      type: String,
+      enum: ["CLIENT", "PROVIDER", "ADMIN", "SYSTEM"],
+    },
+    cancellationNoticeHours: {
+      type: Number,
     },
     refundAmount: {
       type: Number,
@@ -196,7 +339,7 @@ const bookingSchema = new Schema<BookingDocument>(
         },
         userType: {
           type: String,
-          enum: ["VenueLister", "Coach", "Academy", "Player"],
+          enum: ["VenueLister", "Coach", "Academy", "Expert", "Player"],
           required: true,
         },
         amount: {
@@ -259,6 +402,31 @@ const bookingSchema = new Schema<BookingDocument>(
       type: String,
       enum: ["EQUAL", "CUSTOM"],
     },
+    expert: {
+      type: new Schema<BookingExpertDetails>(
+        {
+          legacySessionId: { type: String, index: true, sparse: true },
+          mode: { type: String, enum: ["ONLINE", "IN_PERSON"] },
+          meetingLink: { type: String, trim: true },
+          clientNote: { type: String, trim: true, maxlength: 1000 },
+          momNotes: { type: String, trim: true, maxlength: 4000 },
+          momAddedAt: { type: Date },
+          autoCompleted: { type: Boolean },
+          manualRefundStatus: {
+            type: String,
+            enum: ["NONE", "REQUIRED", "MANUAL_DONE"],
+          },
+          merchantOrderId: { type: String, trim: true },
+          phonepeOrderId: { type: String, trim: true },
+          momReminderSentAt: { type: Date },
+          reviewReminderSentAt: { type: Date },
+          meetingLinkNudgeSentAt: { type: Date },
+          startReminderSentAt: { type: Date },
+        },
+        { _id: false },
+      ),
+      required: false,
+    },
   },
   {
     timestamps: true,
@@ -274,14 +442,52 @@ const bookingSchema = new Schema<BookingDocument>(
   },
 );
 
+/**
+ * Derive `providerType` from the provider ids on every write.
+ *
+ * Precedence matches BookingEventService.providerDimensionsForBooking and must
+ * stay in step with it: academy first (an academy booking is the academy's to
+ * manage), then coach (for a coached session at a venue the coach is the party
+ * whose acceptance and payout the lifecycle turns on), then venue.
+ *
+ * Deriving here rather than trusting callers means the field cannot drift from
+ * the ids, and no call site has to remember to set it.
+ */
+export const deriveBookingProviderType = (booking: {
+  venueId?: unknown;
+  coachId?: unknown;
+  academyId?: unknown;
+  expertId?: unknown;
+}): BookingProviderType => {
+  if (booking.expertId) return "EXPERT";
+  if (booking.academyId) return "ACADEMY";
+  if (booking.coachId) return "COACH";
+  return "VENUE";
+};
+
+bookingSchema.pre("validate", function () {
+  // Expert wins outright: an expert consultation may reference a venue for an
+  // IN_PERSON session, but it is still the expert's booking.
+  if (this.venueId || this.coachId || this.academyId || this.expertId) {
+    this.providerType = deriveBookingProviderType(this);
+  }
+});
+
 // Index for faster booking conflict checks (venue)
 bookingSchema.index({ venueId: 1, date: 1, startTime: 1, endTime: 1 });
+
+// Admin/ops slices by provider kind — replaces re-deriving the bucket in every
+// consumer (and the admin panel's habit of counting academies as venues).
+bookingSchema.index({ providerType: 1, status: 1, date: -1 });
 
 // Index for coach booking conflicts
 bookingSchema.index({ coachId: 1, date: 1, startTime: 1, endTime: 1 });
 
 // Index for academy batch-capacity counts
 bookingSchema.index({ academyId: 1, date: 1, startTime: 1, endTime: 1 });
+
+// Expert sessions are looked up by instant rather than by wall-clock slot.
+bookingSchema.index({ expertId: 1, scheduledAt: 1 });
 
 // Index for expiration cleanup job
 bookingSchema.index({ expiresAt: 1, status: 1 });

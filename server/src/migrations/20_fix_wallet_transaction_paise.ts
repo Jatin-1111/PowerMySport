@@ -289,8 +289,13 @@ export const up = async (options: { apply?: boolean } = {}) => {
     // Post-conversion, a migrated row is indistinguishable from one written
     // correctly by the fixed code — so rollback needs an explicit record of
     // what this run touched rather than re-deriving it.
+    // Written to a dedicated directory rather than the package root: nodemon
+    // watches *.json under server/, so dropping report files there restarted
+    // the dev server on every migration or test run.
+    const reportDir = path.join(process.cwd(), "migration-reports");
+    fs.mkdirSync(reportDir, { recursive: true });
     const reportPath = path.join(
-      process.cwd(),
+      reportDir,
       `migration-20-wallet-paise-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
     );
     fs.writeFileSync(

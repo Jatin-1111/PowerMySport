@@ -109,7 +109,7 @@ const cases: Case[] = [
     expect: ["reset", "tok_abc123"],
   },
   {
-    category: "Booking lifecycle — PENDING_CONFIRMATION (player)",
+    category: "Booking lifecycle — AWAITING_PROVIDER (player)",
     expectedTo: to("lifecycle@example.com"),
     run: () =>
       email.sendBookingLifecycleEmail({
@@ -121,7 +121,7 @@ const cases: Case[] = [
         startTime: "18:00",
         endTime: "19:00",
         totalAmount: 500,
-        state: "PENDING_CONFIRMATION",
+        state: "AWAITING_PROVIDER",
         recipientRole: "Player",
       }),
     expect: ["Turf Arena", "Football"],

@@ -56,7 +56,7 @@ export const getCoachClients = async (
               {
                 $in: [
                   "$status",
-                  ["PENDING_CONFIRMATION", "CONFIRMED", "IN_PROGRESS"],
+                  ["AWAITING_PAYMENT", "AWAITING_PROVIDER", "CONFIRMED", "IN_PROGRESS"],
                 ],
               },
               1,
@@ -145,7 +145,7 @@ export const getClientDetails = async (
     (b: any) => b.status === "COMPLETED",
   ).length;
   const pendingSessions = bookings.filter((b: any) =>
-    ["PENDING_CONFIRMATION", "CONFIRMED", "IN_PROGRESS"].includes(b.status),
+    ["AWAITING_PAYMENT", "AWAITING_PROVIDER", "CONFIRMED", "IN_PROGRESS"].includes(b.status),
   ).length;
   const dates = bookings
     .map((b: any) => new Date(b.date).getTime())

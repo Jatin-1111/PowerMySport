@@ -206,7 +206,7 @@ export const sendWelcomeEmail = async (
   });
 };
 
-type BookingLifecycleState = "PENDING_CONFIRMATION" | "CONFIRMED" | "CANCELLED";
+type BookingLifecycleState = "AWAITING_PROVIDER" | "CONFIRMED" | "CANCELLED";
 
 type BookingLifecycleRecipientRole = "Player" | "PROVIDER";
 
