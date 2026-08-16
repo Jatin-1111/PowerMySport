@@ -113,8 +113,6 @@ export const PathwayStageSchema = z.object({
 export const PathwayGuideSchema = z.object({
   formatVersion: z.literal(PATHWAY_FORMAT_VERSION).default(PATHWAY_FORMAT_VERSION),
   sport: z.object({ slug, name: trimmed(60) }),
-  /** Lower-case state name for a state overlay; omitted/null = the national guide. */
-  state: z.string().trim().toLowerCase().max(60).nullable().optional(),
   /** Hero copy. Small enough to live with the guide rather than in a second CMS. */
   intro: z
     .object({

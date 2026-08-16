@@ -236,6 +236,29 @@ const ensureProfile = async (userId: string) => {
   }
 };
 
+/**
+ * Public read endpoints run behind optionalAuthMiddleware, which only verifies
+ * the JWT signature — it never checks that the user still exists or that their
+ * role can use the community. A stale token (deleted account, token minted
+ * against another database) or a non-community role (Admin, VenueLister,
+ * Expert…) would otherwise make ensureProfile throw and blank out a page that
+ * is meant to render for guests. Downgrade those viewers to guest instead.
+ */
+const resolvePublicViewerId = async (
+  userId: string | undefined,
+): Promise<string | undefined> => {
+  if (!userId) {
+    return undefined;
+  }
+
+  try {
+    await ensureProfile(userId);
+    return userId;
+  } catch {
+    return undefined;
+  }
+};
+
 const isBlockedBetween = async (
   userA: string,
   userB: string,
@@ -327,8 +350,8 @@ export const CommunityService = {
       mine?: boolean;
     },
   ) {
+    userId = await resolvePublicViewerId(userId);
     if (userId) {
-      await ensureProfile(userId);
       const userRole = await getCommunityRole(userId);
       ensureQnaAllowedForRole(userRole);
     }
@@ -500,9 +523,7 @@ export const CommunityService = {
     page = 1,
     limit = 30,
   ) {
-    if (userId) {
-      await ensureProfile(userId);
-    }
+    userId = await resolvePublicViewerId(userId);
 
     const post = await CommunityPost.findOne({ _id: postId, isDeleted: false });
     if (!post) {
@@ -1399,9 +1420,7 @@ export const CommunityService = {
   },
 
   async listGroups(userId: string | undefined, query = "", limit = 20) {
-    if (userId) {
-      await ensureProfile(userId);
-    }
+    userId = await resolvePublicViewerId(userId);
 
     const normalizedQuery = query.trim();
     const safeLimit = Math.min(50, Math.max(1, limit));

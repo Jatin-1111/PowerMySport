@@ -6,9 +6,13 @@ import React from "react";
 
 /**
  * The booking flow itself — a per-user, stateful funnel, not a landing page.
- * It is disallowed in robots.txt and now carries `noindex` too, so the copy no
- * longer needs to sell anything; `/venues`, `/coaches` and `/academies` are the
- * public surfaces for that.
+ * It is disallowed in robots.txt and carries `noindex`, so the copy does not
+ * need to sell anything.
+ *
+ * It is also now the ONLY discovery surface: the standalone `/venues`,
+ * `/coaches` and `/academies` waitlist pages were removed and 308 here. Nothing
+ * public and crawlable lists venues, coaches or academies any more — worth
+ * knowing before assuming search can still reach them.
  */
 export const metadata: Metadata = {
   title: "Booking",

@@ -1,10 +1,10 @@
 /**
  * Canonical Indian states + union territories for the address dropdowns.
  *
- * Re-exported from `@/lib/indianStates` rather than kept as a second copy: the
- * shop's checkout and the state-scoped pathway APIs both reject names the server
- * doesn't recognise, so there is only ever one correct list and it should only
- * ever be edited in one place.
+ * Re-exported from `@/lib/indianStates` rather than kept as a second copy: every
+ * endpoint that takes a state rejects names the server doesn't recognise, so
+ * there is only ever one correct list and it should only ever be edited in one
+ * place.
  */
 import { INDIAN_STATES_AND_UTS } from "@/lib/indianStates";
 

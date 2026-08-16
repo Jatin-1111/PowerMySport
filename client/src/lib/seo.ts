@@ -19,7 +19,7 @@ export const SITE_URL = (
 export const SITE_NAME = "PowerMySport";
 
 export const SITE_DESCRIPTION =
-  "PowerMySport helps parents plan their child's sports journey. AI-powered sport pathways, searchable federation rankings, personalised guidance and 1:1 sessions with verified experts — free to explore, state-specific for India.";
+  "PowerMySport helps parents plan their child's sports journey. Stage-by-stage sport pathways, searchable federation rankings, personalised guidance and 1:1 sessions with verified experts — free to explore, built for India.";
 
 /** Shared social/preview assets. Site-relative; `metadataBase` makes them absolute. */
 export const OG_IMAGE = "/og-image.png";

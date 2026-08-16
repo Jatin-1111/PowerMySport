@@ -6,7 +6,7 @@ import AcademyLayoutShell from "./LayoutShell";
 
 /**
  * The academy partner console and its onboarding funnel — not the public
- * `/academies` discovery surface.
+ * academy discovery surface, which is /booking's Academies tab.
  */
 export const metadata: Metadata = noindexMetadata(
   "Academy Console",

@@ -8,7 +8,7 @@
  * a seed that published itself would put six stages in front of parents the
  * moment it ran. Publishing is a separate, deliberate flag.
  *
- * Idempotent — it upserts on (sportSlug, stateSlug) and rewrites the stages, so
+ * Idempotent — it upserts on sportSlug and rewrites the stages, so
  * re-running it after an edit to this file republishes the corrected content
  * rather than creating a second Tennis.
  *
@@ -28,11 +28,20 @@ import {
 
 // The chips under "Decisions" — the same set on every stage, because the help a
 // parent can reach for does not change with their child's age.
+//
+// Academies and coaches point into /booking's tabs. The standalone /academies
+// and /coaches pages were "launching soon" waitlists and have been removed;
+// /booking is the one discovery surface.
+//
+// No tournament chip. `/tournaments` has no index page, and the tournament
+// calendar is reached from the federation band further down the same page —
+// a second route to it here was noise.
+const TENNIS_CALENDAR = "/federations/aita?tab=calendar";
+
 const HELP_LINKS = [
-  { label: "Find academy", href: "/academies" },
-  { label: "Find coach", href: "/coaches" },
+  { label: "Find academy", href: "/booking?tab=academies" },
+  { label: "Find coach", href: "/booking?tab=coaches" },
   { label: "Book expert", href: "/experts" },
-  { label: "Find tournament", href: "/tournaments" },
   { label: "Equipment", href: "/shop" },
   { label: "Assessment", href: "/guidance" },
 ];
@@ -44,7 +53,6 @@ const ORDERED_LEAD = "The steps for this stage, in the order they are worth doin
 const GUIDE: PathwayGuideInput = {
   formatVersion: PATHWAY_FORMAT_VERSION,
   sport: { slug: "tennis", name: "Tennis" },
-  state: null,
   intro: {
     eyebrow: "Tennis pathway · for parents",
     headline: "Understand. Question. Observe. Decide. Act.",
@@ -138,7 +146,10 @@ const GUIDE: PathwayGuideInput = {
           action: "Understand why and explore another sport.",
         },
       ],
-      primaryAction: { label: "Find trial options near you", href: "/academies" },
+      primaryAction: {
+        label: "Find trial options near you",
+        href: "/booking?tab=academies",
+      },
       helpLinks: HELP_LINKS,
     },
 
@@ -222,7 +233,10 @@ const GUIDE: PathwayGuideInput = {
           action: "Discuss a structured development pathway.",
         },
       ],
-      primaryAction: { label: "Review the academy and coach", href: "/academies" },
+      primaryAction: {
+        label: "Review the academy and coach",
+        href: "/booking?tab=academies",
+      },
       helpLinks: HELP_LINKS,
     },
 
@@ -273,7 +287,7 @@ const GUIDE: PathwayGuideInput = {
       ],
       primaryAction: {
         label: "Build a 12-month competition calendar",
-        href: "/tournaments",
+        href: TENNIS_CALENDAR,
       },
       helpLinks: HELP_LINKS,
     },
@@ -458,12 +472,11 @@ async function main(): Promise<void> {
   await mongoose.connect(uri);
   try {
     const saved = await PathwayGuide.findOneAndUpdate(
-      { sportSlug: guide.sport.slug, stateSlug: null },
+      { sportSlug: guide.sport.slug },
       {
         $set: {
           sportSlug: guide.sport.slug,
           sportName: guide.sport.name,
-          stateSlug: null,
           formatVersion: guide.formatVersion,
           intro: guide.intro,
           sportIntro: guide.sportIntro,

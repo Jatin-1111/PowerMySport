@@ -81,7 +81,7 @@ export default function AcademySubmissionSuccessPage() {
             <Link href="/academy" className="w-full">
               <Button className="w-full">Go to Dashboard</Button>
             </Link>
-            <Link href="/academies" className="w-full">
+            <Link href="/booking?tab=academies" className="w-full">
               <Button variant="outline" className="w-full">
                 Browse Academies
               </Button>

@@ -2,9 +2,9 @@
 
 // ─── Pathways (index) ────────────────────────────────────────────────────────
 //
-// One row per sport (and per state overlay, where one exists). Creating a
-// pathway makes an empty draft and drops you straight into the editor — stages
-// are added there, one at a time, rather than demanded up front.
+// One row per sport. Creating a pathway makes an empty draft and drops you
+// straight into the editor — stages are added there, one at a time, rather than
+// demanded up front.
 
 import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
@@ -42,7 +42,6 @@ export default function AdminPathwaysPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [sportName, setSportName] = useState("");
-  const [state, setState] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -69,7 +68,6 @@ export default function AdminPathwaysPage() {
     try {
       const res = await adminApi.createPathwayGuide({
         sport: { slug: slugify(name), name },
-        state: state.trim() ? state.trim().toLowerCase() : null,
       });
       toast.success(res.message ?? "Pathway created.");
       if (res.data?._id) router.push(`/admin/pathways/${res.data._id}`);
@@ -81,10 +79,9 @@ export default function AdminPathwaysPage() {
   };
 
   const remove = async (row: AdminPathwayGuideRow) => {
-    const scope = row.stateSlug ? `${row.sportName} (${row.stateSlug})` : row.sportName;
     if (
       !window.confirm(
-        `Delete the ${scope} pathway and all ${row.stageCount} of its stages? This cannot be undone.`,
+        `Delete the ${row.sportName} pathway and all ${row.stageCount} of its stages? This cannot be undone.`,
       )
     )
       return;
@@ -108,19 +105,13 @@ export default function AdminPathwaysPage() {
       {/* ── New pathway ── */}
       <Card variant="elevated" className="space-y-4">
         <h2 className="text-lg font-bold text-slate-900">Start a new pathway</h2>
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
           <Field label="Sport" hint="The display name — the slug is derived from it.">
             <TextInput
               value={sportName}
               onChange={setSportName}
               placeholder="Tennis"
             />
-          </Field>
-          <Field
-            label="State"
-            hint="Blank = the national pathway. A state overlay replaces it for that state."
-          >
-            <TextInput value={state} onChange={setState} placeholder="Leave blank" />
           </Field>
           <button
             type="button"
@@ -153,7 +144,6 @@ export default function AdminPathwaysPage() {
               <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-400">
                 <tr>
                   <th className="py-2">Sport</th>
-                  <th className="py-2">Scope</th>
                   <th className="py-2">Stages</th>
                   <th className="py-2">Status</th>
                   <th className="py-2">Updated</th>
@@ -170,9 +160,6 @@ export default function AdminPathwaysPage() {
                       >
                         {row.sportName}
                       </Link>
-                    </td>
-                    <td className="py-2.5 text-slate-600">
-                      {row.stateSlug ?? "National"}
                     </td>
                     <td className="py-2.5 text-slate-600">{row.stageCount}</td>
                     <td className="py-2.5">

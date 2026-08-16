@@ -4,14 +4,14 @@ import React from "react";
 export const metadata: Metadata = {
   title: "Sports Pathway Explorer — Roadmap for Your Child",
   description:
-    "Explore step-by-step sports pathways for 70+ sports across all 28 Indian states. From beginner to elite — benchmarks, costs, trials, schemes, and expert tips. Free, instant, state-specific.",
+    "Stage-by-stage sports pathways for Indian parents. Where your child is now, what to look for, the decisions ahead, and what to do next — written with coaches and experienced parents. Free to read.",
   alternates: {
     canonical: "/roadmap",
   },
   openGraph: {
     title: "Sports Pathway Explorer — Roadmap for Your Child",
     description:
-      "AI-powered sports roadmaps for parents. Any sport, any state in India. Benchmarks, costs, government schemes, and expert guidance — free to explore.",
+      "Sports roadmaps for parents in India. Every stage answers the same five questions — where you are, what parents ask, what to look for, what to decide, what to do next.",
     images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
   keywords: [
@@ -23,7 +23,6 @@ export const metadata: Metadata = {
     "cricket pathway India",
     "badminton roadmap India",
     "football journey path India",
-    "state sports academy India",
   ],
 };
 

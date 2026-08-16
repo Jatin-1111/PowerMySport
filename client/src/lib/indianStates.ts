@@ -59,9 +59,9 @@ export type IndianStateOrUT = (typeof INDIAN_STATES_AND_UTS)[number];
 /**
  * The name the API will accept, or `undefined` if there isn't one.
  *
- * Tolerant on input because state names arrive from URLs a reader may have
- * bookmarked or been sent — `?state=jammu %26 kashmir` should still resolve
- * rather than 404 the page. Output is always the canonical spelling.
+ * Tolerant on input because stored profile values and hand-typed entries drift
+ * in spelling — "jammu & kashmir" should still resolve. Output is always the
+ * canonical spelling the API accepts.
  */
 export function normalizeStateName(raw: string): IndianStateOrUT | undefined {
   const wanted = raw.trim().replace(/\s*&\s*/g, " and ").replace(/\s+/g, " ").toLowerCase();

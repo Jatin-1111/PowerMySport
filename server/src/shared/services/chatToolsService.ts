@@ -75,7 +75,6 @@ const getPathwayStageTool: ChatToolDefinition = {
     const sportSlug = String(args.sportSlug || "").toLowerCase();
     const pathway = await PathwayGuide.findOne({
       sportSlug,
-      stateSlug: null,
       status: "published",
     }).lean();
     if (!pathway) {

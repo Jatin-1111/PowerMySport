@@ -133,9 +133,6 @@ export interface PathwayStage {
 export interface PathwayGuide {
   sportSlug: string;
   sportName: string;
-  stateSlug: string | null;
-  /** True when the reader asked for a state and got a state-specific guide. */
-  isStateGuide: boolean;
   formatVersion: number;
   intro: { eyebrow?: string; headline?: string; description?: string };
   sportIntro: string[];
@@ -147,7 +144,6 @@ export interface PathwayGuide {
 export interface PathwayGuideSummary {
   sportSlug: string;
   sportName: string;
-  stateSlug: string | null;
   stageCount: number;
   updatedAt?: string;
 }
@@ -162,13 +158,9 @@ export const pathwayApi = {
    * published in the CMS have one — so a miss returns null and the caller shows
    * a "not ready yet" state rather than an error.
    */
-  getPathwayGuide: async (
-    sport: string,
-    state?: string,
-  ): Promise<PathwayGuide | null> => {
+  getPathwayGuide: async (sport: string): Promise<PathwayGuide | null> => {
     try {
       const q = new URLSearchParams({ sport });
-      if (state?.trim()) q.set("state", state.trim());
       const resp = await axiosInstance.get<ApiResponse<PathwayGuide>>(
         `/pathways/guide?${q.toString()}`,
       );

@@ -16,7 +16,7 @@ const quickLinks = [
     description: "Set up your academy profile directly on the platform.",
   },
   {
-    href: "/academies",
+    href: "/booking?tab=academies",
     label: "View public profile",
     icon: Globe2,
     description: "See how your academy appears to players and parents.",
@@ -50,7 +50,7 @@ export default function AcademyDashboardPage() {
                 Start onboarding
               </Button>
             </Link>
-            <Link href="/academies">
+            <Link href="/booking?tab=academies">
               <Button
                 variant="outline"
                 className="border-white/30 text-white hover:bg-white/10"

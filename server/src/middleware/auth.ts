@@ -42,6 +42,21 @@ const touchAuthActivity = (userId: string): void => {
     });
 };
 
+/**
+ * Roles whose account record must still exist and be un-suspended for the
+ * token to count. A JWT only proves the signature was ours when it was minted —
+ * it says nothing about whether the account survived.
+ */
+const USER_ROLES_NEEDING_STATUS_CHECK: Array<IUserPayload["role"]> = [
+  "Player",
+  "Parent",
+  "Coach",
+  "VenueLister",
+  "Academy",
+  "EXPERT",
+  "Admin",
+];
+
 export const authMiddleware = async (
   req: Request,
   res: Response,
@@ -73,17 +88,7 @@ export const authMiddleware = async (
       return;
     }
 
-    const userRolesNeedingStatusCheck: Array<IUserPayload["role"]> = [
-      "Player",
-      "Parent",
-      "Coach",
-      "VenueLister",
-      "Academy",
-      "EXPERT",
-      "Admin",
-    ];
-
-    if (userRolesNeedingStatusCheck.includes(decoded.role)) {
+    if (USER_ROLES_NEEDING_STATUS_CHECK.includes(decoded.role)) {
       const userRecord = await User.findById(decoded.id)
         .select("isActive suspensionReason")
         .lean();
@@ -122,6 +127,14 @@ export const authMiddleware = async (
  * Optional auth middleware — decodes the JWT if present and populates req.user,
  * but always calls next() even when no token is provided.
  * Used on routes that serve both authenticated and guest users (e.g. POST /guidance).
+ *
+ * A token that verifies but no longer maps to a live account (deleted user,
+ * suspended user, token minted against another database) is downgraded to
+ * guest rather than trusted. authMiddleware rejects those with a 401; here
+ * there is nothing to reject — the route is public — so the correct outcome is
+ * to serve the guest view. Trusting the payload instead pushed the stale id
+ * into downstream services, which then threw "User not found" and blanked out
+ * pages that were supposed to render for anyone.
  */
 export const optionalAuthMiddleware = async (
   req: Request,
@@ -148,6 +161,18 @@ export const optionalAuthMiddleware = async (
         next();
         return;
       }
+
+      if (USER_ROLES_NEEDING_STATUS_CHECK.includes(decoded.role)) {
+        const userRecord = await User.findById(decoded.id)
+          .select("isActive")
+          .lean();
+
+        if (!userRecord || userRecord.isActive === false) {
+          next();
+          return;
+        }
+      }
+
       req.user = decoded;
       if (decoded.id) {
         touchAuthActivity(decoded.id);

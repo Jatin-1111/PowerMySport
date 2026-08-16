@@ -165,7 +165,7 @@ export default function SavedPage() {
 
           <div className="flex justify-center">
             <Button asChild variant="outline">
-              <Link href="/venues">Discover more venues</Link>
+              <Link href="/booking?tab=venues">Discover more venues</Link>
             </Button>
           </div>
         </div>

@@ -21,8 +21,10 @@ import { PATHWAY_FORMAT_VERSION } from "../validation/pathwayGuideFormat";
 // stages of the same sport don't overwrite each other, and reordering is a
 // rewrite of `order` rather than of the content.
 //
-// One document per (sportSlug, stateSlug). `stateSlug: null` is the national
-// guide; a state document overrides it wholesale for readers in that state.
+// One document per sport. There was a state-overlay dimension here — a second
+// document per (sport, state) that replaced the national one for readers in that
+// state — removed Aug 2026: we author one pathway per sport and nothing was
+// generating state-specific content.
 
 export interface PathwayStageDocument extends PathwayStage {
   /** 1..n, contiguous. The CMS rewrites this on reorder; readers sort by it. */
@@ -32,8 +34,6 @@ export interface PathwayStageDocument extends PathwayStage {
 export interface PathwayGuideDocument extends Document {
   sportSlug: string;
   sportName: string;
-  /** null = the national guide. */
-  stateSlug: string | null;
   status: "draft" | "published";
   formatVersion: number;
   intro: {
@@ -108,10 +108,6 @@ const pathwayGuideSchema = new Schema<PathwayGuideDocument>(
   {
     sportSlug: { type: String, required: true, lowercase: true, trim: true },
     sportName: { type: String, required: true, trim: true },
-    // Stored as an explicit null rather than left undefined: a unique index
-    // treats missing keys as distinct, so two "national" guides for the same
-    // sport could both be inserted if this were allowed to be absent.
-    stateSlug: { type: String, lowercase: true, trim: true, default: null },
     status: {
       type: String,
       enum: ["draft", "published"],
@@ -133,7 +129,7 @@ const pathwayGuideSchema = new Schema<PathwayGuideDocument>(
   { timestamps: true },
 );
 
-pathwayGuideSchema.index({ sportSlug: 1, stateSlug: 1 }, { unique: true });
+pathwayGuideSchema.index({ sportSlug: 1 }, { unique: true });
 
 export const PathwayGuide =
   (mongoose.models.PathwayGuide as mongoose.Model<PathwayGuideDocument>) ||

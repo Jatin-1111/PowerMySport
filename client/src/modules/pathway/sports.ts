@@ -31,3 +31,20 @@ export function sportFromSlug(slug: string): PathwaySport | undefined {
   const wanted = slug.trim().toLowerCase();
   return PATHWAY_SPORTS.find((s) => s.slug === wanted);
 }
+
+/**
+ * Link to a sport's pathway from a display name ("Table Tennis" → `/roadmap/table-tennis`).
+ *
+ * The pathway lives at `/roadmap/[sport]`. Callers used to build `/roadmap?sport=Tennis`
+ * from the old explorer, which took the sport as a query param — the index ignores
+ * it, so every one of those links silently dropped the reader on the sport picker.
+ *
+ * Falls back to the index for a sport we don't publish, which is the picker they
+ * would have landed on anyway — better than a 404 on `/roadmap/kabaddi`.
+ */
+export function roadmapHref(sportName: string | undefined | null): string {
+  const slug = sportName?.trim().toLowerCase().replace(/\s+/g, "-");
+  return slug && PATHWAY_SPORTS.some((s) => s.slug === slug)
+    ? `/roadmap/${slug}`
+    : "/roadmap";
+}

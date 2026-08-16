@@ -115,8 +115,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // ── Federation detail pages (/federations/[slug]) ──
   // Deep, long-tail content — eligibility rules and official calendars parents
-  // search for by name. No /federations index page exists, so the sitemap is
-  // currently the only discovery path Google has for these.
+  // search for by name. Linked from the /federations index and from each
+  // sport's pathway band, so these now have real internal discovery paths too.
   const federationEntries: MetadataRoute.Sitemap = federations
     .filter((f): f is SlugRecord & { slug: string } => Boolean(f.slug))
     .map((f) => ({
@@ -228,6 +228,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.98,
     },
     {
+      url: `${siteUrl}/federations`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.85,
+    },
+    {
       url: `${siteUrl}/assessment`,
       lastModified: now,
       changeFrequency: "daily",
@@ -290,28 +296,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     },
 
-    // ── Booking surfaces (waitlist pages while booking is paused) ──
-    // Listed so Google re-crawls them and replaces the cached 404 with a 200.
-    // `/academies` was the third of these and had no page.tsx at all until now,
-    // so it was serving a genuine 404 under a layout that advertised it.
-    {
-      url: `${siteUrl}/venues`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.4,
-    },
-    {
-      url: `${siteUrl}/coaches`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.4,
-    },
-    {
-      url: `${siteUrl}/academies`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.4,
-    },
+    // ── No booking surfaces listed, deliberately ──
+    // /venues, /coaches and /academies were "launching soon" waitlist pages;
+    // they are gone and now 308 to /booking. /booking does NOT go here in their
+    // place: it is `noindex` and disallowed in robots.txt (see robots.ts), so
+    // submitting it would just trade three crawlable URLs for one Search
+    // Console "blocked by robots.txt" error.
     {
       url: `${siteUrl}/community-waitlist`,
       lastModified: now,
@@ -374,10 +364,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // the questions, signals, decisions and next steps a parent faces there.
     // Listed from the static sport config rather than the API so a sitemap
     // build never depends on the API being up.
-    //
-    // Only the bare path is listed. The `?state=` variants canonicalise back to
-    // it, so putting them here would ask Google to index several hundred pages
-    // that differ by one state overlay.
     ...PATHWAY_SPORTS.map((sport) => ({
       url: `${siteUrl}/roadmap/${sport.slug}`,
       lastModified: now,

@@ -3,6 +3,7 @@
 import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
 import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { roadmapHref } from "@/modules/pathway/sports";
 import { motion } from "framer-motion";
 import {
     ArrowRight,
@@ -30,11 +31,11 @@ import { VerdictHero } from "./VerdictHero";
 
 function getActionUrl(step: string, sport?: string): string | null {
   const s = step.toLowerCase();
-  const sportParam = sport ? `?sport=${encodeURIComponent(sport)}` : "";
+  const roadmap = roadmapHref(sport);
   if (s.includes("coach") || s.includes("session") || s.includes("book")) return "/book";
   if (s.includes("communit") || s.includes("parent")) return "/community";
-  if (s.includes("tournament") || s.includes("compet") || s.includes("opportunit")) return `/roadmap${sportParam}`;
-  if (s.includes("roadmap") || s.includes("pathway")) return `/roadmap${sportParam}`;
+  if (s.includes("tournament") || s.includes("compet") || s.includes("opportunit")) return roadmap;
+  if (s.includes("roadmap") || s.includes("pathway")) return roadmap;
   if (s.includes("guidance") || s.includes("assessment") || s.includes("personalised")) return "/guidance";
   return null;
 }
@@ -111,7 +112,7 @@ export function ResultsView({
               ? {
                   sport: levelContext.sport,
                   levelLabel: levelContext.levelLabel,
-                  roadmapHref: `/roadmap?sport=${encodeURIComponent(levelContext.sport)}`,
+                  roadmapHref: roadmapHref(levelContext.sport),
                 }
               : undefined
           }

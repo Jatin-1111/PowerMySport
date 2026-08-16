@@ -37,6 +37,28 @@ const nextConfig: NextConfig = {
         destination: "/rankings/tennis/:category/:subcategory",
         permanent: true,
       },
+      // The standalone venue/coach/academy listings are gone — /booking is the
+      // one discovery surface, with a tab for each. These three were "launching
+      // soon" waitlist pages and are indexed, so they redirect rather than 404.
+      //
+      // Deliberately exact paths: the DETAIL routes underneath them
+      // (/venues/[venueId], /coaches/[coachId], /academies/[slug]) are live and
+      // are what the booking tabs link to. A `:path*` here would break booking.
+      {
+        source: "/venues",
+        destination: "/booking?tab=venues",
+        permanent: true,
+      },
+      {
+        source: "/coaches",
+        destination: "/booking?tab=coaches",
+        permanent: true,
+      },
+      {
+        source: "/academies",
+        destination: "/booking?tab=academies",
+        permanent: true,
+      },
     ];
   },
   async rewrites() {

@@ -45,7 +45,6 @@ export const metadata: Metadata = {
     "personalised sports plan India",
     "sports expert consultation",
     "book sports expert India",
-    "state-specific sports pathway",
     // Rankings — high-intent and highest-volume of anything here. Parents search
     // the federation acronym and the age bracket, not "youth sports guidance".
     "AITA rankings",

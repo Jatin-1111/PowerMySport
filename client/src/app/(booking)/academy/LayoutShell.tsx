@@ -61,7 +61,7 @@ export default function AcademyLayout({
       icon: LayoutDashboard,
     },
     {
-      href: "/academies",
+      href: "/booking?tab=academies",
       label: "Public Profile",
       icon: Building2,
     },

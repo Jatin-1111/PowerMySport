@@ -335,9 +335,9 @@ export function PathwayReader({
   const shouldFocusStage = useRef(false);
 
   const total = stages.length;
-  // Clamp rather than trust: the index is state, and a shorter guide arriving
-  // (a state overlay, a stage deleted in the CMS) would otherwise read past the
-  // end of the array and blank the page.
+  // Clamp rather than trust: the index is React state, and a shorter guide
+  // arriving (a stage deleted in the CMS) would otherwise read past the end of
+  // the array and blank the page.
   const safeIndex = Math.min(index, total - 1);
   const stage = stages[safeIndex] as PathwayStage;
   const sections = useMemo(() => sectionsFor(stage), [stage]);

@@ -145,9 +145,12 @@ const ARCHETYPE_CALENDAR_NOTE: Record<
 export function FederationDetailClient({
   federation: fed,
   initialTab = "overview",
+  hasPathway = false,
 }: {
   federation: FederationDetail;
   initialTab?: TabId;
+  /** Whether this federation's sport has a published pathway — resolved server-side. */
+  hasPathway?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const tabBarRef = useRef<HTMLDivElement>(null);
@@ -333,7 +336,10 @@ export function FederationDetailClient({
 
           {/* Breadcrumb */}
           <div className="pt-5 pb-4 border-b border-white/[0.07]">
-            <BackToRoadmapLink />
+            <BackToRoadmapLink
+              sportSlug={fed.sportSlug}
+              hasPathway={hasPathway}
+            />
           </div>
 
           {/* Header content */}

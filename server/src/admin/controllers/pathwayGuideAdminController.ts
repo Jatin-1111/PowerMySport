@@ -23,12 +23,6 @@ import { recordAuditLog } from "../services/AuditLogService";
 // public reader use, and errors come back pathed so the form can point at the
 // field that is wrong.
 
-const normaliseState = (value: unknown): string | null => {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim().toLowerCase();
-  return trimmed.length > 0 ? trimmed : null;
-};
-
 const auditContext = (
   req: Request,
 ): { adminId: string; adminEmail: string } | null => {
@@ -91,15 +85,15 @@ const failed = (res: Response, scope: string, error: unknown): void => {
 };
 
 // ─── GET /api/admin/pathway-guides ───────────────────────────────────────────
-// The index the CMS opens on: one row per sport/state, no stage bodies.
+// The index the CMS opens on: one row per sport, no stage bodies.
 export const listPathwayGuides = async (
   _req: Request,
   res: Response,
 ): Promise<void> => {
   try {
     const docs = await PathwayGuide.find({})
-      .select("sportSlug sportName stateSlug status reviewedOn updatedAt publishedAt stages.key")
-      .sort({ sportName: 1, stateSlug: 1 })
+      .select("sportSlug sportName status reviewedOn updatedAt publishedAt stages.key")
+      .sort({ sportName: 1 })
       .lean();
 
     res.json({
@@ -108,7 +102,6 @@ export const listPathwayGuides = async (
         _id: String(doc._id),
         sportSlug: doc.sportSlug,
         sportName: doc.sportName,
-        stateSlug: doc.stateSlug ?? null,
         status: doc.status,
         stageCount: doc.stages?.length ?? 0,
         reviewedOn: doc.reviewedOn ?? null,
@@ -142,37 +135,31 @@ export const createPathwayGuide = async (
 ): Promise<void> => {
   try {
     const body = req.body ?? {};
-    const meta = PathwayGuideSchema.pick({ sport: true, intro: true, sportIntro: true })
-      .extend({ state: PathwayGuideSchema.shape.state })
-      .safeParse({
-        sport: body.sport,
-        intro: body.intro ?? {},
-        sportIntro: body.sportIntro ?? [],
-        state: body.state ?? null,
-      });
+    const meta = PathwayGuideSchema.pick({
+      sport: true,
+      intro: true,
+      sportIntro: true,
+    }).safeParse({
+      sport: body.sport,
+      intro: body.intro ?? {},
+      sportIntro: body.sportIntro ?? [],
+    });
 
     if (!meta.success) {
       return badRequest(res, "Check the sport details.", formatPathwayIssues(meta.error));
     }
 
-    const stateSlug = normaliseState(meta.data.state);
-    const exists = await PathwayGuide.exists({
-      sportSlug: meta.data.sport.slug,
-      stateSlug,
-    });
+    const exists = await PathwayGuide.exists({ sportSlug: meta.data.sport.slug });
     if (exists) {
       return badRequest(
         res,
-        `A pathway guide already exists for ${meta.data.sport.name}${
-          stateSlug ? ` (${stateSlug})` : ""
-        }. Edit that one instead.`,
+        `A pathway guide already exists for ${meta.data.sport.name}. Edit that one instead.`,
       );
     }
 
     const created = new PathwayGuide({
       sportSlug: meta.data.sport.slug,
       sportName: meta.data.sport.name,
-      stateSlug,
       status: "draft",
       formatVersion: PATHWAY_FORMAT_VERSION,
       intro: compact(meta.data.intro),
@@ -184,7 +171,6 @@ export const createPathwayGuide = async (
 
     audit(req, "pathwayGuide.create", String(created._id), {
       sportSlug: created.sportSlug,
-      stateSlug,
     });
 
     res.status(201).json({
@@ -253,7 +239,6 @@ export const deletePathwayGuide = async (
 
     audit(req, "pathwayGuide.delete", String(deleted._id), {
       sportSlug: deleted.sportSlug,
-      stateSlug: deleted.stateSlug ?? null,
       stageCount: deleted.stages?.length ?? 0,
     });
     res.json({ success: true, message: `Deleted the ${deleted.sportName} pathway.` });
@@ -279,7 +264,6 @@ export const setPathwayGuideStatus = async (
       const check = parsePathwayGuide({
         formatVersion: doc.formatVersion,
         sport: { slug: doc.sportSlug, name: doc.sportName },
-        state: doc.stateSlug,
         intro: doc.intro ?? {},
         sportIntro: doc.sportIntro ?? [],
         stages: plainStages(doc),
@@ -301,7 +285,6 @@ export const setPathwayGuideStatus = async (
 
     audit(req, publish ? "pathwayGuide.publish" : "pathwayGuide.unpublish", String(doc._id), {
       sportSlug: doc.sportSlug,
-      stateSlug: doc.stateSlug ?? null,
     });
 
     res.json({

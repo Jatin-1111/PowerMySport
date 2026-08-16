@@ -379,7 +379,9 @@ export default function BookingsPage() {
             actionLabel="Book Venue"
             onAction={() => (window.location.href = "/booking")}
             secondaryActionLabel="Find a Coach"
-            onSecondaryAction={() => (window.location.href = "/coaches")}
+            onSecondaryAction={() =>
+              (window.location.href = "/booking?tab=coaches")
+            }
           />
         </Card>
       ) : (
@@ -494,9 +496,9 @@ export default function BookingsPage() {
                 onAction={() =>
                   (window.location.href =
                     activeTab === "venues"
-                      ? "/venues"
+                      ? "/booking?tab=venues"
                       : activeTab === "coaches"
-                        ? "/coaches"
+                        ? "/booking?tab=coaches"
                         : "/booking?tab=academies")
                 }
               />

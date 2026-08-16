@@ -19,10 +19,8 @@ const apiBase = (): string =>
 
 export async function fetchPathwayGuide(
   sport: string,
-  state?: string,
 ): Promise<PathwayGuide | null> {
   const params = new URLSearchParams({ sport });
-  if (state?.trim()) params.set("state", state.trim());
   try {
     const res = await fetch(`${apiBase()}/pathways/guide?${params.toString()}`, {
       next: { revalidate: REVALIDATE_SECONDS },

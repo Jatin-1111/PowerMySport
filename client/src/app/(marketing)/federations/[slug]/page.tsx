@@ -7,6 +7,7 @@ import {
 } from "@/lib/seo";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { fetchPublishedPathways } from "@/modules/pathway/fetchGuide";
 import { FederationDetailClient } from "./FederationDetailClient";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -123,6 +124,11 @@ export default async function FederationDetailPage({
   const fed = await fetchFederation(slug);
   if (!fed) notFound();
 
+  // Whether the back-link has anywhere to go. Only the CMS knows which sports
+  // are published, and a federation can exist for a sport with no guide yet.
+  const published = await fetchPublishedPathways();
+  const hasPathway = published.some((guide) => guide.sportSlug === fed.sportSlug);
+
   const validTabs = ["overview", "tournaments", "calendar", "eligibility", "register"] as const;
   type TabId = (typeof validTabs)[number];
   const initialTab: TabId = validTabs.includes(tab as TabId)
@@ -148,13 +154,20 @@ export default async function FederationDetailPage({
             ...(fed.contact?.phone ? { phone: fed.contact.phone } : {}),
             ...(fed.socialLinks ? { socialLinks: fed.socialLinks } : {}),
           }),
+          // Mirrors the URL hierarchy now that /federations exists. It pointed
+          // at /rankings while this page had no parent index — a breadcrumb to
+          // a path the URL isn't under.
           breadcrumbJsonLd([
-            { name: "Rankings & Federations", path: "/rankings" },
+            { name: "Federations", path: "/federations" },
             { name: fed.acronym, path: `/federations/${fed.slug}` },
           ]),
         ]}
       />
-      <FederationDetailClient federation={fed} initialTab={initialTab} />
+      <FederationDetailClient
+        federation={fed}
+        initialTab={initialTab}
+        hasPathway={hasPathway}
+      />
     </>
   );
 }

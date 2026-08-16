@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { articleJsonLd } from "@/lib/seo";
-import { normalizeStateName } from "@/lib/indianStates";
+import { FederationBand } from "@/modules/federations/components/FederationBand";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { PathwayReader } from "@/modules/pathway/components/PathwayReader";
@@ -22,20 +22,6 @@ import { sportFromSlug } from "@/modules/pathway/sports";
 // The parent-facing pathway for one sport. Server-rendered so the whole guide is
 // in the HTML: this is the page a parent searching "how do I start my child in
 // tennis" should land on, and it cannot depend on JavaScript to have content.
-
-/**
- * The reader's chosen state, canonicalised, or `undefined` if they didn't pick a
- * real one.
- *
- * Validated here rather than left to the API: an unrecognised name used to come
- * back as a 400 and take the whole page down with it. A typo, a crawler probing
- * `?state=xyz`, or a stale link all resolve to the national guide instead.
- */
-function readState(raw: string | string[] | undefined): string | undefined {
-  const value = Array.isArray(raw) ? raw[0] : raw;
-  const trimmed = value?.trim();
-  return trimmed ? normalizeStateName(trimmed) : undefined;
-}
 
 export async function generateMetadata({
   params,
@@ -57,8 +43,6 @@ export async function generateMetadata({
   return {
     title,
     description,
-    // Every `?state=` variant canonicalises back to the bare path. A state
-    // overlay scopes the content without minting a near-duplicate URL per state.
     alternates: { canonical: `/roadmap/${sport}` },
     openGraph: {
       title,
@@ -83,8 +67,7 @@ export default async function SportPathwayPage({
 }) {
   const { sport } = await params;
   const query = await searchParams;
-  const chosenState = readState(query.state);
-  const guide = await fetchPathwayGuide(sport, chosenState);
+  const guide = await fetchPathwayGuide(sport);
 
   // Read on the server so a shared `?stage=` link renders that stage in the HTML
   // rather than flashing stage one and jumping once JavaScript arrives.
@@ -98,29 +81,24 @@ export default async function SportPathwayPage({
 
   return (
     <main className="overflow-x-clip">
-      {/* Only on the canonical URL — a `?state=` view is the same article with a
-          different overlay, and Article schema per state would offer Google a
-          near-identical "article" for every state in India. */}
-      {!chosenState && (
-        <JsonLd
-          data={[
-            articleJsonLd({
-              headline: `${guide.sportName} pathway in India — a parent's guide`,
-              path: `/roadmap/${guide.sportSlug}`,
-              description:
-                guide.intro.description ??
-                `Every stage of ${guide.sportName} for Indian parents.`,
-              ...(guide.updatedAt ? { dateModified: guide.updatedAt } : {}),
-              section: guide.sportName,
-              keywords: [
-                `${guide.sportName} pathway India`,
-                `${guide.sportName} for kids India`,
-                `how to start ${guide.sportName} in India`,
-              ],
-            }),
-          ]}
-        />
-      )}
+      <JsonLd
+        data={[
+          articleJsonLd({
+            headline: `${guide.sportName} pathway in India — a parent's guide`,
+            path: `/roadmap/${guide.sportSlug}`,
+            description:
+              guide.intro.description ??
+              `Every stage of ${guide.sportName} for Indian parents.`,
+            ...(guide.updatedAt ? { dateModified: guide.updatedAt } : {}),
+            section: guide.sportName,
+            keywords: [
+              `${guide.sportName} pathway India`,
+              `${guide.sportName} for kids India`,
+              `how to start ${guide.sportName} in India`,
+            ],
+          }),
+        ]}
+      />
 
       {/* ── Header ── */}
       <section className="pt-10 sm:pt-14">
@@ -182,6 +160,11 @@ export default async function SportPathwayPage({
           )}
         </div>
       </section>
+
+      {/* Directly under the stages, before the marketing chrome: a parent who has
+          just read what decision is coming is one scroll from the body whose
+          rules that decision has to satisfy. */}
+      <FederationBand sportSlug={guide.sportSlug} sportName={guide.sportName} />
 
       <PathwayStatsBanner />
       <PathwayHelpSection />

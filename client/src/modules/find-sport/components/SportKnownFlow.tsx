@@ -19,6 +19,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { roadmapHref } from "@/modules/pathway/sports";
 import { getAmbitionOptions, getBestResultLadder, getCurrentStandingLadder, deriveExperienceLevel } from "../data/sportArchetypes";
 import { BinaryCards } from "./inputs/BinaryCards";
 import { FourContextCards } from "./inputs/FourContextCards";
@@ -677,7 +678,7 @@ function ResultsView({ form, onReset }: { form: KnownSportForm; onReset: () => v
         {/* Next steps */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Link
-            href={`/roadmap?sport=${encodeURIComponent(form.sport)}${form.state ? `&state=${encodeURIComponent(form.state)}` : ""}`}
+            href={roadmapHref(form.sport)}
             className="group/cta flex w-full items-center justify-center gap-2 rounded-2xl bg-power-orange px-5 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98]"
           >
             <Map className="h-4 w-4" />

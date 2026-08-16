@@ -824,28 +824,22 @@ export const recommendSport = async (
     }
 
     // Step A: Rule-based ranking
-    const stateSlug = parsed.data.location.toLowerCase().replace(/\s+/g, "-");
 
     // 1. Get all verified sports (the full catalog)
     const allSports = await Sport.find({ isVerified: true }).lean();
 
-    // 2. Fetch every published pathway guide, national and state overlays alike.
-    //    One query rather than two: the set is small (one document per sport,
-    //    plus the few states that have their own overlay) and both the
-    //    state-specific map and the "has a pathway anywhere" set come out of it.
+    // 2. Every published pathway guide — one document per sport.
     const publishedGuides = await PathwayGuide.find({ status: "published" })
-      .select("sportSlug stateSlug sportIntro stages")
+      .select("sportSlug sportIntro stages")
       .lean();
 
-    // 3. Prefer this reader's state overlay, fall back to the national guide.
-    const pathwayBySlug = new Map<string, (typeof publishedGuides)[number]>();
-    for (const guide of publishedGuides) {
-      const isForThisState = guide.stateSlug === stateSlug;
-      const existing = pathwayBySlug.get(guide.sportSlug);
-      if (!existing || isForThisState) pathwayBySlug.set(guide.sportSlug, guide);
-    }
+    // 3. Keyed by sport. This used to pick a state overlay over the national
+    //    guide; there is one guide per sport now, so the lookup is direct.
+    const pathwayBySlug = new Map<string, (typeof publishedGuides)[number]>(
+      publishedGuides.map((guide) => [guide.sportSlug, guide]),
+    );
 
-    // 4. Which sports have a readable pathway at all (national infra check).
+    // 4. Which sports have a readable pathway at all.
     const sportsWithAnyPathway = new Set<string>(
       publishedGuides.map((guide) => guide.sportSlug),
     );

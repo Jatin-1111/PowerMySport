@@ -1,24 +1,13 @@
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
-import type { Metadata } from "next";
 import React from "react";
 
-// Copy matches what the page actually is today — a waitlist. The previous
-// "Explore and join the best sports academies" promised a directory that does
-// not exist yet, which reads as a bait-and-switch to anyone arriving from
-// search.
-export const metadata: Metadata = {
-  title: "Sports Academy Discovery — Launching Soon",
-  description:
-    "Verified sports academies with real programmes, fees and age groups are launching soon on PowerMySport. Join the waitlist to get notified when academies near you go live.",
-  alternates: { canonical: "/academies" },
-  openGraph: {
-    title: "Sports Academy Discovery — Launching Soon",
-    description:
-      "Verified academy programmes are launching soon. Join the waitlist to hear first.",
-  },
-};
-
+/**
+ * Chrome for `/academies/[slug]`. See the note in `venues/layout.tsx` — the
+ * `/academies` waitlist page is gone, /booking's Academies tab replaced it, and
+ * the metadata that pointed every academy profile's canonical at that waitlist
+ * went with it.
+ */
 export default function AcademiesLayout({
   children,
 }: {

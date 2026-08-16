@@ -217,7 +217,7 @@ export default function AdminPathwayEditPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge={guide.stateSlug ? `Pathway · ${guide.stateSlug}` : "Pathway · National"}
+        badge="Pathway"
         title={guide.sportName}
         subtitle={`${guide.stages.length} stage${guide.stages.length === 1 ? "" : "s"} · ${
           isPublished ? "live for parents" : "draft, not shown to anyone"

@@ -26,12 +26,10 @@ const slugify = (value: string): string =>
 /** Only published guides are ever visible here — drafts stay in the CMS. */
 const PUBLISHED = { status: "published" as const };
 
-// ─── GET /api/pathways/guide?sport=tennis&state=delhi ────────────────────────
+// ─── GET /api/pathways/guide?sport=tennis ────────────────────────────────────
 //
-// A state guide wins over the national one when it exists. Asking for a state
-// that has no guide of its own falls back to national rather than 404ing: the
-// national guide is the right answer for most of India, and a reader who picked
-// their state should not be punished for it.
+// One guide per sport. This used to take a `?state=` overlay that won over the
+// national guide; removed Aug 2026 along with the rest of the state dimension.
 export const getPathwayGuide = async (
   req: Request,
   res: Response,
@@ -47,22 +45,11 @@ export const getPathwayGuide = async (
     }
 
     const sportSlug = slugify(sport);
-    const stateSlug =
-      typeof req.query.state === "string" && req.query.state.trim()
-        ? slugify(req.query.state)
-        : null;
 
-    // One query for both candidates, then pick — cheaper than a miss-then-retry
-    // round trip for the common case where no state guide exists.
-    const candidates = await PathwayGuide.find({
+    const guide = await PathwayGuide.findOne({
       ...PUBLISHED,
       sportSlug,
-      stateSlug: stateSlug ? { $in: [stateSlug, null] } : null,
     }).lean();
-
-    const guide =
-      candidates.find((doc) => doc.stateSlug === stateSlug) ??
-      candidates.find((doc) => doc.stateSlug === null);
 
     if (!guide) {
       res.status(404).json({
@@ -77,9 +64,6 @@ export const getPathwayGuide = async (
       data: {
         sportSlug: guide.sportSlug,
         sportName: guide.sportName,
-        stateSlug: guide.stateSlug ?? null,
-        /** True when the reader asked for a state and got a state-specific guide. */
-        isStateGuide: guide.stateSlug !== null,
         formatVersion: guide.formatVersion,
         intro: guide.intro ?? {},
         sportIntro: guide.sportIntro ?? [],
@@ -102,7 +86,7 @@ export const listPublishedPathwayGuides = async (
 ): Promise<void> => {
   try {
     const docs = await PathwayGuide.find(PUBLISHED)
-      .select("sportSlug sportName stateSlug stages.key updatedAt")
+      .select("sportSlug sportName stages.key updatedAt")
       .sort({ sportName: 1 })
       .lean();
 
@@ -111,7 +95,6 @@ export const listPublishedPathwayGuides = async (
       data: docs.map((doc) => ({
         sportSlug: doc.sportSlug,
         sportName: doc.sportName,
-        stateSlug: doc.stateSlug ?? null,
         stageCount: doc.stages?.length ?? 0,
         updatedAt: doc.updatedAt,
       })),

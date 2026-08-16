@@ -146,7 +146,7 @@ export default async function PathwaysIndexPage() {
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {pathways.map((pathway) => (
-                <li key={`${pathway.sportSlug}-${pathway.stateSlug ?? "national"}`}>
+                <li key={pathway.sportSlug}>
                   <Link
                     href={`/roadmap/${pathway.sportSlug}`}
                     className="group flex h-full flex-col rounded-2xl border border-white/70 bg-white/80 p-6 backdrop-blur-sm premium-shadow transition hover:border-power-orange/40 hover:shadow-lg"

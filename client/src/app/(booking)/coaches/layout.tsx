@@ -1,22 +1,13 @@
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
-import type { Metadata } from "next";
 import React from "react";
 
-export const metadata: Metadata = {
-  title: "Sports Coach Booking — Launching Soon",
-  description:
-    "Personalised training with certified sports coaches is launching soon on PowerMySport. Join the waitlist to get notified when coach booking opens.",
-  alternates: {
-    canonical: "/coaches",
-  },
-  openGraph: {
-    title: "Sports Coach Booking — Launching Soon",
-    description:
-      "Personalised training with certified sports coaches is launching soon. Join the waitlist.",
-  },
-};
-
+/**
+ * Chrome for `/coaches/[coachId]`. See the note in `venues/layout.tsx` — the
+ * `/coaches` waitlist page is gone, /booking's Coaches tab replaced it, and the
+ * metadata that pointed every coach profile's canonical at that waitlist went
+ * with it.
+ */
 export default function CoachesLayout({
   children,
 }: {

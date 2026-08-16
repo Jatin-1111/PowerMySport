@@ -23,13 +23,12 @@ function deriveTitle(firstUserMessage: string): string {
   return cut + (firstUserMessage.trim().length > 60 ? "…" : "");
 }
 
-// Only a PUBLISHED national guide grounds the chat. A draft is an author's
-// working copy, and answering a parent out of one would quote them content the
-// site itself is not yet showing.
+// Only a PUBLISHED guide grounds the chat. A draft is an author's working copy,
+// and answering a parent out of one would quote them content the site itself is
+// not yet showing.
 async function loadPathway(sportSlug: string) {
   return PathwayGuide.findOne({
     sportSlug: sportSlug.toLowerCase(),
-    stateSlug: null,
     status: "published",
   }).lean();
 }

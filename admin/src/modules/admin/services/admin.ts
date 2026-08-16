@@ -1226,7 +1226,6 @@ export const adminApi = {
 
   createPathwayGuide: async (payload: {
     sport: { slug: string; name: string };
-    state?: string | null;
     intro?: AdminPathwayIntro;
     sportIntro?: string[];
   }): Promise<ApiResponse<AdminPathwayGuide>> => {
@@ -1361,7 +1360,6 @@ export interface AdminPathwayGuide {
   _id: string;
   sportSlug: string;
   sportName: string;
-  stateSlug: string | null;
   status: "draft" | "published";
   formatVersion: number;
   intro: AdminPathwayIntro;
@@ -1378,7 +1376,6 @@ export interface AdminPathwayGuideRow {
   _id: string;
   sportSlug: string;
   sportName: string;
-  stateSlug: string | null;
   status: "draft" | "published";
   stageCount: number;
   reviewedOn: string | null;
