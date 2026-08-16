@@ -1,5 +1,7 @@
+import { JsonLd } from "@/components/seo/JsonLd";
 import { ShopCatalogClient } from "@/components/shop/ShopCatalogClient";
 import { listProducts, type Product } from "@/lib/shop/ecommerce-api";
+import { itemListJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import ShopWaitlist from "../../../components/shop/ShopWaitlist";
@@ -63,10 +65,30 @@ export default async function ShopPage({
     facets: { brands: [], minPrice: 0, maxPrice: 10000 },
   }));
 
+  // Every filtered/paginated view canonicalises back to bare `/shop`, so the
+  // ItemList is only emitted on that view — describing page 3 of a brand filter
+  // as the contents of `/shop` would be a lie in schema.
+  const isCanonicalView =
+    Object.keys(params).length === 0 && data.products.length > 0;
+
   return (
     <Suspense
       fallback={<div className="h-screen w-full animate-pulse bg-slate-50" />}
     >
+      {isCanonicalView && (
+        <JsonLd
+          data={itemListJsonLd({
+            name: "PowerMySport Shop",
+            path: "/shop",
+            description:
+              "Sports gear and equipment for young athletes in India, new and pre-owned.",
+            items: data.products.map((product) => ({
+              name: product.name,
+              path: `/shop/products/${product.id}`,
+            })),
+          })}
+        />
+      )}
       <ShopCatalogClient products={data.products} facets={data.facets} />
     </Suspense>
   );

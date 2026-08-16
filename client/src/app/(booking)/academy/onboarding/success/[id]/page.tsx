@@ -3,7 +3,7 @@ import { CheckCircle, Mail } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = {
-  title: "Application Submitted - PowerMySport",
+  title: "Application Submitted",
   description: "Your academy onboarding has been submitted for approval",
 };
 

@@ -1,10 +1,12 @@
 import { Navigation } from "@/components/layout/Navigation";
+import { NOINDEX_METADATA } from "@/lib/seo";
 import type { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Checkout | PowerMySport",
+  title: "Checkout",
   description: "Secure checkout for sports venue, coach, and academy bookings.",
+  ...NOINDEX_METADATA,
 };
 
 export default function CheckoutLayout({

@@ -1,11 +1,66 @@
+import { JsonLd } from "@/components/seo/JsonLd";
 import { AddToCartButton } from "@/components/shop/AddToCartButton";
 import { ProductReviews } from "@/components/shop/ProductReviews";
 import { RelatedProducts } from "@/components/shop/RelatedProducts";
 import { WishlistButton } from "@/components/shop/WishlistButton";
 import { getProductById } from "@/lib/shop/ecommerce-api";
 import { formatInr, getProductPrice } from "@/lib/shop/format";
+import {
+  breadcrumbJsonLd,
+  clampText,
+  NOINDEX_METADATA,
+  productJsonLd,
+} from "@/lib/seo";
 import { ArrowLeft, ShieldCheck, Truck } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
+
+/**
+ * This route previously exported no metadata at all, so every product inherited
+ * the shop layout's generic title and — because the root layout set one — a
+ * canonical pointing at the homepage. Every product in the catalogue was
+ * declaring itself a duplicate of `/`.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const product = await getProductById(id).catch(() => null);
+
+  // Missing product, or the shop backend is down. The page renders a friendly
+  // body rather than a hard 404 (an outage is not a permanent absence), so keep
+  // it out of the index instead of letting Google cache an empty shell.
+  if (!product) {
+    return { title: "Product not found", ...NOINDEX_METADATA };
+  }
+
+  const description = clampText(
+    product.description ||
+      `Buy ${product.name} on the PowerMySport shop. ${product.category} gear with secure checkout and dispatch across India.`,
+  );
+
+  return {
+    title: product.name,
+    description,
+    alternates: { canonical: `/shop/products/${product.id}` },
+    openGraph: {
+      type: "website",
+      siteName: "PowerMySport",
+      url: `/shop/products/${product.id}`,
+      title: product.name,
+      description,
+      ...(product.images?.[0] ? { images: [{ url: product.images[0] }] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.name,
+      description,
+      ...(product.images?.[0] ? { images: [product.images[0]] } : {}),
+    },
+  };
+}
 
 export default async function ProductDetailPage({
   params,
@@ -49,6 +104,30 @@ export default async function ProductDetailPage({
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <JsonLd
+        data={[
+          productJsonLd({
+            name: product.name,
+            path: `/shop/products/${product.id}`,
+            description: product.description,
+            images: product.images,
+            sku: product.sku,
+            ...(product.brand ? { brand: product.brand } : {}),
+            category: product.category,
+            // The API speaks paise; schema.org wants a decimal amount in the
+            // stated currency. Skipping this division advertises every item at
+            // 100x its real price.
+            priceInr: (variant.price || price) / 100,
+            inStock: variant.stock > 0,
+            ...(product.condition ? { condition: product.condition } : {}),
+          }),
+          breadcrumbJsonLd([
+            { name: "Shop", path: "/shop" },
+            { name: product.category, path: "/shop" },
+            { name: product.name, path: `/shop/products/${product.id}` },
+          ]),
+        ]}
+      />
       <Link
         href="/shop"
         className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"

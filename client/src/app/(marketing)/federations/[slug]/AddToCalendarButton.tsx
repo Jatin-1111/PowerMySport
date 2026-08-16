@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { CalendarPlus, Check, Loader2 } from "lucide-react";
+import { absoluteUrl } from "@/lib/seo";
 import { toast } from "@/lib/toast";
 import { calendarApi, EVENT_TYPE_COLORS } from "@/modules/booking/services/calendarApi";
 import { useAuthStore } from "@/modules/auth/store/authStore";
@@ -35,7 +36,7 @@ function toEventNotes(edition: TournamentEdition): string | undefined {
   const parts = [
     formatLocation(edition.venue, edition.city),
     edition.ageGroups?.length ? edition.ageGroups.join(", ") : null,
-    edition.slug ? `https://powermysport.com/tournaments/${edition.slug}` : null,
+    edition.slug ? absoluteUrl(`/tournaments/${edition.slug}`) : null,
   ].filter(Boolean);
   if (parts.length === 0) return undefined;
   return parts.join(" · ").slice(0, 500);

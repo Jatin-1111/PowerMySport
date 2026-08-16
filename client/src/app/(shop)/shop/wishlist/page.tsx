@@ -1,11 +1,13 @@
+import { noindexMetadata } from "@/lib/seo";
 import { Metadata } from "next";
 import { cookies } from "next/headers";
 import { WishlistClient } from "./WishlistClient";
 
-export const metadata: Metadata = {
-  title: "Wishlist | PowerMySport",
-  description: "View your saved performance gear.",
-};
+// Per-user list — nothing here is the same for two visitors.
+export const metadata: Metadata = noindexMetadata(
+  "Wishlist",
+  "View your saved performance gear.",
+);
 
 export default async function WishlistPage() {
   const cookieStore = await cookies();

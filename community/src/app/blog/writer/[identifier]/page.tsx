@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import WriterProfileClient from "@/modules/community/components/blog/WriterProfileClient";
-import { JsonLd } from "@/modules/community/components/seo/JsonLd";
+import {
+  breadcrumbSchema,
+  JsonLd,
+} from "@/modules/community/components/seo/JsonLd";
 import {
   buildMetadata,
   clampText,
@@ -69,7 +72,18 @@ export default async function WriterProfilePage({
 
   return (
     <>
-      {profileSchema ? <JsonLd data={profileSchema} /> : null}
+      {author && profileSchema ? (
+        <JsonLd
+          data={[
+            profileSchema,
+            breadcrumbSchema([
+              { name: "Community", path: "/" },
+              { name: "Blog", path: "/blog" },
+              { name: author.name, path: `/blog/writer/${identifier}` },
+            ]),
+          ]}
+        />
+      ) : null}
       <WriterProfileClient identifier={identifier} />
     </>
   );

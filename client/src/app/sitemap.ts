@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 
+import { SITE_URL as siteUrl } from "@/lib/seo";
 import {
   RANKING_SPORTS,
   comboHref,
@@ -7,8 +8,16 @@ import {
 } from "@/modules/rankings/config";
 import { RESOURCE_SPORTS } from "@/modules/resources/config";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
+/**
+ * Feature flags gate whole sections of the site. A sitemap that lists `/shop`
+ * while `NEXT_PUBLIC_SHOP_IS_LIVE=false` is asking Google to crawl a waitlist
+ * page and index it as a store — so each flagged section is included only when
+ * it is actually serving its real content.
+ */
+const SHOP_IS_LIVE = process.env.NEXT_PUBLIC_SHOP_IS_LIVE !== "false";
+const EXPERTS_IS_LIVE = process.env.NEXT_PUBLIC_EXPERTS_IS_LIVE === "true";
 
 /**
  * Slug-bearing records from the pathways API. The federations endpoint returns
@@ -41,12 +50,64 @@ async function fetchSlugs(path: string): Promise<SlugRecord[]> {
   }
 }
 
+/** Minimal shapes for the two id-keyed lists below. */
+interface IdRecord {
+  id?: string;
+  _id?: string;
+  updatedAt?: string;
+}
+
+/**
+ * The shop and expert list endpoints answer with different envelopes from the
+ * pathways API (`{ ok, data }` vs `{ success, data }`) and nest their arrays,
+ * so they get their own reader. Like `fetchSlugs` it never throws.
+ *
+ * Deliberately a raw `fetch` rather than `listProducts()` from
+ * `lib/shop/ecommerce-api`: that helper falls back to a hardcoded demo catalogue
+ * when the backend is unreachable, which would publish invented product URLs
+ * into the sitemap on any API blip.
+ */
+async function fetchIds(
+  path: string,
+  pick: (body: unknown) => IdRecord[],
+): Promise<IdRecord[]> {
+  try {
+    const res = await fetch(`${apiBase}${path}`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    return pick(await res.json()) ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  const [federations, editions] = await Promise.all([
+  const [federations, editions, products, experts] = await Promise.all([
     fetchSlugs("/federations"),
     fetchSlugs("/tournament-editions"),
+    SHOP_IS_LIVE
+      ? fetchIds("/v1/products?page=1&limit=500", (body) => {
+          const data = (body as { ok?: boolean; data?: { products?: IdRecord[] } })
+            ?.data;
+          return Array.isArray(data?.products) ? data.products : [];
+        })
+      : Promise.resolve([]),
+    EXPERTS_IS_LIVE
+      ? fetchIds("/experts?limit=200", (body) => {
+          const envelope = body as {
+            success?: boolean;
+            data?: IdRecord[] | { experts?: IdRecord[] };
+          };
+          if (!envelope?.success) return [];
+          if (Array.isArray(envelope.data)) return envelope.data;
+          return Array.isArray(envelope.data?.experts)
+            ? envelope.data.experts
+            : [];
+        })
+      : Promise.resolve([]),
   ]);
 
   const lastMod = (record: SlugRecord) =>
@@ -91,6 +152,43 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Per-player pages are absent on purpose too — they are noindex, because most
   // of the people on these lists are children. See the note in
   // app/(marketing)/rankings/players/[regNo]/page.tsx.
+  // ── Shop (/shop and /shop/products/[id]) ──
+  // Gated on the live flag: while the shop is off, `/shop` renders a waitlist
+  // and there is nothing to list. Private shop routes (cart, orders, account,
+  // checkout) are noindex and never appear here.
+  const shopEntries: MetadataRoute.Sitemap = SHOP_IS_LIVE
+    ? [
+        {
+          url: `${siteUrl}/shop`,
+          lastModified: now,
+          changeFrequency: "daily" as const,
+          priority: 0.7,
+        },
+        ...products
+          .map((product) => product.id ?? product._id)
+          .filter((id): id is string => Boolean(id))
+          .map((id) => ({
+            url: `${siteUrl}/shop/products/${id}`,
+            lastModified: now,
+            changeFrequency: "weekly" as const,
+            priority: 0.5,
+          })),
+      ]
+    : [];
+
+  // ── Expert profiles (/experts/[expertId]) ──
+  // The `/experts` directory itself is listed below regardless; the individual
+  // profiles only make sense once experts are live and bookable.
+  const expertEntries: MetadataRoute.Sitemap = experts
+    .map((expert) => expert.id ?? expert._id)
+    .filter((id): id is string => Boolean(id))
+    .map((id) => ({
+      url: `${siteUrl}/experts/${id}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
+
   const rankingEntries: MetadataRoute.Sitemap = RANKING_SPORTS.flatMap(
     (sport) => [
       {
@@ -194,6 +292,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // ── Booking surfaces (waitlist pages while booking is paused) ──
     // Listed so Google re-crawls them and replaces the cached 404 with a 200.
+    // `/academies` was the third of these and had no page.tsx at all until now,
+    // so it was serving a genuine 404 under a layout that advertised it.
     {
       url: `${siteUrl}/venues`,
       lastModified: now,
@@ -202,6 +302,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${siteUrl}/coaches`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.4,
+    },
+    {
+      url: `${siteUrl}/academies`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.4,
+    },
+    {
+      url: `${siteUrl}/community-waitlist`,
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.4,
@@ -275,5 +387,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // ── Dynamic pathway content ──
     ...federationEntries,
     ...editionEntries,
+
+    // ── Commerce and expert profiles ──
+    ...shopEntries,
+    ...expertEntries,
   ];
 }

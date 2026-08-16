@@ -37,7 +37,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${acronym} ${sport.name} Rankings — searchable, by state and age group`,
       description: `Every ${acronym} ranking list, filterable by state and searchable by name, with each player's week-by-week history.`,
-      url: `https://powermysport.com/rankings/${sport.slug}`,
+      url: `/rankings/${sport.slug}`,
       type: "website",
       siteName: "PowerMySport",
     },

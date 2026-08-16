@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import BlogDetailClient from "@/modules/community/components/blog/BlogDetailClient";
-import { JsonLd } from "@/modules/community/components/seo/JsonLd";
+import {
+  breadcrumbSchema,
+  JsonLd,
+} from "@/modules/community/components/seo/JsonLd";
 import {
   buildMetadata,
   clampText,
@@ -86,7 +89,18 @@ export default async function CommunityBlogDetailPage({
 
   return (
     <>
-      {articleSchema ? <JsonLd data={articleSchema} /> : null}
+      {blog && articleSchema ? (
+        <JsonLd
+          data={[
+            articleSchema,
+            breadcrumbSchema([
+              { name: "Community", path: "/" },
+              { name: "Blog", path: "/blog" },
+              { name: blog.title, path: `/blog/${blogId}` },
+            ]),
+          ]}
+        />
+      ) : null}
       <BlogDetailClient blogId={blogId} />
     </>
   );

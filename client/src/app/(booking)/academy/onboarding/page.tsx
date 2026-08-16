@@ -2,7 +2,7 @@ import { AcademyOnboardingContainer } from "@/modules/onboarding/components/acad
 import { Suspense } from "react";
 
 export const metadata = {
-  title: "Academy Onboarding - PowerMySport",
+  title: "Academy Onboarding",
   description: "Set up your academy profile, operations, pricing, and payouts.",
 };
 

@@ -1,3 +1,5 @@
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbJsonLd, sportsEventJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -110,7 +112,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const detail = await fetchEdition(slug);
-  if (!detail) return { title: "Tournament — PowerMySport" };
+  if (!detail) return { title: "Tournament" };
 
   const { edition } = detail;
   const title = edition.officialName || edition.name;
@@ -125,13 +127,16 @@ export async function generateMetadata({
     .slice(0, 155);
 
   return {
-    title: `${edition.name} — ${formatShortDate(edition.startDate)} | PowerMySport`,
+    title: `${edition.name} — ${formatShortDate(edition.startDate)}`,
     description,
     alternates: { canonical: `/tournaments/${edition.slug}` },
     openGraph: {
       title,
       description,
-      url: `https://powermysport.com/tournaments/${edition.slug}`,
+      // Site-relative: `metadataBase` makes it absolute on whatever host is
+      // serving. Hardcoding the origin here is how this site once shipped
+      // canonicals pointing at a host that redirects away.
+      url: `/tournaments/${edition.slug}`,
       type: "website",
       siteName: "PowerMySport",
     },
@@ -192,8 +197,40 @@ export default async function TournamentEditionPage({
       : []),
   ];
 
+  // The one page on this site with everything an Event rich result needs — a
+  // name, real dates, a place and an organiser — and parents search for exactly
+  // this ("AITA CS7 Delhi August"). No `offers` block: the federation runs
+  // entry, we only mirror the fact sheet.
+  const eventPath = `/tournaments/${edition.slug ?? slug}`;
+
   return (
     <main className="min-h-screen">
+      <JsonLd
+        data={[
+          sportsEventJsonLd({
+            name: edition.officialName || edition.name,
+            path: eventPath,
+            startDate: edition.startDate,
+            ...(edition.endDate ? { endDate: edition.endDate } : {}),
+            ...(edition.venue ? { venue: edition.venue } : {}),
+            ...(edition.city ? { city: edition.city } : {}),
+            ...(edition.state ? { state: edition.state } : {}),
+            organiser: edition.organiser || federation?.name,
+            status: edition.status,
+            sport: edition.sportSlug,
+            ...(edition.registrationDeadlineDate
+              ? { registrationDeadlineDate: edition.registrationDeadlineDate }
+              : {}),
+          }),
+          breadcrumbJsonLd([
+            ...(federation
+              ? [{ name: federation.name, path: `/federations/${federation.slug}` }]
+              : []),
+            { name: edition.name, path: eventPath },
+          ]),
+        ]}
+      />
+
       {/* ── Hero ── */}
       <div className="bg-deep-slate">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">

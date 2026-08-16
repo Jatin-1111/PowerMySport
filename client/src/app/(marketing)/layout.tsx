@@ -1,20 +1,25 @@
 import { AIAssistantBubble } from "@/components/layout/AIAssistantBubble";
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
-import type { Metadata } from "next";
 import React from "react";
 
-export const metadata: Metadata = {
-  title: "PowerMySport | Guiding Every Sporting Journey",
-  description:
-    "Plan your child's sports journey with AI-powered pathways, personalised guidance, and verified experts. State-specific roadmaps for 70+ sports across India. Free to explore.",
-  openGraph: {
-    title: "PowerMySport | Guiding Every Sporting Journey",
-    description:
-      "Plan your child's sports journey with AI-powered pathways, personalised guidance, and verified experts across India.",
-  },
-};
-
+/**
+ * No `metadata` export here on purpose.
+ *
+ * This is a chrome-only layout shared by ~30 unrelated pages — rankings,
+ * legal, resources, the homepage. It used to export the homepage's title,
+ * description and a *partial* `openGraph` block, which caused two problems:
+ *
+ *  - Next.js merges `openGraph` by replacing the whole object, so a partial one
+ *    here dropped `og:image`, `og:url`, `og:site_name` and `og:type` from every
+ *    marketing page that did not redefine them.
+ *  - A plain string `title` in a child segment is run through the parent's
+ *    `%s | PowerMySport` template, so pages without their own title rendered
+ *    "PowerMySport | Guiding Every Sporting Journey | PowerMySport".
+ *
+ * Each page now owns its title/description/canonical, and anything that does
+ * not falls back cleanly to the root layout's defaults.
+ */
 export default function MarketingLayout({
   children,
 }: {

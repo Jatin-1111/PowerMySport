@@ -1,17 +1,19 @@
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
+import { NOINDEX_METADATA } from "@/lib/seo";
 import type { Metadata } from "next";
 import React from "react";
 
+/**
+ * The booking flow itself — a per-user, stateful funnel, not a landing page.
+ * It is disallowed in robots.txt and now carries `noindex` too, so the copy no
+ * longer needs to sell anything; `/venues`, `/coaches` and `/academies` are the
+ * public surfaces for that.
+ */
 export const metadata: Metadata = {
-  title: "Book Venues, Coaches & Academies | PowerMySport",
-  description:
-    "Find and book top sports venues, certified coaches, and elite academies — all in one place.",
-  openGraph: {
-    title: "Book Sports | PowerMySport",
-    description:
-      "Discover and book venues, coaches, and academies for every sport.",
-  },
+  title: "Booking",
+  description: "Complete your venue, coach or academy booking.",
+  ...NOINDEX_METADATA,
 };
 
 export default function BookingLayout({

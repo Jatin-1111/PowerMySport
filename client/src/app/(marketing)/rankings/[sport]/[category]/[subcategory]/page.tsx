@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { sport: sportSlug, category, subcategory } = await params;
   const sport = getRankingSport(sportSlug);
   const combo = sport && resolveCombo(sport, category, subcategory);
-  if (!sport || !combo) return { title: "Rankings — PowerMySport" };
+  if (!sport || !combo) return { title: "Rankings" };
 
   const label = comboLabel(combo);
   const path = comboHref(sport.slug, combo);
@@ -69,7 +69,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     openGraph: {
       title: `${acronym} ${label} Ranking`,
       description: `Current ${label} rankings from ${acronym}, filterable by state.`,
-      url: `https://powermysport.com${path}`,
+      url: path,
       type: "website",
       siteName: "PowerMySport",
     },

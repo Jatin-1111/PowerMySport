@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import QnAPostDetailClient from "@/modules/community/components/page/QnAPostDetailClient";
-import { JsonLd } from "@/modules/community/components/seo/JsonLd";
+import {
+  breadcrumbSchema,
+  JsonLd,
+} from "@/modules/community/components/seo/JsonLd";
 import {
   buildMetadata,
   clampText,
@@ -95,7 +98,18 @@ export default async function CommunityQnADetailPage({
 
   return (
     <div className="min-h-[calc(100vh-88px)] bg-background">
-      {qaSchema ? <JsonLd data={qaSchema} /> : null}
+      {post && qaSchema ? (
+        <JsonLd
+          data={[
+            qaSchema,
+            breadcrumbSchema([
+              { name: "Community", path: "/" },
+              { name: "Q&A", path: "/q" },
+              { name: post.title, path: `/q/${postId}` },
+            ]),
+          ]}
+        />
+      ) : null}
       <QnAPostDetailClient postId={postId} />
     </div>
   );

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Careers at PowerMySport",
+  title: "Careers",
   description:
     "Join PowerMySport's engineering, design, and operations team building India's sports pathway platform for parents and young athletes.",
   alternates: {

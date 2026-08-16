@@ -1,4 +1,6 @@
+import { JsonLd } from "@/components/seo/JsonLd";
 import FeatureWaitlist from "@/components/shared/FeatureWaitlist";
+import { itemListJsonLd } from "@/lib/seo";
 import { expertApi, type Expert } from "@/modules/expert/services/expert";
 import { Users } from "lucide-react";
 import { ExpertsBrowseClient } from "./ExpertsBrowseClient";
@@ -38,9 +40,29 @@ export default async function ExpertsBrowsePage() {
   }
 
   return (
-    <ExpertsBrowseClient
-      initialExperts={initialExperts}
-      initialError={initialError}
-    />
+    <>
+      {/* The directory's value is the list itself, and the browse UI is a
+          client component that cannot put it in the initial HTML. */}
+      {initialExperts.length > 0 && (
+        <JsonLd
+          data={itemListJsonLd({
+            name: "Verified sports experts on PowerMySport",
+            path: "/experts",
+            description:
+              "Verified coaches, mentors and sports professionals available for 1:1 guidance sessions with parents and young athletes in India.",
+            items: initialExperts
+              .filter((expert) => expert.name)
+              .map((expert) => ({
+                name: expert.name as string,
+                path: `/experts/${expert.id}`,
+              })),
+          })}
+        />
+      )}
+      <ExpertsBrowseClient
+        initialExperts={initialExperts}
+        initialError={initialError}
+      />
+    </>
   );
 }

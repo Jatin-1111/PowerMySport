@@ -1,3 +1,10 @@
+import { JsonLd } from "@/components/seo/JsonLd";
+import {
+  breadcrumbJsonLd,
+  clampText,
+  NOINDEX_METADATA,
+  sportsOrganizationJsonLd,
+} from "@/lib/seo";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { FederationDetailClient } from "./FederationDetailClient";
@@ -86,15 +93,16 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const fed = await fetchFederation(slug);
-  if (!fed) return { title: "Federation — PowerMySport" };
+  if (!fed) return { title: "Federation", ...NOINDEX_METADATA };
   return {
-    title: `${fed.name} (${fed.acronym}) — PowerMySport`,
-    description: fed.about.slice(0, 155),
+    title: `${fed.name} (${fed.acronym})`,
+    description: clampText(fed.about, 155),
     alternates: { canonical: `/federations/${fed.slug}` },
     openGraph: {
       title: `${fed.acronym} — ${fed.name}`,
-      description: fed.about.slice(0, 200),
-      url: `https://powermysport.com/federations/${fed.slug}`,
+      description: clampText(fed.about, 200),
+      // Site-relative — `metadataBase` resolves it. See lib/seo.ts.
+      url: `/federations/${fed.slug}`,
       type: "website",
       siteName: "PowerMySport",
     },
@@ -121,5 +129,32 @@ export default async function FederationDetailPage({
     ? (tab as TabId)
     : "overview";
 
-  return <FederationDetailClient federation={fed} initialTab={initialTab} />;
+  return (
+    <>
+      {/* The client component below cannot emit schema into the initial HTML,
+          so it is rendered here where crawlers will see it. */}
+      <JsonLd
+        data={[
+          sportsOrganizationJsonLd({
+            name: fed.name,
+            acronym: fed.acronym,
+            path: `/federations/${fed.slug}`,
+            description: clampText(fed.about, 500),
+            sport: fed.sportSlug,
+            ...(fed.founded ? { founded: fed.founded } : {}),
+            ...(fed.headquarters ? { headquarters: fed.headquarters } : {}),
+            ...(fed.website ? { website: fed.website } : {}),
+            ...(fed.contact?.email ? { email: fed.contact.email } : {}),
+            ...(fed.contact?.phone ? { phone: fed.contact.phone } : {}),
+            ...(fed.socialLinks ? { socialLinks: fed.socialLinks } : {}),
+          }),
+          breadcrumbJsonLd([
+            { name: "Rankings & Federations", path: "/rankings" },
+            { name: fed.acronym, path: `/federations/${fed.slug}` },
+          ]),
+        ]}
+      />
+      <FederationDetailClient federation={fed} initialTab={initialTab} />
+    </>
+  );
 }

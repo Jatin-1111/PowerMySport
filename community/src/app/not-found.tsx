@@ -1,10 +1,20 @@
-import Link from "next/link";
+import { buildMetadata } from "@/lib/seo";
 import { Compass, Home } from "lucide-react";
+import Link from "next/link";
 
-export const metadata = {
+/**
+ * Built through `buildMetadata` rather than hand-rolled. The previous literal
+ * set only `title` and `robots`, so the 404 inherited the root layout's
+ * Open Graph block *and* its canonical — every missing URL announced itself to
+ * crawlers and social scrapers as the community homepage.
+ */
+export const metadata = buildMetadata({
   title: "Page not found",
-  robots: { index: false, follow: false },
-};
+  description:
+    "This PowerMySport community page doesn't exist or may have moved.",
+  path: "/404",
+  noindex: true,
+});
 
 export default function NotFound() {
   return (

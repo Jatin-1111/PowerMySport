@@ -3,7 +3,7 @@ import { BookOpen, Building2, Globe2, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = {
-  title: "Academy Dashboard - PowerMySport",
+  title: "Academy Dashboard",
   description:
     "Manage your academy onboarding and public presence on PowerMySport",
 };

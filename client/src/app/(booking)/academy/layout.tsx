@@ -1,120 +1,22 @@
-"use client";
+import { noindexMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
+import React from "react";
 
-import { toast } from "@/lib/toast";
-import { authApi } from "@/modules/auth/services/auth";
-import { useAuthStore } from "@/modules/auth/store/authStore";
-import {
-    DashboardShell,
-    type DashboardNavItem,
-} from "@/modules/shared/components/dashboard/DashboardShell";
-import {
-    BarChart2,
-    Building2,
-    Calendar,
-    CreditCard,
-    LayoutDashboard,
-    Settings,
-    Star,
-    TrendingUp,
-    Users,
-} from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import React, { useEffect } from "react";
+import AcademyLayoutShell from "./LayoutShell";
+
+/**
+ * The academy partner console and its onboarding funnel — not the public
+ * `/academies` discovery surface.
+ */
+export const metadata: Metadata = noindexMetadata(
+  "Academy Console",
+  "Manage your academy profile, programmes, reviews and earnings.",
+);
 
 export default function AcademyLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { user, logout } = useAuthStore();
-  const isOnboardingRoute = pathname.startsWith("/academy/onboarding");
-
-  useEffect(() => {
-    if (user && user.role !== "Academy" && !isOnboardingRoute) {
-      toast.error("Academy dashboard is limited to academy owners.");
-      router.replace("/");
-    }
-  }, [isOnboardingRoute, router, user]);
-
-  const handleLogout = async () => {
-    try {
-      await authApi.logout();
-    } catch (error) {
-      console.error("Logout failed:", error);
-    } finally {
-      logout();
-      router.push("/");
-    }
-  };
-
-  const navItems: DashboardNavItem[] = [
-    {
-      href: "/academy/onboarding",
-      label: "Onboarding",
-      icon: LayoutDashboard,
-    },
-    {
-      href: "/academy",
-      label: "Dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      href: "/academies",
-      label: "Public Profile",
-      icon: Building2,
-    },
-    {
-      href: "/academy/venues",
-      label: "Venues",
-      icon: Building2,
-    },
-    {
-      href: "/academy/coaches",
-      label: "Coaches",
-      icon: Users,
-    },
-    {
-      href: "/academy/plans",
-      label: "Plans",
-      icon: CreditCard,
-    },
-    {
-      href: "/academy/bookings",
-      label: "Bookings",
-      icon: Calendar,
-    },
-    {
-      href: "/academy/earnings",
-      label: "Earnings",
-      icon: TrendingUp,
-    },
-    {
-      href: "/academy/reviews",
-      label: "Reviews",
-      icon: Star,
-    },
-    {
-      href: "/academy/analytics",
-      label: "Analytics",
-      icon: BarChart2,
-    },
-    {
-      href: "/academy/settings",
-      label: "Settings",
-      icon: Settings,
-    },
-  ];
-
-  return (
-    <DashboardShell
-      dashboardLabel="Academy Owner Dashboard"
-      userName={user?.name}
-      navItems={navItems}
-      onLogout={handleLogout}
-    >
-      {children}
-    </DashboardShell>
-  );
+  return <AcademyLayoutShell>{children}</AcademyLayoutShell>;
 }

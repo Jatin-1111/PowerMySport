@@ -3,14 +3,16 @@ import { CookieConsentBanner } from "@/components/layout/CookieConsentBanner";
 import { HydrationBoundary } from "@/components/layout/HydrationBoundary";
 import { NumericInputGuard } from "@/components/layout/NumericInputGuard";
 import { FriendSocketProvider } from "@/hooks/useFriendSocket";
+import {
+  OG_IMAGE,
+  SITE_DESCRIPTION as siteDescription,
+  SITE_URL as siteUrl,
+  TWITTER_IMAGE,
+} from "@/lib/seo";
 import type { Metadata } from "next";
 import { Geist_Mono, Space_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
-const siteDescription =
-  "PowerMySport helps parents plan their child's sports journey. AI-powered sport pathways, searchable federation rankings, personalised guidance and 1:1 sessions with verified experts — free to explore, state-specific for India.";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -66,9 +68,14 @@ export const metadata: Metadata = {
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
-  alternates: {
-    canonical: "/",
-  },
+  // NO `alternates.canonical` here, deliberately.
+  //
+  // Next.js merges metadata per top-level key, so a canonical set at the root
+  // is inherited by every descendant that does not define its own. This layout
+  // used to set `canonical: "/"`, which meant every route without its own
+  // canonical — /shop/products/[id], /academies/[slug], /booking, all the
+  // dashboards — told Google "I am a duplicate of the homepage". Each route now
+  // declares its own; the homepage declares it in (marketing)/page.tsx.
   openGraph: {
     type: "website",
     locale: "en_IN",
@@ -78,7 +85,7 @@ export const metadata: Metadata = {
     description: siteDescription,
     images: [
       {
-        url: "/og-image.png",
+        url: OG_IMAGE,
         width: 1200,
         height: 630,
         alt: "PowerMySport | Guiding Every Sporting Journey",
@@ -89,7 +96,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "PowerMySport — Guiding Every Sporting Journey",
     description: siteDescription,
-    images: ["/twitter-image.png"],
+    images: [TWITTER_IMAGE],
   },
   robots: {
     index: true,

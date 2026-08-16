@@ -10,8 +10,9 @@
 // these depend on federations publishing machine-readable lists, which is not
 // ours to promise.
 
+import { JsonLd } from "@/components/seo/JsonLd";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { breadcrumbJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/seo";
 import { RESOURCE_SPORTS } from "@/modules/resources/config";
 import { fetchRankingMeta, formatAsOn } from "@/modules/rankings/api";
 import { RANKING_SPORTS, rankingSportHref } from "@/modules/rankings/config";
@@ -20,7 +21,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Sports Rankings in India — Official Federation Lists | PowerMySport",
+  // The root layout appends " | PowerMySport"; repeating it here doubled it.
+  title: "Sports Rankings in India — Official Federation Lists",
   description:
     "Official Indian federation ranking lists, made searchable. Filter by state, look up a player by name or registration number, and follow a rank week by week. Tennis (AITA) is live.",
   alternates: { canonical: "/rankings" },
@@ -28,7 +30,7 @@ export const metadata: Metadata = {
     title: "Sports rankings in India — official federation lists, searchable",
     description:
       "Federation ranking lists mirrored for search and history. Tennis is live, more to follow.",
-    url: "https://powermysport.com/rankings",
+    url: "/rankings",
     type: "website",
     siteName: "PowerMySport",
   },
@@ -51,14 +53,20 @@ export default async function RankingsIndexPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-      <script
-        id="rankings-breadcrumb-jsonld"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            breadcrumbJsonLd([{ name: "Rankings", path: "/rankings" }]),
-          ),
-        }}
+      <JsonLd
+        data={[
+          breadcrumbJsonLd([{ name: "Rankings", path: "/rankings" }]),
+          // The whole point of this page is the list of mirrored sports, so say
+          // so in schema rather than making Google infer it from the markup.
+          itemListJsonLd({
+            name: "Sports rankings mirrored on PowerMySport",
+            path: "/rankings",
+            items: RANKING_SPORTS.map((sport) => ({
+              name: `${sport.name} rankings (${sport.federation.acronym})`,
+              path: rankingSportHref(sport.slug),
+            })),
+          }),
+        ]}
       />
       <Breadcrumbs items={[{ label: "Rankings" }]} className="mb-6" />
 

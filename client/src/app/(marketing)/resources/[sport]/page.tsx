@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { JsonLd } from "@/components/seo/JsonLd";
+import { articleJsonLd, NOINDEX_METADATA } from "@/lib/seo";
 import { normalizeStateName } from "@/lib/indianStates";
 import { SportResourceArticle } from "@/modules/resources/components/SportResourceArticle";
 import { StatePreparing } from "@/modules/resources/components/StatePreparing";
@@ -82,9 +84,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { sport } = await params;
   const entry = sportFromSlug(sport);
-  if (!entry) return { title: "Sport guide — PowerMySport" };
+  if (!entry) return { title: "Sport guide", ...NOINDEX_METADATA };
 
-  const title = `${entry.name} pathway in India — a parent's guide | PowerMySport`;
+  // No " | PowerMySport" suffix — the root layout's `%s | PowerMySport`
+  // template appends it, and spelling it out here produced it twice.
+  const title = `${entry.name} pathway in India — a parent's guide`;
   const description = `Every stage of ${entry.name} in India: the ages, the standard to reach, what a year costs, which schemes help pay for it, and how to judge a coach.`;
 
   return {
@@ -147,12 +151,39 @@ export default async function SportResourcePage({
   }
 
   return (
-    <SportResourceArticle
-      pathway={pathway}
-      sportSlug={entry.slug}
-      sportName={entry.name}
-      state={state}
-      stateWasChosen={!!chosenState}
-    />
+    <>
+      {/* Only on the canonical URL. A `?state=` view is the same article with a
+          different local section, and emitting Article schema per state would
+          offer Google 280 near-identical "articles" — the exact duplication the
+          canonical above exists to prevent. */}
+      {!chosenState && (
+        <JsonLd
+          // No BreadcrumbList: there is no `/resources` index page, so the
+          // trail would be a single item, which is worse than none.
+          data={[
+            articleJsonLd({
+              headline: `${entry.name} pathway in India — a parent's guide`,
+              path: `/resources/${entry.slug}`,
+              description: `Every stage of ${entry.name} in India: the ages, the standard to reach, what a year costs, which schemes help pay for it, and how to judge a coach.`,
+              ...(pathway.updatedAt ? { dateModified: pathway.updatedAt } : {}),
+              section: entry.name,
+              keywords: [
+                `${entry.name} pathway India`,
+                `${entry.name} for kids India`,
+                `how to start ${entry.name} in India`,
+                `${entry.name} academy fees India`,
+              ],
+            }),
+          ]}
+        />
+      )}
+      <SportResourceArticle
+        pathway={pathway}
+        sportSlug={entry.slug}
+        sportName={entry.name}
+        state={state}
+        stateWasChosen={!!chosenState}
+      />
+    </>
   );
 }

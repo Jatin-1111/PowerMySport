@@ -58,7 +58,7 @@ import { notFound } from "next/navigation";
  */
 export const metadata: Metadata = {
   ...NOINDEX_METADATA,
-  title: "Player ranking history — PowerMySport",
+  title: "Player ranking history",
 };
 
 export default async function PlayerRankingPage({

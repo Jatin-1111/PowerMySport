@@ -16,6 +16,15 @@ const nextConfig: NextConfig = {
         hostname: "*.amazonaws.com",
         pathname: "/**",
       },
+      {
+        // The CloudFront distribution in front of that bucket
+        // (`NEXT_PUBLIC_CHAT_BUCKET_DOMAIN`). Without this, every blog cover
+        // image served through the CDN fails `next/image` optimisation — and
+        // cover images are also what `generateMetadata` hands to Open Graph.
+        protocol: "https",
+        hostname: "*.cloudfront.net",
+        pathname: "/**",
+      },
     ],
   },
 };

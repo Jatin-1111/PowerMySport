@@ -26,19 +26,30 @@ export const COMMUNITY_BASE_URL = `${SITE_URL}${BASE_PATH}`;
 
 export const SITE_NAME = "PowerMySport Community";
 
+/**
+ * Describes what this app actually does. The previous copy promised "discover
+ * vetted coaches and venues" — that lives in the main `client` app, not here,
+ * and the community's own `/discover` page is groups, topics and players. A
+ * description that sells a feature the landing page does not have is the fastest
+ * way to earn a pogo-stick back to the SERP.
+ */
 export const SITE_DESCRIPTION =
-  "Join the PowerMySport community — a parent-first, safety-focused space to ask questions, read expert sports blogs, discover vetted coaches and venues, and connect with players and coaches across India.";
+  "A parent-first, moderated community for youth sports in India — ask questions and get answers from experienced parents and badged experts, read sports blogs written by the community, and join groups for your child's sport and city.";
 
 export const SITE_KEYWORDS = [
-  "sports community",
-  "youth sports community",
-  "parent sports community",
-  "sports Q&A",
+  // Q&A — the largest indexable surface
+  "youth sports questions India",
   "ask sports questions",
-  "sports blog",
-  "find sports coaches",
-  "sports academy community",
-  "youth athlete guidance",
+  "sports Q&A India",
+  "parent sports community",
+  // Blogs
+  "youth sports blog India",
+  "sports parenting blog",
+  "write about sports",
+  // Groups / discovery
+  "sports community groups India",
+  "youth sports forum",
+  // Brand
   "PowerMySport community",
 ];
 
