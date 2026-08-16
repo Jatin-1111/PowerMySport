@@ -1,19 +1,18 @@
 import { Request, Response } from "express";
-import { pathwayService } from "../services/PathwayService";
+
 import { AthleteStory } from "../models/AthleteStory";
-import { realDataScraperService } from "../services/RealDataScraperService";
-import { INDIAN_STATES_AND_UTS } from "../utils/states";
-import { PathwayExpertVerification } from "../models/PathwayExpertVerification";
-import { Expert } from "../../client/models/ExpertProfile";
-import {
-  listPathwaysForExpertVerification,
-  verifyPathwayAsExpert,
-  removePathwayExpertVerification,
-} from "../services/PathwayExpertVerificationService";
-import { AnalyticsEvent } from "../../admin/models/AnalyticsEvent";
-import { isSupportedSport, SUPPORTED_SPORTS } from "../constants/supportedSports";
+import { PathwayGuide } from "../models/PathwayGuide";
 import { Tournament } from "../models/Tournament";
-import { SportStageGuide } from "../models/SportStageGuide";
+import { realDataScraperService } from "../services/RealDataScraperService";
+
+// ─── Pathways (public) ───────────────────────────────────────────────────────
+//
+// The read side of the pathway CMS, plus two neighbours that have always lived
+// on this router and depend on nothing here: athlete stories and the curated
+// tournament list.
+//
+// Everything served here is identical for every reader of a sport — it holds no
+// personal data — so it is safely cacheable at the edge.
 
 const fail = (res: Response, error: unknown, code = 400) =>
   res.status(code).json({
@@ -21,170 +20,108 @@ const fail = (res: Response, error: unknown, code = 400) =>
     message: error instanceof Error ? error.message : "Request failed",
   });
 
-/**
- * GET /api/pathways?sport=cricket&age=12&city=Mumbai
- * Returns the pathway for a sport. Generates + caches if not found.
- * If cached but stale, returns the cached version and triggers a background refresh.
- */
-export const getPathway = async (
+const slugify = (value: string): string =>
+  value.trim().toLowerCase().replace(/\s+/g, "-");
+
+/** Only published guides are ever visible here — drafts stay in the CMS. */
+const PUBLISHED = { status: "published" as const };
+
+// ─── GET /api/pathways/guide?sport=tennis&state=delhi ────────────────────────
+//
+// A state guide wins over the national one when it exists. Asking for a state
+// that has no guide of its own falls back to national rather than 404ing: the
+// national guide is the right answer for most of India, and a reader who picked
+// their state should not be punished for it.
+export const getPathwayGuide = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const { sport, state } = req.query;
-
+    const sport = req.query.sport;
     if (!sport || typeof sport !== "string" || sport.trim().length < 2) {
       res.status(400).json({
         success: false,
-        message: "Please provide a sport name (at least 2 characters).",
+        message: "Please provide a sport (at least 2 characters).",
       });
       return;
     }
 
-    if (
-      !state ||
-      typeof state !== "string" ||
-      !INDIAN_STATES_AND_UTS.includes(state as any)
-    ) {
-      res.status(400).json({
-        success: false,
-        message: "Please provide a valid Indian state or UT.",
-      });
-      return;
-    }
+    const sportSlug = slugify(sport);
+    const stateSlug =
+      typeof req.query.state === "string" && req.query.state.trim()
+        ? slugify(req.query.state)
+        : null;
 
-    if (!isSupportedSport(sport.trim())) {
-      // Fire-and-forget — don't await so the response is immediate.
-      AnalyticsEvent.create({
-        eventName: "unsupported_sport_search",
-        metadata: { sport: sport.trim(), source: "roadmap" },
-        source: "WEB",
-        ...(req.user ? { userId: req.user.id } : {}),
-      }).catch(() => {});
+    // One query for both candidates, then pick — cheaper than a miss-then-retry
+    // round trip for the common case where no state guide exists.
+    const candidates = await PathwayGuide.find({
+      ...PUBLISHED,
+      sportSlug,
+      stateSlug: stateSlug ? { $in: [stateSlug, null] } : null,
+    }).lean();
 
-      res.status(200).json({
-        success: true,
-        status: "not_supported",
-        sport: sport.trim(),
-        supportedSports: SUPPORTED_SPORTS,
-        message: `We're building the ${sport.trim()} pathway — our team is working on it! In the meantime, explore one of our 10 supported sports.`,
-      });
-      return;
-    }
+    const guide =
+      candidates.find((doc) => doc.stateSlug === stateSlug) ??
+      candidates.find((doc) => doc.stateSlug === null);
 
-    const result = await pathwayService.getOrGeneratePathway(
-      sport.trim(),
-      state,
-    );
-
-    if (result.source === "not_a_sport") {
+    if (!guide) {
       res.status(404).json({
         success: false,
-        message: result.message,
+        message: `No published pathway for "${sport}" yet.`,
       });
       return;
-    }
-
-    // Expert verification is sport-wide (not per state-variant document), so
-    // it's attached here at read time rather than stored on the pathway doc.
-    let data: unknown = result.pathway;
-    if (result.pathway) {
-      const rawVerifications = await PathwayExpertVerification.find({
-        sportSlug: result.pathway.sportSlug,
-      })
-        .select("expertId expertName expertPhotoUrl verifiedAt note -_id")
-        .sort({ verifiedAt: -1 })
-        .lean();
-
-      const expertVerifications = await Promise.all(
-        rawVerifications.map(async (v) => {
-          const profile = await Expert.findOne({ userId: v.expertId })
-            .select("achievements bio sports")
-            .lean();
-          return {
-            ...v,
-            expertCredential:
-              (profile as any)?.achievements ||
-              (profile as any)?.bio?.slice(0, 80) ||
-              null,
-            expertSports: (profile as any)?.sports || [],
-          };
-        }),
-      );
-      let trustTier: "unverified" | "admin_verified" | "expert_verified" =
-        "unverified";
-      if (result.pathway.isVerified) {
-        trustTier =
-          expertVerifications.length > 0 ? "expert_verified" : "admin_verified";
-      }
-
-      data = {
-        ...(typeof (result.pathway as any).toObject === "function"
-          ? (result.pathway as any).toObject()
-          : result.pathway),
-        expertVerifications,
-        trustTier,
-      };
     }
 
     res.json({
       success: true,
-      source: result.source, // "db" | "generated"
-      isStale: result.isStale ?? false,
-      entitiesReady: result.entitiesReady ?? true,
-      data,
-      warnings: result.warnings,
+      data: {
+        sportSlug: guide.sportSlug,
+        sportName: guide.sportName,
+        stateSlug: guide.stateSlug ?? null,
+        /** True when the reader asked for a state and got a state-specific guide. */
+        isStateGuide: guide.stateSlug !== null,
+        formatVersion: guide.formatVersion,
+        intro: guide.intro ?? {},
+        sportIntro: guide.sportIntro ?? [],
+        reviewedOn: guide.reviewedOn ?? null,
+        updatedAt: guide.updatedAt,
+        stages: [...(guide.stages ?? [])].sort((a, b) => a.order - b.order),
+      },
     });
   } catch (error) {
-    console.error("Error fetching pathway:", error);
-    res.status(500).json({
-      success: false,
-      message: "An error occurred while generating the pathway.",
-    });
+    fail(res, error, 500);
   }
 };
 
-/**
- * GET /api/pathways/entities?sport=cricket&city=Mumbai
- * Returns just tournaments/scholarships/universities for a sport.
- * Triggers the scraper and waits for it if entities aren't cached yet.
- * Called in parallel with the skeleton request from the client.
- */
-export const getPathwayEntities = async (
-  req: Request,
+// ─── GET /api/pathways/guides ────────────────────────────────────────────────
+// Which sports have a pathway a parent can actually read. Used to build the
+// sport picker without shipping every stage of every sport to do it.
+export const listPublishedPathwayGuides = async (
+  _req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const { sport, state } = req.query;
-    if (!sport || typeof sport !== "string" || sport.trim().length < 2) {
-      res
-        .status(400)
-        .json({ success: false, message: "Provide a sport name." });
-      return;
-    }
-    if (
-      !state ||
-      typeof state !== "string" ||
-      !INDIAN_STATES_AND_UTS.includes(state as any)
-    ) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "Provide a valid Indian state or UT.",
-        });
-      return;
-    }
-    const entities = await pathwayService.getEntities(sport.trim(), state);
-    res.json({ success: true, data: entities });
+    const docs = await PathwayGuide.find(PUBLISHED)
+      .select("sportSlug sportName stateSlug stages.key updatedAt")
+      .sort({ sportName: 1 })
+      .lean();
+
+    res.json({
+      success: true,
+      data: docs.map((doc) => ({
+        sportSlug: doc.sportSlug,
+        sportName: doc.sportName,
+        stateSlug: doc.stateSlug ?? null,
+        stageCount: doc.stages?.length ?? 0,
+        updatedAt: doc.updatedAt,
+      })),
+    });
   } catch (error) {
-    console.error("Error fetching pathway entities:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch entities." });
+    fail(res, error, 500);
   }
 };
 
+// ─── GET /api/pathways/stories?sport=cricket&level=2 ─────────────────────────
 export const getPathwayStories = async (
   req: Request,
   res: Response,
@@ -200,7 +137,7 @@ export const getPathwayStories = async (
     }
 
     const sportSlug = sport.toLowerCase();
-    const query: any = { sportSlug };
+    const query: Record<string, unknown> = { sportSlug };
 
     if (level && !isNaN(Number(level))) {
       query.level = Number(level);
@@ -220,13 +157,12 @@ export const getPathwayStories = async (
     const stories = await AthleteStory.find(query).sort({ level: 1 }).lean();
 
     // If nothing found, fire a background scrape so the next request gets results.
-    // Use the Sport collection to get the display name for the scraper prompt.
     if (stories.length === 0) {
       const { Sport } = await import("../models/Sport");
       const knownSport = await Sport.findOne({ slug: sportSlug })
         .select("name")
         .lean();
-      const sportName = (knownSport as any)?.name || sport;
+      const sportName = (knownSport as { name?: string } | null)?.name || sport;
 
       realDataScraperService
         .scrapeStoriesForSport({
@@ -243,225 +179,12 @@ export const getPathwayStories = async (
     }
 
     res.json({ success: true, data: stories });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch stories" });
+  } catch {
+    res.status(500).json({ success: false, message: "Failed to fetch stories" });
   }
 };
 
-/**
- * GET /api/pathways/search?q=bad
- * Autocomplete: returns cached pathways matching the query.
- */
-export const searchPathways = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { q } = req.query;
-
-    if (!q || typeof q !== "string" || q.trim().length === 0) {
-      res.json({ success: true, data: [] });
-      return;
-    }
-
-    const results = await pathwayService.searchPathways(q.trim());
-    res.json({ success: true, data: results });
-  } catch (error) {
-    console.error("Error searching pathways:", error);
-    res.status(500).json({ success: false, message: "Search failed." });
-  }
-};
-
-/**
- * POST /api/pathways/refresh
- * Admin: manually force-refresh a specific pathway by cacheKey.
- * Body: { cacheKey: string }
- */
-export const refreshPathway = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { cacheKey } = req.body;
-
-    if (!cacheKey || typeof cacheKey !== "string") {
-      res.status(400).json({
-        success: false,
-        message: "cacheKey is required.",
-      });
-      return;
-    }
-
-    const refreshed = await pathwayService.refreshPathway(cacheKey.trim());
-
-    if (!refreshed) {
-      res.status(500).json({
-        success: false,
-        message: "Refresh failed — Gemini may be unavailable. Try again later.",
-      });
-      return;
-    }
-
-    res.json({ success: true, data: refreshed });
-  } catch (error) {
-    console.error("Error refreshing pathway:", error);
-    res.status(500).json({ success: false, message: "Refresh failed." });
-  }
-};
-
-/**
- * POST /api/pathways/refresh-stale
- * Admin: refresh all stale pathways (older than PATHWAY_STALE_DAYS env var, default 30).
- * Returns the count of pathways refreshed.
- * Runs sequentially to avoid hammering the Gemini API.
- */
-export const refreshStalePathways = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const staleCacheKeys = await pathwayService.getStalePathways();
-
-    if (staleCacheKeys.length === 0) {
-      res.json({
-        success: true,
-        refreshed: 0,
-        message: "No stale pathways found.",
-      });
-      return;
-    }
-
-    console.log(
-      `[PathwayController] Refreshing ${staleCacheKeys.length} stale pathways...`,
-    );
-
-    // Return immediately and run refresh in background
-    res.json({
-      success: true,
-      refreshed: staleCacheKeys.length,
-      message: `Refreshing ${staleCacheKeys.length} stale pathway(s) in the background.`,
-      cacheKeys: staleCacheKeys,
-    });
-
-    // Background sequential refresh (after response sent)
-    (async () => {
-      let count = 0;
-      for (const cacheKey of staleCacheKeys) {
-        await pathwayService.refreshPathway(cacheKey);
-        count++;
-        // Stagger to avoid Gemini rate limiting
-        await new Promise((r) => setTimeout(r, 2000));
-      }
-      console.log(
-        `[PathwayController] ✅ Background stale refresh complete: ${count}/${staleCacheKeys.length} done.`,
-      );
-    })().catch((err) =>
-      console.error("[PathwayController] Background refresh error:", err),
-    );
-  } catch (error) {
-    console.error("Error refreshing stale pathways:", error);
-    res.status(500).json({ success: false, message: "Stale refresh failed." });
-  }
-};
-
-/**
- * GET /api/pathways/stats
- * Admin: returns aggregate stats about the pathway collection.
- */
-export const getPathwayStats = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const stats = await pathwayService.getStats();
-    res.json({ success: true, data: stats });
-  } catch (error) {
-    console.error("Error fetching pathway stats:", error);
-    res.status(500).json({ success: false, message: "Stats fetch failed." });
-  }
-};
-
-/**
- * GET /api/pathways/expert/mine
- * Expert-only: pathways matching sports on the logged-in expert's profile,
- * so they only ever see (and can verify) content in their own domain.
- */
-export const getPathwaysForExpertVerification = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
-    }
-    const data = await listPathwaysForExpertVerification(req.user.id);
-    res.json({ success: true, message: "Pathways retrieved", data });
-  } catch (error) {
-    fail(res, error, 404);
-  }
-};
-
-/**
- * POST /api/pathways/expert/:sportSlug/verify
- * Expert-only: adds (or updates) this expert's named verification credit for
- * a sport. Applies to every state variant of that sport's pathway — rejected
- * server-side if the sport isn't on the expert's own profile.
- */
-export const postPathwayExpertVerify = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
-    }
-    const verification = await verifyPathwayAsExpert(
-      req.params.sportSlug as string,
-      req.user.id,
-      typeof req.body?.note === "string" ? req.body.note : undefined,
-    );
-    res.json({
-      success: true,
-      message: "Pathway verified",
-      data: verification,
-    });
-  } catch (error) {
-    fail(res, error);
-  }
-};
-
-/**
- * DELETE /api/pathways/expert/:sportSlug/verify
- * Expert-only: removes this expert's own verification credit for a sport.
- */
-export const deletePathwayExpertVerify = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
-    }
-    await removePathwayExpertVerification(
-      req.params.sportSlug as string,
-      req.user.id,
-    );
-    res.json({ success: true, message: "Verification removed" });
-  } catch (error) {
-    fail(res, error);
-  }
-};
-
-/**
- * GET /api/pathways/tournaments/:slug
- * Returns a single curated tournament by its URL slug.
- * Used by the /tournaments/[slug] detail page.
- */
+// ─── GET /api/pathways/tournaments/:slug ─────────────────────────────────────
 export const getCuratedTournamentBySlug = async (
   req: Request,
   res: Response,
@@ -480,9 +203,7 @@ export const getCuratedTournamentBySlug = async (
     }).lean();
 
     if (!tournament) {
-      res
-        .status(404)
-        .json({ success: false, message: "Tournament not found" });
+      res.status(404).json({ success: false, message: "Tournament not found" });
       return;
     }
 
@@ -492,10 +213,7 @@ export const getCuratedTournamentBySlug = async (
   }
 };
 
-/**
- * GET /api/pathways/tournaments?sport=cricket
- * Returns all curated tournaments for a sport (for listing).
- */
+// ─── GET /api/pathways/tournaments?sport=cricket ─────────────────────────────
 export const getCuratedTournaments = async (
   req: Request,
   res: Response,
@@ -504,7 +222,7 @@ export const getCuratedTournaments = async (
     const { sport } = req.query;
     const query: Record<string, unknown> = { isCurated: true };
     if (sport && typeof sport === "string") {
-      query.sportSlug = sport.trim().toLowerCase().replace(/\s+/g, "-");
+      query.sportSlug = slugify(sport);
     }
 
     const tournaments = await Tournament.find(query)
@@ -514,242 +232,5 @@ export const getCuratedTournaments = async (
     res.json({ success: true, data: tournaments });
   } catch (error) {
     fail(res, error, 500);
-  }
-};
-
-/**
- * GET /api/pathways/progression?sport=&state=&level=
- * Returns the progression plan for a raw level number (1–4), generating it
- * lazily via Gemini if not yet stored. Results are cached in MongoDB so repeat
- * requests are instant.
- */
-export const getProgressionPlan = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { sport, state, level } = req.query;
-
-    if (!sport || typeof sport !== "string" || sport.trim().length < 2) {
-      res.status(400).json({
-        success: false,
-        message: "Please provide a sport name (at least 2 characters).",
-      });
-      return;
-    }
-
-    if (
-      !state ||
-      typeof state !== "string" ||
-      !INDIAN_STATES_AND_UTS.includes(state as any)
-    ) {
-      res.status(400).json({
-        success: false,
-        message: "Please provide a valid Indian state or UT.",
-      });
-      return;
-    }
-
-    const levelNum = parseInt(String(level), 10);
-    if (isNaN(levelNum) || levelNum < 1 || levelNum > 4) {
-      res.status(400).json({
-        success: false,
-        message: "level must be a number between 1 and 4.",
-      });
-      return;
-    }
-
-    const plan = await pathwayService.getOrGenerateProgressionPlan(
-      sport.trim(),
-      state,
-      levelNum,
-    );
-
-    if (!plan) {
-      res.status(503).json({
-        success: false,
-        message: "Progression plan could not be generated right now. Please try again in a moment.",
-      });
-      return;
-    }
-
-    res.json({ success: true, data: plan });
-  } catch (error) {
-    console.error("Error generating progression plan:", error);
-    res.status(500).json({ success: false, message: "Failed to generate progression plan." });
-  }
-};
-
-/**
- * GET /api/pathways/personal-notes?sport=&state=&age=&tier=&ambition=&budget=&hours=
- * Layer-2 personalization: one short AI note per raw level, tailored to an
- * anonymized child signature. No name / no PII is accepted — the exact age is
- * collapsed to a band server-side so cache entries are shared across similar
- * children. Requires the pathway to already be cached (never generates one).
- */
-export const getPersonalNotes = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { sport, state, age, tier, ambition, budget, hours } = req.query;
-
-    if (!sport || typeof sport !== "string" || sport.trim().length < 2) {
-      res.status(400).json({
-        success: false,
-        message: "Please provide a sport name (at least 2 characters).",
-      });
-      return;
-    }
-
-    if (
-      !state ||
-      typeof state !== "string" ||
-      !INDIAN_STATES_AND_UTS.includes(state as any)
-    ) {
-      res.status(400).json({
-        success: false,
-        message: "Please provide a valid Indian state or UT.",
-      });
-      return;
-    }
-
-    // Collapse exact age to a band — better cache sharing, no precise PII.
-    // Bands must fully cover getAgeFromDob()'s valid 1–30 range: a 4-year-old
-    // was previously falling through to "5-7" (no lower bound on that arm),
-    // then had "aged 5-7" stated back to the parent as if it were their
-    // child's actual age.
-    const ageNum = age ? parseInt(String(age), 10) : NaN;
-    const ageBand =
-      isNaN(ageNum) || ageNum < 1 || ageNum > 30
-        ? undefined
-        : ageNum <= 4
-          ? ("under-5" as const)
-          : ageNum <= 7
-            ? ("5-7" as const)
-            : ageNum <= 10
-              ? ("8-10" as const)
-              : ageNum <= 13
-                ? ("11-13" as const)
-                : ageNum <= 16
-                  ? ("14-16" as const)
-                  : ("17-plus" as const);
-
-    const tierNum = tier ? parseInt(String(tier), 10) : NaN;
-    const standingTier =
-      !isNaN(tierNum) && tierNum >= 1 && tierNum <= 5 ? tierNum : undefined;
-
-    const AMBITIONS = ["fun", "competitive", "national", "professional"];
-    const BUDGETS = ["under-3k", "3k-7k", "7k-15k", "15k-plus"];
-    const HOURS = ["1-3", "4-7", "8-12", "13-plus"];
-    const ambitionVal = AMBITIONS.includes(String(ambition))
-      ? (String(ambition) as any)
-      : undefined;
-    const budgetVal = BUDGETS.includes(String(budget))
-      ? (String(budget) as any)
-      : undefined;
-    const hoursVal = HOURS.includes(String(hours))
-      ? (String(hours) as any)
-      : undefined;
-
-    // A signature with zero known facts would generate a generic note —
-    // that's what the shared pathway copy already is. Refuse instead.
-    if (!ageBand && !standingTier && !ambitionVal && !budgetVal && !hoursVal) {
-      res.status(400).json({
-        success: false,
-        message: "Provide at least one profile field (age, tier, ambition, budget, hours).",
-      });
-      return;
-    }
-
-    const notes = await pathwayService.getOrGeneratePersonalNotes(
-      sport.trim(),
-      state,
-      {
-        ageBand,
-        standingTier,
-        ambition: ambitionVal,
-        budgetRange: budgetVal,
-        weeklyHours: hoursVal,
-      },
-    );
-
-    if (!notes) {
-      res.status(503).json({
-        success: false,
-        message: "Personal notes could not be generated right now.",
-      });
-      return;
-    }
-
-    res.json({ success: true, data: notes });
-  } catch (error) {
-    console.error("Error generating personal notes:", error);
-    res.status(500).json({ success: false, message: "Failed to generate personal notes." });
-  }
-};
-
-// ─── GET /api/pathways/stage-guide?sport=tennis&state=Delhi ──────────────────
-//
-// The India-specific, hand-authored stage guide the pathway page renders.
-//
-// Reads ONLY `SportStageGuide` — never SportBasePath/SportStatePath, which feed
-// /resources and the guidance AI. The two surfaces are deliberately independent,
-// so this 404s rather than falling back to resource content and quietly making
-// the two pages say the same thing again.
-//
-// A state-scoped guide wins over the national one when a sport has both.
-export const getStageGuide = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const sportSlug = String(req.query.sport ?? "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "-");
-
-    if (!sportSlug) {
-      res.status(400).json({ success: false, message: "sport is required" });
-      return;
-    }
-
-    const stateSlug = String(req.query.state ?? "")
-      .trim()
-      .toLowerCase();
-
-    const candidates = stateSlug ? [stateSlug, null] : [null];
-    for (const scope of candidates) {
-      const doc = await SportStageGuide.findOne({
-        sportSlug,
-        stateSlug: scope,
-        status: "published",
-      })
-        .select("guide stateSlug verifiedOn updatedAt")
-        .lean();
-
-      if (doc) {
-        res.json({
-          success: true,
-          data: {
-            guide: doc.guide,
-            scope: doc.stateSlug ? "state" : "national",
-            verifiedOn: doc.verifiedOn ?? null,
-            updatedAt: doc.updatedAt,
-          },
-        });
-        return;
-      }
-    }
-
-    // Not an error — most sports have no authored guide yet, and the client
-    // falls back to stages derived from the sport's pathway levels.
-    res.status(404).json({
-      success: false,
-      message: `No published stage guide for "${sportSlug}".`,
-    });
-  } catch (error) {
-    console.error("[pathway] getStageGuide failed", error);
-    res.status(500).json({ success: false, message: "Failed to load the stage guide." });
   }
 };

@@ -1,10 +1,16 @@
-import type { PathwayLevel } from "../models/SportPathway";
+import type { PathwayStage } from "../validation/pathwayGuideFormat";
 
-interface PathwayContext {
+/**
+ * What the chat needs to know about the pathway the parent is reading.
+ *
+ * `stages` comes straight off the published `PathwayGuide`, so the assistant is
+ * grounded in exactly the words on the parent's screen — the whole point of the
+ * roadmap chat is that it can answer "what does this mean?" about *this* page.
+ */
+export interface PathwayContext {
   sportName: string;
-  category?: string;
-  overview?: string;
-  levels: PathwayLevel[];
+  sportIntro?: string[];
+  stages: Array<PathwayStage & { order: number }>;
 }
 
 export interface UpcomingTournamentContext {
@@ -70,35 +76,67 @@ When the parent asks about tournament dates or "what's next", answer DIRECTLY fr
 
 export function buildRoadmapChatSystemPrompt(
   pathway: PathwayContext,
-  currentLevel?: number,
+  currentStageKey?: string,
   upcomingTournaments: UpcomingTournamentContext[] = [],
 ): string {
-  const level =
-    pathway.levels.find((l) => l.level === currentLevel) || pathway.levels[0];
+  const stage =
+    pathway.stages.find((s) => s.key === currentStageKey) || pathway.stages[0];
 
-  const stepsBlock = level?.steps?.length
-    ? `Key objectives at this level:\n${level.steps.map((s) => `- ${s}`).join("\n")}`
-    : "";
+  // The stage's own five buckets, verbatim. Only the headlines go in — the
+  // written answers can run to a page each and would crowd out everything else.
+  const block = (heading: string, lines: string[]): string =>
+    lines.length ? `${heading}\n${lines.map((l) => `- ${l}`).join("\n")}` : "";
 
-  return `You are a friendly Youth Sports Coach on the PowerMySport platform. A parent is browsing the development roadmap for "${pathway.sportName}" in the app right now and has a quick question.
+  const questionsBlock = block(
+    "Questions parents typically have at this stage:",
+    (stage?.questions ?? []).map((q) => q.question),
+  );
+  const signalsBlock = block(
+    "What a parent should be watching for at this stage:",
+    (stage?.signals ?? []).map((s) => s.title),
+  );
+  const decisionsBlock = block(
+    "Decisions this stage may put in front of them:",
+    (stage?.decisions ?? []).map((d) => d.title),
+  );
+  const nextStepsBlock = block(
+    "The next steps this stage recommends:",
+    (stage?.nextSteps ?? []).map((n) => `${n.when} → ${n.action}`),
+  );
+  const stageListBlock = block(
+    `The full ${pathway.sportName} pathway, in order:`,
+    pathway.stages.map(
+      (s) => `Stage ${s.order} — ${s.name} (${s.ageRange}): ${s.coreQuestion}`,
+    ),
+  );
+
+  return `You are a friendly Youth Sports Coach on the PowerMySport platform. A parent is browsing the development pathway for "${pathway.sportName}" in the app right now and has a quick question.
 
 WRITE IN SIMPLE LANGUAGE: speak like you're talking out loud to a parent with no sports background and no advanced English. Short sentences, everyday words. Never use a sport-federation acronym (AITA, ITF, FIDE, SAI, BCCI, WTA, etc.) without explaining it in plain words the first time.
 Keep answers SHORT and focused — the parent is asking a quick question while browsing, not requesting a full essay. 2-4 sentences is usually enough unless they ask for a list.
 
 ## What the parent is currently looking at
-Sport: ${pathway.sportName}${pathway.category ? ` (${pathway.category})` : ""}
-${pathway.overview ? `Overview: ${pathway.overview}` : ""}
-Currently viewing level ${level?.level ?? 1} — "${level?.label ?? "Beginner"}": ${level?.title ?? ""}
-${level?.description ? `What this level means: ${level.description}` : ""}
-${level?.keyFocus ? `Key focus: ${level.keyFocus}` : ""}
-${level?.ageRange ? `Typical age range: ${level.ageRange}` : ""}
-${level?.competitions ? `Competitions at this level: ${level.competitions}` : ""}
-${stepsBlock}
+Sport: ${pathway.sportName}
+${pathway.sportIntro?.length ? pathway.sportIntro.join(" ") : ""}
+
+Currently reading Stage ${stage?.order ?? 1} — "${stage?.name ?? ""}" (typical age ${stage?.ageRange ?? "—"}).
+The question this stage answers: ${stage?.coreQuestion ?? ""}
+What this stage means: ${stage?.overview ?? ""}
+
+${questionsBlock}
+
+${signalsBlock}
+
+${decisionsBlock}
+
+${nextStepsBlock}
+
+${stageListBlock}
 
 ${buildUpcomingTournamentsBlock(pathway.sportName, upcomingTournaments)}
 
 ## In scope
-- Anything about this sport's development pathway, this level, or the broader journey through ${pathway.sportName}
+- Anything about this sport's development pathway, this stage, or the broader journey through ${pathway.sportName}
 - Coaching, training, equipment, cost, trials, and competitions related to this pathway
 - Where to find a coach — point them to /experts (1:1 expert consultations). The venue/coach/academy booking marketplace (/booking) is currently down — never recommend, mention, or link to /booking, /venues, /coaches, or /academies pages under any circumstance.
 

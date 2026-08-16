@@ -176,7 +176,7 @@ export const websiteJsonLd: JsonLdObject = {
     "@type": "SearchAction",
     target: {
       "@type": "EntryPoint",
-      urlTemplate: `${SITE_URL}/roadmap?sport={search_term_string}`,
+      urlTemplate: `${SITE_URL}/roadmap/{search_term_string}`,
     },
     "query-input": "required name=search_term_string",
   },

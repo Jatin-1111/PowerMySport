@@ -10,12 +10,14 @@ import {
   Building2,
   Calendar,
   CheckCircle,
+  ChevronsLeft,
+  ChevronsRight,
   Database,
   Gavel,
   LayoutDashboard,
   LifeBuoy,
+  LogOut,
   Landmark,
-  ListOrdered,
   Map,
   Menu,
   MessageSquareWarning,
@@ -216,14 +218,9 @@ export default function AdminLayout({
         title: "Content",
         items: [
           {
-            href: "/admin/sport-pathways",
-            label: "Sport Pathways",
+            href: "/admin/pathways",
+            label: "Pathways",
             icon: Map,
-          },
-          {
-            href: "/admin/stage-guides",
-            label: "Stage Guides",
-            icon: ListOrdered,
           },
           {
             href: "/admin/screenings",
@@ -382,6 +379,25 @@ export default function AdminLayout({
     router.replace("/admin/login");
   };
 
+  // ── Desktop sidebar collapse ──
+  // Persisted, because it is a workspace preference: an admin who works on a
+  // laptop collapses it once and should not have to do it again on every page.
+  // Read after mount rather than during render — the server has no localStorage,
+  // and initialising from it would hydrate a rail against an expanded shell.
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    setIsSidebarCollapsed(localStorage.getItem("admin_sidebar_collapsed") === "1");
+  }, []);
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("admin_sidebar_collapsed", next ? "1" : "0");
+      return next;
+    });
+  };
+
   const [isMobile, setIsMobile] = useState(false);
   const isMounted = useSyncExternalStore(
     () => () => {},
@@ -524,39 +540,114 @@ export default function AdminLayout({
             )}
 
             {isMounted && !isMobile && (
-              <aside className="fixed left-0 top-0 hidden h-screen w-72 flex-col overflow-y-auto border-r border-slate-200 bg-white shadow-sm lg:flex">
-                <div className="p-6">
-                  <div className="rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-5 text-white">
-                    <p className="text-xs uppercase tracking-wide text-slate-300">
-                      Admin Dashboard
-                    </p>
-                    <h1 className="mt-2 text-2xl font-bold text-white">
-                      PowerMySport
-                    </h1>
-                    <p className="mt-1 text-sm text-slate-200">{adminName}</p>
+              <aside
+                className={`fixed left-0 top-0 hidden h-screen flex-col overflow-y-auto overflow-x-hidden border-r border-slate-200 bg-white shadow-sm transition-[width] duration-200 lg:flex ${
+                  isSidebarCollapsed ? "w-20" : "w-72"
+                }`}
+              >
+                {/* ── Brand ──
+                       Collapsed, the gradient card shrinks to a square mark so the
+                       rail still reads as PowerMySport rather than a bare strip of
+                       icons. */}
+                <div className={isSidebarCollapsed ? "p-3" : "p-6"}>
+                  <div
+                    className={`rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 text-white ${
+                      isSidebarCollapsed
+                        ? "flex h-14 items-center justify-center"
+                        : "p-5"
+                    }`}
+                  >
+                    {isSidebarCollapsed ? (
+                      <span className="text-lg font-bold" title={adminName}>
+                        PMS
+                      </span>
+                    ) : (
+                      <>
+                        <p className="text-xs uppercase tracking-wide text-slate-300">
+                          Admin Dashboard
+                        </p>
+                        <h1 className="mt-2 text-2xl font-bold text-white">
+                          PowerMySport
+                        </h1>
+                        <p className="mt-1 text-sm text-slate-200">{adminName}</p>
+                      </>
+                    )}
                   </div>
                 </div>
 
-                <div className="px-6 pb-2">
+                {/* ── Collapse toggle ── */}
+                <div className={isSidebarCollapsed ? "px-3 pb-2" : "px-6 pb-2"}>
                   <button
                     type="button"
-                    onClick={() => setIsCommandPaletteOpen(true)}
-                    className="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-100"
+                    onClick={toggleSidebar}
+                    aria-label={
+                      isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+                    }
+                    aria-expanded={!isSidebarCollapsed}
+                    title={
+                      isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+                    }
+                    className={`flex w-full items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-100 ${
+                      isSidebarCollapsed ? "justify-center" : ""
+                    }`}
                   >
-                    <Search size={15} />
-                    <span className="flex-1 text-left">Search pages...</span>
-                    <kbd className="rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
-                      ⌘K
-                    </kbd>
+                    {isSidebarCollapsed ? (
+                      <ChevronsRight size={16} />
+                    ) : (
+                      <>
+                        <ChevronsLeft size={16} />
+                        <span className="flex-1 text-left">Collapse</span>
+                      </>
+                    )}
                   </button>
                 </div>
 
-                <nav className="mt-2 space-y-5 px-4 pb-6">
+                {/* ── Search ──
+                       Kept in the rail as an icon: with the labels gone it is the
+                       fastest way to reach a page by name, so hiding it would make
+                       collapsing cost more than it saves. */}
+                <div className={isSidebarCollapsed ? "px-3 pb-2" : "px-6 pb-2"}>
+                  <button
+                    type="button"
+                    onClick={() => setIsCommandPaletteOpen(true)}
+                    title="Search pages (⌘K)"
+                    aria-label="Search pages"
+                    className={`flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-100 ${
+                      isSidebarCollapsed ? "justify-center" : ""
+                    }`}
+                  >
+                    <Search size={15} />
+                    {!isSidebarCollapsed && (
+                      <>
+                        <span className="flex-1 text-left">Search pages...</span>
+                        <kbd className="rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
+                          ⌘K
+                        </kbd>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <nav
+                  className={`mt-2 space-y-5 pb-6 ${
+                    isSidebarCollapsed ? "px-2" : "px-4"
+                  }`}
+                >
                   {navGroups.map((group) => (
                     <div key={group.title}>
-                      <p className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                        {group.title}
-                      </p>
+                      {/* Collapsed, the group heading becomes a rule. The grouping
+                          is still worth showing, but 11px of truncated text in an
+                          80px rail is not readable. */}
+                      {isSidebarCollapsed ? (
+                        <div
+                          aria-hidden
+                          className="mx-3 mb-2 border-t border-slate-200"
+                        />
+                      ) : (
+                        <p className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                          {group.title}
+                        </p>
+                      )}
                       <div className="space-y-1">
                         {group.items.map((item) => {
                           const Icon = item.icon;
@@ -564,26 +655,62 @@ export default function AdminLayout({
                             pathname,
                             item.href,
                           );
+                          const badgeCount = getNavBadgeCount(
+                            item.href,
+                            pendingCounts,
+                          );
 
                           return (
                             <Link
                               key={item.href}
                               href={item.href}
-                              className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors ${
+                              // The label becomes the tooltip when it is not on
+                              // screen. A rail of unlabelled icons is otherwise a
+                              // memory test, and several of these icons repeat —
+                              // Users, Plus and CheckCircle each appear twice.
+                              title={
+                                isSidebarCollapsed
+                                  ? badgeCount > 0
+                                    ? `${item.label} (${badgeCount})`
+                                    : item.label
+                                  : undefined
+                              }
+                              aria-label={
+                                isSidebarCollapsed ? item.label : undefined
+                              }
+                              className={`relative flex items-center rounded-xl transition-colors ${
+                                isSidebarCollapsed
+                                  ? "justify-center px-0 py-3"
+                                  : "gap-3 px-4 py-3"
+                              } ${
                                 isActive
                                   ? "bg-power-orange text-white shadow-sm"
                                   : "text-slate-700 hover:bg-slate-100"
                               }`}
                             >
                               <Icon size={18} />
-                              <span className="text-sm font-semibold">
-                                {item.label}
-                              </span>
-                              {getNavBadgeCount(item.href, pendingCounts) >
-                                0 && (
-                                <span className="ml-auto rounded-full bg-power-orange px-2 py-0.5 text-[11px] font-bold text-white">
-                                  {getNavBadgeCount(item.href, pendingCounts)}
-                                </span>
+                              {isSidebarCollapsed ? (
+                                // A count would not fit, so it degrades to a dot
+                                // that says "something is waiting here".
+                                badgeCount > 0 && (
+                                  <span
+                                    aria-hidden
+                                    className={`absolute right-2 top-2 h-2 w-2 rounded-full ${
+                                      isActive ? "bg-white" : "bg-power-orange"
+                                    }`}
+                                  />
+                                )
+                              ) : (
+                                <>
+                                  <span className="text-sm font-semibold">
+                                    {item.label}
+                                  </span>
+                                  {badgeCount > 0 && (
+                                    <span className="ml-auto rounded-full bg-power-orange px-2 py-0.5 text-[11px] font-bold text-white">
+                                      {badgeCount}
+                                    </span>
+                                  )}
+                                </>
                               )}
                             </Link>
                           );
@@ -593,12 +720,18 @@ export default function AdminLayout({
                   ))}
                 </nav>
 
-                <div className="mt-auto border-t border-slate-200 p-6">
+                <div
+                  className={`mt-auto border-t border-slate-200 ${
+                    isSidebarCollapsed ? "p-3" : "p-6"
+                  }`}
+                >
                   <button
                     onClick={handleLogout}
-                    className="w-full rounded-lg border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100"
+                    title={isSidebarCollapsed ? "Logout" : undefined}
+                    aria-label="Logout"
+                    className="flex w-full items-center justify-center rounded-lg border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100"
                   >
-                    Logout
+                    {isSidebarCollapsed ? <LogOut size={16} /> : "Logout"}
                   </button>
                 </div>
               </aside>
@@ -607,7 +740,13 @@ export default function AdminLayout({
         )}
 
         <main
-          className={`min-w-0 flex-1 ${!isLoginPage && !isChangePasswordPage ? "lg:ml-72" : ""}`}
+          className={`min-w-0 flex-1 transition-[margin] duration-200 ${
+            isLoginPage || isChangePasswordPage
+              ? ""
+              : isSidebarCollapsed
+                ? "lg:ml-20"
+                : "lg:ml-72"
+          }`}
         >
           <div className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
             {children}

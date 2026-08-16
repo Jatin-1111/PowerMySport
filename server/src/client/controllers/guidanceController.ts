@@ -10,7 +10,7 @@ import {
   generateGuidanceDiagnosis,
 } from "../../shared/services/guidanceAiService";
 import { GuidanceSubmission } from "../models/GuidanceSubmission";
-import { SportPathway } from "../../shared/models/SportPathway";
+import { PathwayGuide } from "../../shared/models/PathwayGuide";
 import { Sport } from "../../shared/models/Sport";
 import { AnalyticsEvent } from "../../admin/models/AnalyticsEvent";
 import { PlanCheckInService } from "../../shared/services/PlanCheckInService";
@@ -829,19 +829,26 @@ export const recommendSport = async (
     // 1. Get all verified sports (the full catalog)
     const allSports = await Sport.find({ isVerified: true }).lean();
 
-    // 2. Fetch existing pathways for this specific state
-    const existingPathways = await SportPathway.find({
-      cacheKey: { $regex: new RegExp(`_${stateSlug}$`, "i") },
-    }).lean();
+    // 2. Fetch every published pathway guide, national and state overlays alike.
+    //    One query rather than two: the set is small (one document per sport,
+    //    plus the few states that have their own overlay) and both the
+    //    state-specific map and the "has a pathway anywhere" set come out of it.
+    const publishedGuides = await PathwayGuide.find({ status: "published" })
+      .select("sportSlug stateSlug sportIntro stages")
+      .lean();
 
-    // 3. Create a map of existing pathways by sport slug (state-specific)
-    const pathwayBySlug = new Map<string, any>(
-      existingPathways.map((p) => [(p as any).sportSlug, p]),
+    // 3. Prefer this reader's state overlay, fall back to the national guide.
+    const pathwayBySlug = new Map<string, (typeof publishedGuides)[number]>();
+    for (const guide of publishedGuides) {
+      const isForThisState = guide.stateSlug === stateSlug;
+      const existing = pathwayBySlug.get(guide.sportSlug);
+      if (!existing || isForThisState) pathwayBySlug.set(guide.sportSlug, guide);
+    }
+
+    // 4. Which sports have a readable pathway at all (national infra check).
+    const sportsWithAnyPathway = new Set<string>(
+      publishedGuides.map((guide) => guide.sportSlug),
     );
-
-    // 4. Also fetch sport slugs that have a pathway in ANY state (national infra check)
-    const allPathwaySlugs = await SportPathway.distinct("sportSlug");
-    const sportsWithAnyPathway = new Set<string>(allPathwaySlugs);
 
     if (allSports.length === 0) {
       res.status(404).json({ success: false, message: "No sports available" });
@@ -863,23 +870,24 @@ export const recommendSport = async (
       const p = pathwayBySlug.get(sport.slug);
       const hasGeneratedPathway = !!p;
 
-      let level1 = null;
-      let equip1 = null;
+      // The first stage is the one a family choosing a sport is actually about
+      // to live through, so it is the stage that grounds the recommendation.
+      const stage1 = p?.stages?.length
+        ? [...p.stages].sort((a, b) => a.order - b.order)[0]
+        : null;
       let overview = sport.description || "";
 
-      if (hasGeneratedPathway) {
-        level1 = p.levels && p.levels.length > 0 ? p.levels[0] : null;
-        equip1 = p.equipment && p.equipment.length > 0 ? p.equipment[0] : null;
-        if (p.overview) overview = p.overview;
-
-        if (equip1 && equip1.estimatedCost) {
-          score += getBudgetScore(parsed.data.budget_tier, equip1.estimatedCost);
-        }
-        if (level1 && level1.ageRange) {
-          score += getAgeScore(parsed.data.child_age, level1.ageRange);
+      if (stage1) {
+        if (p?.sportIntro?.length) overview = p.sportIntro.join(" ");
+        if (stage1.ageRange) {
+          score += getAgeScore(parsed.data.child_age, stage1.ageRange);
         }
       }
 
+      // NOTE: budget scoring no longer contributes here. It used to key off the
+      // old pathway's per-level equipment cost estimate, and the authored
+      // pathway carries no cost figures — an invented one would be worse than
+      // an absent one in a recommendation a parent acts on.
       return {
         _rawScore: score,
         sportSlug: sport.slug,
@@ -887,13 +895,13 @@ export const recommendSport = async (
         category: sport.category || "Other",
         sportDescription: sport.description || "",
         attributes: sport.attributes || null,
-        keyFocus: level1?.keyFocus || null,
-        mentalSkillsFocus: level1?.mentalSkillsFocus || null,
-        levelDescription: level1?.description || null,
-        talentSignals: level1?.talentSignals
-          ? JSON.stringify(level1.talentSignals)
+        keyFocus: stage1?.coreQuestion || null,
+        mentalSkillsFocus: null,
+        levelDescription: stage1?.overview || null,
+        talentSignals: stage1?.signals?.length
+          ? JSON.stringify(stage1.signals.map((s) => s.title))
           : "None",
-        equipmentCost: equip1?.estimatedCost || "Unknown",
+        equipmentCost: "Unknown",
         overview: overview,
         hasGeneratedPathway,
       };

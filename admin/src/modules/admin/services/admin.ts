@@ -23,81 +23,6 @@ type OpeningHours = {
   sunday: OpeningHoursDay;
 };
 
-// ─── Sport Pathways ─────────────────────────────────────────────────────────
-
-export interface AdminPathwayBenchmarkMetric {
-  metric: string;
-  target: string;
-}
-
-export interface AdminPathwayGovernmentScheme {
-  name: string;
-  body: string;
-  eligibility: string;
-  benefit: string;
-  howToApply: string;
-}
-
-export interface AdminPathwayLevel {
-  level: number;
-  label: string;
-  title: string;
-  description: string;
-  keyFocus: string;
-  ageRange: string;
-  competitions: string;
-  steps: string[];
-  governingBody?: string;
-  localResources?: {
-    academies?: string[];
-    facilities?: string[];
-    governingBodies?: string[];
-  };
-  benchmarks?: {
-    description?: string;
-    metrics?: AdminPathwayBenchmarkMetric[];
-  };
-  trialInfo?: {
-    typicalMonths?: string;
-    registrationProcess?: string;
-    eligibilityAge?: string;
-    selectionCriteria?: string[];
-    tips?: string[];
-  };
-  injuryRisks?: {
-    commonInjuries?: string[];
-    preventionTips?: string[];
-    warningSignsToWatch?: string[];
-  };
-  talentSignals?: {
-    physicalMarkers?: string[];
-    cognitiveMarkers?: string[];
-    behavioralMarkers?: string[];
-  };
-  mentalSkillsFocus?: string[];
-  coachSelectionGuide?: {
-    mustHave?: string[];
-    niceToHave?: string[];
-    redFlags?: string[];
-    questionsToAsk?: string[];
-  };
-  governmentSchemes?: AdminPathwayGovernmentScheme[];
-  academicIntegration?: string;
-  proactiveDocuments?: string[];
-}
-
-export interface AdminPathwayEquipment {
-  level: string;
-  items: string[];
-  estimatedCost: string;
-}
-
-export interface AdminPathwayCareer {
-  role: string;
-  description: string;
-  demand: string;
-}
-
 // ─── Federation/Tournament Data Sources ─────────────────────────────────────
 
 export type DataSourceTargetType = "FEDERATION" | "CURATED_TOURNAMENT" | "TOURNAMENT_CALENDAR";
@@ -152,27 +77,6 @@ export interface AdminDataSourceSubmission {
   currentLiveData?: unknown;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface AdminSportPathway {
-  _id: string;
-  sportSlug: string;
-  sportName: string;
-  cacheKey?: string;
-  category?: string;
-  overview: string;
-  levels: AdminPathwayLevel[];
-  equipment: AdminPathwayEquipment[];
-  careers: AdminPathwayCareer[];
-  isVerified: boolean;
-  verifiedAt?: string;
-  verifiedBy?: string | { _id: string; name?: string; email?: string };
-  lookupCount: number;
-  lastRefreshedAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  /** Unverified and not refreshed in 6+ months — same threshold the parent-facing site uses. */
-  isStale?: boolean;
 }
 
 export interface AcademyAdminQueueRecord {
@@ -1195,61 +1099,6 @@ export const adminApi = {
     return response.data;
   },
 
-  // ─── Sport Pathways ───────────────────────────────────────────────────────
-
-  getPathways: async (params?: {
-    search?: string;
-    isVerified?: "true" | "false";
-    page?: number;
-    limit?: number;
-  }): Promise<ApiResponse<AdminSportPathway[]>> => {
-    const query = new URLSearchParams();
-    if (params?.search) query.append("search", params.search);
-    if (params?.isVerified) query.append("isVerified", params.isVerified);
-    if (params?.page) query.append("page", String(params.page));
-    if (params?.limit) query.append("limit", String(params.limit));
-    const response = await axiosInstance.get(
-      `/admin/sport-pathways${query.toString() ? `?${query.toString()}` : ""}`,
-    );
-    return response.data;
-  },
-
-  getPathwayById: async (
-    id: string,
-  ): Promise<ApiResponse<AdminSportPathway>> => {
-    const response = await axiosInstance.get(`/admin/sport-pathways/${id}`);
-    return response.data;
-  },
-
-  updatePathway: async (
-    id: string,
-    data: Partial<
-      Pick<
-        AdminSportPathway,
-        "overview" | "category" | "levels" | "equipment" | "careers"
-      >
-    >,
-  ): Promise<ApiResponse<AdminSportPathway>> => {
-    const response = await axiosInstance.patch(
-      `/admin/sport-pathways/${id}`,
-      data,
-    );
-    return response.data;
-  },
-
-  setPathwayVerified: async (
-    id: string,
-    verified: boolean,
-  ): Promise<ApiResponse<AdminSportPathway>> => {
-    const response = await axiosInstance.post(
-      `/admin/sport-pathways/${id}/verify`,
-      {
-        verified,
-      },
-    );
-    return response.data;
-  },
-
   // ─── Federation/Tournament Data Sources ───────────────────────────────────
 
   getDataSourceUploadUrl: async (
@@ -1357,81 +1206,182 @@ export const adminApi = {
     return response.data;
   },
 
-  // ─── Pathway stage guides ─────────────────────────────────────────────────
-  // Hand-authored JSON, validated server-side against the published format.
-  // `validate` writes nothing, so a file can be checked before it goes live.
+  // ─── Pathway CMS ──────────────────────────────────────────────────────────
+  //
+  // Guide-level and stage-level writes are separate calls on purpose: the editor
+  // saves the one stage being worked on, so a validation failure in stage 4
+  // cannot cost the author their edits to stages 1–3. Every write that touches
+  // the stage list answers with the whole updated guide, so the client never has
+  // to guess what the server ended up storing.
 
-  listStageGuides: async (): Promise<ApiResponse<AdminStageGuideRow[]>> => {
-    const response = await axiosInstance.get("/admin/stage-guides");
+  listPathwayGuides: async (): Promise<ApiResponse<AdminPathwayGuideRow[]>> => {
+    const response = await axiosInstance.get("/admin/pathway-guides");
     return response.data;
   },
 
-  getStageGuide: async (
-    sportSlug: string,
-    state?: string | null,
-  ): Promise<ApiResponse<AdminStageGuideDetail>> => {
-    const query = state ? `?state=${encodeURIComponent(state)}` : "";
-    const response = await axiosInstance.get(`/admin/stage-guides/${sportSlug}${query}`);
+  getPathwayGuide: async (id: string): Promise<ApiResponse<AdminPathwayGuide>> => {
+    const response = await axiosInstance.get(`/admin/pathway-guides/${id}`);
     return response.data;
   },
 
-  validateStageGuide: async (
-    guide: unknown,
-  ): Promise<StageGuideValidationResult> => {
-    const response = await axiosInstance.post("/admin/stage-guides/validate", { guide });
-    return response.data;
-  },
-
-  upsertStageGuide: async (payload: {
-    guide: unknown;
+  createPathwayGuide: async (payload: {
+    sport: { slug: string; name: string };
     state?: string | null;
-    status?: "draft" | "published";
-  }): Promise<ApiResponse<AdminStageGuideSaveResult>> => {
-    const response = await axiosInstance.put("/admin/stage-guides", payload);
+    intro?: AdminPathwayIntro;
+    sportIntro?: string[];
+  }): Promise<ApiResponse<AdminPathwayGuide>> => {
+    const response = await axiosInstance.post("/admin/pathway-guides", payload);
     return response.data;
   },
 
-  deleteStageGuide: async (
-    sportSlug: string,
-    state?: string | null,
-  ): Promise<ApiResponse<null>> => {
-    const query = state ? `?state=${encodeURIComponent(state)}` : "";
-    const response = await axiosInstance.delete(`/admin/stage-guides/${sportSlug}${query}`);
+  updatePathwayGuide: async (
+    id: string,
+    payload: {
+      intro?: AdminPathwayIntro;
+      sportIntro?: string[];
+      reviewedOn?: string;
+    },
+  ): Promise<ApiResponse<AdminPathwayGuide>> => {
+    const response = await axiosInstance.put(`/admin/pathway-guides/${id}`, payload);
+    return response.data;
+  },
+
+  deletePathwayGuide: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await axiosInstance.delete(`/admin/pathway-guides/${id}`);
+    return response.data;
+  },
+
+  setPathwayGuideStatus: async (
+    id: string,
+    status: "draft" | "published",
+  ): Promise<ApiResponse<{ status: string; publishedAt: string | null }>> => {
+    const response = await axiosInstance.post(`/admin/pathway-guides/${id}/status`, {
+      status,
+    });
+    return response.data;
+  },
+
+  addPathwayStage: async (
+    id: string,
+    stage: AdminPathwayStage,
+  ): Promise<ApiResponse<AdminPathwayGuide>> => {
+    const response = await axiosInstance.post(`/admin/pathway-guides/${id}/stages`, stage);
+    return response.data;
+  },
+
+  updatePathwayStage: async (
+    id: string,
+    stageKey: string,
+    stage: AdminPathwayStage,
+  ): Promise<ApiResponse<AdminPathwayGuide>> => {
+    const response = await axiosInstance.put(
+      `/admin/pathway-guides/${id}/stages/${encodeURIComponent(stageKey)}`,
+      stage,
+    );
+    return response.data;
+  },
+
+  deletePathwayStage: async (
+    id: string,
+    stageKey: string,
+  ): Promise<ApiResponse<AdminPathwayGuide>> => {
+    const response = await axiosInstance.delete(
+      `/admin/pathway-guides/${id}/stages/${encodeURIComponent(stageKey)}`,
+    );
+    return response.data;
+  },
+
+  reorderPathwayStages: async (
+    id: string,
+    keys: string[],
+  ): Promise<ApiResponse<AdminPathwayGuide>> => {
+    const response = await axiosInstance.put(`/admin/pathway-guides/${id}/stages/order`, {
+      keys,
+    });
     return response.data;
   },
 };
 
-export interface AdminStageGuideRow {
+// ─── Pathway CMS types ───────────────────────────────────────────────────────
+//
+// Mirrors `server/src/shared/validation/pathwayGuideFormat.ts`. The server is
+// the authority — it re-validates everything sent here — so these exist to make
+// the editor type-safe, not to enforce anything.
+
+export interface AdminPathwayIntro {
+  eyebrow?: string;
+  headline?: string;
+  description?: string;
+}
+
+export interface AdminPathwayAction {
+  label: string;
+  href?: string;
+}
+
+/** Bucket 2. `answer` absent = listed but not yet written. */
+export interface AdminPathwayQuestion {
+  question: string;
+  answer?: string;
+}
+
+/** Buckets 3 and 4 share this shape. */
+export interface AdminPathwayPoint {
+  title: string;
+  detail?: string;
+}
+
+/** Bucket 5. `when` is the left column: "Not started", or "Step 1". */
+export interface AdminPathwayNextStep {
+  when: string;
+  action: string;
+}
+
+export interface AdminPathwayStage {
+  key: string;
+  name: string;
+  ageRange: string;
+  coreQuestion: string;
+  overview: string;
+  questions: AdminPathwayQuestion[];
+  signals: AdminPathwayPoint[];
+  decisions: AdminPathwayPoint[];
+  nextStepLead?: string;
+  nextSteps: AdminPathwayNextStep[];
+  primaryAction?: AdminPathwayAction;
+  helpLinks: AdminPathwayAction[];
+}
+
+/** As stored: the stage plus its position in the pathway. */
+export interface AdminPathwayStageStored extends AdminPathwayStage {
+  order: number;
+}
+
+export interface AdminPathwayGuide {
+  _id: string;
+  sportSlug: string;
+  sportName: string;
+  stateSlug: string | null;
+  status: "draft" | "published";
+  formatVersion: number;
+  intro: AdminPathwayIntro;
+  sportIntro: string[];
+  stages: AdminPathwayStageStored[];
+  reviewedOn?: string;
+  publishedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** The list view — no stage bodies. */
+export interface AdminPathwayGuideRow {
   _id: string;
   sportSlug: string;
   sportName: string;
   stateSlug: string | null;
   status: "draft" | "published";
   stageCount: number;
-  formatVersion: number;
-  verifiedOn?: string;
-  uploadedAt?: string;
-}
-
-export interface AdminStageGuideDetail extends AdminStageGuideRow {
-  guide: unknown;
-}
-
-export interface AdminStageGuideSaveResult {
-  sportSlug: string;
-  stateSlug: string | null;
-  status: "draft" | "published";
-  stageCount: number;
-}
-
-/** The validate endpoint answers with pathed errors on failure. */
-export interface StageGuideValidationResult {
-  success: boolean;
-  message: string;
-  errors?: string[];
-  data?: {
-    sportSlug: string;
-    stageCount: number;
-    stages: Array<{ number: number; title: string }>;
-  };
+  reviewedOn: string | null;
+  publishedAt: string | null;
+  updatedAt: string;
 }

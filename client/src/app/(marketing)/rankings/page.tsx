@@ -5,7 +5,7 @@
 // sports — a parent who came looking for badminton deserves a straight "not
 // yet" instead of a page that silently pretends only tennis has rankings.
 //
-// The unmirrored list is drawn from RESOURCE_SPORTS so it cannot drift from the
+// The unmirrored list is drawn from PATHWAY_SPORTS so it cannot drift from the
 // sports the platform actually covers, and it deliberately carries no dates:
 // these depend on federations publishing machine-readable lists, which is not
 // ours to promise.
@@ -13,7 +13,7 @@
 import { JsonLd } from "@/components/seo/JsonLd";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/seo";
-import { RESOURCE_SPORTS } from "@/modules/resources/config";
+import { PATHWAY_SPORTS } from "@/modules/pathway/sports";
 import { fetchRankingMeta, formatAsOn } from "@/modules/rankings/api";
 import { RANKING_SPORTS, rankingSportHref } from "@/modules/rankings/config";
 import { ArrowRight } from "lucide-react";
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
 
 export default async function RankingsIndexPage() {
   const live = new Set(RANKING_SPORTS.map((s) => s.slug));
-  const notYet = RESOURCE_SPORTS.filter((s) => !live.has(s.slug));
+  const notYet = PATHWAY_SPORTS.filter((s) => !live.has(s.slug));
 
   // Only tennis has data today; a single fetch is honest rather than a loop that
   // would make nine pointless requests. The freshest list date across the sport's
@@ -129,7 +129,7 @@ export default async function RankingsIndexPage() {
                 <span className="mt-3 block text-sm text-muted-foreground">
                   Not available yet ·{" "}
                   <Link
-                    href={`/resources/${sport.slug}`}
+                    href={`/roadmap/${sport.slug}`}
                     className="font-medium text-power-orange hover:underline"
                   >
                     pathway guide

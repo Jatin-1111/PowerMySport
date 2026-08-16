@@ -6,7 +6,7 @@ import {
   comboHref,
   rankingSportHref,
 } from "@/modules/rankings/config";
-import { RESOURCE_SPORTS } from "@/modules/resources/config";
+import { PATHWAY_SPORTS } from "@/modules/pathway/sports";
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -369,16 +369,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.2,
     },
 
-    // ── Sport resource guides (/resources/[sport]) ──
-    // The deepest evergreen content on the site: every stage of a sport with
-    // ages, costs, funding schemes and coach guidance. Listed from a static
-    // config rather than the API because these are pre-rendered at build.
+    // ── Sport pathways (/roadmap/[sport]) ──
+    // The deepest evergreen content on the site: every stage of a sport, with
+    // the questions, signals, decisions and next steps a parent faces there.
+    // Listed from the static sport config rather than the API so a sitemap
+    // build never depends on the API being up.
     //
     // Only the bare path is listed. The `?state=` variants canonicalise back to
     // it, so putting them here would ask Google to index several hundred pages
-    // that differ by one list of academies.
-    ...RESOURCE_SPORTS.map((sport) => ({
-      url: `${siteUrl}/resources/${sport.slug}`,
+    // that differ by one state overlay.
+    ...PATHWAY_SPORTS.map((sport) => ({
+      url: `${siteUrl}/roadmap/${sport.slug}`,
       lastModified: now,
       changeFrequency: "monthly" as const,
       priority: 0.8,

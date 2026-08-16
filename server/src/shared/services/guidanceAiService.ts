@@ -1,6 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
-import { SportPathway } from "../models/SportPathway";
 import { SportBasePath } from "../models/SportBasePath";
 import { SportStatePath } from "../models/SportStatePath";
 
@@ -464,32 +463,12 @@ export const generateYouthSportsGuidance = async (
           }
           groundingContext = JSON.stringify(groundingObj, null, 2);
         }
-      } else {
-        // Fall back to the monolithic SportPathway for sports/states not yet
-        // migrated to the new split model.
-        const cacheKey = `${slug}_${stateSlug}`;
-        const pathway = await SportPathway.findOne({ cacheKey }).lean();
-        if (
-          pathway &&
-          (pathway as any).levels &&
-          (pathway as any).levels.length > 0
-        ) {
-          const levelObj = (pathway as any).levels[levelIndex];
-          if (levelObj) {
-            groundingContext = JSON.stringify(
-              {
-                level: levelObj.level,
-                title: levelObj.title,
-                benchmarks: levelObj.benchmarks,
-                trialInfo: levelObj.trialInfo,
-                talentSignals: levelObj.talentSignals,
-              },
-              null,
-              2,
-            );
-          }
-        }
       }
+      // No fallback. The old monolithic SportPathway used to stand in for a
+      // missing SportBasePath here; it was AI-generated and unreviewed, and it
+      // has been removed. A sport with no base path now produces no grounding
+      // context, which the prompt already handles — better than grounding a
+      // parent's guidance in figures nobody checked.
     } catch (e) {
       console.error("Failed to fetch grounding context for guidance AI", e);
     }

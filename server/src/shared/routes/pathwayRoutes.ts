@@ -1,29 +1,19 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
+
 import {
-  getPathway,
-  getPathwayEntities,
-  searchPathways,
-  refreshPathway,
-  refreshStalePathways,
-  getPathwayStats,
-  getPathwayStories,
-  getPathwaysForExpertVerification,
-  postPathwayExpertVerify,
-  deletePathwayExpertVerify,
   getCuratedTournamentBySlug,
   getCuratedTournaments,
-  getProgressionPlan,
-  getPersonalNotes,
-  getStageGuide,
+  getPathwayGuide,
+  getPathwayStories,
+  listPublishedPathwayGuides,
 } from "../controller/pathwayController";
-import { authMiddleware } from "../../middleware/auth";
 
 const router = Router();
 
 const pathwayRateLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 8, // max 8 pathway lookups per minute per IP
+  windowMs: 60 * 1000,
+  max: 60, // plain reads of published content — no generation happens behind these
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -32,80 +22,16 @@ const pathwayRateLimiter = rateLimit({
   },
 });
 
-// ── Public routes ─────────────────────────────────────────────────────────────
+router.use(pathwayRateLimiter);
 
-// GET /api/pathways/search?q=bad  (must come before / to avoid route conflict)
-router.get("/search", pathwayRateLimiter, searchPathways);
+// ── The pathway itself ──
+// "guides" is registered before "guide" only for readability; they don't collide.
+router.get("/guides", listPublishedPathwayGuides);
+router.get("/guide", getPathwayGuide);
 
-// GET /api/pathways/progression?sport=&state=&level=
-// Returns (or lazily generates) the transition plan from one macro-level to the next.
-router.get("/progression", pathwayRateLimiter, getProgressionPlan);
-
-// GET /api/pathways/personal-notes?sport=&state=&age=&tier=&ambition=&budget=&hours=
-// Layer-2 personalization: per-level notes for an anonymized child signature.
-router.get("/personal-notes", pathwayRateLimiter, getPersonalNotes);
-
-// GET /api/pathways/stories?sport=cricket&level=2
-router.get("/stories", pathwayRateLimiter, getPathwayStories);
-
-// GET /api/pathways/tournaments          — list all curated tournaments (optionally filtered by ?sport=)
-// GET /api/pathways/tournaments/:slug    — single curated tournament detail page data
-router.get("/tournaments", pathwayRateLimiter, getCuratedTournaments);
-router.get("/tournaments/:slug", pathwayRateLimiter, getCuratedTournamentBySlug);
-
-// GET /api/pathways?sport=cricket&age=12&city=Mumbai
-router.get("/", pathwayRateLimiter, getPathway);
-
-// GET /api/pathways/entities?sport=cricket&city=Mumbai
-// Fetches only tournaments/scholarships/universities — waits for scraper if needed.
-// The client calls this in parallel with the main pathway request.
-router.get("/entities", pathwayRateLimiter, getPathwayEntities);
-
-// ── Expert verification routes ────────────────────────────────────────────────
-// Verification is keyed by sportSlug, not a specific pathway document id —
-// pathways are cached per-state, but an expert's credit applies sport-wide.
-
-// GET /api/pathways/expert/mine — sports matching the logged-in expert's own profile
-router.get(
-  "/expert/mine",
-  pathwayRateLimiter,
-  authMiddleware,
-  getPathwaysForExpertVerification,
-);
-
-// POST /api/pathways/expert/:sportSlug/verify — add/update this expert's verification credit
-router.post(
-  "/expert/:sportSlug/verify",
-  pathwayRateLimiter,
-  authMiddleware,
-  postPathwayExpertVerify,
-);
-
-// DELETE /api/pathways/expert/:sportSlug/verify — remove this expert's own verification credit
-router.delete(
-  "/expert/:sportSlug/verify",
-  pathwayRateLimiter,
-  authMiddleware,
-  deletePathwayExpertVerify,
-);
-
-// GET /api/pathways/stage-guide?sport=tennis&state=Delhi
-// The hand-authored India stage guide. Public and cacheable — it holds no
-// personal data and is identical for every reader of a sport/state.
-router.get("/stage-guide", pathwayRateLimiter, getStageGuide);
-
-// ── Admin / internal routes ───────────────────────────────────────────────────
-// These require no extra middleware in development.
-// In production, add role-check middleware (e.g. requireAdmin) before each.
-
-// GET  /api/pathways/stats           — aggregate usage stats
-router.get("/stats", getPathwayStats);
-
-// POST /api/pathways/refresh         — force-refresh a single pathway
-// Body: { cacheKey: string }
-router.post("/refresh", refreshPathway);
-
-// POST /api/pathways/refresh-stale   — refresh all stale pathways (runs in background)
-router.post("/refresh-stale", refreshStalePathways);
+// ── Neighbours that share this router ──
+router.get("/stories", getPathwayStories);
+router.get("/tournaments", getCuratedTournaments);
+router.get("/tournaments/:slug", getCuratedTournamentBySlug);
 
 export default router;

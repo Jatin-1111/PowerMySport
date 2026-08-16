@@ -1,80 +1,6 @@
 import axiosInstance from "@/lib/api/axios";
-import type { ApiStageGuideResponse } from "@/modules/roadmap/stages/apiFormat";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface ProgressionPlanMilestone {
-  title: string;
-  description: string;
-  timeframe: string;
-}
-
-export interface ProgressionPlan {
-  gap: string;
-  prerequisites: string[];
-  milestones: ProgressionPlanMilestone[];
-  targetCompetitions: string[];
-  coachSignals: string[];
-  commonMistakes: string[];
-  typicalTimeline: string;
-  generatedAt?: string;
-}
-
-export interface PathwayLevel {
-  level: number;
-  label: string;
-  title: string;
-  description: string;
-  keyFocus: string;
-  ageRange: string;
-  competitions: string;
-  steps: string[];
-  governingBody?: string;
-  localResources?: {
-    academies?: string[];
-    facilities?: string[];
-    governingBodies?: string[];
-  };
-  benchmarks?: {
-    description: string;
-    metrics: Array<{ metric: string; target: string }>;
-  };
-  trialInfo?: {
-    typicalMonths: string;
-    registrationProcess: string;
-    eligibilityAge: string;
-    selectionCriteria: string[];
-    tips: string[];
-  };
-  injuryRisks?: {
-    commonInjuries: string[];
-    preventionTips: string[];
-    warningSignsToWatch: string[];
-  };
-  talentSignals?: {
-    physicalMarkers: string[];
-    cognitiveMarkers: string[];
-    behavioralMarkers: string[];
-  };
-  mentalSkillsFocus?: string[];
-  coachSelectionGuide?: {
-    mustHave: string[];
-    niceToHave: string[];
-    redFlags: string[];
-    questionsToAsk: string[];
-  };
-  governmentSchemes?: Array<{
-    name: string;
-    body: string;
-    eligibility: string;
-    benefit: string;
-    howToApply: string;
-    verifiedAsOf?: string;
-  }>;
-  academicIntegration?: string;
-  proactiveDocuments?: string[];
-  progressionPlan?: ProgressionPlan;
-}
 
 export interface FederationInfo {
   name: string;
@@ -146,55 +72,6 @@ export interface Career {
 }
 
 /** A named credit from an expert who verified this pathway matches their domain. */
-export interface PathwayExpertVerification {
-  expertId: string;
-  expertName: string;
-  expertPhotoUrl?: string;
-  verifiedAt: string;
-  note?: string;
-  expertCredential?: string;
-}
-
-export interface SportPathway {
-  _id?: string;
-  sportSlug: string;
-  sportName: string;
-  category?: string;
-  state?: string;
-  overview: string;
-  levels: PathwayLevel[];
-  tournaments: Tournament[];
-  scholarships: Scholarship[];
-  universities: University[];
-  equipment: Equipment[];
-  careers: Career[];
-  isVerified: boolean;
-  expertVerifications?: PathwayExpertVerification[];
-  trustTier?: "unverified" | "admin_verified" | "expert_verified";
-  lookupCount: number;
-  lastRefreshedAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-/**
- * Summary row for an expert's own "sports I can verify" queue — one row per
- * sport (not per state variant; the same sport can have several cached
- * pathway documents, one per Indian state, but verification is sport-wide).
- */
-export interface ExpertVerifiablePathway {
-  sportSlug: string;
-  sportName: string;
-  category?: string;
-  overview: string;
-  isVerified: boolean;
-  lookupCount: number;
-  /** How many separate state-variant pathway documents exist for this sport. */
-  stateVariants: number;
-  expertVerificationCount: number;
-  verifiedByMe: boolean;
-}
-
 interface ApiResponse<T> {
   success: boolean;
   message?: string;
@@ -208,92 +85,104 @@ interface ApiResponse<T> {
   supportedSports?: Array<{ slug: string; name: string }>;
 }
 
+// ─── Pathway guide ───────────────────────────────────────────────────────────
+//
+// Mirrors `server/src/shared/validation/pathwayGuideFormat.ts`. Every stage
+// answers the same five questions in the same order — that repetition is the
+// product, not an accident of the schema.
+
+export interface PathwayAction {
+  label: string;
+  href?: string;
+}
+
+/** Bucket 2. No `answer` means the question is listed but not yet written. */
+export interface PathwayQuestion {
+  question: string;
+  answer?: string;
+}
+
+/** Buckets 3 and 4 — "what to look for" and "decisions" — share this shape. */
+export interface PathwayPoint {
+  title: string;
+  detail?: string;
+}
+
+/** Bucket 5. `when` is a situation ("Not started") or an order ("Step 1"). */
+export interface PathwayNextStep {
+  when: string;
+  action: string;
+}
+
+export interface PathwayStage {
+  key: string;
+  order: number;
+  name: string;
+  ageRange: string;
+  coreQuestion: string;
+  overview: string;
+  questions: PathwayQuestion[];
+  signals: PathwayPoint[];
+  decisions: PathwayPoint[];
+  nextStepLead?: string;
+  nextSteps: PathwayNextStep[];
+  primaryAction?: PathwayAction;
+  helpLinks: PathwayAction[];
+}
+
+export interface PathwayGuide {
+  sportSlug: string;
+  sportName: string;
+  stateSlug: string | null;
+  /** True when the reader asked for a state and got a state-specific guide. */
+  isStateGuide: boolean;
+  formatVersion: number;
+  intro: { eyebrow?: string; headline?: string; description?: string };
+  sportIntro: string[];
+  reviewedOn: string | null;
+  updatedAt?: string;
+  stages: PathwayStage[];
+}
+
+export interface PathwayGuideSummary {
+  sportSlug: string;
+  sportName: string;
+  stateSlug: string | null;
+  stageCount: number;
+  updatedAt?: string;
+}
+
 // ─── API ─────────────────────────────────────────────────────────────────────
 
 export const pathwayApi = {
   /**
-   * Fetch (or generate) a pathway for a sport name.
-   * Returns null when the input is not a valid sport.
-   * If the cached pathway is stale, the server refreshes it in the background
-   * and returns the cached version immediately (serve-stale-while-revalidating).
+   * The published pathway for a sport: the intro copy plus every stage.
+   *
+   * 404 is a normal answer — only sports whose pathway has been written and
+   * published in the CMS have one — so a miss returns null and the caller shows
+   * a "not ready yet" state rather than an error.
    */
-  getPathway: async (
-    sportName: string,
-    childAge?: number,
+  getPathwayGuide: async (
+    sport: string,
     state?: string,
-  ): Promise<
-    | { pathway: SportPathway; source: "db" | "generated"; isStale?: boolean; entitiesReady?: boolean }
-    | { notSupported: true; sport: string; supportedSports: Array<{ slug: string; name: string }>; message: string }
-    | null
-  > => {
+  ): Promise<PathwayGuide | null> => {
     try {
-      const params = new URLSearchParams({ sport: sportName });
-      if (childAge) params.append("age", String(childAge));
-      if (state) params.append("state", state.trim());
-      const resp = await axiosInstance.get<ApiResponse<SportPathway>>(
-        `/pathways?${params.toString()}`,
+      const q = new URLSearchParams({ sport });
+      if (state?.trim()) q.set("state", state.trim());
+      const resp = await axiosInstance.get<ApiResponse<PathwayGuide>>(
+        `/pathways/guide?${q.toString()}`,
       );
-      if (resp.data.status === "not_supported") {
-        return {
-          notSupported: true,
-          sport: resp.data.sport ?? sportName,
-          supportedSports: resp.data.supportedSports ?? [],
-          message: resp.data.message ?? `${sportName} pathways are coming soon.`,
-        };
-      }
-      if (resp.data.success && resp.data.data) {
-        return {
-          pathway: resp.data.data,
-          source: resp.data.source ?? "db",
-          isStale: resp.data.isStale,
-          entitiesReady: resp.data.entitiesReady ?? true,
-        };
-      }
-      return null;
-    } catch (err: any) {
-      if (err.response?.status === 404) {
-        throw new Error(err.response.data?.message || "Not found");
-      }
-      throw err;
-    }
-  },
-
-  /**
-   * Fetch only tournaments/scholarships/universities for a sport.
-   * The server waits for the scraper if they aren't cached yet.
-   * Call this in parallel with getPathway when entitiesReady is false.
-   */
-  getEntities: async (
-    sportName: string,
-    childCity?: string,
-  ): Promise<{
-    tournaments: Tournament[];
-    scholarships: Scholarship[];
-    universities: University[];
-  } | null> => {
-    try {
-      const params = new URLSearchParams({ sport: sportName });
-      if (childCity) params.append("city", childCity.trim());
-      const resp = await axiosInstance.get<
-        ApiResponse<{
-          tournaments: Tournament[];
-          scholarships: Scholarship[];
-          universities: University[];
-        }>
-      >(`/pathways/entities?${params.toString()}`);
       return resp.data.data ?? null;
     } catch {
       return null;
     }
   },
 
-  /**
-   * Search cached pathways for autocomplete.
-   */
-  searchPathways: async (query: string): Promise<SportPathway[]> => {
+  /** Which sports a parent can actually read a pathway for. */
+  listPathwayGuides: async (): Promise<PathwayGuideSummary[]> => {
     try {
-      const resp = await axiosInstance.get<ApiResponse<SportPathway[]>>(
-        `/pathways/search?q=${encodeURIComponent(query)}`,
+      const resp = await axiosInstance.get<ApiResponse<PathwayGuideSummary[]>>(
+        "/pathways/guides",
       );
       return resp.data.data ?? [];
     } catch {
@@ -301,76 +190,8 @@ export const pathwayApi = {
     }
   },
 
-  /**
-   * Admin: manually trigger refresh of a specific pathway cache key.
-   */
-  refreshPathway: async (cacheKey: string): Promise<SportPathway | null> => {
-    try {
-      const resp = await axiosInstance.post<ApiResponse<SportPathway>>(
-        `/pathways/refresh`,
-        { cacheKey },
-      );
-      return resp.data.data ?? null;
-    } catch {
-      return null;
-    }
-  },
-
-  /**
-   * Admin: trigger a background refresh of all stale pathways.
-   * Returns the number of pathways refreshed.
-   */
-  refreshStale: async (): Promise<{ refreshed: number }> => {
-    try {
-      const resp = await axiosInstance.post<{
-        success: boolean;
-        refreshed: number;
-      }>(`/pathways/refresh-stale`);
-      return { refreshed: resp.data.refreshed ?? 0 };
-    } catch {
-      return { refreshed: 0 };
-    }
-  },
-
-  /**
-   * Expert-only: pathways matching sports on the logged-in expert's own
-   * profile — the queue they can verify.
-   */
-  getForExpertVerification: async (): Promise<ExpertVerifiablePathway[]> => {
-    const resp = await axiosInstance.get<
-      ApiResponse<ExpertVerifiablePathway[]>
-    >(`/pathways/expert/mine`);
-    return resp.data.data ?? [];
-  },
-
-  /**
-   * Expert-only: add/update this expert's named verification credit for a
-   * sport — applies to every state variant of that sport's pathway.
-   */
-  verifyAsExpert: async (
-    sportSlug: string,
-    note?: string,
-  ): Promise<ApiResponse<PathwayExpertVerification>> => {
-    const resp = await axiosInstance.post<
-      ApiResponse<PathwayExpertVerification>
-    >(`/pathways/expert/${sportSlug}/verify`, { note });
-    return resp.data;
-  },
-
-  /** Expert-only: remove this expert's own verification credit for a sport. */
-  removeExpertVerification: async (
-    sportSlug: string,
-  ): Promise<ApiResponse<null>> => {
-    const resp = await axiosInstance.delete<ApiResponse<null>>(
-      `/pathways/expert/${sportSlug}/verify`,
-    );
-    return resp.data;
-  },
-
   /** Fetch all curated tournaments, optionally filtered by sportSlug. */
-  getCuratedTournaments: async (
-    sportSlug?: string,
-  ): Promise<Tournament[]> => {
+  getCuratedTournaments: async (sportSlug?: string): Promise<Tournament[]> => {
     try {
       const params = sportSlug ? `?sport=${encodeURIComponent(sportSlug)}` : "";
       const resp = await axiosInstance.get<ApiResponse<Tournament[]>>(
@@ -379,90 +200,6 @@ export const pathwayApi = {
       return resp.data.data ?? [];
     } catch {
       return [];
-    }
-  },
-
-
-  /**
-   * Layer-2 personalization: one short AI note per raw level (1–5) for an
-   * anonymized child signature. Returns a level→note map, or null on any
-   * error so the roadmap can silently skip the card. No name is ever sent.
-   */
-  getPersonalNotes: async (
-    sportName: string,
-    state: string,
-    params: {
-      age?: number;
-      tier?: number;
-      ambition?: string;
-      budget?: string;
-      hours?: string;
-    },
-  ): Promise<Record<number, string> | null> => {
-    try {
-      const q = new URLSearchParams({ sport: sportName, state });
-      if (params.age) q.append("age", String(params.age));
-      if (params.tier) q.append("tier", String(params.tier));
-      if (params.ambition) q.append("ambition", params.ambition);
-      if (params.budget) q.append("budget", params.budget);
-      if (params.hours) q.append("hours", params.hours);
-      const resp = await axiosInstance.get<
-        ApiResponse<Array<{ level: number; note: string }>>
-      >(`/pathways/personal-notes?${q.toString()}`);
-      const notes = resp.data.data ?? [];
-      if (!notes.length) return null;
-      return Object.fromEntries(notes.map((n) => [n.level, n.note]));
-    } catch {
-      return null;
-    }
-  },
-
-  /**
-   * Fetch (or lazily generate) the progression plan for a raw pathway level.
-   * level must be 1–4 (level 5 is the top — no next level to progress to).
-   * Returns null on any error so the caller can show a graceful error state.
-   */
-  getProgressionPlan: async (
-    sportName: string,
-    state: string,
-    level: number,
-  ): Promise<ProgressionPlan | null> => {
-    try {
-      const params = new URLSearchParams({
-        sport: sportName,
-        state,
-        level: String(level),
-      });
-      const resp = await axiosInstance.get<ApiResponse<ProgressionPlan>>(
-        `/pathways/progression?${params.toString()}`,
-      );
-      return resp.data.data ?? null;
-    } catch {
-      return null;
-    }
-  },
-
-  /**
-   * The hand-authored, India-specific stage guide for a sport.
-   *
-   * 404 is the normal answer for most sports — only the ones whose guide has
-   * been written and uploaded have one — so a miss returns null and the caller
-   * falls back to stages derived from the pathway levels. Deliberately does NOT
-   * fall back to /resources content: the two surfaces are meant to differ.
-   */
-  getStageGuide: async (
-    sportName: string,
-    state?: string,
-  ): Promise<ApiStageGuideResponse | null> => {
-    try {
-      const q = new URLSearchParams({ sport: sportName });
-      if (state) q.set("state", state);
-      const resp = await axiosInstance.get<ApiResponse<ApiStageGuideResponse>>(
-        `/pathways/stage-guide?${q.toString()}`,
-      );
-      return resp.data.data ?? null;
-    } catch {
-      return null;
     }
   },
 };

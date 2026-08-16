@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import { SportPathway } from "../../shared/models/SportPathway";
+import { PathwayGuide } from "../../shared/models/PathwayGuide";
 import { RoadmapChatSession } from "../models/RoadmapChatSession";
 import { buildRoadmapChatSystemPrompt } from "../../shared/services/roadmapChatService";
 import { streamChatAndPersist } from "../../shared/services/chatStreamService";
@@ -12,9 +12,8 @@ import {
   checkChatRateLimit,
 } from "../../shared/services/chatRateLimitService";
 
-function buildOpeningMessage(sportName: string, levelLabel?: string): string {
-  const levelBit = levelLabel ? ` at the ${levelLabel} level` : "";
-  return `Hi! 👋 I can see you're exploring the ${sportName} roadmap${levelBit}. I'm your sports coach — ask me anything about this stage: what to do next, what it costs, how to find a coach, or what a term on this page means. What would you like to know?`;
+function buildOpeningMessage(sportName: string): string {
+  return `Hi! 👋 I can see you're exploring the ${sportName} pathway. I'm your sports coach — ask me anything about this stage: what to do next, what it costs, how to find a coach, or what a term on this page means. What would you like to know?`;
 }
 
 function deriveTitle(firstUserMessage: string): string {
@@ -22,6 +21,26 @@ function deriveTitle(firstUserMessage: string): string {
   const lastSpace = trimmed.lastIndexOf(" ");
   const cut = lastSpace > 30 ? trimmed.slice(0, lastSpace) : trimmed;
   return cut + (firstUserMessage.trim().length > 60 ? "…" : "");
+}
+
+// Only a PUBLISHED national guide grounds the chat. A draft is an author's
+// working copy, and answering a parent out of one would quote them content the
+// site itself is not yet showing.
+async function loadPathway(sportSlug: string) {
+  return PathwayGuide.findOne({
+    sportSlug: sportSlug.toLowerCase(),
+    stateSlug: null,
+    status: "published",
+  }).lean();
+}
+
+/** Sort defensively — `order` is the contract, array position is not. */
+function toPathwayContext(pathway: NonNullable<Awaited<ReturnType<typeof loadPathway>>>) {
+  return {
+    sportName: pathway.sportName,
+    sportIntro: pathway.sportIntro ?? [],
+    stages: [...(pathway.stages ?? [])].sort((a, b) => a.order - b.order),
+  };
 }
 
 // ─── GET /api/roadmap-chat/sessions ──────────────────────────────────────────
@@ -75,9 +94,9 @@ export const createRoadmapChatSession = async (
       return;
     }
 
-    const pathway = await SportPathway.findOne({ sportSlug }).lean();
+    const pathway = await loadPathway(sportSlug);
     if (!pathway) {
-      res.status(404).json({ success: false, message: "Sport pathway not found" });
+      res.status(404).json({ success: false, message: "No published pathway for this sport yet" });
       return;
     }
 
@@ -187,7 +206,10 @@ export const sendRoadmapChatSessionMessage = async (
     }
 
     const userMessage: string = (req.body?.message ?? "").trim();
-    const level: number | undefined = req.body?.level ? Number(req.body.level) : undefined;
+    const stageKey: string | undefined =
+      typeof req.body?.stage === "string" && req.body.stage.trim()
+        ? req.body.stage.trim().toLowerCase()
+        : undefined;
 
     if (!userMessage) {
       res.status(400).json({ success: false, message: "Message is required" });
@@ -208,9 +230,9 @@ export const sendRoadmapChatSessionMessage = async (
       return;
     }
 
-    const pathway = await SportPathway.findOne({ sportSlug: session.sportSlug }).lean();
+    const pathway = await loadPathway(session.sportSlug);
     if (!pathway) {
-      res.status(404).json({ success: false, message: "Sport pathway not found" });
+      res.status(404).json({ success: false, message: "No published pathway for this sport yet" });
       return;
     }
 
@@ -236,7 +258,7 @@ export const sendRoadmapChatSessionMessage = async (
 
     // ── Build system prompt ────────────────────────────────────────────────────
     const upcomingTournaments = await getUpcomingEditions(session.sportSlug, 5).catch(() => []);
-    const systemPrompt = buildRoadmapChatSystemPrompt(pathway, level, upcomingTournaments);
+    const systemPrompt = buildRoadmapChatSystemPrompt(toPathwayContext(pathway), stageKey, upcomingTournaments);
 
     // ── Stream response and persist both turns ─────────────────────────────────
     await streamChatAndPersist(res, req.user.id, session, systemPrompt, userMessage);
@@ -269,9 +291,9 @@ export const getRoadmapChat = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const pathway = await SportPathway.findOne({ sportSlug }).lean();
+    const pathway = await loadPathway(sportSlug);
     if (!pathway) {
-      res.status(404).json({ success: false, message: "Sport pathway not found" });
+      res.status(404).json({ success: false, message: "No published pathway for this sport yet" });
       return;
     }
 
@@ -327,7 +349,10 @@ export const sendRoadmapChatMessage = async (req: Request, res: Response): Promi
     }
 
     const userMessage: string = (req.body?.message ?? "").trim();
-    const level: number | undefined = req.body?.level ? Number(req.body.level) : undefined;
+    const stageKey: string | undefined =
+      typeof req.body?.stage === "string" && req.body.stage.trim()
+        ? req.body.stage.trim().toLowerCase()
+        : undefined;
 
     if (!userMessage) {
       res.status(400).json({ success: false, message: "Message is required" });
@@ -338,9 +363,9 @@ export const sendRoadmapChatMessage = async (req: Request, res: Response): Promi
       return;
     }
 
-    const pathway = await SportPathway.findOne({ sportSlug }).lean();
+    const pathway = await loadPathway(sportSlug);
     if (!pathway) {
-      res.status(404).json({ success: false, message: "Sport pathway not found" });
+      res.status(404).json({ success: false, message: "No published pathway for this sport yet" });
       return;
     }
 
@@ -374,7 +399,7 @@ export const sendRoadmapChatMessage = async (req: Request, res: Response): Promi
     }
 
     const upcomingTournaments = await getUpcomingEditions(sportSlug, 5).catch(() => []);
-    const systemPrompt = buildRoadmapChatSystemPrompt(pathway, level, upcomingTournaments);
+    const systemPrompt = buildRoadmapChatSystemPrompt(toPathwayContext(pathway), stageKey, upcomingTournaments);
 
     await streamChatAndPersist(res, req.user.id, session, systemPrompt, userMessage);
   } catch (error) {

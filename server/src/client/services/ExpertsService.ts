@@ -18,7 +18,6 @@ import {
 import { NotificationService } from "./NotificationService";
 import { recordExpertSessionEvent } from "./BookingEventService";
 import type { BookingEventChannel } from "../models/BookingEvent";
-import { PathwayExpertVerification } from "../../shared/models/PathwayExpertVerification";
 import {
   computeOpenSlots,
   assertSlotBookable,
@@ -603,10 +602,6 @@ export const rejectExpert = async (expertId: string, reason: string) => {
     .populate("userId", "name email")
     .lean();
   if (!expert) throw new Error("Expert not found");
-  // A rejected expert's public "Verified by [name]" pathway credit should not
-  // persist — otherwise a for-cause rejection still leaves their name/photo
-  // attached to a live, indexable trust signal parents see.
-  await PathwayExpertVerification.deleteMany({ expertId: expert._id });
   return serializeExpertFull(expert);
 };
 

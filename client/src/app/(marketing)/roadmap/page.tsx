@@ -1,251 +1,182 @@
-"use client";
+import Link from "next/link";
 
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
-import { motion } from "framer-motion";
-import { Award, Dumbbell, MapPin, TrendingUp, Unlock, Zap } from "lucide-react";
-import { Suspense, useState } from "react";
-
-import { PathwayExplorerSection } from "@/modules/roadmap/components/PathwayExplorerSection";
-import { AmbientBlob } from "@/modules/roadmap/components/SubComponents";
 import {
-    SPRING_STIFF,
-    cardReveal,
-    fadeUp,
-    orchestrator,
-} from "@/modules/roadmap/config/constants";
+  PathwayHelpSection,
+  PathwayStatsBanner,
+} from "@/modules/pathway/components/PathwaySections";
+import { fetchPublishedPathways } from "@/modules/pathway/fetchGuide";
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
+// ─── /roadmap ────────────────────────────────────────────────────────────────
+//
+// The index: why the journey is worth understanding, the five questions every
+// stage answers, and the sports whose pathway a parent can read today.
+//
+// A server component with no client state. The old explorer was a 2,000-line
+// client component that generated a pathway on demand; pathways are now authored
+// and published in the CMS, so this page only has to list what exists.
+//
 // `overflow-x-clip` on <main>, not `overflow-x-hidden`: hiding one axis promotes
 // the other to `auto`, which makes this a scroll container and silently breaks
 // `position: sticky` for every descendant on the page.
-export default function PathwaysPage() {
-  const communityUrl = getCommunityAppUrl();
-  const [activeLevel, setActiveLevel] = useState(0);
 
-  const statCards = [
-    {
-      icon: <Zap className="h-6 w-6" />,
-      value: "< 30 sec",
-      label: "Any Sport, Pathway in Seconds",
-      color: "bg-orange-100 text-power-orange",
-    },
-    {
-      icon: <TrendingUp className="h-6 w-6" />,
-      value: "4 Journey Types",
-      label: "Matched to How Your Sport Works",
-      color: "bg-indigo-100 text-indigo-600",
-    },
-    {
-      icon: <MapPin className="h-6 w-6" />,
-      value: "28 States",
-      label: "State-Specific Guidance",
-      color: "bg-amber-100 text-amber-600",
-    },
-    {
-      icon: <Unlock className="h-6 w-6" />,
-      value: "₹0",
-      label: "Free to Explore",
-      color: "bg-emerald-100 text-emerald-600",
-    },
-  ];
+const BUCKETS = [
+  { n: "01", title: "Overview", body: "Where am I and what does this stage mean?" },
+  {
+    n: "02",
+    title: "Your questions",
+    body: "What am I likely to be worried or confused about?",
+  },
+  {
+    n: "03",
+    title: "What to look for",
+    body: "What should I observe in my child, coach and environment?",
+  },
+  { n: "04", title: "Decisions", body: "What choices may I need to make?" },
+  { n: "05", title: "Next step", body: "What should I actually do now?" },
+];
+
+export default async function PathwaysIndexPage() {
+  const pathways = await fetchPublishedPathways();
+  const communityUrl = getCommunityAppUrl();
 
   return (
     <main className="overflow-x-clip">
       {/* ── Hero ── */}
-      {/* <Hero
-        variant="page"
-        title="Plan Your Child's Sports Journey"
-        subtitle="A Simple Guide for Parents"
-        description="From playing in the local park to reaching the highest level in sports. Find out exactly how much time, money, and effort it takes to support your child's dream."
-      /> */}
-
-      {/* ── AI Search Section ── */}
-      {/* Reserve roughly the section's real height so it doesn't pop in at
-          full height once useSearchParams() finishes its client-only render
-          — an empty fallback collapses this to 0px and causes a large CLS
-          jump when the real content mounts. The fallback below mirrors the
-          real header/search layout (instead of a bare blank box) so a slow
-          first paint still looks intentional. */}
-      <Suspense fallback={<PathwayExplorerSkeleton />}>
-        <PathwayExplorerSection />
-      </Suspense>
-
-      {/* ── Stats Banner ── */}
-      <section className="relative py-10 sm:py-16">
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-0 h-64 w-full -translate-x-1/2 bg-gradient-to-b from-orange-50/40 to-transparent" />
-        </div>
-
+      <section className="relative pt-12 sm:pt-16 lg:pt-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={orchestrator}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-60px" }}
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4"
-          >
-            {statCards.map((stat) => (
-              <motion.div
-                key={stat.label}
-                variants={cardReveal}
-                whileHover={{ y: -4, scale: 1.02 }}
-                transition={SPRING_STIFF}
-                className="group flex flex-col items-center rounded-2xl border border-white/70 bg-white/80 p-5 sm:p-6 text-center backdrop-blur-sm premium-shadow will-change-transform"
-              >
-                <div
-                  className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 ${stat.color}`}
-                >
-                  {stat.icon}
-                </div>
-                <p className="font-title text-2xl font-extrabold text-slate-900 sm:text-3xl">
-                  {stat.value}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">{stat.label}</p>
-              </motion.div>
-            ))}
-          </motion.div>
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="mb-4 flex justify-center">
+              <SectionLabel label="Sports Pathways" color="orange" />
+            </div>
+            <h1 className="font-title text-3xl font-bold text-slate-900 sm:text-4xl md:text-5xl">
+              Starting a sport is easy. Navigating the journey is not.
+            </h1>
+            <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">
+              As a child progresses, parents face questions about coaches,
+              academies, training, competitions, costs, injuries, education and
+              eventually college or career. Those answers are scattered across
+              coaches, other parents, websites and sports bodies. We put them in
+              one place, stage by stage.
+            </p>
+          </div>
+
+          {/* ── Why this matters ── */}
+          <div className="mx-auto mt-10 grid max-w-5xl gap-5 md:grid-cols-2">
+            <div className="rounded-2xl border border-white/70 bg-white/80 p-6 backdrop-blur-sm premium-shadow">
+              <h2 className="font-title text-lg font-bold text-slate-900">
+                Why sport matters
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                The foundational years are an important time for every child to
+                discover movement, build confidence and find a sport they enjoy.
+                Some children discover their sport simply by playing. Others need
+                guidance. Some parents already know the sport they want their
+                child to pursue. There is no single right way to start — what
+                matters is making an informed choice and understanding the
+                journey ahead.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/80 p-6 backdrop-blur-sm premium-shadow">
+              <h2 className="font-title text-lg font-bold text-slate-900">
+                Why understanding the journey matters
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                Finding the right information at the right time is difficult. As
+                sports parents ourselves, we build sport-specific pathways with
+                experienced coaches, experts and fellow parents — so you can see
+                where your child is today, what comes next, and what decisions
+                you may need to make along the way.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ── How PowerMySport Helps ── */}
-      <section className="relative overflow-hidden py-12 sm:py-16 md:py-20 lg:py-28">
-        <AmbientBlob className="h-80 w-80 bg-orange-100/40 -right-24 top-16" />
-        <AmbientBlob className="h-72 w-72 bg-emerald-100/30 -left-32 bottom-20" />
-
+      {/* ── The five questions ── */}
+      <section className="py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={orchestrator}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mb-14 text-center"
-          >
-            <motion.div variants={fadeUp} className="mb-4 flex justify-center">
-              <SectionLabel
-                label="We Support You at Every Step"
-                color="green"
-              />
-            </motion.div>
-            <motion.h2
-              variants={fadeUp}
-              className="font-title mx-auto max-w-2xl text-2xl font-bold text-slate-900 sm:text-3xl md:text-4xl lg:text-5xl"
-            >
-              PowerMySport Helps You Grow Faster
-            </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              className="mx-auto mt-4 max-w-xl text-base text-slate-600 sm:text-lg"
-            >
-              No matter where you start, we provide the expert guidance and
-              smart tools you need to reach the next level.
-            </motion.p>
-          </motion.div>
+          <div className="mb-8 text-center">
+            <h2 className="font-title text-2xl font-bold text-slate-900 sm:text-3xl">
+              Every stage answers the same five questions
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600 sm:text-base">
+              Learn the shape once and it never moves again — whatever the sport,
+              whatever your child&apos;s age.
+            </p>
+          </div>
 
-          <motion.div
-            variants={orchestrator}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-60px" }}
-            className="mx-auto grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2"
-          >
-            {[
-              {
-                icon: <Dumbbell className="h-7 w-7" />,
-                title: "Top Experts",
-                description:
-                  "Connect with verified experts who have played at top levels. Learn from people who know exactly what it takes to succeed.",
-                color: "bg-orange-100 text-power-orange",
-                accent: "text-power-orange",
-              },
-              {
-                icon: <Award className="h-7 w-7" />,
-                title: "Smart AI Planning",
-                description:
-                  "Our AI creates a custom plan based on your child's age, sport, and current skill level — showing you exactly what to do next.",
-                color: "bg-emerald-100 text-emerald-600",
-                accent: "text-emerald-600",
-              },
-            ].map((item) => (
-              <motion.div
-                key={item.title}
-                variants={cardReveal}
-                whileHover={{ y: -6, scale: 1.015 }}
-                transition={SPRING_STIFF}
-                className="group relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-6 sm:p-8 backdrop-blur-sm premium-shadow will-change-transform hover:border-white/90"
+          <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {BUCKETS.map((bucket) => (
+              <li
+                key={bucket.n}
+                className="rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm premium-shadow"
               >
-                {/* decorative circle */}
-                <div
-                  aria-hidden
-                  className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-slate-50 opacity-60 transition-transform duration-500 group-hover:scale-150"
-                />
-                <div
-                  className={`relative mb-5 flex h-14 w-14 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 ${item.color}`}
-                >
-                  {item.icon}
-                </div>
-                <h3 className="relative mb-3 text-lg font-bold text-slate-900">
-                  {item.title}
-                </h3>
-                <p className="relative text-sm leading-relaxed text-slate-600">
-                  {item.description}
+                <p className="font-title text-xs font-extrabold tracking-[0.18em] text-power-orange">
+                  {bucket.n}
                 </p>
-              </motion.div>
+                <p className="font-title mt-2 text-base font-bold text-slate-900">
+                  {bucket.title}
+                </p>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                  {bucket.body}
+                </p>
+              </li>
             ))}
-          </motion.div>
+          </ol>
         </div>
       </section>
 
-      {/* ── CTA ── */}
+      {/* ── Sports ── */}
+      <section className="pb-4">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-6 text-center">
+            <h2 className="font-title text-2xl font-bold text-slate-900 sm:text-3xl">
+              Choose a sport
+            </h2>
+          </div>
+
+          {pathways.length === 0 ? (
+            <p className="mx-auto max-w-xl text-center text-sm text-slate-600 sm:text-base">
+              No pathways are published yet. We&apos;re building them with coaches
+              and experienced parents, one sport at a time — check back shortly.
+            </p>
+          ) : (
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {pathways.map((pathway) => (
+                <li key={`${pathway.sportSlug}-${pathway.stateSlug ?? "national"}`}>
+                  <Link
+                    href={`/roadmap/${pathway.sportSlug}`}
+                    className="group flex h-full flex-col rounded-2xl border border-white/70 bg-white/80 p-6 backdrop-blur-sm premium-shadow transition hover:border-power-orange/40 hover:shadow-lg"
+                  >
+                    <p className="font-title text-xl font-bold text-slate-900 group-hover:text-power-orange">
+                      {pathway.sportName}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {pathway.stageCount} stage
+                      {pathway.stageCount === 1 ? "" : "s"}, from the first
+                      session to what comes after
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      <PathwayStatsBanner />
+      <PathwayHelpSection />
+
       <CTA
         variant="gradient"
         title="Ready to Support Their Dream?"
         description="Find the right coach, book the right ground, and get a smart plan that shows exactly how to help your child grow in sports."
-        primaryCTA={{
-          label: "Get Guidance",
-          href: "/guidance",
-        }}
-        secondaryCTA={{
-          label: "Join Parent Community",
-          href: communityUrl,
-        }}
+        primaryCTA={{ label: "Get Guidance", href: "/guidance" }}
+        secondaryCTA={{ label: "Join Parent Community", href: communityUrl }}
       />
     </main>
-  );
-}
-
-// ─── Suspense fallback ────────────────────────────────────────────────────────
-//
-// Mirrors the explorer's header/search layout with pulse-animated blocks so a
-// slow first paint reads as "still loading" rather than a broken blank page.
-
-function PathwayExplorerSkeleton() {
-  return (
-    <section className="py-12 sm:py-16 md:py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-10 flex flex-col items-center gap-4 text-center">
-          <div className="h-6 w-28 animate-pulse rounded-full bg-slate-200" />
-          <div className="h-9 w-72 max-w-full animate-pulse rounded-lg bg-slate-200 sm:h-11 sm:w-96" />
-          <div className="h-4 w-64 max-w-full animate-pulse rounded bg-slate-100" />
-        </div>
-
-        <div className="mx-auto flex max-w-3xl flex-col gap-2 sm:flex-row">
-          <div className="h-12 w-full animate-pulse rounded-xl bg-slate-100 sm:w-40" />
-          <div className="h-12 w-full flex-1 animate-pulse rounded-xl bg-slate-100" />
-        </div>
-
-        <div className="mx-auto mt-8 flex max-w-3xl flex-wrap justify-center gap-2">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-8 animate-pulse rounded-full bg-slate-100"
-              style={{ width: 64 + (i % 3) * 20 }}
-            />
-          ))}
-        </div>
-      </div>
-    </section>
   );
 }

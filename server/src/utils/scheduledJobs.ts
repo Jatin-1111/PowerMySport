@@ -10,7 +10,6 @@ import {
 import { cleanupExpiredCodes } from "../shared/services/EmailVerificationService";
 import { cleanupExpiredCoachSubscriptions } from "../client/services/CoachSubscriptionService";
 import { processWaitlistNotifications } from "../shop/services/shopScheduledJobs";
-import { pathwayService } from "../shared/services/PathwayService";
 
 /**
  * Auto-release payments 24 hours after session completion
@@ -243,41 +242,6 @@ export const pollPendingRefunds = async (): Promise<void> => {
 };
 
 /**
- * Refresh stale sport pathways via Gemini scraper.
- * Finds pathways that haven't been refreshed in PATHWAY_STALE_DAYS (default: 30)
- * and regenerates them sequentially to respect Gemini rate limits.
- */
-export const refreshStalePathways = async (): Promise<void> => {
-  try {
-    console.log("[PathwayScheduler] 🔍 Checking for stale pathways...");
-    const staleCacheKeys = await pathwayService.getStalePathways();
-
-    if (staleCacheKeys.length === 0) {
-      console.log("[PathwayScheduler] ✅ No stale pathways found.");
-      return;
-    }
-
-    console.log(
-      `[PathwayScheduler] 🔄 Refreshing ${staleCacheKeys.length} stale pathway(s)...`,
-    );
-
-    let refreshed = 0;
-    for (const cacheKey of staleCacheKeys) {
-      const result = await pathwayService.refreshPathway(cacheKey);
-      if (result) refreshed++;
-      // 2-second stagger to respect Gemini API rate limits
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    }
-
-    console.log(
-      `[PathwayScheduler] ✅ Stale refresh complete: ${refreshed}/${staleCacheKeys.length} refreshed.`,
-    );
-  } catch (error) {
-    console.error("❌ Error refreshing stale pathways:", error);
-  }
-};
-
-/**
  * Run all cleanup tasks.
  * Scheduled to run every 15–60 minutes depending on environment.
  */
@@ -405,25 +369,4 @@ export const initializeScheduledJobs = (): void => {
   // ── Pathway pre-warm (once at startup) ───────────────────────────────────
   // Pre-warming of 'any' locality generic sports is disabled.
 
-  // ── Pathway stale-refresh (periodic) ─────────────────────────────────────
-  // Configurable via PATHWAY_REFRESH_INTERVAL_HOURS (default: 24h).
-  const pathwayRefreshIntervalHours = parseInt(
-    process.env.PATHWAY_REFRESH_INTERVAL_HOURS || "24",
-    10,
-  );
-  const PATHWAY_REFRESH_INTERVAL =
-    Math.max(1, pathwayRefreshIntervalHours) * 60 * 60 * 1000;
-
-  const pathwayRefreshHandle = setInterval(async () => {
-    try {
-      await refreshStalePathways();
-    } catch (error) {
-      console.error("❌ Pathway stale refresh job failed:", error);
-    }
-  }, PATHWAY_REFRESH_INTERVAL);
-  pathwayRefreshHandle.unref();
-
-  console.log(
-    `⏰ Pathway scraper: pre-warm at startup + stale refresh every ${pathwayRefreshIntervalHours}h`,
-  );
 };

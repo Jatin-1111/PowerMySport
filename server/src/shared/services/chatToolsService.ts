@@ -1,5 +1,5 @@
 import { listActiveExperts } from "../../client/services/ExpertsService";
-import { SportPathway, type PathwayLevel } from "../models/SportPathway";
+import { PathwayGuide } from "../models/PathwayGuide";
 import { getUpcomingEditions } from "./tournamentEditionQueries";
 
 export interface ChatToolDefinition {
@@ -50,47 +50,56 @@ const searchExpertsTool: ChatToolDefinition = {
   },
 };
 
-// ─── get_pathway_level ─────────────────────────────────────────────────────────
+// ─── get_pathway_stage ─────────────────────────────────────────────────────────
 
-const getPathwayLevelTool: ChatToolDefinition = {
-  name: "get_pathway_level",
+const getPathwayStageTool: ChatToolDefinition = {
+  name: "get_pathway_stage",
   description:
-    "Look up a sport's development pathway — either an overview of all levels or the details of one specific level (what it means, key focus, age range, competitions). Use when a parent asks about a sport's roadmap, levels, or what a stage of development involves.",
+    "Look up a sport's parent-facing pathway — either an overview of every stage, or one stage in full (what it means, the questions parents ask, what to watch for, the decisions it forces, and the recommended next steps). Use when a parent asks about a sport's pathway, its stages, or what a stage of development involves.",
   parametersJsonSchema: {
     type: "object",
     properties: {
       sportSlug: {
         type: "string",
-        description: "URL slug for the sport, e.g. 'badminton', 'football'.",
+        description: "URL slug for the sport, e.g. 'tennis', 'badminton'.",
       },
-      level: {
+      stage: {
         type: "number",
-        description: "Level number to focus on (1 = beginner). Omit for an overview of all levels.",
+        description:
+          "Stage number to focus on (1 = the earliest stage). Omit for an overview of every stage.",
       },
     },
     required: ["sportSlug"],
   },
   execute: async (args) => {
-    const sportSlug = String(args.sportSlug || "");
-    const pathway = await SportPathway.findOne({ sportSlug }).lean();
-    if (!pathway) return { error: `No pathway found for sport slug "${sportSlug}"` };
+    const sportSlug = String(args.sportSlug || "").toLowerCase();
+    const pathway = await PathwayGuide.findOne({
+      sportSlug,
+      stateSlug: null,
+      status: "published",
+    }).lean();
+    if (!pathway) {
+      return { error: `No published pathway found for sport slug "${sportSlug}"` };
+    }
 
-    if (args.level != null) {
-      const level = pathway.levels.find((l: PathwayLevel) => l.level === Number(args.level));
-      if (!level) {
-        return { error: `No level ${args.level} found for ${pathway.sportName}` };
+    const stages = [...(pathway.stages ?? [])].sort((a, b) => a.order - b.order);
+
+    if (args.stage != null) {
+      const stage = stages.find((s) => s.order === Number(args.stage));
+      if (!stage) {
+        return { error: `No stage ${args.stage} found for ${pathway.sportName}` };
       }
-      return { sportName: pathway.sportName, level };
+      return { sportName: pathway.sportName, stage };
     }
 
     return {
       sportName: pathway.sportName,
-      overview: pathway.overview,
-      levels: pathway.levels.map((l: PathwayLevel) => ({
-        level: l.level,
-        label: l.label,
-        title: l.title,
-        keyFocus: l.keyFocus,
+      intro: pathway.sportIntro ?? [],
+      stages: stages.map((s) => ({
+        stage: s.order,
+        name: s.name,
+        ageRange: s.ageRange,
+        coreQuestion: s.coreQuestion,
       })),
     };
   },
@@ -130,6 +139,6 @@ const getUpcomingTournamentsTool: ChatToolDefinition = {
 
 export const ASSISTANT_CHAT_TOOLS: ChatToolDefinition[] = [
   searchExpertsTool,
-  getPathwayLevelTool,
+  getPathwayStageTool,
   getUpcomingTournamentsTool,
 ];
