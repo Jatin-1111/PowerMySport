@@ -18,7 +18,40 @@ interface SendEmailOptions {
   subject: string;
   html: string;
   text?: string;
+  /**
+   * Rethrow when the send fails, instead of swallowing it.
+   *
+   * Default `false`, which is right for the notification mail most callers send:
+   * a failed "your booking is confirmed" should not roll back the booking.
+   *
+   * It is WRONG for any mail that is the only copy of something — a temporary
+   * password, a verification link, a one-time code. There, a swallowed failure
+   * leaves an account nobody can get into while the API reports success. Those
+   * callers must pass `critical: true` so the caller can roll back.
+   */
+  critical?: boolean;
 }
+
+/** Everything useful an SMTP rejection carries, flattened for one log line. */
+const describeSmtpError = (error: unknown): string => {
+  if (!error || typeof error !== "object") return String(error);
+  const e = error as {
+    code?: string;
+    responseCode?: number;
+    command?: string;
+    response?: string;
+    message?: string;
+  };
+  return [
+    e.code && `code=${e.code}`,
+    e.responseCode && `responseCode=${e.responseCode}`,
+    e.command && `command=${e.command}`,
+    e.response && `response=${e.response}`,
+    e.message,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+};
 
 export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
   try {
@@ -33,10 +66,40 @@ export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Email sent: ${info.messageId}`);
+
+    // `rejected` is the quiet one: the SMTP conversation succeeds, sendMail
+    // resolves, and the server has still refused this recipient. Without this
+    // check a rejected address looks identical to a delivered one in the logs.
+    if (info.rejected?.length) {
+      throw new Error(
+        `SMTP accepted the message but rejected ${info.rejected.join(", ")}`,
+      );
+    }
+
+    console.log(`✅ Email sent to ${options.to}: ${info.messageId}`);
   } catch (error) {
-    console.error("❌ Email sending failed:", error);
-    // Don't throw error to prevent registration from failing if email fails
+    console.error(
+      `❌ Email sending failed [to=${options.to}] [subject=${options.subject}]: ${describeSmtpError(error)}`,
+    );
+    if (options.critical) throw error;
+    // Otherwise swallowed by design — see `critical` above.
+  }
+};
+
+/**
+ * Authenticate against the SMTP server without sending anything.
+ *
+ * For diagnosing "mail isn't arriving" without mailing a real person: it
+ * separates a credential or host problem from a per-message rejection.
+ */
+export const verifyEmailTransport = async (): Promise<
+  { ok: true } | { ok: false; error: string }
+> => {
+  try {
+    await createTransporter().verify();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: describeSmtpError(error) };
   }
 };
 
@@ -1546,6 +1609,9 @@ export const sendExpertAdminCredentialsEmail = async (
     to: options.email,
     subject: "Your PowerMySport Expert Account Is Ready",
     html,
+    // Same reasoning as the admin credentials mail below: it carries the only
+    // copy of a temporary password.
+    critical: true,
   });
 };
 
@@ -1640,6 +1706,11 @@ export const sendAdminTemporaryCredentialsEmail = async (
     to: options.email,
     subject: "Your PowerMySport Admin Account Credentials",
     html,
+    // This mail is the ONLY copy of the temporary password — it is never stored
+    // in readable form and never shown in the UI. If it does not leave, the
+    // account it belongs to is unreachable, so the caller must be able to roll
+    // the account back rather than be told the mail was sent.
+    critical: true,
   });
 };
 
