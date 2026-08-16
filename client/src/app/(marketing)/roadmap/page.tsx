@@ -1,8 +1,9 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
-import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
+import { AmbientBlob } from "@/modules/pathway/components/AmbientBlob";
 import {
   PathwayHelpSection,
   PathwayStatsBanner,
@@ -44,27 +45,124 @@ export default async function PathwaysIndexPage() {
 
   return (
     <main className="overflow-x-clip">
-      {/* ── Hero ── */}
-      <section className="relative pt-12 sm:pt-16 lg:pt-20">
+      {/* ── Hero + sport picker ──
+          One section, deliberately. They were two, and the gap between them
+          pushed the only thing a parent can actually click below the fold on a
+          laptop: a page whose job is "pick your sport" opened with no sport in
+          sight. The picker is now the first thing under the headline. */}
+      <section className="relative pb-12 pt-12 sm:pt-16">
+        <AmbientBlob className="-right-24 top-0 h-72 w-72 bg-orange-100/40" />
+        <AmbientBlob className="-left-28 top-32 h-64 w-64 bg-emerald-100/30" />
+
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {/* No eyebrow badge: "Sports Pathways" restated the headline a line
+              above it, and cost a row to do it. */}
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-4 flex justify-center">
-              <SectionLabel label="Sports Pathways" color="orange" />
-            </div>
-            <h1 className="font-title text-3xl font-bold text-slate-900 sm:text-4xl md:text-5xl">
+            <h1 className="font-title text-3xl font-bold text-slate-900 sm:text-4xl">
               Starting a sport is easy. Navigating the journey is not.
             </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">
-              As a child progresses, parents face questions about coaches,
-              academies, training, competitions, costs, injuries, education and
-              eventually college or career. Those answers are scattered across
-              coaches, other parents, websites and sports bodies. We put them in
-              one place, stage by stage.
+            <p className="mx-auto mt-4 max-w-xl text-base text-slate-600 sm:text-lg">
+              Coaches, academies, competitions, costs, education — the answers
+              are scattered everywhere. We put them in one place, stage by stage.
             </p>
           </div>
 
-          {/* ── Why this matters ── */}
-          <div className="mx-auto mt-10 grid max-w-5xl gap-5 md:grid-cols-2">
+          <div className="mt-10">
+            <h2 className="text-center text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
+              Choose a sport
+            </h2>
+
+            {pathways.length === 0 ? (
+              <p className="mx-auto mt-4 max-w-xl text-center text-sm text-slate-600 sm:text-base">
+                No pathways are published yet. We&apos;re building them with
+                coaches and experienced parents, one sport at a time — check back
+                shortly.
+              </p>
+            ) : (
+              <>
+                {/* Flex-wrap rather than a 3-column grid: with one published
+                    sport a grid left-aligns a lone card against two empty
+                    columns, which reads as a page that failed to load. This
+                    centres cleanly at any count. */}
+                <ul className="mt-4 flex flex-wrap justify-center gap-4">
+                  {pathways.map((pathway) => (
+                    <li
+                      key={pathway.sportSlug}
+                      className="w-full sm:w-[300px]"
+                    >
+                      <Link
+                        href={`/roadmap/${pathway.sportSlug}`}
+                        className="group flex h-full items-center gap-4 rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm premium-shadow transition hover:-translate-y-0.5 hover:border-power-orange/40 hover:shadow-lg"
+                      >
+                        <div className="min-w-0 flex-1 text-left">
+                          <p className="font-title text-xl font-bold text-slate-900 transition group-hover:text-power-orange">
+                            {pathway.sportName}
+                          </p>
+                          <p className="mt-0.5 text-sm text-slate-500">
+                            {pathway.stageCount} stage
+                            {pathway.stageCount === 1 ? "" : "s"}, first session
+                            to what comes after
+                          </p>
+                        </div>
+                        <ArrowRight className="h-5 w-5 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-power-orange" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+
+                <p className="mt-4 text-center text-xs text-slate-400">
+                  More sports are being written with coaches and experienced
+                  parents, one at a time.
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── The five questions ──
+          Now an explanation of what a parent is about to open, rather than a
+          wall standing between them and the list. */}
+      <section className="border-y border-white/60 bg-white/40 py-12 sm:py-14">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 text-center">
+            <h2 className="font-title text-2xl font-bold text-slate-900 sm:text-3xl">
+              Every stage answers the same five questions
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600 sm:text-base">
+              Learn the shape once and it never moves again — whatever the sport,
+              whatever your child&apos;s age.
+            </p>
+          </div>
+
+          <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {BUCKETS.map((bucket) => (
+              <li
+                key={bucket.n}
+                className="flex h-full flex-col rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm premium-shadow"
+              >
+                <p className="font-title text-xs font-extrabold tracking-[0.18em] text-power-orange">
+                  {bucket.n}
+                </p>
+                <p className="font-title mt-2 text-base font-bold text-slate-900">
+                  {bucket.title}
+                </p>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                  {bucket.body}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ── Why this matters ──
+          Below the sport picker, not above it. This is the argument for reading
+          a pathway at all; a parent who came here already looking for their
+          sport should not have to scroll past it to find the list. */}
+      <section className="pt-12 sm:pt-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto grid max-w-5xl gap-5 md:grid-cols-2">
             <div className="rounded-2xl border border-white/70 bg-white/80 p-6 backdrop-blur-sm premium-shadow">
               <h2 className="font-title text-lg font-bold text-slate-900">
                 Why sport matters
@@ -92,78 +190,6 @@ export default async function PathwaysIndexPage() {
               </p>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ── The five questions ── */}
-      <section className="py-12 sm:py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-8 text-center">
-            <h2 className="font-title text-2xl font-bold text-slate-900 sm:text-3xl">
-              Every stage answers the same five questions
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600 sm:text-base">
-              Learn the shape once and it never moves again — whatever the sport,
-              whatever your child&apos;s age.
-            </p>
-          </div>
-
-          <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {BUCKETS.map((bucket) => (
-              <li
-                key={bucket.n}
-                className="rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm premium-shadow"
-              >
-                <p className="font-title text-xs font-extrabold tracking-[0.18em] text-power-orange">
-                  {bucket.n}
-                </p>
-                <p className="font-title mt-2 text-base font-bold text-slate-900">
-                  {bucket.title}
-                </p>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
-                  {bucket.body}
-                </p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* ── Sports ── */}
-      <section className="pb-4">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-6 text-center">
-            <h2 className="font-title text-2xl font-bold text-slate-900 sm:text-3xl">
-              Choose a sport
-            </h2>
-          </div>
-
-          {pathways.length === 0 ? (
-            <p className="mx-auto max-w-xl text-center text-sm text-slate-600 sm:text-base">
-              No pathways are published yet. We&apos;re building them with coaches
-              and experienced parents, one sport at a time — check back shortly.
-            </p>
-          ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {pathways.map((pathway) => (
-                <li key={pathway.sportSlug}>
-                  <Link
-                    href={`/roadmap/${pathway.sportSlug}`}
-                    className="group flex h-full flex-col rounded-2xl border border-white/70 bg-white/80 p-6 backdrop-blur-sm premium-shadow transition hover:border-power-orange/40 hover:shadow-lg"
-                  >
-                    <p className="font-title text-xl font-bold text-slate-900 group-hover:text-power-orange">
-                      {pathway.sportName}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {pathway.stageCount} stage
-                      {pathway.stageCount === 1 ? "" : "s"}, from the first
-                      session to what comes after
-                    </p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
       </section>
 
