@@ -2,9 +2,14 @@
 
 // ─── Shared roadmap page sections ────────────────────────────────────────────
 //
-// The marketing chrome the roadmap page has always had — the stats banner and
-// the "how we help" pair — lifted out so both `/roadmap` and `/roadmap/[sport]`
-// wear the same page rather than one of them being a bare document.
+// The marketing chrome the roadmap pages have always had — the stats banner and
+// the "how we help" pair.
+//
+// Only `/roadmap/[sport]` wears them now. They used to run on the index too, and
+// there they sat between the sport list and the footer CTA: three marketing
+// blocks stacked under the one thing a visitor came to click. The index replaced
+// them with a band of concrete next steps. At the foot of a pathway a parent has
+// actually read, the pitch has been earned — so here they stay.
 //
 // Client-only because of the scroll-triggered motion; the pathway content itself
 // is server-rendered above these.

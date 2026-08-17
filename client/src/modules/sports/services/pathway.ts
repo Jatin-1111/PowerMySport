@@ -141,10 +141,22 @@ export interface PathwayGuide {
   stages: PathwayStage[];
 }
 
+/** The stage fields the picker needs. Everything long stays in the full guide. */
+export type PathwayStageSummary = Pick<
+  PathwayStage,
+  "key" | "name" | "ageRange" | "coreQuestion"
+>;
+
 export interface PathwayGuideSummary {
   sportSlug: string;
   sportName: string;
   stageCount: number;
+  /**
+   * Present since the picker started pointing parents at a stage rather than at
+   * a sport. Optional because a cached or older response may not carry it, and
+   * a sport with no stage list degrades to a plain link rather than an error.
+   */
+  stages?: PathwayStageSummary[];
   updatedAt?: string;
 }
 

@@ -6,6 +6,7 @@ import {
   getCuratedTournaments,
   getPathwayGuide,
   getPathwayStories,
+  listPathwayQuestions,
   listPublishedPathwayGuides,
 } from "../controller/pathwayController";
 
@@ -28,6 +29,8 @@ router.use(pathwayRateLimiter);
 // "guides" is registered before "guide" only for readability; they don't collide.
 router.get("/guides", listPublishedPathwayGuides);
 router.get("/guide", getPathwayGuide);
+// Answered questions across every published sport, for the `/roadmap` preview.
+router.get("/questions", listPathwayQuestions);
 
 // ── Neighbours that share this router ──
 router.get("/stories", getPathwayStories);

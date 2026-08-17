@@ -9,6 +9,16 @@
 // answers `null` whenever it is not sure, so an unparseable range simply opts
 // out of age matching instead of silently claiming a wrong stage.
 
+/**
+ * Where the child's age is remembered, shared by the `/roadmap` picker and the
+ * per-sport reader.
+ *
+ * One key on purpose: a parent who types "9" on the index should land on the
+ * right stage and never be asked again, on this sport or the next one. It lived
+ * privately in the reader until the index needed to agree with it.
+ */
+export const AGE_STORAGE_KEY = "pms_pathway_child_age";
+
 export interface ParsedAgeRange {
   min: number;
   /** Absent means open-ended ("18+"). */

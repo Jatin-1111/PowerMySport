@@ -275,6 +275,43 @@
     @apply rounded-xl px-3 py-2 text-slate-700 transition-colors hover:bg-indigo-50 hover:text-slate-900;
   }
 
+  /* ── Scroll-driven section reveal ──
+     Used by the roadmap page's sections.
+
+     Progressive enhancement in the strict sense: with no support and no opt-in
+     the element is simply visible, un-animated, at full opacity. Only a browser
+     that supports scroll-driven animations takes the animation, and a reader who
+     asked for reduced motion gives it back.
+
+     That ordering is the whole point. The usual way to do this — start at
+     `opacity: 0` and animate in from JavaScript — means content that exists only
+     once a frame loop has run, and a throttled or backgrounded tab renders a
+     blank page. A view() timeline is driven by scroll position rather than by
+     rAF, and the default state here is "visible", so there is no state in which
+     the words are missing. */
+  @keyframes reveal-rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .reveal-on-scroll {
+        animation: reveal-rise linear both;
+        animation-timeline: view();
+        /* Finishes well before the element is centred, so it is settled by the
+           time it is being read rather than still arriving. */
+        animation-range: entry 4% cover 20%;
+      }
+    }
+  }
+
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
