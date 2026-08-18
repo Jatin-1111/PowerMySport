@@ -29,8 +29,6 @@ import {
   GitBranch,
   MapPin,
   MessageCircleQuestion,
-  Minus,
-  Plus,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -135,7 +133,7 @@ const SECTIONS: Array<{
     n: "02",
     label: "Your questions",
     heading: "What parents usually ask here",
-    blurb: "Open one to read the answer.",
+    blurb: "The answers parents ask for most at this stage.",
     icon: MessageCircleQuestion,
   },
   {
@@ -342,97 +340,26 @@ function SectionHeading({
 }
 
 function QuestionsList({ stage }: { stage: PathwayStage }) {
-  // Every question starts closed. The list is the point — a parent scans eight
-  // headlines to find their own worry — and auto-opening the first one pushes
-  // the rest below the fold to answer a question nobody asked.
-  const [open, setOpen] = useState<number | null>(null);
-
+  // Answers are shown outright rather than behind a disclosure: a parent
+  // scanning this section wants the answers, and making them click eight times
+  // to read eight short paragraphs buys nothing but hidden content.
   return (
-    <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
-      {stage.questions.map((item, i) => {
-        // A question with no answer written yet is not a button: pretending it
-        // opens and then showing nothing is worse than the plain list item.
-        const hasAnswer = Boolean(item.answer?.trim());
-        const isOpen = hasAnswer && open === i;
-        const heading = (
-          <span className="flex items-start gap-3">
-            {hasAnswer ? (
-              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-100 text-power-orange">
-                {/* The plus turns a quarter-circle into the minus, so the
-                    control reads as the same object changing state rather than
-                    two icons swapping places. Only the open icon animates in:
-                    the closed one is what the server renders, and it has to be
-                    at full opacity in that HTML. */}
-                <motion.span
-                  key={isOpen ? "minus" : "plus"}
-                  initial={
-                    isOpen
-                      ? { rotate: -90, opacity: 0 }
-                      : { rotate: 0, opacity: 1 }
-                  }
-                  animate={{ rotate: 0, opacity: 1 }}
-                  transition={{ duration: 0.18, ease: EASE_OUT }}
-                  className="flex"
-                >
-                  {isOpen ? (
-                    <Minus className="h-3 w-3" />
-                  ) : (
-                    <Plus className="h-3 w-3" />
-                  )}
-                </motion.span>
-              </span>
-            ) : (
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
-            )}
-            <span className="text-[15px] font-bold leading-snug text-slate-900">
-              {item.question}
-            </span>
+    <ul className="space-y-2.5">
+      {stage.questions.map((item) => (
+        <li
+          key={item.question}
+          className="rounded-xl border border-slate-200 bg-white p-3.5"
+        >
+          <span className="block text-[14.5px] font-semibold leading-snug text-slate-900">
+            {item.question}
           </span>
-        );
-
-        return (
-          <li key={item.question}>
-            {hasAnswer ? (
-              <button
-                type="button"
-                onClick={() => setOpen(isOpen ? null : i)}
-                aria-expanded={isOpen}
-                className={`block w-full px-4 py-3.5 text-left transition focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-power-orange ${
-                  isOpen ? "bg-slate-50" : "hover:bg-slate-50/70"
-                }`}
-              >
-                {heading}
-                {/* Height, not display: the list below slides down out of the
-                    way instead of jumping, which is what makes opening a second
-                    question feel like the same page rather than a new one.
-                    `initial={false}` keeps the closed state closed on first
-                    paint without a collapse animation nobody asked for. */}
-                <AnimatePresence initial={false}>
-                  {isOpen && (
-                    <motion.span
-                      key="answer"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{
-                        height: { duration: 0.26, ease: EASE_OUT },
-                        opacity: { duration: 0.2, ease: EASE_OUT },
-                      }}
-                      className="block overflow-hidden"
-                    >
-                      <span className="mt-2 block max-w-[70ch] pl-8 text-[14.5px] leading-relaxed text-slate-600">
-                        {item.answer}
-                      </span>
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </button>
-            ) : (
-              <div className="px-4 py-3.5">{heading}</div>
-            )}
-          </li>
-        );
-      })}
+          {item.answer?.trim() && (
+            <span className="mt-1 block max-w-[70ch] text-[13.5px] leading-relaxed text-slate-500">
+              {item.answer}
+            </span>
+          )}
+        </li>
+      ))}
     </ul>
   );
 }
