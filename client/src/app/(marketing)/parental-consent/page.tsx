@@ -1,13 +1,17 @@
-"use client";
-
 import { ShieldAlert } from "lucide-react";
-import { useEffect } from "react";
+
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Parental Consent",
+  description:
+    "Parental consent requirements for minors using PowerMySport's coaching, booking, and guidance services.",
+  alternates: {
+    canonical: "/parental-consent",
+  },
+};
 
 export default function ParentalConsent() {
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
   return (
     <main className="min-h-screen bg-white">
       <div className="container mx-auto max-w-4xl px-4 py-16 md:py-24">

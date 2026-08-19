@@ -1,4 +1,4 @@
-"use client";
+import type { Metadata } from "next";
 
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
@@ -13,6 +13,15 @@ import {
     Zap,
 } from "lucide-react";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Careers",
+  description:
+    "Join PowerMySport's engineering, design, and operations team building India's sports pathway platform for parents and young athletes.",
+  alternates: {
+    canonical: "/careers",
+  },
+};
 
 const jobOpenings = [
   {

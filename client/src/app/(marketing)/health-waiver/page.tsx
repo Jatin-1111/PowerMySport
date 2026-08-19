@@ -1,13 +1,17 @@
-"use client";
-
 import { TriangleAlert } from "lucide-react";
-import { useEffect } from "react";
+
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Health & Liability Waiver",
+  description:
+    "PowerMySport's health and liability waiver for booking sports sessions, coaching, and venue activities.",
+  alternates: {
+    canonical: "/health-waiver",
+  },
+};
 
 export default function HealthWaiver() {
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
   return (
     <main className="min-h-screen bg-white">
       <div className="container mx-auto max-w-4xl px-4 py-16 md:py-24">

@@ -1,12 +1,15 @@
-"use client";
+import type { Metadata } from "next";
 
-import { useEffect } from "react";
+export const metadata: Metadata = {
+  title: "Cookie Policy",
+  description:
+    "How PowerMySport uses essential cookies to keep you signed in and secure, plus anonymous analytics — no ads, no personal data sold.",
+  alternates: {
+    canonical: "/cookies",
+  },
+};
 
 export default function CookiePolicy() {
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
   return (
     <main className="min-h-screen bg-white">
       <div className="container mx-auto max-w-4xl px-4 py-16 md:py-24">
