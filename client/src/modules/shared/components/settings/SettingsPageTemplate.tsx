@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "@/lib/toast";
+import { useProfile } from "@/modules/auth/hooks/useProfile";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { Button } from "@/modules/shared/ui/Button";
@@ -155,21 +156,11 @@ export function SettingsPageTemplate({
     user?.hasPassword !== undefined,
   );
 
-  useEffect(() => {
-    if (!user) return;
-    const fetchFreshProfile = async () => {
-      try {
-        const response = await authApi.getProfile();
-        if (response.success && response.data) {
-          setUser(response.data);
-          localStorage.setItem("user", JSON.stringify(response.data));
-        }
-      } catch (err) {
-        console.error("Failed to freshen profile for settings", err);
-      }
-    };
-    fetchFreshProfile();
-  }, [user?.id, setUser]); // deliberately only re-run if ID changes, not whole object
+  // `useProfile` owns the fetch, the caching and writing the result back to the
+  // auth store. It replaces a bespoke effect here that duplicated all three, and
+  // it deduplicates against every other consumer of the profile: this page and
+  // the notifications page used to fetch it separately on each visit.
+  useProfile();
 
   const handleGoogleLink = async (credentialResponse: { credential?: string }) => {
     try {

@@ -7,7 +7,7 @@ import {
 } from "@/lib/seo";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { fetchPublishedPathways } from "@/modules/pathway/fetchGuide";
+import { fetchPublishedPathways } from "@/modules/pathway/services/fetchGuide";
 import { FederationDetailClient } from "./FederationDetailClient";
 
 // ─── Types ────────────────────────────────────────────────────────────────────

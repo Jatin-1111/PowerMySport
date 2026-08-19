@@ -1,6 +1,6 @@
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 
-import { fetchFederations } from "../fetchFederations";
+import { fetchFederations } from "../services/fetchFederations";
 import { FederationCard } from "./FederationCard";
 
 // ─── "Who governs this sport" ────────────────────────────────────────────────

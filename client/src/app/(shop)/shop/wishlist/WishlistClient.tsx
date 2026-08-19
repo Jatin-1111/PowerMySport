@@ -1,6 +1,6 @@
 "use client";
 
-import { ProductCard } from "@/components/shop/ProductCard";
+import { ProductCard } from "@/modules/shop/components/ProductCard";
 import type { Product } from "@/lib/shop/ecommerce-api";
 import { motion } from "framer-motion";
 import { Heart, ShoppingBag } from "lucide-react";

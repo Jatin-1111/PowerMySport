@@ -1,4 +1,4 @@
-import { CheckoutClient } from "@/components/shop/CheckoutClient";
+import { CheckoutClient } from "@/modules/shop/components/CheckoutClient";
 
 export default function CheckoutPage() {
   return <CheckoutClient />;

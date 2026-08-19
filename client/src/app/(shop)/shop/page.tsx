@@ -1,10 +1,10 @@
 import { JsonLd } from "@/components/seo/JsonLd";
-import { ShopCatalogClient } from "@/components/shop/ShopCatalogClient";
+import { ShopCatalogClient } from "@/modules/shop/components/ShopCatalogClient";
 import { listProducts, type Product } from "@/lib/shop/ecommerce-api";
 import { itemListJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import ShopWaitlist from "../../../components/shop/ShopWaitlist";
+import ShopWaitlist from "@/modules/shop/components/ShopWaitlist";
 
 export const metadata: Metadata = {
   title: "Shop — Sports Gear & Equipment",

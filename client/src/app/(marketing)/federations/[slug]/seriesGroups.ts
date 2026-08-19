@@ -1,4 +1,4 @@
-import type { TournamentEdition } from "@/modules/sports/services/pathway";
+import type { TournamentEdition } from "@/modules/pathway/services/pathway";
 
 // ─── Grouping calendar editions by tournament series ────────────────────────
 //

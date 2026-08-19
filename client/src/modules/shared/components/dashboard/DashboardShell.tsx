@@ -4,8 +4,8 @@ import {
     BottomNav,
     BottomNavSpacer,
     type BottomNavItem,
-} from "@/components/layout/BottomNav";
-import { Badge } from "@/components/ui/badge";
+} from "../BottomNav";
+import { Badge } from "../../ui/Badge";
 import { Menu, X, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";

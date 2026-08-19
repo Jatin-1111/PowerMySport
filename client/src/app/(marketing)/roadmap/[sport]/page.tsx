@@ -14,8 +14,8 @@ import {
   PathwayHelpSection,
   PathwayStatsBanner,
 } from "@/modules/pathway/components/PathwaySections";
-import { fetchPathwayGuide } from "@/modules/pathway/fetchGuide";
-import { sportFromSlug } from "@/modules/pathway/sports";
+import { fetchPathwayGuide } from "@/modules/pathway/services/fetchGuide";
+import { sportFromSlug } from "@/modules/pathway/data/sports";
 
 // ─── /roadmap/[sport] ────────────────────────────────────────────────────────
 //

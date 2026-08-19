@@ -1,8 +1,8 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { CancelSubscriptionModal } from "@/components/ui/CancelSubscriptionModal";
+import { Badge } from "@/modules/shared/ui/Badge";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
+import { CancelSubscriptionModal } from "@/modules/shared/components/CancelSubscriptionModal";
 import { useFriendSocket } from "@/hooks/useFriendSocket";
 import { toast } from "@/lib/toast";
 import { coachApi } from "@/modules/coach/services/coach";

@@ -4,15 +4,15 @@
 // grouping and federation attribution all come off the sport's registry entry,
 // so a second federation renders here without a new page.
 
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import { breadcrumbJsonLd } from "@/lib/seo";
-import { fetchRankingMeta, formatAsOn } from "@/modules/rankings/api";
+import { fetchRankingMeta, formatAsOn } from "@/modules/rankings/services/api";
 import {
   RANKING_SPORTS,
   comboHref,
   comboLabel,
   getRankingSport,
-} from "@/modules/rankings/config";
+} from "@/modules/rankings/config/rankings";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";

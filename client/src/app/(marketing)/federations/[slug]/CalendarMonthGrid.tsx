@@ -1,6 +1,6 @@
 "use client";
 
-import type { TournamentEdition } from "@/modules/sports/services/pathway";
+import type { TournamentEdition } from "@/modules/pathway/services/pathway";
 import { CAL_TZ, dateKey } from "./editionUtils";
 
 /**

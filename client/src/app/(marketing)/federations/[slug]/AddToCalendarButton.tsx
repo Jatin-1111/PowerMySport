@@ -7,7 +7,7 @@ import { absoluteUrl } from "@/lib/seo";
 import { toast } from "@/lib/toast";
 import { calendarApi, EVENT_TYPE_COLORS } from "@/modules/booking/services/calendarApi";
 import { useAuthStore } from "@/modules/auth/store/authStore";
-import type { TournamentEdition } from "@/modules/sports/services/pathway";
+import type { TournamentEdition } from "@/modules/pathway/services/pathway";
 import { formatLocation } from "./editionUtils";
 
 /**

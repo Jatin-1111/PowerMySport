@@ -6,7 +6,7 @@ import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { Button } from "@/modules/shared/ui/Button";
 import { AnimatePresence, motion, Variants } from "framer-motion";
-import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
+import { WhatsAppIcon } from "@/modules/shared/ui/WhatsAppIcon";
 import {
     Instagram,
     Linkedin,

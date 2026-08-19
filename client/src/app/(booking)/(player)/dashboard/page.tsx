@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/modules/shared/ui/Badge";
 import { useFriendSocket } from "@/hooks/useFriendSocket";
 import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";

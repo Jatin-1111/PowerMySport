@@ -1,7 +1,7 @@
 "use client";
 
-import { AddressManagement } from "@/components/shop/AddressManagement";
-import { ProductCard } from "@/components/shop/ProductCard";
+import { AddressManagement } from "@/modules/shop/components/AddressManagement";
+import { ProductCard } from "@/modules/shop/components/ProductCard";
 import {
     createSellerProduct,
     deleteSellerProduct,

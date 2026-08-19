@@ -1,5 +1,5 @@
 import { Footer } from "@/components/layout/Footer";
-import { ShopChrome } from "@/components/shop/ShopChrome";
+import { ShopChrome } from "@/modules/shop/components/ShopChrome";
 import type { Metadata } from "next";
 import React from "react";
 

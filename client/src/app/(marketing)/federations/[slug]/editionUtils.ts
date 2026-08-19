@@ -1,4 +1,4 @@
-import type { TournamentEdition } from "@/modules/sports/services/pathway";
+import type { TournamentEdition } from "@/modules/pathway/services/pathway";
 
 // Shared by the calendar's browse-all view and the player-event finder, so a
 // tournament row looks and reads the same in both.

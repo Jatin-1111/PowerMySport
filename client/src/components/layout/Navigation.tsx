@@ -4,7 +4,7 @@ import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { Button } from "@/modules/shared/ui/Button";
 import { cn } from "@/utils/cn";
-import { getDashboardPathByRole, getSettingsPathByRole } from "@/utils/roleDashboard";
+import { consoleHomeFor, settingsHomeFor } from "@/flow/policy";
 import { AnimatePresence, motion } from "framer-motion";
 import {
     BrainCircuit,
@@ -158,7 +158,7 @@ export const Navigation: React.FC<NavProps> = ({
 
   const getDashboardLink = () => {
     if (!user) return null;
-    return getDashboardPathByRole(user.role);
+    return consoleHomeFor(user.role);
   };
 
   return (
@@ -517,7 +517,7 @@ export const Navigation: React.FC<NavProps> = ({
                           )}
 
                           <Link
-                            href={getSettingsPathByRole(user.role)}
+                            href={settingsHomeFor(user.role)}
                             onClick={() => setUserDropdownOpen(false)}
                             className="flex items-center px-4 py-2 text-sm text-card-foreground hover:bg-muted transition-colors"
                           >
@@ -810,7 +810,7 @@ export const Navigation: React.FC<NavProps> = ({
                       </Link>
                     )}
 
-                    <Link href={getSettingsPathByRole(user.role)}>
+                    <Link href={settingsHomeFor(user.role)}>
                       <Button
                         variant="ghost"
                         size="sm"

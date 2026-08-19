@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Calendar, Clock, FileText, MapPin } from "lucide-react";
-import type { TournamentEdition } from "@/modules/sports/services/pathway";
+import type { TournamentEdition } from "@/modules/pathway/services/pathway";
 import {
   CAL_TZ,
   formatLocation,

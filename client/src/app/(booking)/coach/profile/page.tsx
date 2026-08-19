@@ -1,7 +1,8 @@
 ﻿"use client";
 
-import ProfilePictureUpload from "@/components/ui/ProfilePictureUpload";
+import ProfilePictureUpload from "@/modules/shared/components/ProfilePictureUpload";
 import { toast } from "@/lib/toast";
+import { useFetchProfile } from "@/modules/auth/hooks/useProfile";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { bookingApi } from "@/modules/booking/services/booking";
@@ -80,6 +81,8 @@ const isSameAvailabilityBySport = (
 
 export default function CoachProfilePage() {
   const router = useRouter();
+  // Shared cached profile fetch (one entry across all consumers).
+  const fetchAuthProfile = useFetchProfile();
   const { logout } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [coachProfile, setCoachProfile] = useState<Coach | null>(null);
@@ -208,10 +211,8 @@ export default function CoachProfilePage() {
 
   const loadUser = async () => {
     try {
-      const response = await authApi.getProfile();
-      if (response.success && response.data) {
-        setUser(response.data);
-      }
+      // Shared cache: one profile entry across every consumer.
+      await fetchAuthProfile();
     } catch (error) {
       console.error("Failed to load user:", error);
     }

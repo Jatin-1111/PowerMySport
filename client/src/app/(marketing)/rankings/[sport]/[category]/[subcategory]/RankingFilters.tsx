@@ -1,6 +1,6 @@
 "use client";
 
-import { formatAsOn, type RankingDate } from "@/modules/rankings/api";
+import { formatAsOn, type RankingDate } from "@/modules/rankings/services/api";
 import { Search, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";

@@ -1,27 +1,27 @@
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import {
   fetchRankingDates,
   fetchRankingMeta,
   fetchRankings,
   formatAsOn,
-} from "@/modules/rankings/api";
+} from "@/modules/rankings/services/api";
 import {
   RANKING_SPORTS,
   comboHref,
   comboLabel,
   getRankingSport,
   resolveCombo,
-} from "@/modules/rankings/config";
-import { isJuniorBracket } from "@/modules/rankings/aitaRules";
-import { EntryRules, HowToRead } from "@/modules/rankings/HowToRead";
-import { rankAtPercentile } from "@/modules/rankings/insights";
-import { PlayerSpotlight } from "@/modules/rankings/PlayerSpotlight";
-import { PointsComposition } from "@/modules/rankings/PointsComposition";
-import { PointsLadder } from "@/modules/rankings/PointsLadder";
-import { RankingStatStrip } from "@/modules/rankings/RankingStatStrip";
-import { RankingTable } from "@/modules/rankings/RankingTable";
-import { StateDistribution } from "@/modules/rankings/StateDistribution";
+} from "@/modules/rankings/config/rankings";
+import { isJuniorBracket } from "@/modules/rankings/utils/aitaRules";
+import { EntryRules, HowToRead } from "@/modules/rankings/components/HowToRead";
+import { rankAtPercentile } from "@/modules/rankings/utils/insights";
+import { PlayerSpotlight } from "@/modules/rankings/components/PlayerSpotlight";
+import { PointsComposition } from "@/modules/rankings/components/PointsComposition";
+import { PointsLadder } from "@/modules/rankings/components/PointsLadder";
+import { RankingStatStrip } from "@/modules/rankings/components/RankingStatStrip";
+import { RankingTable } from "@/modules/rankings/components/RankingTable";
+import { StateDistribution } from "@/modules/rankings/components/StateDistribution";
 import { CalendarDays, ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";

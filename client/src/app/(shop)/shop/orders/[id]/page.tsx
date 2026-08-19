@@ -1,4 +1,4 @@
-import { OrderDetailClient } from "@/components/shop/OrderDetailClient";
+import { OrderDetailClient } from "@/modules/shop/components/OrderDetailClient";
 
 export default async function OrderPage({
   params,

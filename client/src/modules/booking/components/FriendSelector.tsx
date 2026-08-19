@@ -1,7 +1,7 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Avatar, AvatarFallback, AvatarImage } from "../../shared/ui/Avatar";
+import { Checkbox } from "../../shared/ui/Checkbox";
 import { Friend, friendService } from "@/modules/shared/services/friend";
 import { cn } from "@/utils/cn";
 import { Loader2, UserPlus, Users } from "lucide-react";

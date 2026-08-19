@@ -1,7 +1,7 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/modules/shared/ui/Input";
+import { Textarea } from "@/modules/shared/ui/Textarea";
 import { toast } from "@/lib/toast";
 import { coachApi } from "@/modules/coach/services/coach";
 import { Button } from "@/modules/shared/ui/Button";

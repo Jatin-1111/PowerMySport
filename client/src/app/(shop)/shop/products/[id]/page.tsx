@@ -1,8 +1,8 @@
 import { JsonLd } from "@/components/seo/JsonLd";
-import { AddToCartButton } from "@/components/shop/AddToCartButton";
-import { ProductReviews } from "@/components/shop/ProductReviews";
-import { RelatedProducts } from "@/components/shop/RelatedProducts";
-import { WishlistButton } from "@/components/shop/WishlistButton";
+import { AddToCartButton } from "@/modules/shop/components/AddToCartButton";
+import { ProductReviews } from "@/modules/shop/components/ProductReviews";
+import { RelatedProducts } from "@/modules/shop/components/RelatedProducts";
+import { WishlistButton } from "@/modules/shop/components/WishlistButton";
 import { getProductById } from "@/lib/shop/ecommerce-api";
 import { formatInr, getProductPrice } from "@/lib/shop/format";
 import {

@@ -1,9 +1,12 @@
 "use client";
 
 import { notificationApi } from "@/lib/api/notification";
+import { queryKeys } from "@/lib/query/keys";
 import { bookingApi } from "@/modules/booking/services/booking";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { friendService } from "@/modules/shared/services/friend";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 
 interface NotificationCounts {
   friendRequests: number;
@@ -11,82 +14,83 @@ interface NotificationCounts {
   inAppUnread: number;
 }
 
+const ZERO: NotificationCounts = {
+  friendRequests: 0,
+  bookingInvitations: 0,
+  inAppUnread: 0,
+};
+
+/**
+ * The three badge counts in the dashboard nav.
+ *
+ * This used to hand-roll everything a query layer already does: an in-flight ref
+ * to dedupe concurrent calls, a manual polling interval, its own loading/error
+ * state, and a bespoke equality check to avoid re-render churn. All of that is
+ * now `useQueries` — three independently cached queries that dedupe across every
+ * consumer and share one cache with the rest of the app.
+ *
+ * `enabled` matters here beyond efficiency: these endpoints 401 for a signed-out
+ * visitor, and the axios interceptor answers a 401 with a full-page redirect to
+ * /login. Firing them without a session used to hijack the dashboard guard's own
+ * redirect and lose the return path.
+ */
 export function useNotifications(pollingInterval: number = 0) {
-  const [counts, setCounts] = useState<NotificationCounts>({
-    friendRequests: 0,
-    bookingInvitations: 0,
-    inAppUnread: 0,
+  const queryClient = useQueryClient();
+  const hydrated = useAuthStore((state) => state.hydrated);
+  const token = useAuthStore((state) => state.token);
+  const enabled = hydrated && Boolean(token);
+
+  const refetchInterval = pollingInterval > 0 ? pollingInterval : undefined;
+
+  const results = useQueries({
+    queries: [
+      {
+        queryKey: queryKeys.friends.pendingRequestsCount,
+        queryFn: () => friendService.getPendingRequestsCount(),
+        enabled,
+        refetchInterval,
+      },
+      {
+        queryKey: queryKeys.bookings.pendingInvitationsCount,
+        queryFn: () => bookingApi.getPendingInvitationsCount(),
+        enabled,
+        refetchInterval,
+      },
+      {
+        queryKey: queryKeys.notifications.unreadCount,
+        queryFn: () => notificationApi.getUnreadCount(),
+        enabled,
+        refetchInterval,
+      },
+    ],
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const inFlightRef = useRef<Promise<void> | null>(null);
 
-  const fetchCounts = useCallback(async () => {
-    if (inFlightRef.current) {
-      return inFlightRef.current;
-    }
+  const [friendRequests, bookingInvitations, inAppUnread] = results;
 
-    const request = (async () => {
-      try {
-        setError(null);
-
-        // Fetch both counts in parallel
-        const [friendRequestsData, invitationsData, unreadData] =
-          await Promise.all([
-            friendService.getPendingRequestsCount().catch(() => ({ count: 0 })),
-            bookingApi.getPendingInvitationsCount().catch(() => ({ count: 0 })),
-            notificationApi.getUnreadCount().catch(() => ({ count: 0 })),
-          ]);
-
-        const nextCounts = {
-          friendRequests: friendRequestsData.count || 0,
-          bookingInvitations: invitationsData.count || 0,
-          inAppUnread: unreadData.count || 0,
-        };
-
-        setCounts((current) => {
-          if (
-            current.friendRequests === nextCounts.friendRequests &&
-            current.bookingInvitations === nextCounts.bookingInvitations
-          ) {
-            return current;
-          }
-
-          return nextCounts;
-        });
-      } catch (err) {
-        console.error("Failed to fetch notification counts:", err);
-        setError("Failed to fetch notifications");
-      } finally {
-        setLoading(false);
+  const counts: NotificationCounts = enabled
+    ? {
+        friendRequests: friendRequests.data?.count ?? 0,
+        bookingInvitations: bookingInvitations.data?.count ?? 0,
+        inAppUnread: inAppUnread.data?.count ?? 0,
       }
-    })();
+    : ZERO;
 
-    inFlightRef.current = request;
-    try {
-      await request;
-    } finally {
-      inFlightRef.current = null;
-    }
-  }, []);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchCounts();
-  }, [fetchCounts]);
-
-  // Polling
-  useEffect(() => {
-    if (pollingInterval <= 0) return;
-
-    const intervalId = setInterval(fetchCounts, pollingInterval);
-    return () => clearInterval(intervalId);
-  }, [fetchCounts, pollingInterval]);
+  const refresh = useCallback(() => {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.friends.pendingRequestsCount,
+    });
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.bookings.pendingInvitationsCount,
+    });
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.notifications.unreadCount,
+    });
+  }, [queryClient]);
 
   return {
     counts,
-    loading,
-    error,
-    refresh: fetchCounts,
+    loading: enabled && results.some((r) => r.isPending),
+    error: results.find((r) => r.error) ? "Failed to fetch notifications" : null,
+    refresh,
   };
 }

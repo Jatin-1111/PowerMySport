@@ -1,32 +1,32 @@
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import { NOINDEX_METADATA } from "@/lib/seo";
 import {
   fetchPlayer,
   formatAsOn,
   type PlayerCurrentEntry,
   type RankingBandProfile,
-} from "@/modules/rankings/api";
-import { entryStatus, isJuniorBracket } from "@/modules/rankings/aitaRules";
-import { EntryRules } from "@/modules/rankings/HowToRead";
-import { RankTrajectory } from "@/modules/rankings/RankTrajectory";
+} from "@/modules/rankings/services/api";
+import { entryStatus, isJuniorBracket } from "@/modules/rankings/utils/aitaRules";
+import { EntryRules } from "@/modules/rankings/components/HowToRead";
+import { RankTrajectory } from "@/modules/rankings/components/RankTrajectory";
 import {
   comboHref,
   comboLabel,
   getRankingSport,
-} from "@/modules/rankings/config";
+} from "@/modules/rankings/config/rankings";
 import {
   formatPoints,
   nationalStandingPhrase,
   ownBracket,
   tierPhrase,
-} from "@/modules/rankings/insights";
+} from "@/modules/rankings/utils/insights";
 import {
   PlayerHero,
   displayName,
   summariseSeason,
-} from "@/modules/rankings/PlayerHero";
-import { PointsComposition } from "@/modules/rankings/PointsComposition";
-import { RankDelta } from "@/modules/rankings/RankDelta";
+} from "@/modules/rankings/components/PlayerHero";
+import { PointsComposition } from "@/modules/rankings/components/PointsComposition";
+import { RankDelta } from "@/modules/rankings/components/RankDelta";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";

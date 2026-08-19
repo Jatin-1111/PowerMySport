@@ -1,8 +1,8 @@
 "use client";
 
-import ProfilePictureUpload from "@/components/ui/ProfilePictureUpload";
+import ProfilePictureUpload from "@/modules/shared/components/ProfilePictureUpload";
 import { toast } from "@/lib/toast";
-import { authApi } from "@/modules/auth/services/auth";
+import { useFetchProfile } from "@/modules/auth/hooks/useProfile";
 import { coachApi } from "@/modules/coach/services/coach";
 import {
     getCoachVerificationStatus,
@@ -249,6 +249,8 @@ const getStatusGuidance = (status: string, isDataComplete: boolean) => {
 
 export default function CoachVerificationPage() {
   const router = useRouter();
+  // Shared cached profile fetch — one cache entry across every consumer.
+  const fetchProfile = useFetchProfile();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingDocIndex, setUploadingDocIndex] = useState<number | null>(
@@ -584,15 +586,15 @@ export default function CoachVerificationPage() {
     try {
       const [coachResult, userResult] = await Promise.allSettled([
         coachApi.getMyProfile(),
-        authApi.getProfile(),
+        fetchProfile(),
       ]);
 
       if (userResult.status === "fulfilled") {
-        const userResponse = userResult.value;
-        if (userResponse.success && userResponse.data) {
-          setUser(userResponse.data);
-          if (userResponse.data.phone) {
-            setMobileNumber(userResponse.data.phone);
+        const profile = userResult.value;
+        if (profile) {
+          setUser(profile);
+          if (profile.phone) {
+            setMobileNumber(profile.phone);
           }
         }
       }

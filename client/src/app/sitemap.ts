@@ -5,8 +5,8 @@ import {
   RANKING_SPORTS,
   comboHref,
   rankingSportHref,
-} from "@/modules/rankings/config";
-import { PATHWAY_SPORTS } from "@/modules/pathway/sports";
+} from "@/modules/rankings/config/rankings";
+import { PATHWAY_SPORTS } from "@/modules/pathway/data/sports";
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 

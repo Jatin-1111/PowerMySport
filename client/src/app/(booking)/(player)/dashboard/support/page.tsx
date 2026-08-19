@@ -1,7 +1,7 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { Badge } from "@/modules/shared/ui/Badge";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";

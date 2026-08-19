@@ -1,7 +1,7 @@
 "use client";
 
-import { PushNotificationPermission } from "@/components/layout/PushNotificationPermission";
-import { Checkbox } from "@/components/ui/checkbox";
+import { PushNotificationPermission } from "../PushNotificationPermission";
+import { Checkbox } from "../../ui/Checkbox";
 import {
     notificationApi,
     NotificationChannelPreferences,

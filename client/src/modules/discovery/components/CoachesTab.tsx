@@ -8,7 +8,7 @@ import {
     FilterBar,
 } from "@/modules/discovery/components/FilterBar";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
-import { clientFollowStore } from "@/modules/shared/lib/followStore";
+import { clientFollowStore } from "../../shared/store/followStore";
 import { Button } from "@/modules/shared/ui/Button";
 import {
     StaggerContainer,

@@ -1,6 +1,6 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
+import { Input } from "../../shared/ui/Input";
 import { toast } from "@/lib/toast";
 import { Button } from "@/modules/shared/ui/Button";
 import { cn } from "@/utils/cn";

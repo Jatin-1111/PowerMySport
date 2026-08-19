@@ -72,11 +72,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useMemo, useState } from "react";
 
-import { findStageForAge } from "../ageRange";
-import { useChildAge } from "../childAge";
-import type { PathwayIndexEntry } from "../fetchGuide";
-import { filterSports, groupCounts, indexSports } from "../pickerFilter";
-import type { SportGroup } from "../sports";
+import { findStageForAge } from "../utils/ageRange";
+import { useChildAge } from "../utils/childAge";
+import type { PathwayIndexEntry } from "../services/fetchGuide";
+import { filterSports, groupCounts, indexSports } from "../utils/pickerFilter";
+import type { SportGroup } from "../data/sports";
 
 /** Below this many sports, the group filter is noise. */
 const GROUP_FILTER_FROM = 12;

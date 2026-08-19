@@ -1,6 +1,6 @@
 "use client";
 
-import FeatureWaitlist from "@/components/shared/FeatureWaitlist";
+import FeatureWaitlist from "@/modules/shared/components/FeatureWaitlist";
 import { Users } from "lucide-react";
 
 export default function CommunityWaitlistPage() {

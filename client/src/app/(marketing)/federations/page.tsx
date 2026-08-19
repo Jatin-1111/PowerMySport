@@ -9,11 +9,11 @@ import { FederationCard } from "@/modules/federations/components/FederationCard"
 import {
   FEDERATION_INDEX_REVALIDATE_SECONDS,
   fetchFederations,
-} from "@/modules/federations/fetchFederations";
+} from "@/modules/federations/services/fetchFederations";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
-import { fetchPublishedPathways } from "@/modules/pathway/fetchGuide";
-import { PATHWAY_SPORTS } from "@/modules/pathway/sports";
+import { fetchPublishedPathways } from "@/modules/pathway/services/fetchGuide";
+import { PATHWAY_SPORTS } from "@/modules/pathway/data/sports";
 
 // ─── /federations ────────────────────────────────────────────────────────────
 //

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { EditionDocument } from "@/modules/sports/services/pathway";
+import type { EditionDocument } from "@/modules/pathway/services/pathway";
 import { groupDocumentsByKind } from "./documentGroups";
 
 const doc = (

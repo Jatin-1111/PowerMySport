@@ -18,7 +18,7 @@ import {
 import type {
   EditionDocument,
   TournamentEditionDetail,
-} from "@/modules/sports/services/pathway";
+} from "@/modules/pathway/services/pathway";
 import { CAL_TZ, formatLocation, levelColor } from "../../federations/[slug]/editionUtils";
 import { AddToCalendarButton } from "../../federations/[slug]/AddToCalendarButton";
 import { groupDocumentsByKind } from "./documentGroups";

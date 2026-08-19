@@ -2,8 +2,15 @@
 
 import { SportKnownFlow } from "@/modules/find-sport/components/SportKnownFlow";
 import { useRouter } from "next/navigation";
+import { Suspense } from "react";
 
 export default function SportProfilePage() {
   const router = useRouter();
-  return <SportKnownFlow onBack={() => router.push("/assessment")} />;
+  // Suspense boundary: SportKnownFlow reads the step from the URL via
+  // useSearchParams, which must be wrapped.
+  return (
+    <Suspense fallback={null}>
+      <SportKnownFlow onBack={() => router.push("/assessment")} />
+    </Suspense>
+  );
 }

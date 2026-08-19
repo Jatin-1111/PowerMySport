@@ -7,7 +7,7 @@ import {
 } from "@/modules/discovery/components/FilterBar";
 import { academyOnboardingApi } from "@/modules/onboarding/services/academy";
 import { OnboardingAcademy } from "@/modules/onboarding/types/academy";
-import { clientFollowStore } from "@/modules/shared/lib/followStore";
+import { clientFollowStore } from "../../shared/store/followStore";
 import { Button } from "@/modules/shared/ui/Button";
 import { cn } from "@/utils/cn";
 import {

@@ -19,7 +19,7 @@ import { Award, Dumbbell, MapPin, TrendingUp, Unlock, Zap } from "lucide-react";
 
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { AmbientBlob } from "./AmbientBlob";
-import { SPRING_STIFF, cardReveal, fadeUp, orchestrator } from "../motion";
+import { SPRING_STIFF, cardReveal, fadeUp, orchestrator } from "../utils/motion";
 
 const STAT_CARDS = [
   {

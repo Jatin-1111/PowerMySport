@@ -1,11 +1,12 @@
 "use client";
 
-import ProfilePictureUpload from "@/components/ui/ProfilePictureUpload";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { Input } from "@/components/ui/input";
+import ProfilePictureUpload from "@/modules/shared/components/ProfilePictureUpload";
+import { Avatar, AvatarFallback } from "@/modules/shared/ui/Avatar";
+import { Badge } from "@/modules/shared/ui/Badge";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
+import { Input } from "@/modules/shared/ui/Input";
 import { toast } from "@/lib/toast";
+import { useFetchProfile } from "@/modules/auth/hooks/useProfile";
 import { authApi } from "@/modules/auth/services/auth";
 import {
   normalizeStoredState,
@@ -21,7 +22,7 @@ import { ProfileEditPanel } from "@/modules/player/components/ProfileEditPanel";
 import { ProfileFormSelect } from "@/modules/player/components/ProfileFormSelect";
 import { ProfileInfoField } from "@/modules/player/components/ProfileInfoField";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
-import { formatDependentRelation } from "@/modules/player/constants/dependentRelations";
+import { formatDependentRelation } from "@/modules/player/data/dependentRelations";
 import {
   AGILITY_LABELS,
   AMBITION_LABELS,
@@ -44,7 +45,7 @@ import {
   WATER_COMFORT_LABELS,
   WEEKLY_HOURS_LABELS,
   wizardChip,
-} from "@/modules/player/constants/wizardLabels";
+} from "@/modules/player/data/wizardLabels";
 import { getDependentAge } from "@/modules/player/utils/dependentAge";
 import { calculateDependentCompletion } from "@/modules/player/utils/dependentCompletion";
 import { calculateProfileCompletion } from "@/modules/player/utils/profileCompletion";
@@ -109,6 +110,8 @@ function ProfilePageSkeleton() {
 
 function ProfilePageContent() {
   const router = useRouter();
+  // Shared cached profile fetch (one entry across all consumers).
+  const loadProfile = useFetchProfile();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -171,10 +174,9 @@ function ProfilePageContent() {
 
   const fetchProfile = async () => {
     try {
-      const response = await authApi.getProfile();
-      if (response.success && response.data) {
-        setUser(response.data);
-      }
+      // Goes through the shared cache; `useProfile` and every other consumer
+      // read the same entry rather than each issuing its own request.
+      await loadProfile();
     } catch (error) {
       console.error("Failed to fetch profile:", error);
     } finally {

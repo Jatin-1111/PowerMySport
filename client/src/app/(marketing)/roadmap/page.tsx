@@ -13,8 +13,8 @@ import { getCommunityAppUrl } from "@/lib/community/url";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { AmbientBlob } from "@/modules/pathway/components/AmbientBlob";
 import { PathwayPicker } from "@/modules/pathway/components/PathwayPicker";
-import { fetchPathwayIndex } from "@/modules/pathway/fetchGuide";
-import { sectionDomId } from "@/modules/pathway/sectionIds";
+import { fetchPathwayIndex } from "@/modules/pathway/services/fetchGuide";
+import { sectionDomId } from "@/modules/pathway/utils/sectionIds";
 
 // ─── /roadmap ────────────────────────────────────────────────────────────────
 //

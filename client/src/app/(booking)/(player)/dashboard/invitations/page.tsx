@@ -1,7 +1,8 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { Badge } from "@/modules/shared/ui/Badge";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
+import { queryKeys } from "@/lib/query/keys";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
@@ -20,6 +21,7 @@ import {
     Users,
     XCircle,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -46,6 +48,7 @@ interface BookingInvitation {
 }
 
 export default function InvitationsPage() {
+  const queryClient = useQueryClient();
   const [invitations, setInvitations] = useState<BookingInvitation[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -68,6 +71,11 @@ export default function InvitationsPage() {
   const handleRespond = async (invitationId: string, accept: boolean) => {
     try {
       await bookingApi.respondToInvitation(invitationId, accept);
+      // The dashboard nav badge reads the pending-invitation count through
+      // `useNotifications`. The service used to clear a module-level cache
+      // itself; caching is the query layer's job now, so invalidation belongs
+      // here — the `bookings` prefix covers the count and the invitation list.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all });
       toast.success(accept ? "Invitation accepted!" : "Invitation declined");
       loadInvitations();
     } catch (error) {

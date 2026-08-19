@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, BadgeCheck } from "lucide-react";
 
-import type { FederationSummary } from "../fetchFederations";
+import type { FederationSummary } from "../services/fetchFederations";
 
 // ─── One federation, as a card ───────────────────────────────────────────────
 //

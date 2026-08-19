@@ -1,13 +1,14 @@
 "use client";
 
-import ProfilePictureUpload from "@/components/ui/ProfilePictureUpload";
+import ProfilePictureUpload from "@/modules/shared/components/ProfilePictureUpload";
 import { toast } from "@/lib/toast";
+import { useProfile } from "@/modules/auth/hooks/useProfile";
 import { authApi } from "@/modules/auth/services/auth";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { User as UserType } from "@/types";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const getErrorMessage = (error: unknown): string => {
   if (typeof error === "object" && error !== null && "response" in error) {
@@ -22,7 +23,10 @@ const getErrorMessage = (error: unknown): string => {
 
 export default function VenueListerProfilePage() {
   const [user, setUser] = useState<UserType | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Replaces a local fetch-into-useState effect: the query layer owns the
+  // request, its cache and writing the result back to the auth store, so this
+  // page no longer maintains its own copy of any of that.
+  const { isPending: isLoading } = useProfile();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
@@ -31,23 +35,6 @@ export default function VenueListerProfilePage() {
     phone: "",
     dob: "",
   });
-
-  useEffect(() => {
-    void fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    try {
-      const response = await authApi.getProfile();
-      if (response.success && response.data) {
-        setUser(response.data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch venue lister profile:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleEditProfileClick = () => {
     if (!user) {

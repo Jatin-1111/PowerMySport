@@ -1,4 +1,4 @@
-import type { EditionDocument, EditionDocumentKind } from "@/modules/sports/services/pathway";
+import type { EditionDocument, EditionDocumentKind } from "@/modules/pathway/services/pathway";
 
 export interface DisplayDocument extends EditionDocument {
   /** `label`, numbered when the same label appears more than once for its kind. */

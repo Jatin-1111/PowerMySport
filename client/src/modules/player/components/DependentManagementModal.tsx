@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Input } from "@/components/ui/input";
+import { Input } from "../../shared/ui/Input";
 import { toast } from "@/lib/toast";
 import {
   normalizeStoredState,
@@ -26,7 +26,7 @@ import {
   DEFAULT_DEPENDENT_RELATION,
   DEPENDENT_RELATIONS,
   normalizeDependentRelation,
-} from "@/modules/player/constants/dependentRelations";
+} from "../data/dependentRelations";
 import {
   AGILITY_LABELS,
   BUILD_LABELS,
@@ -39,7 +39,7 @@ import {
   PRESSURE_LABELS,
   VISUAL_TRACKING_LABELS,
   WATER_COMFORT_LABELS,
-} from "@/modules/player/constants/wizardLabels";
+} from "../data/wizardLabels";
 import { getDependentAge } from "@/modules/player/utils/dependentAge";
 import { Button } from "@/modules/shared/ui/Button";
 import { Modal } from "@/modules/shared/ui/Modal";

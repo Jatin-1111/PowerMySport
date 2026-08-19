@@ -38,11 +38,11 @@ import type {
   PathwayAction,
   PathwayGuide,
   PathwayStage,
-} from "@/modules/sports/services/pathway";
-import { findStageForAge } from "../ageRange";
-import { parseTypedAge, rememberChildAge, useChildAge } from "../childAge";
-import { headingDomId, sectionDomId } from "../sectionIds";
-import type { SectionId } from "../sectionIds";
+} from "@/modules/pathway/services/pathway";
+import { findStageForAge } from "../utils/ageRange";
+import { parseTypedAge, rememberChildAge, useChildAge } from "../utils/childAge";
+import { headingDomId, sectionDomId } from "../utils/sectionIds";
+import type { SectionId } from "../utils/sectionIds";
 
 // ─── Motion ──────────────────────────────────────────────────────────────────
 //

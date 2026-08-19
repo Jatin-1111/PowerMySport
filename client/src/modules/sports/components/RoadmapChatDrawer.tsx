@@ -1,6 +1,6 @@
 "use client";
 
-import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
+import { AIDisclaimer } from "../../shared/components/AIDisclaimer";
 import { ChatDrawer } from "@/modules/guidance/components/chat/ChatDrawer";
 import { useEffect, useState } from "react";
 import { useRoadmapChat } from "../hooks/useRoadmapChat";

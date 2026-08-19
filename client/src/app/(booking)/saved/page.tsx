@@ -5,7 +5,7 @@ import { Navigation } from "@/components/layout/Navigation";
 import {
     clientFollowStore,
     FollowItem,
-} from "@/modules/shared/lib/followStore";
+} from "@/modules/shared/store/followStore";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { Bookmark, ExternalLink, MapPin, Users } from "lucide-react";

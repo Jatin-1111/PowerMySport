@@ -1,17 +1,19 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/modules/shared/ui/Avatar";
+import { Badge } from "@/modules/shared/ui/Badge";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@/modules/shared/ui/DropdownMenu";
+import { Input } from "@/modules/shared/ui/Input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/modules/shared/ui/Tabs";
 import { useFriendSocket } from "@/hooks/useFriendSocket";
+import { queryKeys } from "@/lib/query/keys";
+import { useQueryClient } from "@tanstack/react-query";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import {
@@ -54,6 +56,15 @@ export default function FriendsPage() {
   const [activeTab, setActiveTab] = useState("friends");
 
   const { connected } = useFriendSocket();
+  const queryClient = useQueryClient();
+
+  // Friend mutations change counts the dashboard nav badge reads through
+  // `useNotifications`. The service used to clear a module-level cache itself;
+  // now the query layer owns caching, so invalidation belongs here, at the call
+  // site that knows a mutation happened. Invalidating the `friends` prefix
+  // covers the counts, the list and any user search.
+  const invalidateFriends = () =>
+    void queryClient.invalidateQueries({ queryKey: queryKeys.friends.all });
   const latestSearchRequestIdRef = useRef(0);
   const searchDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -105,6 +116,7 @@ export default function FriendsPage() {
   const handleAcceptRequest = async (requestId: string) => {
     try {
       await friendService.acceptFriendRequest(requestId);
+      invalidateFriends();
       toast.success("Friend request accepted");
       loadFriends();
       loadPendingRequests();
@@ -116,6 +128,7 @@ export default function FriendsPage() {
   const handleDeclineRequest = async (requestId: string) => {
     try {
       await friendService.declineFriendRequest(requestId);
+      invalidateFriends();
       toast.success("Friend request declined");
       loadPendingRequests();
     } catch {
@@ -126,6 +139,7 @@ export default function FriendsPage() {
   const handleRemoveFriend = async (friendId: string) => {
     try {
       await friendService.removeFriend(friendId);
+      invalidateFriends();
       toast.success("Friend removed");
       loadFriends();
     } catch {
@@ -144,6 +158,7 @@ export default function FriendsPage() {
 
     try {
       await friendService.blockUser(userId);
+      invalidateFriends();
       toast.success(`${userName} blocked`);
       loadFriends();
     } catch {
@@ -238,6 +253,7 @@ export default function FriendsPage() {
   const handleSendFriendRequest = async (userId: string) => {
     try {
       await friendService.sendFriendRequest(userId);
+      invalidateFriends();
       toast.success("Friend request sent");
       handleSearch();
       loadSentRequests();

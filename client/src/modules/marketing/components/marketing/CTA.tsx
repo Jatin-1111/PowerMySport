@@ -1,6 +1,6 @@
 "use client";
 
-import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
+import { WhatsAppIcon } from "@/modules/shared/ui/WhatsAppIcon";
 import { Button } from "@/modules/shared/ui/Button";
 import { motion, Variants } from "framer-motion";
 import Image from "next/image";

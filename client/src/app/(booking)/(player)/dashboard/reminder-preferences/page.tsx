@@ -1,6 +1,6 @@
 "use client";
 
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";

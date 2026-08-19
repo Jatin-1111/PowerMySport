@@ -11,11 +11,11 @@
 // ours to promise.
 
 import { JsonLd } from "@/components/seo/JsonLd";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/seo";
-import { PATHWAY_SPORTS } from "@/modules/pathway/sports";
-import { fetchRankingMeta, formatAsOn } from "@/modules/rankings/api";
-import { RANKING_SPORTS, rankingSportHref } from "@/modules/rankings/config";
+import { PATHWAY_SPORTS } from "@/modules/pathway/data/sports";
+import { fetchRankingMeta, formatAsOn } from "@/modules/rankings/services/api";
+import { RANKING_SPORTS, rankingSportHref } from "@/modules/rankings/config/rankings";
 import { ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";

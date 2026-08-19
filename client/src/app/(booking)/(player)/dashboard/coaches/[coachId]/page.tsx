@@ -1,8 +1,8 @@
 "use client";
 
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import { toast } from "@/lib/toast";
-import { authApi } from "@/modules/auth/services/auth";
+import { useFetchProfile } from "@/modules/auth/hooks/useProfile";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { coachApi } from "@/modules/coach/services/coach";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
@@ -10,13 +10,15 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { venueApi } from "@/modules/venue/services/venue";
 import { Coach, User, Venue } from "@/types";
-import { getDashboardPathByRole } from "@/utils/roleDashboard";
+import { consoleHomeFor } from "@/flow/policy";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 export default function BookCoachPage() {
   const params = useParams();
   const router = useRouter();
+  // Shared cached profile fetch (one entry across all consumers).
+  const loadProfile = useFetchProfile();
   const coachId = params.coachId as string;
 
   const [coach, setCoach] = useState<Coach | null>(null);
@@ -97,15 +99,11 @@ export default function BookCoachPage() {
         }
       }
 
-      const userResponse = await authApi.getProfile();
-      if (userResponse.success && userResponse.data) {
-        setUser(userResponse.data);
-        if (
-          userResponse.data.role !== "Player" &&
-          userResponse.data.role !== "Parent"
-        ) {
+      const profile = await loadProfile();
+      if (profile) {
+        if (profile.role !== "Player" && profile.role !== "Parent") {
           toast.error("Only player accounts can create bookings.");
-          router.replace(getDashboardPathByRole(userResponse.data.role));
+          router.replace(consoleHomeFor(profile.role));
           return;
         }
       }

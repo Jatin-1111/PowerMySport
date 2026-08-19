@@ -1,5 +1,5 @@
 import { JsonLd } from "@/components/seo/JsonLd";
-import FeatureWaitlist from "@/components/shared/FeatureWaitlist";
+import FeatureWaitlist from "@/modules/shared/components/FeatureWaitlist";
 import { itemListJsonLd } from "@/lib/seo";
 import { expertApi, type Expert } from "@/modules/expert/services/expert";
 import { Users } from "lucide-react";

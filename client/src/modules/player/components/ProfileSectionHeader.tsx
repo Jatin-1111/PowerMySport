@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "../../shared/ui/Badge";
 import { Button } from "@/modules/shared/ui/Button";
 import { cn } from "@/utils/cn";
 import { LucideIcon, Pencil, X } from "lucide-react";

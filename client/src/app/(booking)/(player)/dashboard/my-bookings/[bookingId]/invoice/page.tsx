@@ -1,6 +1,6 @@
 "use client";
 
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import { toast } from "@/lib/toast";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";

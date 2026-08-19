@@ -24,13 +24,13 @@ import {
   Users,
   CheckCircle2,
 } from "lucide-react";
-import { BackToRoadmapLink } from "@/components/BackToRoadmapLink";
-import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
+import { BackToRoadmapLink } from "@/modules/pathway/components/BackToRoadmapLink";
+import { WhatsAppIcon } from "@/modules/shared/ui/WhatsAppIcon";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { FederationDetail } from "./page";
-import type { Tournament, TournamentEdition } from "@/modules/sports/services/pathway";
-import { federationApi } from "@/modules/sports/services/pathway";
+import type { Tournament, TournamentEdition } from "@/modules/pathway/services/pathway";
+import { federationApi } from "@/modules/pathway/services/pathway";
 import { getSportArchetypeInfo } from "@/modules/sports/config/sportArchetypes";
 import { CalendarMonthGrid } from "./CalendarMonthGrid";
 import { EditionRow } from "./EditionRow";
