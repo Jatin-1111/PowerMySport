@@ -1,11 +1,13 @@
 "use client";
 
+import { useRoleGuard } from "@/modules/auth/hooks/useRoleGuard";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
     DashboardShell,
     type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
+import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
 import { PayoutBanner } from "@/modules/shared/components/payout/PayoutBanner";
 import { payoutApi } from "@/modules/shared/services/payout";
 import { IPayoutMethod } from "@/types";
@@ -37,13 +39,8 @@ export default function VendorLayout({
     IPayoutMethod | null | undefined
   >(undefined);
 
-  // Block coaches from accessing venue-lister routes
-  // Coaches who want to list venues must create separate venue-lister credentials
-  useEffect(() => {
-    if (user && user.role !== "VenueLister") {
-      router.replace("/");
-    }
-  }, [user, router]);
+  // Who may be here is declared in src/flow/policy.ts, not repeated here.
+  const guard = useRoleGuard();
 
   // Silently check payout method for banner
   const loadPayoutStatus = useCallback(async () => {
@@ -123,6 +120,10 @@ export default function VendorLayout({
       icon: Settings,
     },
   ];
+
+  if (guard !== "allowed") {
+    return <RouteGateScreen />;
+  }
 
   return (
     <DashboardShell

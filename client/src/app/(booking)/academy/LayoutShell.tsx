@@ -1,25 +1,23 @@
 "use client";
 
-import { toast } from "@/lib/toast";
+import { useRoleGuard } from "@/modules/auth/hooks/useRoleGuard";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
     DashboardShell,
     type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
+import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
 import {
     BarChart2,
     Building2,
-    Calendar,
-    CreditCard,
     LayoutDashboard,
     Settings,
     Star,
     TrendingUp,
-    Users,
 } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import React from "react";
 
 export default function AcademyLayout({
   children,
@@ -27,16 +25,11 @@ export default function AcademyLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
   const { user, logout } = useAuthStore();
-  const isOnboardingRoute = pathname.startsWith("/academy/onboarding");
 
-  useEffect(() => {
-    if (user && user.role !== "Academy" && !isOnboardingRoute) {
-      toast.error("Academy dashboard is limited to academy owners.");
-      router.replace("/");
-    }
-  }, [isOnboardingRoute, router, user]);
+  // Who may be here — and the /academy/onboarding exemption — is declared in
+  // src/flow/policy.ts, not repeated here.
+  const guard = useRoleGuard();
 
   const handleLogout = async () => {
     try {
@@ -65,26 +58,10 @@ export default function AcademyLayout({
       label: "Public Profile",
       icon: Building2,
     },
-    {
-      href: "/academy/venues",
-      label: "Venues",
-      icon: Building2,
-    },
-    {
-      href: "/academy/coaches",
-      label: "Coaches",
-      icon: Users,
-    },
-    {
-      href: "/academy/plans",
-      label: "Plans",
-      icon: CreditCard,
-    },
-    {
-      href: "/academy/bookings",
-      label: "Bookings",
-      icon: Calendar,
-    },
+    // Venues, Coaches, Plans and Bookings were listed here but none of those
+    // routes exist — four 404s in the console partners are onboarded into. They
+    // are removed rather than stubbed; `tests/navLinks.test.ts` now fails the
+    // build if a nav href stops resolving to a real page.
     {
       href: "/academy/earnings",
       label: "Earnings",
@@ -106,6 +83,10 @@ export default function AcademyLayout({
       icon: Settings,
     },
   ];
+
+  if (guard !== "allowed") {
+    return <RouteGateScreen />;
+  }
 
   return (
     <DashboardShell

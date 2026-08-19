@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { generateToken, revokeToken } from "../../utils/jwt";
+import { generateToken, revokeToken, TOKEN_MAX_AGE_MS } from "../../utils/jwt";
 import {
   addAddress,
   addDependent,
@@ -33,6 +33,13 @@ const authCookieOptions = {
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax" as const,
   path: "/",
+  // Without this the cookie is a *session* cookie: it dies when the browser
+  // closes, while the token it carries stays valid for 7 days and is also held
+  // in localStorage. That left returning users routinely holding a valid session
+  // and no cookie, so the cookie could not be treated as the session of record
+  // and server-side auth gating had to stay disabled. Derived from the token's
+  // own lifetime so the two cannot drift apart.
+  maxAge: TOKEN_MAX_AGE_MS,
   // Only set domain in production to allow cross-subdomain auth (e.g. .powermysport.com)
   // In development, omit it so localhost handles it gracefully across ports
   ...(authCookieDomain && process.env.NODE_ENV === "production"

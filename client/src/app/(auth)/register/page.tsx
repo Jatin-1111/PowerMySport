@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { postSignupFor, safeReturnPath } from "@/flow/policy";
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
@@ -61,7 +62,10 @@ const ROLE_OPTIONS = [
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || null;
+  // Attacker-controlled — validated for the same reason as on the login page.
+  // `router.push` follows absolute external URLs too, so this needs the same
+  // allowlist rather than being treated as internal-only.
+  const redirectTo = safeReturnPath(searchParams.get("redirect"));
   const { user, setUser, setToken, setLoading } = useAuthStore();
   // Pre-select the role card from a `?role=` link (e.g. the footer's "Become
   // a Coach" → /register?role=Coach) when it matches an available option.
@@ -85,23 +89,7 @@ function RegisterContent() {
 
   useEffect(() => {
     if (user) {
-      if (user.role === "Parent") {
-        router.push("/assessment");
-      } else if (user.role === "Player") {
-        router.push("/dashboard/my-bookings");
-      } else if (user.role === "VenueLister") {
-        router.push("/venue-lister/inventory");
-      } else if (user.role === "Coach") {
-        router.push("/coach/verification");
-      } else if (user.role === "Academy") {
-        router.push("/academy");
-      } else if (user.role === "EXPERT") {
-        router.push("/expert/onboarding");
-      } else if (user.role === "Admin") {
-        router.push("/admin/users");
-      } else {
-        router.push("/dashboard/my-bookings");
-      }
+      router.push(postSignupFor(user.role));
     }
   }, [user, router]);
 
@@ -156,21 +144,7 @@ function RegisterContent() {
         if (formData.userType === "Coach") {
           localStorage.setItem("coachServiceMode", formData.serviceMode);
         }
-        if (redirectTo) {
-          router.push(redirectTo);
-        } else if (response.data.user.role === "Parent") {
-          router.push("/assessment");
-        } else if (response.data.user.role === "Coach") {
-          router.push("/coach/verification");
-        } else if (response.data.user.role === "VenueLister") {
-          router.push("/venue-lister/inventory");
-        } else if (response.data.user.role === "EXPERT") {
-          router.push("/expert/onboarding");
-        } else if (response.data.user.role === "Admin") {
-          router.push("/admin/users");
-        } else {
-          router.push("/dashboard/my-bookings");
-        }
+        router.push(redirectTo || postSignupFor(response.data.user.role));
       } else {
         toast.error(response.message || "Registration failed");
       }
@@ -216,19 +190,7 @@ function RegisterContent() {
         if (formData.userType === "Coach") {
           localStorage.setItem("coachServiceMode", formData.serviceMode);
         }
-        if (response.data.user.role === "Parent") {
-          router.push("/assessment");
-        } else if (response.data.user.role === "Coach") {
-          router.push("/coach/verification");
-        } else if (response.data.user.role === "VenueLister") {
-          router.push("/venue-lister/inventory");
-        } else if (response.data.user.role === "EXPERT") {
-          router.push("/expert/onboarding");
-        } else if (response.data.user.role === "Admin") {
-          router.push("/admin/users");
-        } else {
-          router.push("/dashboard/my-bookings");
-        }
+        router.push(postSignupFor(response.data.user.role));
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRoleGuard } from "@/modules/auth/hooks/useRoleGuard";
 import { authApi } from "@/modules/auth/services/auth";
 import { expertApi } from "@/modules/expert/services/expert";
 import { useAuthStore } from "@/modules/auth/store/authStore";
@@ -7,13 +8,12 @@ import {
     DashboardShell,
     type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
+import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
 import {
     BadgeIndianRupee,
     CalendarCheck,
     LayoutDashboard,
-    Settings,
-    ShieldCheck,
-    UserCog,
+    Settings,    UserCog,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import React, { useEffect } from "react";
@@ -26,6 +26,8 @@ export default function ExpertLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+
+  const guard = useRoleGuard();
 
   useEffect(() => {
     // Redirect any not-yet-approved expert to onboarding unless they're
@@ -57,6 +59,10 @@ export default function ExpertLayout({
     }
   };
 
+  if (guard !== "allowed") {
+    return <RouteGateScreen />;
+  }
+
   const isOnboarding = pathname === "/expert/onboarding";
 
   const navItems: DashboardNavItem[] = isOnboarding
@@ -65,7 +71,7 @@ export default function ExpertLayout({
         { href: "/expert/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { href: "/expert/sessions", label: "My Sessions", icon: CalendarCheck },
         { href: "/expert/profile", label: "Profile & Availability", icon: UserCog },
-        { href: "/expert/pathways", label: "Verify Pathways", icon: ShieldCheck },
+        // "Verify Pathways" pointed at /expert/pathways, which does not exist.
         { href: "/expert/payouts", label: "Payouts", icon: BadgeIndianRupee },
         { href: "/expert/settings", label: "Settings", icon: Settings },
       ];

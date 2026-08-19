@@ -2,6 +2,7 @@
 
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { toast } from "@/lib/toast";
+import { useRoleGuard } from "@/modules/auth/hooks/useRoleGuard";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { coachApi } from "@/modules/coach/services/coach";
@@ -11,6 +12,7 @@ import {
     type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
 import { PayoutBanner } from "@/modules/shared/components/payout/PayoutBanner";
+import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
 import { payoutApi } from "@/modules/shared/services/payout";
 import { IPayoutMethod } from "@/types";
 import {
@@ -42,6 +44,11 @@ export default function CoachLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+
+  // Who may be here at all. The verification gate below is a separate,
+  // narrower question — what a coach who IS allowed here may yet do.
+  const guard = useRoleGuard();
+
   const [isGateLoading, setIsGateLoading] = useState(true);
   const [isVerificationLocked, setIsVerificationLocked] = useState(false);
   const [isGateStuck, setIsGateStuck] = useState(false);
@@ -215,6 +222,10 @@ export default function CoachLayout({
           item.external,
       )
     : navItems.filter((item) => item.href !== "/coach/verification");
+
+  if (guard !== "allowed") {
+    return <RouteGateScreen />;
+  }
 
   if (
     isGateLoading &&

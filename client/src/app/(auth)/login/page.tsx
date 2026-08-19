@@ -1,6 +1,11 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import {
+  isExternalReturnPath,
+  postLoginFor,
+  safeReturnPath,
+} from "@/flow/policy";
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
@@ -17,28 +22,28 @@ function LoginContent() {
   // "next" is what the community app (and other satellite apps) send when
   // bouncing an unauthenticated user back to login; "redirect" is used
   // internally within this app.
-  const redirectTo =
-    searchParams.get("redirect") || searchParams.get("next") || null;
+  //
+  // Both are attacker-controlled, so they go through `safeReturnPath`, which
+  // drops anything that is not a site-relative path or an origin we own. A
+  // rejected value falls back to the role's default landing page.
+  const redirectTo = safeReturnPath(
+    searchParams.get("redirect") || searchParams.get("next"),
+  );
   const { user, setUser, setToken, setLoading } = useAuthStore();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const getDefaultRedirect = (role: string) => {
-    if (role === "VenueLister") return "/venue-lister/inventory";
-    if (role === "Coach") return "/coach/verification";
-    if (role === "Academy") return "/academy";
-    if (role === "EXPERT") return "/expert/dashboard";
-    if (role === "Admin") return "/admin/users";
-    return "/";
-  };
-
   // router.push only handles internal app routes. A redirect target from an
   // external origin (e.g. community.powermysport.com) needs a full navigation
   // so the browser actually leaves this app and carries the auth cookie along.
+  //
+  // Only reachable with targets that already passed `safeReturnPath` — either
+  // `redirectTo` above or a hardcoded default — so the external branch can no
+  // longer be pointed at an arbitrary host.
   const goToRedirect = (target: string) => {
-    if (/^https?:\/\//i.test(target)) {
+    if (isExternalReturnPath(target)) {
       window.location.href = target;
       return;
     }
@@ -47,7 +52,7 @@ function LoginContent() {
 
   useEffect(() => {
     if (user) {
-      goToRedirect(redirectTo || getDefaultRedirect(user.role));
+      goToRedirect(redirectTo || postLoginFor(user.role));
     }
   }, [user, router, redirectTo]);
 
@@ -79,7 +84,7 @@ function LoginContent() {
         if (response.data.deletionCancelled) {
           toast.success("Account deletion cancelled.");
         }
-        goToRedirect(redirectTo || getDefaultRedirect(response.data.user.role));
+        goToRedirect(redirectTo || postLoginFor(response.data.user.role));
       } else {
         toast.error(response.message || "Login failed");
       }
@@ -109,7 +114,7 @@ function LoginContent() {
         setToken(response.data.token);
         setUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
-        goToRedirect(redirectTo || getDefaultRedirect(response.data.user.role));
+        goToRedirect(redirectTo || postLoginFor(response.data.user.role));
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };

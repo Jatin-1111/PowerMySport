@@ -1,14 +1,16 @@
 "use client";
 
-import { BottomNavItem } from "@/components/layout/BottomNav";
+import { BottomNavItem } from "@/modules/shared/components/BottomNav";
 import { useNotifications } from "@/hooks/useNotifications";
 import { getCommunityAppUrl } from "@/lib/community/url";
+import { useRoleGuard } from "@/modules/auth/hooks/useRoleGuard";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
     DashboardNavItem,
     DashboardShell,
 } from "@/modules/shared/components/dashboard/DashboardShell";
+import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
 import {
     Bell,
     Calendar,
@@ -27,11 +29,32 @@ import {
 import { useRouter } from "next/navigation";
 import React from "react";
 
+/**
+ * This tree had no guard at all: a signed-out visitor to /dashboard was served
+ * the whole player console.
+ *
+ * The guard lives in this outer component so that the chrome below — and in
+ * particular its `useNotifications` fetching — is never mounted for a visitor
+ * who is not allowed to be here. That is not just tidiness: those requests 401
+ * while signed out, and the axios interceptor responds by assigning
+ * `window.location.href = "/login"`, a full navigation that overwrites this
+ * guard's `router.replace("/login?redirect=…")` and drops the return path.
+ */
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const guard = useRoleGuard();
+
+  if (guard !== "allowed") {
+    return <RouteGateScreen />;
+  }
+
+  return <PlayerDashboardChrome>{children}</PlayerDashboardChrome>;
+}
+
+function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const { counts } = useNotifications();

@@ -31,6 +31,17 @@ const JWT_ALGORITHM = "HS256" as const;
 const JWT_EXPIRE = "7d";
 const REVOKED_TOKEN_PREFIX = "jwt:revoked:";
 
+/**
+ * `JWT_EXPIRE` in milliseconds, for callers that need it as a number.
+ *
+ * Exported so the auth cookie's `maxAge` is derived from the token's lifetime
+ * rather than being a second, independently-maintained copy of "7 days". If the
+ * cookie outlives the token the client believes in a session the API rejects; if
+ * it dies first, the client is signed out while holding a valid token — which is
+ * exactly the mismatch that kept edge-side auth gating switched off.
+ */
+export const TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
 export const generateToken = (payload: IUserPayload): string => {
   return jwt.sign(
     { ...payload, jti: crypto.randomUUID() },
