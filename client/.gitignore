@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...but the documented template is meant to be committed, same as the root
+# .gitignore allows. Without this negation the blanket rule above swallows it.
+!.env.example
 
 # vercel
 .vercel
