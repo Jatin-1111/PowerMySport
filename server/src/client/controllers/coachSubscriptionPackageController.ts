@@ -26,15 +26,18 @@ import { User } from "../models/User";
 import { CoachSubscriptionPaymentTransaction } from "../models/CoachSubscriptionPayment";
 import { CoachSubscription } from "../models/CoachSubscription";
 import { reconcileCoachSubscriptionPaymentByIdentifiers } from "../services/CoachSubscriptionPaymentService";
+import {
+  computeSubscriptionFees,
+  SUBSCRIPTION_TAX_RATE as SHARED_SUBSCRIPTION_TAX_RATE,
+} from "../services/PricingRates";
 
 const SUBSCRIPTION_PLATFORM_FEE_RATE = Number(
   process.env.SUBSCRIPTION_PLATFORM_FEE_RATE ??
     process.env.SERVICE_FEE_RATE ??
     0,
 );
-const SUBSCRIPTION_TAX_RATE = Number(
-  process.env.SUBSCRIPTION_TAX_RATE ?? process.env.TAX_RATE ?? 0.05,
-);
+// Rates come from the shared pricing module so charge and quote cannot drift.
+const SUBSCRIPTION_TAX_RATE = SHARED_SUBSCRIPTION_TAX_RATE;
 
 const buildSubscriptionMerchantOrderId = (params: {
   coachId: string;
@@ -365,6 +368,48 @@ export const deleteCoachPackageHandler = async (
 /**
  * Subscribe user to a coach's package
  */
+/**
+ * The authoritative subscription price breakdown, in paise.
+ *
+ * The client used to recompute this from `NEXT_PUBLIC_SUBSCRIPTION_*` rate
+ * copies. Same problem as the booking quote: two independently-configured
+ * sources for the number shown versus the number charged.
+ */
+export const getSubscriptionQuoteHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { basePaise } = req.body as { basePaise: number };
+
+    if (!Number.isFinite(basePaise) || basePaise < 0) {
+      res.status(400).json({
+        success: false,
+        message: "A non-negative basePaise amount is required",
+      });
+      return;
+    }
+
+    const fees = computeSubscriptionFees(Math.round(basePaise));
+
+    res.status(200).json({
+      success: true,
+      data: {
+        basePaise: fees.subtotal,
+        platformFeePaise: fees.serviceFee,
+        taxPaise: fees.tax,
+        totalPaise: fees.total,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to price subscription",
+    });
+  }
+};
+
 export const subscribeToCoachPackageHandler = async (
   req: Request,
   res: Response,

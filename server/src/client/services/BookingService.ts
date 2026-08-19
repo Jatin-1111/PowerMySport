@@ -8,6 +8,7 @@ import { User } from "../models/User";
 import { Player } from "../models/Player";
 import { Venue, VenueDocument } from "../models/Venue";
 import Academy from "../../admin/models/Academy";
+import { SERVICE_FEE_RATE, TAX_RATE } from "./PricingRates";
 import {
   sendBookingLifecycleEmail,
   sendBookingInvitationEmail,
@@ -89,8 +90,8 @@ const CHECK_IN_CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const MAX_TRANSACTION_RETRIES = 3;
 const COACH_SUBSCRIPTIONS_ENFORCE_BOOKING =
   process.env.COACH_SUBSCRIPTIONS_ENFORCE_BOOKING === "true";
-const SERVICE_FEE_RATE = Number(process.env.SERVICE_FEE_RATE ?? 0);
-const TAX_RATE = Number(process.env.TAX_RATE ?? 0.05);
+// Fee rates come from the shared pricing module (imported at the top) so the
+// amount charged here and the amount quoted to the client cannot drift.
 
 interface BookingCreatePayload {
   userId: string;

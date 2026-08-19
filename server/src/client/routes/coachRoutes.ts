@@ -24,6 +24,7 @@ import {
   updateCoachPackageHandler,
   deleteCoachPackageHandler,
   subscribeToCoachPackageHandler,
+  getSubscriptionQuoteHandler,
   getUserCoachSubscriptionsHandler,
   cancelSubscriptionHandler,
   getCoachActiveSubscriptionsHandler,
@@ -182,6 +183,14 @@ router.get(
 
 // Public endpoints for subscription management
 // Subscribe to a coach's package
+// Subscription pricing quote — the client displays what this returns rather than
+// recomputing fees from its own rate copies.
+router.post(
+  "/subscriptions/quote",
+  authMiddleware,
+  getSubscriptionQuoteHandler,
+);
+
 router.post("/subscriptions", authMiddleware, subscribeToCoachPackageHandler);
 
 // Get user's subscriptions

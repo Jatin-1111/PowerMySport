@@ -1,8 +1,9 @@
-import { GuestAnalyticsTracker } from "@/components/analytics/GuestAnalyticsTracker";
+import { GuestAnalyticsTracker } from "@/modules/analytics/components/GuestAnalyticsTracker";
 import { CookieConsentBanner } from "@/components/layout/CookieConsentBanner";
 import { HydrationBoundary } from "@/components/layout/HydrationBoundary";
 import { NumericInputGuard } from "@/components/layout/NumericInputGuard";
 import { FriendSocketProvider } from "@/hooks/useFriendSocket";
+import { QueryProvider } from "@/lib/query/QueryProvider";
 import {
   OG_IMAGE,
   SITE_DESCRIPTION as siteDescription,
@@ -123,7 +124,11 @@ export default function RootLayout({
         <NumericInputGuard />
         <GuestAnalyticsTracker />
         <HydrationBoundary>
-          <FriendSocketProvider>{children}</FriendSocketProvider>
+          {/* Inside HydrationBoundary: the query cache is scoped to the signed-in
+              identity, so it has to be able to observe the restored session. */}
+          <QueryProvider>
+            <FriendSocketProvider>{children}</FriendSocketProvider>
+          </QueryProvider>
         </HydrationBoundary>
         <CookieConsentBanner />
         <Toaster

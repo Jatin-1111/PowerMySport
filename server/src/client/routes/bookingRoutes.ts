@@ -23,6 +23,7 @@ import {
   payBookingWithWallet,
   rescheduleBookingHandler,
   retryBookingRefund,
+  getBookingQuote,
 } from "../controllers/bookingController";
 import {
   authMiddleware,
@@ -47,6 +48,11 @@ router.post(
   validateRequest(promoValidateSchema),
   validateBookingPromoCode,
 );
+
+// Pricing quote. Authenticated (it is only used inside checkout) but requires no
+// booking to exist yet — the client calls it as the slot/duration changes so the
+// breakdown it displays always comes from the server that will charge it.
+router.post("/quote", authMiddleware, getBookingQuote);
 
 router.post(
   "/waitlist",

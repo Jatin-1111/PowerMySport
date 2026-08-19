@@ -40,6 +40,7 @@ import {
   rescheduleBookingByCoach,
   processBookingRefund,
 } from "../services/BookingService";
+import { computeBookingFees } from "../services/PricingRates";
 import {
   getPhonePeOrderStatus,
   initiatePhonePePayment,
@@ -698,6 +699,48 @@ export const getVenueAvailability = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to fetch availability",
+    });
+  }
+};
+
+/**
+ * The authoritative fee breakdown for a booking subtotal.
+ *
+ * The client used to compute the service fee and tax itself from
+ * `NEXT_PUBLIC_*` rates — a second, independently-configured copy of numbers
+ * this server owns. The two agreed only by luck, and a change to one without
+ * the other would quote a price the API then refused to honour. Now the client
+ * displays what this returns, so there is one source for what a customer is
+ * shown and what they are charged.
+ */
+export const getBookingQuote = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { subtotal, discount } = req.body as {
+      subtotal: number;
+      discount?: number;
+    };
+
+    if (!Number.isFinite(subtotal) || subtotal < 0) {
+      res
+        .status(400)
+        .json({ success: false, message: "A non-negative subtotal is required" });
+      return;
+    }
+
+    const safeDiscount =
+      Number.isFinite(discount) && (discount ?? 0) > 0 ? (discount as number) : 0;
+
+    res.status(200).json({
+      success: true,
+      data: computeBookingFees(subtotal, safeDiscount),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to price booking",
     });
   }
 };
