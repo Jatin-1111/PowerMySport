@@ -13,7 +13,8 @@ import {
   Trophy,
   Wrench,
 } from "lucide-react";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import api from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
@@ -33,6 +34,8 @@ import { ThreeOptionCards } from "@/modules/find-sport/components/inputs/ThreeOp
 import { getAgeFromDob } from "@/modules/find-sport/utils/sportKnownFlowUtils";
 import { EMPTY_FORM, buildPayload, buildQuestion, COMMON_WEAKNESS_ISSUES } from "./guidanceUtils";
 import type { ConsultForm, ProblemId } from "./guidanceUtils";
+import { buildStepGateFlow } from "@/flow/defineFlow";
+import { useFlow } from "@/flow/useFlow";
 
 // ─── Problem type config (picker only) ───────────────────────────────────────
 
@@ -746,6 +749,33 @@ function isAnswered(id: ConsultField, form: ConsultForm): boolean {
   return v !== null;
 }
 
+// ─── Flow wiring ──────────────────────────────────────────────────────────────
+
+const PROBLEM_IDS: readonly ProblemId[] = ["weakness", "tournament", "levelup", "custom"];
+const isProblemId = (value: string | null): value is ProblemId =>
+  value !== null && (PROBLEM_IDS as readonly string[]).includes(value);
+
+/**
+ * The per-problem question sequence, wired to the URL.
+ *
+ * A step is enterable only when every required question before it is answered,
+ * so opening `?step=6` in a fresh tab lands on the first unanswered question
+ * rather than deep inside a form that was never filled in. Built per problem
+ * because each problem has its own step list; memoised by the caller on
+ * problemId so the object identity is stable across answers.
+ */
+function buildGuidanceFlow(problemId: ProblemId) {
+  const steps = WIZARD_STEPS[problemId];
+  return buildStepGateFlow<ConsultForm>(
+    `guidance-${problemId}`,
+    steps.length,
+    (i, form) => {
+      const step = steps[i];
+      return step.kind !== "question" || !step.required || isAnswered(step.id, form);
+    },
+  );
+}
+
 // ─── Loading screen ───────────────────────────────────────────────────────────
 
 function LoadingView({ problemId }: { problemId: ProblemId }) {
@@ -909,7 +939,6 @@ function ProblemWizardInner({
   const qNums = getStepQNums(steps);
   const totalQ = getTotalQuestions(steps);
 
-  const [idx, setIdx] = useState(0);
   const [levelPlanLabel] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     const sp = new URLSearchParams(window.location.search);
@@ -931,7 +960,6 @@ function ProblemWizardInner({
     }
     return EMPTY_FORM;
   });
-  const [dir, setDir] = useState<1 | -1>(1);
   const [loading, setLoading] = useState(false);
   const [submission, setSubmission] = useState<GuidanceSubmission | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -978,6 +1006,19 @@ function ProblemWizardInner({
   const set = <K extends ConsultField>(k: K, v: ConsultForm[K]) =>
     setForm((p) => ({ ...p, [k]: v }));
 
+  // The active step lives in the URL (?step=), so the browser Back button walks
+  // the questionnaire instead of leaving it, each step is linkable for
+  // analytics, and a mid-flow entry is gated to the first unanswered question.
+  const flow = useMemo(() => buildGuidanceFlow(problemId), [problemId]);
+  const {
+    index: idx,
+    isLast: isLastStep,
+    direction: dir,
+    next: goToNextStep,
+    back: goToPrevStep,
+    goToStep,
+  } = useFlow(flow, form);
+
   const current = steps[idx];
   const qNum = qNums[idx];
 
@@ -986,21 +1027,19 @@ function ProblemWizardInner({
     !current.required ||
     isAnswered(current.id, form);
 
-  const isLastStep = idx === steps.length - 1;
-
   const goNext = () => {
     setError(null);
-    setDir(1);
     if (!isLastStep) {
-      setIdx((i) => i + 1);
+      goToNextStep();
     } else {
       handleSubmit();
     }
   };
 
   const goPrev = () => {
-    setDir(-1);
-    if (idx > 0) setIdx((i) => i - 1);
+    // At the first step, "back" leaves the wizard to the picker rather than
+    // clamping in place.
+    if (idx > 0) goToPrevStep();
     else onBack();
   };
 
@@ -1050,8 +1089,7 @@ function ProblemWizardInner({
 
   const reset = () => {
     setForm(EMPTY_FORM);
-    setIdx(0);
-    setDir(1);
+    goToStep(1);
     setLoading(false);
     setSubmission(null);
     setError(null);
@@ -1373,26 +1411,54 @@ function ProblemPicker({ onSelect }: { onSelect: (id: ProblemId) => void }) {
 // ─── Default export ───────────────────────────────────────────────────────────
 
 export default function GuidancePage() {
-  // A /roadmap level CTA (?mode=level-plan) always maps to "levelup" and
-  // skips the picker entirely — the parent already told us what they want by
-  // clicking a specific pathway level, so don't ask them again.
-  const [problemType, setProblemType] = useState<ProblemId | null>(() => {
-    if (typeof window !== "undefined") {
-      const sp = new URLSearchParams(window.location.search);
-      if (sp.get("mode") === "level-plan") return "levelup";
+  // useSearchParams needs a Suspense boundary; the whole flow lives inside it.
+  return (
+    <Suspense fallback={null}>
+      <GuidanceRoot />
+    </Suspense>
+  );
+}
+
+function GuidanceRoot() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // The selected problem lives in the URL (?problem=), so it survives a refresh
+  // and is shareable — it used to be component state that reset on reload.
+  //
+  // A /roadmap level CTA (?mode=level-plan) always maps to "levelup" and skips
+  // the picker: the parent already told us what they want by clicking a
+  // specific pathway level, so don't ask them again.
+  const isLevelPlan = searchParams.get("mode") === "level-plan";
+  const problemParam = searchParams.get("problem");
+  const problemType: ProblemId | null = isLevelPlan
+    ? "levelup"
+    : isProblemId(problemParam)
+      ? problemParam
+      : null;
+
+  const setProblem = (id: ProblemId | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (id) {
+      params.set("problem", id);
+    } else {
+      // Leaving the wizard clears the step too, so returning to a problem
+      // starts clean rather than resuming a half-filled form.
+      params.delete("problem");
+      params.delete("step");
     }
-    return null;
-  });
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
 
   if (problemType) {
     return (
-      <Suspense fallback={null}>
-        <ProblemWizardInner
-          problemId={problemType}
-          onBack={() => setProblemType(null)}
-        />
-      </Suspense>
+      <ProblemWizardInner
+        problemId={problemType}
+        onBack={() => setProblem(null)}
+      />
     );
   }
-  return <ProblemPicker onSelect={setProblemType} />;
+  return <ProblemPicker onSelect={setProblem} />;
 }

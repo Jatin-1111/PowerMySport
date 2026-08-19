@@ -2,10 +2,12 @@
 
 import React from "react";
 import api from "@/lib/api/axios";
+import { defineFlow } from "@/flow/defineFlow";
+import { useFlow } from "@/flow/useFlow";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, CheckCircle, Clock, Zap, Users, Brain, Heart, Target, User, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PRIOR_SPORTS_OPTIONS } from "../data/sportProfiles";
 import type { WizardAnswers } from "../types";
 import { EMPTY_ANSWERS, MAX_CONSIDERED_SPORTS } from "../types";
@@ -91,6 +93,22 @@ const STEPS: Step[] = [
 
 const QUESTION_STEPS = STEPS.filter((s) => s.kind === "question");
 const TOTAL_QUESTIONS = QUESTION_STEPS.length;
+
+// The step lives in the URL. `processing` — the only step with a side-effect
+// (it creates or updates the child profile) — is gated on the questionnaire
+// being complete, i.e. the last question is answered. A bare `?step=processing`
+// or `?step=results` therefore cannot fire that side-effect or render an empty
+// report: it clamps back to the final question instead. Every other step is a
+// question or a screen that is safe to open directly.
+const PROCESSING_INDEX = STEPS.findIndex((s) => s.kind === "processing");
+type AssessmentFlowContext = { completed: boolean };
+const ASSESSMENT_FLOW = defineFlow<string, AssessmentFlowContext>({
+  id: "sport-assessment",
+  steps: STEPS.map((_, i) => String(i + 1)),
+  canEnter: {
+    [String(PROCESSING_INDEX + 1)]: (ctx) => ctx.completed,
+  },
+});
 
 // Every step is unconditional, so navigation is a straight walk in both
 // directions — there is no longer any question shown only in response to a
@@ -834,11 +852,33 @@ function ProcessingScreen({ name }: { name: string }) {
 
 export function WizardShell() {
   const { user, token } = useAuthStore();
-  const [stepIndex, setStepIndex] = useState(0);
-  const [direction, setDirection] = useState(1);
   const [answers, setAnswers] = useState<WizardAnswers>({ ...EMPTY_ANSWERS });
-  const [results, setResults] = useState<SportResult[]>([]);
-  const [chosenFits, setChosenFits] = useState<SportFitResult[]>([]);
+  // Scores are a pure function of the answers, so they are derived, not stored.
+  // Previously they lived in state and were populated by the `processing` step's
+  // effect, which meant the results only existed once that effect had run —
+  // fine for the linear flow, but it made the results step impossible to reach
+  // from a URL (a deep link would render an empty report). Deriving them makes
+  // the results a function of context, which is the prerequisite for putting
+  // this wizard's step in the URL. The persistence side-effects (save to the
+  // API, localStorage, trial check-in) stay in the processing effect below —
+  // only the computation moved.
+  const results = useMemo(() => scoreSports(answers), [answers]);
+  const chosenFits = useMemo(() => scoreChosenSports(answers), [answers]);
+
+  // The active step lives in the URL (?step=): Back walks the questionnaire
+  // instead of leaving it, refresh keeps your place, and each step is linkable
+  // for drop-off analytics. `goNext`/`goBack` below are this flow's next/back,
+  // so every existing call site (question auto-advance, transitions, the
+  // processing screen's auto-advance) is unchanged. Completion = the last
+  // question answered; see ASSESSMENT_FLOW.
+  const flow = useMemo(() => ASSESSMENT_FLOW, []);
+  const {
+    index: stepIndex,
+    direction,
+    next: goNext,
+    back: goBack,
+    goToStep,
+  } = useFlow(flow, { completed: answers.weeklyHours != null });
   const [nameInput, setNameInput] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
   // The sport the parent explicitly committed to on the results page — the one
@@ -879,10 +919,8 @@ export function WizardShell() {
       const scored = scoreSports(restored);
       const chosen = scoreChosenSports(restored);
       if (scored.length === 0 && chosen.length === 0) return;
-      setResults(scored);
-      setChosenFits(chosen);
       if (saved.chosenSport) setChosenSport(saved.chosenSport);
-      setStepIndex(STEPS.length - 1);
+      goToStep(STEPS.length);
 
       // Logged-in user: defer the child profile creation until after the
       // players fetch confirms they have no existing children (newly registered).
@@ -1007,16 +1045,6 @@ export function WizardShell() {
   const profileChips = getProfileChips(answers);
   const sectionMeta = SECTION_META[currentSection];
 
-  const goNext = () => {
-    setDirection(1);
-    setStepIndex((i) => Math.min(i + 1, STEPS.length - 1));
-  };
-
-  const goBack = () => {
-    setDirection(-1);
-    setStepIndex((i) => Math.max(i - 1, 0));
-  };
-
   const setAnswer = <K extends keyof WizardAnswers>(key: K, value: WizardAnswers[K]) => {
     setAnswers((prev) => ({ ...prev, [key]: value }));
   };
@@ -1024,11 +1052,9 @@ export function WizardShell() {
   const retake = () => {
     setAnswers({ ...EMPTY_ANSWERS });
     setNameInput("");
-    setResults([]);
-    setChosenFits([]);
     setSavedStatus("idle");
     setChosenSport(null);
-    setStepIndex(0);
+    goToStep(1);
   };
 
   /**
@@ -1074,8 +1100,6 @@ export function WizardShell() {
       const timer = setTimeout(async () => {
         const scored = scoreSports(answers);
         const chosen = scoreChosenSports(answers);
-        setResults(scored);
-        setChosenFits(chosen);
 
         // Save to profile if logged in with a selected dependent (update)
         if (token && selectedDependentId) {

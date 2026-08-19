@@ -1,6 +1,6 @@
 "use client";
 
-import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
+import { AIDisclaimer } from "../../../shared/components/AIDisclaimer";
 import { useEffect, useRef } from "react";
 import { useAssistantChat } from "../../hooks/useAssistantChat";
 import { ChatDrawer } from "./ChatDrawer";

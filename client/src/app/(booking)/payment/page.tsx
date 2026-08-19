@@ -4,7 +4,8 @@ import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { toast } from "@/lib/toast";
-import { authApi } from "@/modules/auth/services/auth";
+import { useFetchProfile } from "@/modules/auth/hooks/useProfile";
+import { useSubscriptionQuote } from "@/modules/booking/hooks/useSubscriptionQuote";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { coachApi } from "@/modules/coach/services/coach";
 import { CommunityInsightsCard } from "@/modules/community/components/CommunityInsightsCard";
@@ -45,6 +46,8 @@ const bookingCoachName = (coach: Coach | null): string | undefined => {
 
 function PaymentPageContent() {
   const router = useRouter();
+  // Shared cached profile fetch — one cache entry across every consumer.
+  const fetchProfile = useFetchProfile();
   const searchParams = useSearchParams();
   const status = searchParams.get("status") || "pending";
   const bookingId = searchParams.get("bookingId") || "";
@@ -89,7 +92,7 @@ function PaymentPageContent() {
             await Promise.all([
               coachApi.getCoachById(coachId),
               coachApi.getCoachPackages(coachId),
-              authApi.getProfile().catch(() => null),
+              fetchProfile().catch(() => null),
             ]);
 
           if (coachResponse.success && coachResponse.data) {
@@ -103,15 +106,14 @@ function PaymentPageContent() {
             setSubscriptionPackage(selectedPackage || null);
           }
 
-          if (profileResponse?.success && profileResponse.data) {
-            if (
-              profileResponse.data.role !== "Player" &&
-              profileResponse.data.role !== "Parent"
-            ) {
-              toast.error("Only player accounts can purchase subscriptions.");
-              router.replace("/dashboard");
-              return;
-            }
+          if (
+            profileResponse &&
+            profileResponse.role !== "Player" &&
+            profileResponse.role !== "Parent"
+          ) {
+            toast.error("Only player accounts can purchase subscriptions.");
+            router.replace("/dashboard");
+            return;
           }
         } catch (error) {
           console.error("Failed to load subscription details:", error);
@@ -260,33 +262,11 @@ function PaymentPageContent() {
     <Clock className="text-power-orange" size={44} />
   );
 
-  const subscriptionCharges = (() => {
-    const basePaise = Math.round(subscriptionPackage?.price || 0);
-    const platformFeeRate = Number(
-      process.env.NEXT_PUBLIC_SUBSCRIPTION_PLATFORM_FEE_RATE ??
-        process.env.NEXT_PUBLIC_SERVICE_FEE_RATE ??
-        0,
-    );
-    const taxRate = Number(
-      process.env.NEXT_PUBLIC_SUBSCRIPTION_TAX_RATE ??
-        process.env.NEXT_PUBLIC_TAX_RATE ??
-        0.05,
-    );
-    const safePlatformFeeRate = Number.isFinite(platformFeeRate)
-      ? Math.max(0, platformFeeRate)
-      : 0;
-    const safeTaxRate = Number.isFinite(taxRate) ? Math.max(0, taxRate) : 0;
-    const platformFeePaise = Math.round(basePaise * safePlatformFeeRate);
-    const taxPaise =
-      platformFeePaise > 0 ? Math.round(platformFeePaise * safeTaxRate) : 0;
-
-    return {
-      basePaise,
-      platformFeePaise,
-      taxPaise,
-      totalPaise: basePaise + platformFeePaise + taxPaise,
-    };
-  })();
+  // Server-priced — see useSubscriptionQuote. The client no longer derives fees
+  // from its own NEXT_PUBLIC_* rate copies.
+  const { breakdown: subscriptionCharges } = useSubscriptionQuote(
+    Math.round(subscriptionPackage?.price || 0),
+  );
 
   if (isSubscriptionPayment) {
     const coachName =

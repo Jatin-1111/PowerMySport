@@ -16,10 +16,12 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "@/lib/api/axios";
+import { buildStepGateFlow } from "@/flow/defineFlow";
+import { useFlow } from "@/flow/useFlow";
 import { useAuthStore } from "@/modules/auth/store/authStore";
-import { roadmapHref } from "@/modules/pathway/sports";
+import { roadmapHref } from "../../pathway/data/sports";
 import { getAmbitionOptions, getBestResultLadder, getCurrentStandingLadder, deriveExperienceLevel } from "../data/sportArchetypes";
 import { BinaryCards } from "./inputs/BinaryCards";
 import { FourContextCards } from "./inputs/FourContextCards";
@@ -219,17 +221,24 @@ function shouldSkipStep(step: WizardStep, form: KnownSportForm): boolean {
   return step.kind === "question" && step.skip?.(form) === true;
 }
 
-function stepIndexInDirection(steps: WizardStep[], from: number, dir: 1 | -1, form: KnownSportForm): number {
-  let i = from + dir;
-  while (i >= 0 && i < steps.length && shouldSkipStep(steps[i], form)) {
-    i += dir;
-  }
-  return Math.max(0, Math.min(steps.length - 1, i));
-}
-
 function countEffectiveQuestions(steps: WizardStep[], form: KnownSportForm): number {
   return steps.filter((s) => s.kind === "question" && !s.skip?.(form)).length;
 }
+
+// The wizard steps, wired to the URL. A step is enterable only when every
+// required question before it is answered (so ?step=8 in a fresh tab lands on
+// the first unanswered question), and skipped steps — the conditional branches
+// like the "who trains them" follow-up — are transparent to both the gate and
+// navigation.
+const KNOWN_SPORT_FLOW = buildStepGateFlow<KnownSportForm>(
+  "known-sport",
+  STEPS.length,
+  (i, form) => {
+    const step = STEPS[i];
+    return step.kind !== "question" || !step.required || isAnswered(step.id, form);
+  },
+  { isStepSkipped: (i, form) => shouldSkipStep(STEPS[i], form) },
+);
 
 function questionNumberAt(steps: WizardStep[], index: number, form: KnownSportForm): number | null {
   const step = steps[index];
@@ -714,10 +723,20 @@ function ResultsView({ form, onReset }: { form: KnownSportForm; onReset: () => v
 
 export function SportKnownFlow({ onBack }: { onBack: () => void }) {
   const { token } = useAuthStore();
-  const [idx, setIdx] = useState(0);
   const [done, setDone] = useState(false);
   const [form, setForm] = useState<KnownSportForm>(EMPTY_FORM);
-  const [dir, setDir] = useState<1 | -1>(1);
+  // Active step lives in the URL (?step=): Back walks the questionnaire, each
+  // step is linkable, and a mid-flow deep link is gated to the first unanswered
+  // question and hops any skipped branch.
+  const flow = useMemo(() => KNOWN_SPORT_FLOW, []);
+  const {
+    index: idx,
+    isLast,
+    direction: dir,
+    next: goToNext,
+    back: goToPrev,
+    goToStep,
+  } = useFlow(flow, form);
   const [dependents, setDependents] = useState<any[]>([]);
   const [matchedDep, setMatchedDep] = useState<any | null>(null);
 
@@ -792,8 +811,7 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
     isAnswered(current.id, form);
 
   const goNext = () => {
-    setDir(1);
-    if (idx >= STEPS.length - 1) {
+    if (isLast) {
       // Persist locally so /roadmap can personalise (name, standing tier,
       // budget, ambition) — the only durable record for guests, and for
       // logged-in users it covers the window before the dependent refetch.
@@ -844,20 +862,18 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
       setDone(true);
       return;
     }
-    setIdx(stepIndexInDirection(STEPS, idx, 1, form));
+    goToNext();
   };
 
   const goPrev = () => {
-    setDir(-1);
-    if (idx > 0) setIdx(stepIndexInDirection(STEPS, idx, -1, form));
+    if (idx > 0) goToPrev();
     else onBack();
   };
 
   const reset = () => {
     setForm(EMPTY_FORM);
-    setIdx(0);
+    goToStep(1);
     setDone(false);
-    setDir(1);
     setMatchedDep(null);
   };
 

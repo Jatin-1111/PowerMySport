@@ -1,8 +1,9 @@
 "use client";
 
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { useSubscriptionQuote } from "@/modules/booking/hooks/useSubscriptionQuote";
 import { coachApi } from "@/modules/coach/services/coach";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
@@ -96,37 +97,12 @@ function SubscriptionCheckoutContent() {
     [subscriptionPackage?.frequency],
   );
 
-  const priceBreakdown = useMemo(() => {
-    const basePaise = Math.round(subscriptionPackage?.price || 0);
-    const platformFeeRate = Number(
-      process.env.NEXT_PUBLIC_SUBSCRIPTION_PLATFORM_FEE_RATE ??
-        process.env.NEXT_PUBLIC_SERVICE_FEE_RATE ??
-        0,
-    );
-    const taxRate = Number(
-      process.env.NEXT_PUBLIC_SUBSCRIPTION_TAX_RATE ??
-        process.env.NEXT_PUBLIC_TAX_RATE ??
-        0.05,
-    );
-
-    const safePlatformFeeRate = Number.isFinite(platformFeeRate)
-      ? Math.max(0, platformFeeRate)
-      : 0;
-    const safeTaxRate = Number.isFinite(taxRate) ? Math.max(0, taxRate) : 0;
-
-    const platformFeePaise = Math.round(basePaise * safePlatformFeeRate);
-    const taxPaise =
-      platformFeePaise > 0 ? Math.round(platformFeePaise * safeTaxRate) : 0;
-    const totalPaise = basePaise + platformFeePaise + taxPaise;
-
-    return {
-      basePaise,
-      platformFeePaise,
-      taxPaise,
-      totalPaise,
-      isZeroCommission: platformFeePaise === 0,
-    };
-  }, [subscriptionPackage?.price]);
+  // The breakdown comes from the server that will charge it — see
+  // useSubscriptionQuote. The client no longer recomputes fees from its own
+  // NEXT_PUBLIC_* rate copies.
+  const { breakdown: priceBreakdown, isQuoteLoading } = useSubscriptionQuote(
+    Math.round(subscriptionPackage?.price || 0),
+  );
 
   const handlePay = async () => {
     if (!coachId || !packageId || !subscriptionPackage) {

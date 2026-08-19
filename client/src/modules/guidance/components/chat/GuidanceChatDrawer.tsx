@@ -1,6 +1,6 @@
 "use client";
 
-import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
+import { AIDisclaimer } from "../../../shared/components/AIDisclaimer";
 import { useEffect, useState } from "react";
 import { useGuidanceChat } from "../../hooks/useGuidanceChat";
 import type { GuidanceSubmission } from "../../types";

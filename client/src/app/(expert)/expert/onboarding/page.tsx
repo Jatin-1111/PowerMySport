@@ -39,7 +39,9 @@ import {
   Zap,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { buildStepGateFlow } from "@/flow/defineFlow";
+import { useFlow } from "@/flow/useFlow";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -92,10 +94,59 @@ function SectionHeading({
   );
 }
 
-export default function ExpertOnboardingPage() {
+// Expert onboarding wired to the URL: Back walks the five steps instead of
+// leaving the flow, and each step is a distinct URL for drop-off analytics.
+// A step is reachable only when every step before it is complete — the same
+// per-step checks the Continue button enforces — so a deep link cannot jump
+// past unfilled steps. `loading` short-circuits the gate so a refresh does not
+// clamp before the saved draft has been fetched back from the server.
+type ExpertOnboardingGate = {
+  loading: boolean;
+  name: string;
+  bio: string;
+  achievements: string;
+  sports: string[];
+  expertise: string[];
+  sessionFee: string;
+  sessionMode: "ONLINE" | "IN_PERSON" | "BOTH";
+  inPersonAddress: string;
+  windows: ExpertAvailabilityWindow[];
+};
+
+const isExpertStepComplete = (
+  stepIndex: number,
+  c: ExpertOnboardingGate,
+): boolean => {
+  switch (stepIndex) {
+    case 0: // Identity
+      return (
+        c.name.trim().length > 0 &&
+        c.bio.trim().length >= 20 &&
+        c.achievements.trim().length > 0
+      );
+    case 1: // Expertise
+      return c.sports.length > 0 && c.expertise.length > 0;
+    case 2: // Session setup
+      return (
+        Number(c.sessionFee) > 0 &&
+        (c.sessionMode === "ONLINE" || c.inPersonAddress.trim().length > 0)
+      );
+    case 3: // Availability — invalid time ranges block advancement
+      return c.windows.every((w) => w.start < w.end);
+    default:
+      return true;
+  }
+};
+
+const EXPERT_ONBOARDING_FLOW = buildStepGateFlow<ExpertOnboardingGate>(
+  "expert-onboarding",
+  5,
+  (i, c) => c.loading || isExpertStepComplete(i, c),
+);
+
+function ExpertOnboardingContent() {
   const router = useRouter();
   const { user, setUser } = useAuthStore();
-  const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -131,6 +182,27 @@ export default function ExpertOnboardingPage() {
     EMPTY_TAX_PAYOUT_INFO,
   );
   const [agreedToPartnerTerms, setAgreedToPartnerTerms] = useState(false);
+
+  // URL-driven step (1-based `step` preserved so every existing reference works).
+  // `flowNext`/`goBack` are this flow's next/back; the existing `goNext` below
+  // keeps its validation and calls `flowNext()` once the step is saved.
+  const {
+    number: step,
+    next: flowNext,
+    back: goBack,
+    goToStep,
+  } = useFlow(EXPERT_ONBOARDING_FLOW, {
+    loading,
+    name,
+    bio,
+    achievements,
+    sports,
+    expertise,
+    sessionFee,
+    sessionMode,
+    inPersonAddress,
+    windows,
+  });
 
   const stepAnnouncerRef = useRef<HTMLParagraphElement>(null);
   const prevStepRef = useRef(step);
@@ -199,7 +271,7 @@ export default function ExpertOnboardingPage() {
           });
           // If rejected, show rejection reason
           if (p.verificationStatus === "REJECTED") {
-            setStep(1);
+            goToStep(1);
           }
         }
       })
@@ -309,10 +381,9 @@ export default function ExpertOnboardingPage() {
       }
       await saveDraft({ weeklyAvailability: windows, blackoutDates: blackout });
     }
-    setStep((s) => s + 1);
+    flowNext();
   };
 
-  const goBack = () => setStep((s) => s - 1);
 
   // ── Final submission ─────────────────────────────────────────────────────
 
@@ -429,7 +500,7 @@ export default function ExpertOnboardingPage() {
           <div key={s.id} className="flex flex-1 items-center">
             <button
               type="button"
-              onClick={() => step > s.id && setStep(s.id)}
+              onClick={() => step > s.id && goToStep(s.id)}
               disabled={s.id >= step}
               aria-current={step === s.id ? "step" : undefined}
               aria-label={`Step ${s.id}: ${s.title}${
@@ -972,5 +1043,14 @@ export default function ExpertOnboardingPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function ExpertOnboardingPage() {
+  // Suspense boundary for the URL-driven step (useSearchParams).
+  return (
+    <Suspense fallback={null}>
+      <ExpertOnboardingContent />
+    </Suspense>
   );
 }

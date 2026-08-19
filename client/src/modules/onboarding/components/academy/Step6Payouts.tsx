@@ -1,8 +1,8 @@
 "use client";
 
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "../../../shared/ui/Checkbox";
+import { Input } from "../../../shared/ui/Input";
+import { Textarea } from "../../../shared/ui/Textarea";
 import { toast } from "@/lib/toast";
 import type {
   AcademyPayoutFrequency,

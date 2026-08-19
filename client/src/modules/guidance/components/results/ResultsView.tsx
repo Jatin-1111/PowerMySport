@@ -1,9 +1,9 @@
 "use client";
 
-import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
-import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
+import { AIDisclaimer } from "../../../shared/components/AIDisclaimer";
+import { WhatsAppIcon } from "@/modules/shared/ui/WhatsAppIcon";
 import { useAuthStore } from "@/modules/auth/store/authStore";
-import { roadmapHref } from "@/modules/pathway/sports";
+import { roadmapHref } from "../../../pathway/data/sports";
 import { motion } from "framer-motion";
 import {
     ArrowRight,

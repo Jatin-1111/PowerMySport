@@ -9,7 +9,9 @@ import {
     VenueCoach,
 } from "@/modules/onboarding/types/onboarding";
 import { ArrowLeft, Check, CircleDot } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { buildStepGateFlow } from "@/flow/defineFlow";
+import { useFlow } from "@/flow/useFlow";
 import EmailVerificationModal from "./EmailVerificationModal";
 import { getDefaultOpeningHours } from "./OpeningHoursInput";
 import Step1ContactInfo from "./Step1ContactInfo";
@@ -80,11 +82,29 @@ interface UploadedDoc {
   s3Key: string; // S3 key for regenerating presigned URLs
 }
 
-export default function OnboardingContainer() {
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
+// Venue onboarding wired to the URL: Back walks the five steps instead of
+// leaving the flow, and each step is a distinct URL for drop-off analytics.
+// Steps 2–5 all operate on a venue that step 1 creates, so they are reachable
+// only once a `venueId` exists — a bare `?step=3` (no venue) clamps back to
+// step 1. There is no server resume here, so on refresh venueId is gone and the
+// flow correctly restarts, exactly as it did before.
+const VENUE_ONBOARDING_FLOW = buildStepGateFlow<{ venueId: string }>(
+  "venue-onboarding",
+  5,
+  (_i, ctx) => Boolean(ctx.venueId),
+);
+
+function OnboardingFlow() {
   const [isBooting, setIsBooting] = useState(true);
   const [isStepVisible, setIsStepVisible] = useState(false);
   const [venueId, setVenueId] = useState<string>("");
+
+  // URL-driven step (1-based `currentStep` preserved so existing reads work).
+  const {
+    number: currentStep,
+    back: flowBack,
+    goToStep,
+  } = useFlow(VENUE_ONBOARDING_FLOW, { venueId });
   const [loading, setLoading] = useState(false);
   const [showEmailVerification, setShowEmailVerification] = useState(false);
   const [emailToVerify, setEmailToVerify] = useState<string>("");
@@ -112,7 +132,7 @@ export default function OnboardingContainer() {
   const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDoc[]>([]);
 
   const resetOnboardingFlow = useCallback(() => {
-    setCurrentStep(1);
+    goToStep(1);
     setVenueId("");
     setContactInfo(null);
     setVenueDetails(null);
@@ -123,7 +143,7 @@ export default function OnboardingContainer() {
     setHasCoaches(false);
     setShowEmailVerification(false);
     setEmailToVerify("");
-  }, []);
+  }, [goToStep]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -183,17 +203,17 @@ export default function OnboardingContainer() {
   // ============ Email Verification ============
   const handleEmailVerified = useCallback(() => {
     setShowEmailVerification(false);
-    setCurrentStep(2);
+    goToStep(2);
     toast.success("Email verified");
-  }, []);
+  }, [goToStep]);
 
   const handleEmailVerificationClose = useCallback(() => {
     setShowEmailVerification(false);
     // Reset to step 1 if email verification is closed
-    setCurrentStep(1);
+    goToStep(1);
     setVenueId("");
     setContactInfo(null);
-  }, []);
+  }, [goToStep]);
 
   // ============ STEP 2: Submit venue details ============
   const handleStep2SubmitVenueDetails = useCallback(
@@ -222,14 +242,14 @@ export default function OnboardingContainer() {
         }
 
         setImagePresignedUrls(imageUrlsResponse.data.uploadUrls || []);
-        setCurrentStep(3);
+        goToStep(3);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Failed to proceed");
       } finally {
         setLoading(false);
       }
     },
-    [venueId],
+    [venueId, goToStep],
   );
 
   // ============ STEP 3: Confirm images and get document URLs ============
@@ -322,7 +342,7 @@ export default function OnboardingContainer() {
         }
 
         setDocumentPresignedUrls(docUrlsResponse.data.uploadUrls || []);
-        setCurrentStep(4);
+        goToStep(4);
       } catch (err) {
         toast.error(
           err instanceof Error ? err.message : "Failed to proceed to next step",
@@ -331,7 +351,7 @@ export default function OnboardingContainer() {
         setLoading(false);
       }
     },
-    [venueId],
+    [venueId, goToStep],
   );
 
   // ============ STEP 4: Finalize with documents ============
@@ -367,7 +387,7 @@ export default function OnboardingContainer() {
 
         // If venue has coaches, go to Step 5, otherwise finalize
         if (hasCoaches) {
-          setCurrentStep(5);
+          goToStep(5);
         } else {
           toast.success(
             "Venue submitted for approval. Details sent to " +
@@ -394,6 +414,7 @@ export default function OnboardingContainer() {
       contactInfo?.ownerEmail,
       hasCoaches,
       resetOnboardingFlow,
+      goToStep,
     ],
   );
 
@@ -458,7 +479,7 @@ export default function OnboardingContainer() {
       setContactInfo(dummyData);
       setEmailToVerify(dummyData.ownerEmail);
       setShowEmailVerification(false);
-      setCurrentStep(2);
+      goToStep(2);
       toast.success("Dev skip: moved to Step 2 without email verification");
     } catch (err) {
       console.error("Skip step 1 error:", err);
@@ -466,7 +487,7 @@ export default function OnboardingContainer() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [goToStep]);
 
   const handleSkipStep2 = useCallback(
     async (hasCoachesOverride?: boolean) => {
@@ -600,14 +621,14 @@ export default function OnboardingContainer() {
       }
 
       setDocumentPresignedUrls(docUrlsResponse.data.uploadUrls || []);
-      setCurrentStep(4);
+      goToStep(4);
     } catch (err) {
       console.error("Skip step 3 error:", err);
       toast.error(err instanceof Error ? err.message : "Failed to skip step 3");
     } finally {
       setLoading(false);
     }
-  }, [venueId]);
+  }, [venueId, goToStep]);
 
   const handleSkipStep4 = useCallback(async () => {
     setLoading(true);
@@ -675,7 +696,7 @@ export default function OnboardingContainer() {
       console.log("Step 4 skipped - hasCoaches is:", hasCoaches);
       if (hasCoaches) {
         console.log("Routing to Step 5 (coaches)");
-        setCurrentStep(5);
+        goToStep(5);
       } else {
         console.log("Showing success message (no coaches)");
         toast.success(
@@ -701,12 +722,13 @@ export default function OnboardingContainer() {
     contactInfo?.ownerEmail,
     hasCoaches,
     resetOnboardingFlow,
+    goToStep,
   ]);
   const handleBack = useCallback(() => {
     if (currentStep > 1) {
-      setCurrentStep((prev) => (prev - 1) as OnboardingStep);
+      flowBack();
     }
-  }, [currentStep]);
+  }, [currentStep, flowBack]);
 
   const handleCancel = useCallback(async () => {
     if (!venueId) return;
@@ -731,9 +753,9 @@ export default function OnboardingContainer() {
     (targetStep: OnboardingStep) => {
       if (loading) return;
       if (targetStep >= currentStep) return;
-      setCurrentStep(targetStep);
+      goToStep(targetStep);
     },
-    [loading, currentStep],
+    [loading, currentStep, goToStep],
   );
 
   if (isBooting) {
@@ -993,5 +1015,14 @@ export default function OnboardingContainer() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OnboardingContainer() {
+  // Suspense boundary for the URL-driven step (useSearchParams).
+  return (
+    <Suspense fallback={<OnboardingContainerSkeleton />}>
+      <OnboardingFlow />
+    </Suspense>
   );
 }

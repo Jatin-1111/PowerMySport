@@ -26,11 +26,10 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { toast } from "@/lib/toast";
 import { statsApi } from "@/modules/analytics/services/stats";
-import { authApi } from "@/modules/auth/services/auth";
 import {
   PaymentMethodOption,
   PaymentMethodSelector,
@@ -47,7 +46,11 @@ import { Coach, User, Venue } from "@/types";
 import { cn } from "@/utils/cn";
 import { formatCurrency, formatDate, formatTime } from "@/utils/format";
 import { getOwnVenueLocationDisplay } from "@/utils/location";
-import { getDashboardPathByRole } from "@/utils/roleDashboard";
+import { CHECKOUT_FLOW } from "@/flow/flows/checkout";
+import { useFlow } from "@/flow/useFlow";
+import { useBookingQuote } from "@/modules/booking/hooks/useBookingQuote";
+import { useFetchProfile } from "@/modules/auth/hooks/useProfile";
+import { consoleHomeFor } from "@/flow/policy";
 
 // ─── Animation variants ──────────────────────────────────────────────────────
 
@@ -462,8 +465,6 @@ function CheckoutPageContent() {
   const [discount, setDiscount] = useState(0);
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [stepDir, setStepDir] = useState(1);
   const [alternateSlots, setAlternateSlots] = useState<string[]>([]);
   const [showWaitlistPrompt, setShowWaitlistPrompt] = useState(false);
   const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
@@ -498,7 +499,7 @@ function CheckoutPageContent() {
               : type === "venue" && venueId
                 ? venueApi.getVenue(venueId)
                 : Promise.resolve(null),
-            authApi.getProfile().catch(() => null),
+            fetchProfile().catch(() => null),
             walletApi.getWallet().catch(() => null),
           ]);
 
@@ -507,14 +508,14 @@ function CheckoutPageContent() {
         if (type === "venue" && detailsResponse?.success)
           setVenue(detailsResponse.data as Venue);
 
-        if (profileResponse?.success && profileResponse.data) {
-          setUser(profileResponse.data);
+        if (profileResponse) {
+          setUser(profileResponse);
           if (
-            profileResponse.data.role !== "Player" &&
-            profileResponse.data.role !== "Parent"
+            profileResponse.role !== "Player" &&
+            profileResponse.role !== "Parent"
           ) {
             toast.error("Only player accounts can create bookings.");
-            router.replace(getDashboardPathByRole(profileResponse.data.role));
+            router.replace(consoleHomeFor(profileResponse.role));
             return;
           }
         }
@@ -566,24 +567,19 @@ function CheckoutPageContent() {
     return 0;
   }, [type, coach, venue, sport]);
 
-  const serviceFeeRate = Number(process.env.NEXT_PUBLIC_SERVICE_FEE_RATE ?? 0);
-  const taxRate = Number(process.env.NEXT_PUBLIC_TAX_RATE ?? 0.05);
   const subtotal = durationHours * pricePerHour;
-  const serviceFee = Math.round(
-    subtotal * (Number.isFinite(serviceFeeRate) ? serviceFeeRate : 0),
-  );
-  const taxes =
-    serviceFee > 0
-      ? Math.round(serviceFee * (Number.isFinite(taxRate) ? taxRate : 0))
-      : 0;
-  const total = Math.max(0, subtotal + serviceFee + taxes - discount);
-
+  // Fees come from the server that will charge them — see useBookingQuote. The
+  // client no longer derives the breakdown from its own NEXT_PUBLIC_* rate copies.
+  const { quote, isQuoteLoading } = useBookingQuote(subtotal, discount);
+  const serviceFee = quote.serviceFee;
+  const taxes = quote.tax;
+  const total = quote.total;
   const finalPayableAmount =
     isGroupBooking && paymentType === "SPLIT"
       ? Math.round(total / (selectedFriendIds.length + 1))
       : total;
-
-  const isZeroCommission = serviceFeeRate === 0;
+  // Zero-commission is a property of the quote, not of a locally-read rate.
+  const isZeroCommission = serviceFee === 0;
 
   const hasRequiredDetails = Boolean(date && startTime && endTime && sport);
   const hasValidDuration = durationMinutes > 0;
@@ -609,12 +605,25 @@ function CheckoutPageContent() {
     return opts;
   }, [walletBalance, finalPayableAmount]);
 
-  const goToStep = (n: number) => {
-    setStepDir(n > currentStep ? 1 : -1);
-    setCurrentStep(n);
-  };
+  // The step lives in the URL, not in component state. Back steps back through
+  // the flow instead of leaving it, a refresh keeps your place, and each step is
+  // a distinct URL that drop-off can be attributed to. The entry guards live in
+  // CHECKOUT_FLOW, so ?step=confirm in a fresh tab lands on review.
+  // Shared cached profile fetch — same key as `useProfile`, so this page and
+  // every other consumer collapse onto one cache entry instead of each issuing
+  // its own request.
+  const fetchProfile = useFetchProfile();
+
+  const flow = useFlow(CHECKOUT_FLOW, {
+    hasBookingDetails: hasRequiredDetails && hasValidDuration,
+    hasPaymentMethod: Boolean(paymentMethod),
+  });
+  const currentStep = flow.number;
+  const stepDir = flow.direction;
 
   const handleNextStep = () => {
+    // Kept as explicit feedback: the guard alone would silently refuse to
+    // advance, and the user needs to be told which detail is missing.
     if (!hasRequiredDetails) {
       toast.error("Missing booking details.");
       return;
@@ -623,10 +632,10 @@ function CheckoutPageContent() {
       toast.error("End time must be after start time.");
       return;
     }
-    goToStep(Math.min(3, currentStep + 1));
+    flow.next();
   };
 
-  const handlePrevStep = () => goToStep(Math.max(1, currentStep - 1));
+  const handlePrevStep = () => flow.back();
 
   const handleApplyPromo = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -902,7 +911,11 @@ function CheckoutPageContent() {
         variant="primary"
         className="w-[180px] lg:w-full gap-2"
         disabled={
-          !hasRequiredDetails || !hasValidDuration || isSubmitting || total <= 0
+          !hasRequiredDetails ||
+          !hasValidDuration ||
+          isSubmitting ||
+          isQuoteLoading ||
+          total <= 0
         }
         loading={currentStep === 3 ? isSubmitting : false}
         onClick={currentStep === 3 ? handleCheckout : handleNextStep}
