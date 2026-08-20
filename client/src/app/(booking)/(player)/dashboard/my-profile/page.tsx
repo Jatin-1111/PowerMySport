@@ -6,7 +6,7 @@ import { Badge } from "@/modules/shared/ui/Badge";
 import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import { Input } from "@/modules/shared/ui/Input";
 import { toast } from "@/lib/toast";
-import { useFetchProfile } from "@/modules/auth/hooks/useProfile";
+import { useRefreshProfile } from "@/modules/auth/hooks/useProfile";
 import { authApi } from "@/modules/auth/services/auth";
 import {
   normalizeStoredState,
@@ -110,8 +110,10 @@ function ProfilePageSkeleton() {
 
 function ProfilePageContent() {
   const router = useRouter();
-  // Shared cached profile fetch (one entry across all consumers).
-  const loadProfile = useFetchProfile();
+  // Shared profile query entry, but always re-read from the network: this page
+  // both reads and writes the profile, so a cached read after a save would show
+  // the user the value they just replaced.
+  const loadProfile = useRefreshProfile();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -174,9 +176,9 @@ function ProfilePageContent() {
 
   const fetchProfile = async () => {
     try {
-      // Goes through the shared cache; `useProfile` and every other consumer
-      // read the same entry rather than each issuing its own request.
-      await loadProfile();
+      // Writes through the shared query entry, so `useProfile` consumers get
+      // the same profile this page just rendered.
+      setUser(await loadProfile());
     } catch (error) {
       console.error("Failed to fetch profile:", error);
     } finally {

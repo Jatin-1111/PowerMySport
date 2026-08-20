@@ -109,3 +109,26 @@ export const useFetchProfile = (): (() => Promise<User | null>) => {
     [queryClient, setUser],
   );
 };
+
+/**
+ * Imperative access that always goes to the network.
+ *
+ * `useFetchProfile` honours the 30s default `staleTime`, which is what makes it
+ * a shared cache read. Callers that have just *written* to the profile need the
+ * opposite: a page that adds a dependent and then re-reads inside that window
+ * would render the pre-write profile back to the user.
+ */
+export const useRefreshProfile = (): (() => Promise<User | null>) => {
+  const queryClient = useQueryClient();
+  const setUser = useAuthStore((state) => state.setUser);
+
+  return useCallback(
+    () =>
+      queryClient.fetchQuery({
+        queryKey: profileQueryKey,
+        queryFn: () => fetchProfile(setUser),
+        staleTime: 0,
+      }),
+    [queryClient, setUser],
+  );
+};

@@ -291,6 +291,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     },
 
+    // ── Auth ──
+    // Only /login, and only because "<brand> login" is a query real returning
+    // users type — see the note in (auth)/login/layout.tsx. Its siblings
+    // (/register, /forgot-password, /reset-password) stay noindex and stay out.
+    {
+      url: `${siteUrl}/login`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.5,
+    },
+
     // ── No booking surfaces listed, deliberately ──
     // /venues, /coaches, /academies and /experts were standalone listings; they
     // are gone and now 308 to /booking. /booking does NOT go here in their
