@@ -205,7 +205,7 @@ export function ResultsView({
           <div className="grid grid-cols-2 gap-3">
             {/* Book an Expert */}
             <Link
-              href="/experts"
+              href="/booking?tab=experts"
               className="group flex flex-col items-start gap-3 rounded-2xl border border-orange-100 bg-orange-50 p-4 transition hover:border-orange-200 hover:bg-orange-100/60 cursor-pointer"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 group-hover:bg-orange-200/70 transition">

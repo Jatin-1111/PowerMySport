@@ -7,8 +7,9 @@
  * Two changes, both of them things the seed script cannot do for a guide that is
  * already in the database:
  *
- *   1. `/academies` and `/coaches` were standalone "launching soon" waitlist
- *      pages. They are gone; /booking's tabs are the one discovery surface.
+ *   1. `/academies`, `/coaches`, `/venues` and `/experts` were standalone
+ *      directories. They are gone; /booking's tabs are the one discovery
+ *      surface, and each of those paths now 308s to its tab.
  *   2. The "Find tournament" chip is dropped entirely — `/tournaments` has no
  *      index page, and the tournament calendar is reached from the federation
  *      band on the same page.
@@ -27,6 +28,7 @@ const REPOINT: Record<string, string> = {
   "/academies": "/booking?tab=academies",
   "/coaches": "/booking?tab=coaches",
   "/venues": "/booking?tab=venues",
+  "/experts": "/booking?tab=experts",
 };
 
 /** helpLinks chips to delete outright, matched on href prefix. */

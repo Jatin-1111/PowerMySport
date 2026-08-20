@@ -23,33 +23,39 @@ const isBookingLive = process.env.NEXT_PUBLIC_BOOKING_IS_LIVE !== "false";
 
 const navColumns = [
   {
+    // Product surfaces, in the order a parent actually meets them.
+    title: "Explore",
+    links: [
+      { label: "Get Started", href: "/assessment" },
+      { label: "Sports Pathways", href: "/roadmap" },
+      { label: "Powermysport AI", href: "/guidance" },
+      { label: "Find an Expert", href: "/booking?tab=experts" },
+      ...(isBookingLive ? [{ label: "Book a Session", href: "/booking" }] : []),
+    ],
+  },
+  {
+    title: "For Partners",
+    links: [
+      { label: "List Your Venue", href: "/onboarding" },
+      { label: "List Your Academy", href: "/academy/onboarding" },
+      { label: "Become a Coach", href: "/register?role=COACH" },
+      { label: "Partner Terms", href: "/partner-terms" },
+    ],
+  },
+  {
     title: "Company",
     links: [
       { label: "About Us", href: "/about" },
       { label: "How It Works", href: "/how-it-works" },
-      { label: "Get Started", href: "/assessment" },
-      { label: "Sports Pathways", href: "/roadmap" },
-      { label: "Powermysport AI", href: "/guidance" },
-      { label: "Experts", href: "/experts" },
       { label: "FAQ", href: "/faq" },
       { label: "Contact", href: "/contact" },
       { label: "Careers", href: "/careers" },
     ],
   },
   {
-    title: "Platform",
-    links: [
-      ...(isBookingLive ? [{ label: "Book a Session", href: "/booking" }] : []),
-      { label: "List Your Venue", href: "/onboarding" },
-      { label: "List Your Academy", href: "/academy/onboarding" },
-      { label: "Become a Coach", href: "/register?role=COACH" },
-    ],
-  },
-  {
     title: "Legal",
     links: [
       { label: "Terms of Service", href: "/terms" },
-      { label: "Partner Terms", href: "/partner-terms" },
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Refund Policy", href: "/refund-policy" },
       { label: "Health Waiver", href: "/health-waiver" },
@@ -93,9 +99,9 @@ export const Footer: React.FC = () => {
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Main grid */}
-        <div className="grid grid-cols-1 gap-10 py-16 sm:grid-cols-2 lg:grid-cols-5">
-          {/* Brand column — 2 cols wide on lg */}
-          <div className="sm:col-span-2 lg:col-span-2">
+        <div className="grid grid-cols-1 gap-x-8 gap-y-12 py-16 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+          {/* Brand block — owns its own row until lg, then sits beside the nav */}
+          <div className="sm:col-span-2 md:col-span-4 lg:col-span-2">
             <Link href="/" className="inline-flex items-center">
               <span className="font-title text-3xl font-extrabold leading-none tracking-tight">
                 <span className="text-white">Power</span>
@@ -200,7 +206,7 @@ export const Footer: React.FC = () => {
               href="mailto:teams@powermysport.com"
               className="text-slate-500 transition-colors hover:text-slate-300"
             >
-              Legal
+              Legal Enquiries
             </a>
           </p>
         </div>

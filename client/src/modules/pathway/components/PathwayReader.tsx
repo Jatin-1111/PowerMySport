@@ -927,7 +927,7 @@ export function PathwayReader({
                         </Link>
                       )}
                       <Link
-                        href="/experts"
+                        href="/booking?tab=experts"
                         className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:border-slate-400"
                       >
                         Speak with an expert

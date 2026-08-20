@@ -1,9 +1,7 @@
 {
   "app/(auth)/register/page.tsx": 572,
-  "app/(booking)/(player)/dashboard/checkout/page.tsx": 1635,
-  "app/(booking)/(player)/dashboard/coaches/[coachId]/page.tsx": 459,
   "app/(booking)/(player)/dashboard/friends/page.tsx": 702,
-  "app/(booking)/(player)/dashboard/my-bookings/page.tsx": 855,
+  "app/(booking)/(player)/dashboard/my-bookings/page.tsx": 650,
   "app/(booking)/(player)/dashboard/my-profile/page.tsx": 1619,
   "app/(booking)/(player)/dashboard/page.tsx": 502,
   "app/(booking)/(player)/dashboard/subscription-checkout/page.tsx": 422,
@@ -22,7 +20,6 @@
   "app/(booking)/coach/schedule/page.tsx": 1433,
   "app/(booking)/coach/verification/page.tsx": 2211,
   "app/(booking)/coaches/[coachId]/CoachDetailClient.tsx": 1195,
-  "app/(booking)/experts/ExpertsBrowseClient.tsx": 548,
   "app/(booking)/experts/[expertId]/ExpertDetailClient.tsx": 483,
   "app/(booking)/experts/sessions/[sessionId]/page.tsx": 673,
   "app/(booking)/payment/page.tsx": 663,

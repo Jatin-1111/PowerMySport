@@ -59,6 +59,14 @@ const nextConfig: NextConfig = {
         destination: "/booking?tab=academies",
         permanent: true,
       },
+      // Same story for the expert directory, collapsed into the Experts tab.
+      // `/experts/[expertId]` and `/experts/sessions` underneath stay live and
+      // are what that tab links to, so this stays an exact path too.
+      {
+        source: "/experts",
+        destination: "/booking?tab=experts",
+        permanent: true,
+      },
     ];
   },
   async rewrites() {

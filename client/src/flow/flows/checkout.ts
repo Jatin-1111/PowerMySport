@@ -1,12 +1,11 @@
 import { defineFlow } from "../defineFlow";
 
 /**
- * The booking checkout flow, shared by both entry points.
+ * The booking checkout flow.
  *
- * `/checkout` and `/dashboard/checkout` are near-duplicate 1,700-line pages with
- * identical step structure. One definition is the first piece of converging them:
- * the sequence and its entry rules now exist once, whatever the surrounding page
- * looks like.
+ * `/checkout` is the single entry point; the near-duplicate `/dashboard/checkout`
+ * it once shared this definition with has been deleted. The sequence and its
+ * entry rules live here so a new provider type extends one flow, not a new page.
  */
 
 export type CheckoutStep = "review" | "payment" | "confirm";

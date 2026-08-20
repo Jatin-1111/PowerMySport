@@ -108,7 +108,7 @@ export default function MyExpertSessionsPage() {
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-3xl px-6 py-10">
           <Link
-            href="/experts"
+            href="/booking?tab=experts"
             className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-power-orange"
           >
             <ArrowLeft className="h-4 w-4" /> Browse experts
@@ -152,7 +152,7 @@ export default function MyExpertSessionsPage() {
               title="No sessions yet"
               description="Book a 1:1 session with a sports expert to get started."
               actionLabel="Browse experts"
-              onAction={() => router.push("/experts")}
+              onAction={() => router.push("/booking?tab=experts")}
             />
           </div>
         ) : (

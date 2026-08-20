@@ -240,7 +240,7 @@ export default function ExpertSessionPage() {
         <div className="mx-auto max-w-2xl px-6 py-20 text-center">
           <p className="font-semibold text-red-600">{error || "Not found."}</p>
           <Link
-            href="/experts"
+            href="/booking?tab=experts"
             className="mt-4 inline-flex items-center gap-2 rounded-lg bg-power-orange px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
           >
             <ArrowLeft className="h-4 w-4" /> Back to experts

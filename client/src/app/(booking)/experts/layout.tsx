@@ -1,29 +1,19 @@
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
-import type { Metadata } from "next";
 import React from "react";
 
-export const metadata: Metadata = {
-  title: "Sports Experts — Book 1:1 Guidance Sessions",
-  description:
-    "Browse verified Indian sports experts and book paid 1:1 sessions online or in person. Get personalised advice on your child's sport, level, and next steps from people who've actually played.",
-  alternates: {
-    canonical: "/experts",
-  },
-  openGraph: {
-    title: "Sports Experts — Book 1:1 Guidance Sessions",
-    description:
-      "Verified sports experts available for 1:1 sessions. Book online or in person. PowerMySport.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
-  },
-  keywords: [
-    "sports expert India",
-    "book sports expert online India",
-    "1:1 sports coaching India",
-    "sports mentor for kids India",
-    "verified sports coach India",
-  ],
-};
+/**
+ * Chrome for `/experts/[expertId]` and `/experts/sessions`.
+ *
+ * `/experts` itself is gone — /booking's Experts tab is the real discovery
+ * surface — so this segment has no page of its own and the bare path 308s in
+ * next.config, exactly as /venues, /coaches and /academies already do.
+ *
+ * Deliberately no `metadata` export. The old one carried `canonical: "/experts"`,
+ * which the children inherited: `/experts/sessions` already had to override it
+ * (see its layout), and pointing it at the new tab would only move the bug, since
+ * /booking is noindex. The detail route sets its own canonical.
+ */
 
 export default function ExpertsLayout({
   children,

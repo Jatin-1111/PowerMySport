@@ -41,7 +41,7 @@ const TENNIS_CALENDAR = "/federations/aita?tab=calendar";
 const HELP_LINKS = [
   { label: "Find academy", href: "/booking?tab=academies" },
   { label: "Find coach", href: "/booking?tab=coaches" },
-  { label: "Book expert", href: "/experts" },
+  { label: "Book expert", href: "/booking?tab=experts" },
   { label: "Equipment", href: "/shop" },
   { label: "Assessment", href: "/guidance" },
 ];
@@ -344,7 +344,7 @@ const GUIDE: PathwayGuideInput = {
         },
         { when: "Step 5", action: "Begin discussing future pathways early." },
       ],
-      primaryAction: { label: "Start a high-performance review", href: "/experts" },
+      primaryAction: { label: "Start a high-performance review", href: "/booking?tab=experts" },
       helpLinks: HELP_LINKS,
     },
 
@@ -447,7 +447,7 @@ const GUIDE: PathwayGuideInput = {
         },
         { when: "Step 4", action: "Build a 2–3 year transition plan." },
       ],
-      primaryAction: { label: "Explore career directions", href: "/experts" },
+      primaryAction: { label: "Explore career directions", href: "/booking?tab=experts" },
       helpLinks: HELP_LINKS,
     },
   ],

@@ -19,7 +19,6 @@ import {
     ShoppingBag,
     Star,
     User,
-    Users,
     X,
 } from "lucide-react";
 import Link from "next/link";
@@ -34,14 +33,17 @@ export interface NavProps {
 
 const isShopLive = process.env.NEXT_PUBLIC_SHOP_IS_LIVE !== "false";
 const isBookingLive = process.env.NEXT_PUBLIC_BOOKING_IS_LIVE !== "false";
+const isExpertsLive = process.env.NEXT_PUBLIC_EXPERTS_IS_LIVE === "true";
 
+/** Mirrors the tabs /booking actually renders. */
+const BOOK_TABS = isExpertsLive
+  ? "Venues · Coaches · Academies · Experts"
+  : "Venues · Coaches · Academies";
+
+// Experts deliberately absent: it is a tab inside Book, so listing it here as a
+// sibling of Book pointed out of Book and straight back into it. It is named in
+// the Book entry's subtitle instead.
 const servicesItems = [
-  {
-    href: "/experts",
-    label: "Experts",
-    description: "Guidance for your sports plan",
-    icon: Users,
-  },
   ...(isShopLive
     ? [
         {
@@ -377,7 +379,7 @@ export const Navigation: React.FC<NavProps> = ({
                                   Book
                                 </p>
                                 <p className="text-xs text-slate-400">
-                                  Venues · Coaches · Academies
+                                  {BOOK_TABS}
                                 </p>
                               </div>
                             </Link>

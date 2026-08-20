@@ -105,7 +105,7 @@ const NEXT_STEPS = [
     icon: MessagesSquare,
     title: "Want to ask a person?",
     body: "Book time with a verified expert who has been through this — a coach, an ex-player, someone who has taken a child down this road.",
-    href: "/experts",
+    href: "/booking?tab=experts",
     cta: "Speak with an expert",
     tone: "text-indigo-600 bg-indigo-100",
   },

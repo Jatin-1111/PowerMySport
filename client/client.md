@@ -48,9 +48,9 @@ The `client` project is the main consumer-facing web application of the PowerMyS
 
 ### Booking & Checkout Flow
 1. **Selection**: User selects a slot on a Venue or Coach profile and clicks Book.
-2. **Checkout Page**: User is redirected to `/dashboard/checkout?params...`. `CheckoutClient.tsx` loads the details.
+2. **Checkout Page**: User is redirected to `/checkout?params...`, which loads the details.
 3. **Payment**: User selects a payment method (e.g., PhonePe). `bookingApi.initiatePayment` is called.
-4. **Redirect**: User is redirected to PhonePe. Upon success, they are redirected back to the app (`/dashboard/bookings/[id]?success=true`).
+4. **Redirect**: User is redirected to PhonePe. Upon success, they are redirected back to the app (`/dashboard/my-bookings?success=true&bookingId=...`).
 
 ### Coach Verification
 1. **Initiate**: Coach signs up and visits `/coach/verification`.
@@ -74,7 +74,7 @@ The `client` project is the main consumer-facing web application of the PowerMyS
 - `/venues`, `/coaches` - Discovery directories
 - `/dashboard/my-bookings` - Player's past and upcoming bookings
 - `/dashboard/wallet` - Wallet balance and top-up
-- `/dashboard/checkout` - Unified checkout for bookings
+- `/checkout` - Unified checkout for bookings
 - `/venue-lister/inventory` - Venue owner dashboard
 - `/coach/verification` - Coach onboarding
 - `/academy/onboarding` - Academy setup workflow

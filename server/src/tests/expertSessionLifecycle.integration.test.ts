@@ -18,6 +18,25 @@
 // Where current behaviour is arguably wrong, it is pinned as-is and flagged in
 // a comment rather than silently "fixed" — a characterization suite that
 // encodes what you wish the code did is worse than none.
+//
+// HOW TO RUN
+// ----------
+//   npm run test:expert-lifecycle   (or `npm test` for everything)
+//
+// It must go through the build. The scripts compile to `dist/` because tsconfig
+// targets CommonJS, and `mock.method` below depends on that: it replaces a
+// property by rewriting its descriptor, which only works on the writable data
+// properties CJS `exports` produces. Running the TypeScript directly with a
+// loader that emits ESM instead (`npx tsx --test src/tests/...`) makes
+// `require()` return a module namespace whose exports are non-configurable
+// GETTERS — the descriptor then has no `.value`, and every mock.method call dies
+// in `before()` with:
+//
+//   TypeError [ERR_INVALID_ARG_VALUE]: The argument 'methodName' must be a
+//   method. Received undefined
+//
+// which cancels the whole file and reports a cheerful `pass 0, fail 0`.
+
 process.env.JWT_SECRET = "test-secret-test-secret-test-secret-1234567890";
 process.env.PHONEPE_CLIENT_ID = "test-client";
 process.env.PHONEPE_CLIENT_SECRET = "test-secret";

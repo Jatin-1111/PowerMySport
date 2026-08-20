@@ -2,6 +2,8 @@ import { randomBytes } from "crypto";
 import mongoose, { ClientSession } from "mongoose";
 import { Booking, BookingDocument } from "../models/Booking";
 import { BookingSlotLock } from "../models/BookingSlotLock";
+import { ExpertSession } from "../models/ExpertBooking";
+import { Expert } from "../models/ExpertProfile";
 import { Coach } from "../models/Coach";
 import { CoachSubscription } from "../models/CoachSubscription";
 import { User } from "../models/User";
@@ -32,6 +34,11 @@ import {
   calculateSplitAmounts,
 } from "../../utils/payment";
 import { generateDynamicSlots } from "../../utils/booking";
+import {
+  projectExpertSessionAsBooking,
+  type ExpertSessionForProjection,
+  type ProjectedExpertBooking,
+} from "../../utils/expertSessionMapping";
 import { recordBookingEventFor } from "./BookingEventService";
 import type {
   BookingEventActorType,
@@ -1383,35 +1390,142 @@ export const initiateBooking = async (
 /**
  * Get all bookings for a user
  */
+/**
+ * Flatten a populated Expert into the shape the client already reads elsewhere:
+ * `name` at the top level rather than nested under `userId`. Mirrors
+ * ExpertsService's serializeExpert for the handful of display fields a booking
+ * card needs, without pulling in that module's full (and sensitive) payload.
+ */
+const expertDisplayFields = (expert: unknown): unknown => {
+  if (!expert || typeof expert !== "object") return expert;
+  const e = expert as {
+    _id?: unknown;
+    photoUrl?: string;
+    city?: string;
+    sessionMode?: string;
+    timezone?: string;
+    rating?: number;
+    reviewCount?: number;
+    userId?: { name?: string } | unknown;
+  };
+  const user = e.userId as { name?: string } | undefined;
+  return {
+    id: e._id ? String(e._id) : undefined,
+    _id: e._id,
+    name: user && typeof user === "object" ? user.name : undefined,
+    photoUrl: e.photoUrl,
+    city: e.city,
+    sessionMode: e.sessionMode,
+    timezone: e.timezone,
+    rating: e.rating,
+    reviewCount: e.reviewCount,
+  };
+};
+
+/**
+ * A row in a parent's booking list: either a real Booking, or an expert session
+ * projected into the same shape (see projectExpertSessionAsBooking).
+ */
+export type UserBookingRow = BookingDocument | ProjectedExpertBooking;
+
+/**
+ * Upper bound on rows read per source before merging.
+ *
+ * This path is per-parent, where real counts are in the tens, so the cap only
+ * exists so a pathological account cannot pull an unbounded result set into
+ * memory. It is far above any realistic booking history.
+ */
+const USER_BOOKING_SCAN_CAP = 500;
+
+const createdAtOf = (row: UserBookingRow): number => {
+  const value = (row as { createdAt?: Date }).createdAt;
+  return value ? new Date(value).getTime() : 0;
+};
+
+/**
+ * Every booking a parent has made, across all four provider types.
+ *
+ * Expert consultations still live in their own `expertsessions` collection, so
+ * they are read separately and projected into the booking shape rather than
+ * being missing from the list. Both sources are read whole and merged before
+ * paging, because two collections cannot be skip/limited independently without
+ * producing wrong pages the moment their rows interleave by date — page 1 would
+ * hold the newest of each source rather than the newest overall.
+ */
 export const getUserBookings = async (
   userId: string,
   page: number = 1,
   limit: number = 20,
 ): Promise<{
-  bookings: BookingDocument[];
+  bookings: UserBookingRow[];
   total: number;
   page: number;
   totalPages: number;
 }> => {
-  const skip = (page - 1) * limit;
-  const query = { userId };
+  const [bookings, sessions] = await Promise.all([
+    Booking.find({ userId })
+      .select("+checkInCode")
+      .populate([
+        { path: "venueId" },
+        {
+          path: "coachId",
+          populate: { path: "userId", select: "name email phone" },
+        },
+        { path: "academyId" },
+        {
+          path: "expertId",
+          model: Expert,
+          // Explicit select, never the whole document: Expert holds PAN and GST
+          // with decrypting getters that must not reach a parent-facing payload.
+          select: "photoUrl city sessionMode timezone rating reviewCount",
+          populate: { path: "userId", select: "name" },
+        },
+      ])
+      .sort({ createdAt: -1 })
+      .limit(USER_BOOKING_SCAN_CAP),
+    ExpertSession.find({ userId })
+      .populate({
+        path: "expertId",
+        model: Expert,
+        select: "photoUrl city sessionMode timezone rating reviewCount",
+        populate: { path: "userId", select: "name" },
+      })
+      .sort({ createdAt: -1 })
+      .limit(USER_BOOKING_SCAN_CAP),
+  ]);
 
-  const total = await Booking.countDocuments(query);
-  const bookings = await Booking.find(query)
-    .select("+checkInCode")
-    .populate([
-      { path: "venueId" },
-      {
-        path: "coachId",
-        populate: { path: "userId", select: "name email phone" },
-      },
-      { path: "academyId" },
-    ])
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
+  // Once migration 25 runs, a session exists in both collections. The Booking
+  // copy wins, so the list does not double every expert booking on the day that
+  // migration is applied.
+  const alreadyMigrated = new Set(
+    bookings
+      .map((b) => b.expert?.legacySessionId)
+      .filter((id): id is string => Boolean(id))
+      .map(String),
+  );
 
-  return { bookings, total, page, totalPages: Math.ceil(total / limit) };
+  const projected = sessions
+    .filter((session) => !alreadyMigrated.has(String(session._id)))
+    .map((session) =>
+      projectExpertSessionAsBooking(
+        session.toObject() as unknown as ExpertSessionForProjection,
+        expertDisplayFields(session.expertId),
+      ),
+    );
+
+  const merged = [...bookings, ...projected].sort(
+    (a, b) => createdAtOf(b) - createdAtOf(a),
+  );
+
+  const total = merged.length;
+  const start = (page - 1) * limit;
+
+  return {
+    bookings: merged.slice(start, start + limit),
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 /**

@@ -1,10 +1,9 @@
 "use client";
 
 import { FilterBar, type ActiveFilter } from "@/modules/discovery/components/FilterBar";
-import { type Expert } from "@/modules/expert/services/expert";
+import { expertApi, type Expert } from "@/modules/expert/services/expert";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
-import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
 import {
     StaggerContainer,
     StaggerItem,
@@ -12,20 +11,15 @@ import {
 import { cn } from "@/utils/cn";
 import {
     ArrowRight,
-    CalendarCheck,
-    CircleCheck,
     Globe,
     Languages,
     MapPin,
     Search,
     ServerCrash,
-    ShieldCheck,
     Star,
-    Zap,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 const normalize = (v: string) =>
@@ -92,18 +86,54 @@ function ExpertCardSkeleton() {
   );
 }
 
-export function ExpertsBrowseClient({
+/**
+ * Expert discovery — filters, sorting and the result grid.
+ *
+ * Shared by both entry points so they cannot drift: `/experts` renders it under
+ * its own SEO hero with a server-fetched list, and the `/booking` Experts tab
+ * renders it bare and fetches on mount. Everything a caller owns (hero, page
+ * chrome, background) lives outside this component.
+ */
+export function ExpertsTab({
   initialExperts,
-  initialError,
+  initialError = null,
 }: {
-  initialExperts: Expert[];
-  initialError: string | null;
+  /** Server-rendered list. Omit it to fetch client-side instead. */
+  initialExperts?: Expert[];
+  initialError?: string | null;
 }) {
   const router = useRouter();
 
-  const [experts] = useState<Expert[]>(initialExperts);
-  const loading = false;
-  const [error] = useState<string | null>(initialError);
+  const [experts, setExperts] = useState<Expert[]>(initialExperts ?? []);
+  const [loading, setLoading] = useState(!initialExperts);
+  const [error, setError] = useState<string | null>(initialError);
+
+  const loadExperts = useCallback(async () => {
+    try {
+      const res = await expertApi.listExperts({ limit: 60 });
+      if (res.success && res.data) setExperts(res.data);
+      else setError(res.message || "Failed to load experts.");
+    } catch {
+      setError("Failed to load experts.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Resetting the flags belongs here rather than inside loadExperts: on mount
+  // `loading` already starts true, and only a retry needs them cleared.
+  const retryLoad = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    void loadExperts();
+  }, [loadExperts]);
+
+  // Only the tab fetches. `/experts` already has its list from the server, and
+  // re-fetching there would flash a skeleton over content that is already good.
+  useEffect(() => {
+    if (initialExperts) return;
+    void loadExperts();
+  }, [initialExperts, loadExperts]);
 
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
@@ -238,62 +268,7 @@ export function ExpertsBrowseClient({
   const hasFilters = activeFilters.length > 0 || appliedSearch !== "";
 
   return (
-    <div className="min-h-screen bg-[#F4F3F0]">
-      {/* ── Hero ─────────────────────────────────────────────────── */}
-      <div className="border-b border-slate-200 bg-white">
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <FadeIn className="max-w-2xl">
-              <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.22em] text-orange-700">
-                Expert Guidance
-              </p>
-              <h1
-                className="font-title font-black leading-[0.92] tracking-tight text-slate-900"
-                style={{
-                  fontSize: "clamp(2.2rem, 5vw, 3.75rem)",
-                  textWrap: "balance",
-                }}
-              >
-                Book a 1:1 session with a{" "}
-                <span className="text-power-orange">sports expert.</span>
-              </h1>
-              <p className="mt-4 max-w-md text-[15px] leading-relaxed text-slate-500">
-                Browse verified experts, pay securely, pick a time that suits
-                you — then rate your session afterwards.
-              </p>
-            </FadeIn>
-
-            <FadeIn
-              delay={0.1}
-              className="flex flex-col items-start lg:items-end gap-6"
-            >
-              <div className="flex flex-wrap gap-3 lg:flex-col lg:items-end lg:gap-2.5">
-                {[
-                  { icon: ShieldCheck, label: "Secure payments" },
-                  { icon: CircleCheck, label: "Verified experts" },
-                  { icon: Zap, label: "1:1 Guidance" },
-                ].map(({ icon: Icon, label }) => (
-                  <span
-                    key={label}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-100 bg-slate-50 px-3.5 py-1.5 text-[12px] font-medium text-slate-600"
-                  >
-                    <Icon size={13} className="text-power-orange" />
-                    {label}
-                  </span>
-                ))}
-              </div>
-
-              <Link
-                href="/experts/sessions"
-                className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-orange-50 px-4 py-2.5 text-sm font-semibold text-orange-700 transition-colors hover:bg-orange-100 ring-1 ring-inset ring-orange-700/20"
-              >
-                <CalendarCheck className="h-4 w-4" /> My sessions
-              </Link>
-            </FadeIn>
-          </div>
-        </div>
-      </div>
-
+    <div>
       {/* ── Filters ──────────────────────────────────────────────── */}
       <FilterBar
         searchValue={searchInput}
@@ -425,7 +400,7 @@ export function ExpertsBrowseClient({
               title="Couldn't load experts"
               description={error}
               actionLabel="Retry"
-              onAction={() => window.location.reload()}
+              onAction={retryLoad}
             />
           </div>
         ) : filtered.length === 0 ? (
@@ -460,10 +435,6 @@ export function ExpertsBrowseClient({
                 const id = String(expert.id || expert._id || "");
                 const route = `/experts/${id}`;
                 const primarySport = expert.sports?.[0] || "Guidance";
-                const tags = [
-                  ...(expert.sports || []),
-                  ...(expert.expertise || []),
-                ].slice(0, 3);
 
                 return (
                   <StaggerItem key={id} className="h-full">

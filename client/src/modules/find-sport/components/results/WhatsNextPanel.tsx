@@ -194,7 +194,7 @@ export function WhatsNextPanel({
           </p>
 
           <a
-            href={booked.expertDone ? "/experts/sessions" : "/experts"}
+            href={booked.expertDone ? "/experts/sessions" : "/booking?tab=experts"}
             className="group/cta flex items-center justify-center gap-2 w-full rounded-xl border border-white/15 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-white hover:border-white hover:text-slate-900"
           >
             {booked.expertDone ? "View your session" : "Talk to an Expert"}

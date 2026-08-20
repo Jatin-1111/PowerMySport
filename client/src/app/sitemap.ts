@@ -177,8 +177,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     : [];
 
   // ── Expert profiles (/experts/[expertId]) ──
-  // The `/experts` directory itself is listed below regardless; the individual
-  // profiles only make sense once experts are live and bookable.
+  // Expert profiles are the only indexable expert URLs — the directory itself is
+  // gone (see the omission note below) — and they only make sense once experts
+  // are live and bookable.
   const expertEntries: MetadataRoute.Sitemap = experts
     .map((expert) => expert.id ?? expert._id)
     .filter((id): id is string => Boolean(id))
@@ -257,12 +258,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.95,
     },
-    {
-      url: `${siteUrl}/experts`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
 
     // ── Marketing / informational ──
     {
@@ -297,8 +292,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
 
     // ── No booking surfaces listed, deliberately ──
-    // /venues, /coaches and /academies were "launching soon" waitlist pages;
-    // they are gone and now 308 to /booking. /booking does NOT go here in their
+    // /venues, /coaches, /academies and /experts were standalone listings; they
+    // are gone and now 308 to /booking. /booking does NOT go here in their
     // place: it is `noindex` and disallowed in robots.txt (see robots.ts), so
     // submitting it would just trade three crawlable URLs for one Search
     // Console "blocked by robots.txt" error.

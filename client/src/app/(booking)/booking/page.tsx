@@ -2,6 +2,7 @@
 
 import AcademiesTab from "@/modules/discovery/components/AcademiesTab";
 import CoachesTab from "@/modules/discovery/components/CoachesTab";
+import { ExpertsTab } from "@/modules/discovery/components/ExpertsTab";
 import VenuesTab from "@/modules/discovery/components/VenuesTab";
 import { cn } from "@/utils/cn";
 import {
@@ -10,12 +11,17 @@ import {
     GraduationCap,
     MapPin,
     ShieldCheck,
+    UserRoundSearch,
     Zap,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
-type Tab = "venues" | "coaches" | "academies";
+type Tab = "venues" | "coaches" | "academies" | "experts";
+
+// Experts are behind the same flag the `/experts` directory reads, so the tab
+// appears only once they are actually bookable.
+const isExpertsLive = process.env.NEXT_PUBLIC_EXPERTS_IS_LIVE === "true";
 
 const TABS: {
   id: Tab;
@@ -36,6 +42,16 @@ const TABS: {
     icon: Building2,
     sub: "Structured programs",
   },
+  ...(isExpertsLive
+    ? [
+        {
+          id: "experts" as Tab,
+          label: "Experts",
+          icon: UserRoundSearch,
+          sub: "1:1 guidance",
+        },
+      ]
+    : []),
 ];
 
 function TabBar({
@@ -101,7 +117,7 @@ function BookingPageContent() {
   const handleTabChange = (tab: Tab) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
-    ["sport", "mode", "maxRate", "minRating", "sort"].forEach((k) =>
+    ["sport", "mode", "maxRate", "maxFee", "minRating", "sort"].forEach((k) =>
       params.delete(k),
     );
     router.push(`/booking?${params.toString()}`);
@@ -126,11 +142,15 @@ function BookingPageContent() {
                 }}
               >
                 Book courts,{" "}
-                <span className="text-power-orange">coaches &</span> academies.
+                <span className="text-power-orange">
+                  {isExpertsLive ? "coaches," : "coaches &"}
+                </span>{" "}
+                {isExpertsLive ? "academies & experts." : "academies."}
               </h1>
               <p className="mt-4 max-w-md text-[15px] leading-relaxed text-slate-500">
-                Verified venues, certified coaches, structured academies all
-                bookable in minutes across India.
+                Verified venues, certified coaches, structured academies
+                {isExpertsLive ? ", and 1:1 sessions with verified experts —" : ""}{" "}
+                all bookable in minutes across India.
               </p>
             </div>
 
@@ -166,6 +186,7 @@ function BookingPageContent() {
         {activeTab === "venues" && <VenuesTab />}
         {activeTab === "coaches" && <CoachesTab />}
         {activeTab === "academies" && <AcademiesTab />}
+        {activeTab === "experts" && <ExpertsTab />}
       </div>
     </div>
   );

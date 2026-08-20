@@ -143,7 +143,7 @@ export default async function ExpertDetailPage({
                 : {}),
             }),
             breadcrumbJsonLd([
-              { name: "Experts", path: "/experts" },
+              { name: "Experts", path: "/booking?tab=experts" },
               { name: expert.name as string, path: `/experts/${expertId}` },
             ]),
           ]}

@@ -195,3 +195,138 @@ export const slotCrossesMidnightIST = (
   const startMinutes = ist.getUTCHours() * 60 + ist.getUTCMinutes();
   return startMinutes + (durationMinutes || 60) > 23 * 60 + 59;
 };
+
+/**
+ * The `sport` a consultation is recorded under.
+ *
+ * Booking requires a sport and every slot/listing query reads it, but an expert
+ * consultation is not about one sport the way a court booking is. "Consultation"
+ * is used rather than the expert's first sport so the value never implies the
+ * session was scoped to a sport nobody chose.
+ */
+export const EXPERT_BOOKING_SPORT = "Consultation";
+
+/** The ExpertSession fields the read-time projection needs. */
+export interface ExpertSessionForProjection extends ExpertSessionLike {
+  _id: unknown;
+  userId: unknown;
+  expertId: unknown;
+  playerId?: unknown;
+  amount: number;
+  durationMinutes: number;
+  paidAt?: Date | null;
+  holdExpiresAt?: Date | null;
+  expertRespondedAt?: Date | null;
+  completedAt?: Date | null;
+  cancelledAt?: Date | null;
+  cancellationNoticeHours?: number;
+  mode?: string;
+  meetingLink?: string;
+  clientNote?: string;
+  momNotes?: string;
+  momAddedAt?: Date | null;
+  autoCompleted?: boolean;
+  refundStatus?: string;
+  merchantOrderId?: string;
+  phonepeOrderId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** A booking-shaped view of an expert session. Plain data, never persisted. */
+export type ProjectedExpertBooking = Record<string, unknown> & {
+  providerType: "EXPERT";
+  status: BookingStatus;
+  createdAt: Date;
+};
+
+/**
+ * Present an ExpertSession as a Booking, without writing anything.
+ *
+ * Expert consultations are the one provider type still stored in their own
+ * collection, so a parent's booking list would otherwise show three of their
+ * four booking kinds. Rather than migrate the data to fix a read, this projects
+ * the old shape into the new one at read time — the same field mapping migration
+ * 25 performs, so whenever that migration does run the rows it writes match what
+ * this returned and the list does not visibly change.
+ *
+ * `refundStatus` is deliberately left unset: expert sessions use a manual refund
+ * flow with its own vocabulary (surfaced as `expert.manualRefundStatus`), and
+ * populating the automated field would make the client poll for a status
+ * transition that never comes.
+ */
+export const projectExpertSessionAsBooking = (
+  session: ExpertSessionForProjection,
+  /** The populated expert, passed through for display. */
+  expert?: unknown,
+): ProjectedExpertBooking => {
+  const duration =
+    Number.isFinite(session.durationMinutes) && session.durationMinutes > 0
+      ? Math.round(session.durationMinutes)
+      : 60;
+
+  // An unscheduled session (paid, no time agreed) still needs the derived slot
+  // fields the booking shape requires, so they are derived from its creation
+  // instant and the caller distinguishes the two by `scheduledAt` being null.
+  const anchor = session.scheduledAt ?? session.createdAt;
+  const slot = deriveSlotFromInstant(anchor, duration);
+  const canceller = mapExpertCanceller(session.cancelledBy);
+
+  return {
+    id: String(session._id),
+    _id: session._id,
+    userId: session.userId,
+    organizerId: session.userId,
+    expertId: expert ?? session.expertId,
+    providerType: "EXPERT",
+    sport: EXPERT_BOOKING_SPORT,
+    date: slot.date,
+    startTime: slot.startTime,
+    endTime: slot.endTime,
+    scheduledAt: session.scheduledAt ?? null,
+    durationMinutes: duration,
+    totalAmount: session.amount,
+    status: mapExpertStatusToBookingStatus(session),
+    bookingType: "INDIVIDUAL",
+    paymentType: "SINGLE",
+    participants: [],
+    ...(session.playerId ? { participantId: session.playerId } : {}),
+    ...(session.paidAt ? { paymentConfirmedAt: session.paidAt } : {}),
+    ...(session.holdExpiresAt ? { expiresAt: session.holdExpiresAt } : {}),
+    ...(session.expertAcceptance
+      ? { providerAcceptance: session.expertAcceptance }
+      : {}),
+    ...(session.expertRespondedAt
+      ? { providerRespondedAt: session.expertRespondedAt }
+      : {}),
+    ...(session.completedAt ? { completedAt: session.completedAt } : {}),
+    ...(session.cancelledAt ? { cancelledAt: session.cancelledAt } : {}),
+    ...(session.cancelReason
+      ? { cancellationReason: session.cancelReason }
+      : {}),
+    ...(canceller ? { cancelledBy: canceller } : {}),
+    ...(typeof session.cancellationNoticeHours === "number"
+      ? { cancellationNoticeHours: session.cancellationNoticeHours }
+      : {}),
+    expert: {
+      legacySessionId: String(session._id),
+      ...(session.mode ? { mode: session.mode } : {}),
+      ...(session.meetingLink ? { meetingLink: session.meetingLink } : {}),
+      ...(session.clientNote ? { clientNote: session.clientNote } : {}),
+      ...(session.momNotes ? { momNotes: session.momNotes } : {}),
+      ...(session.momAddedAt ? { momAddedAt: session.momAddedAt } : {}),
+      ...(session.autoCompleted ? { autoCompleted: true } : {}),
+      ...(session.refundStatus
+        ? { manualRefundStatus: session.refundStatus }
+        : {}),
+      ...(session.merchantOrderId
+        ? { merchantOrderId: session.merchantOrderId }
+        : {}),
+      ...(session.phonepeOrderId
+        ? { phonepeOrderId: session.phonepeOrderId }
+        : {}),
+    },
+    createdAt: session.createdAt,
+    updatedAt: session.updatedAt,
+  };
+};

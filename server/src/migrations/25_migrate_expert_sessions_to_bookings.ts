@@ -9,6 +9,7 @@ import { Expert } from "../client/models/ExpertProfile";
 import { Player } from "../client/models/Player";
 import { User } from "../client/models/User";
 import {
+  EXPERT_BOOKING_SPORT,
   deriveSlotFromInstant,
   mapExpertCanceller,
   mapExpertStatusToBookingStatus,
@@ -75,7 +76,6 @@ interface SkippedRow {
   reason: string;
 }
 
-const DEFAULT_SPORT = "Consultation";
 
 export const up = async (
   options: { apply?: boolean; report?: boolean } = {},
@@ -199,7 +199,7 @@ export const up = async (
       organizerId: session.userId,
       expertId: session.expertId,
       providerType: "EXPERT",
-      sport: DEFAULT_SPORT,
+      sport: EXPERT_BOOKING_SPORT,
       date: slot.date,
       startTime: slot.startTime,
       endTime: slot.endTime,

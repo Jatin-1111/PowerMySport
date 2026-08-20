@@ -365,6 +365,25 @@ export interface AcademyRef {
   gstNumber?: string;
 }
 
+/**
+ * The expert fields a booking carries for display. Deliberately narrow: the full
+ * Expert profile holds tax identifiers the bookings API does not return.
+ */
+export interface BookingExpertRef {
+  id: string;
+  _id?: string;
+  name?: string;
+  photoUrl?: string;
+  city?: string;
+  sessionMode?: "ONLINE" | "IN_PERSON" | "BOTH";
+  timezone?: string;
+  rating?: number;
+  reviewCount?: number;
+}
+
+/** Which kind of provider a booking is against. */
+export type BookingProviderType = "VENUE" | "COACH" | "ACADEMY" | "EXPERT";
+
 export interface Booking {
   id: string;
   userId: string | User;
@@ -372,7 +391,28 @@ export interface Booking {
   venue?: Venue; // Populated venue data
   coachId?: string | Coach; // Can be populated
   academyId?: string | AcademyRef; // Can be populated
+  /** Set for providerType EXPERT. Populated by the bookings API. */
+  expertId?: string | BookingExpertRef;
   coach?: Coach; // Populated coach data
+  /**
+   * Set by the server on every booking. Prefer this over sniffing which
+   * provider id is present — an expert consultation may reference a venue for an
+   * IN_PERSON session, so id-sniffing miscategorises it.
+   */
+  providerType?: BookingProviderType;
+  /** Expert-only details. Present when providerType is EXPERT. */
+  expert?: {
+    legacySessionId?: string;
+    mode?: "ONLINE" | "IN_PERSON";
+    meetingLink?: string;
+    clientNote?: string;
+    momNotes?: string;
+    momAddedAt?: string;
+    manualRefundStatus?: "NONE" | "REQUIRED" | "MANUAL_DONE";
+  };
+  /** True instant of an expert session; the slot fields are derived from it. */
+  scheduledAt?: string | null;
+  durationMinutes?: number;
   sport: string; // Required in backend
   date: string;
   startTime: string;

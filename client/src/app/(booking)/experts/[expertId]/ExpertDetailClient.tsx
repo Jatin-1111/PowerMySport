@@ -207,7 +207,7 @@ export function ExpertDetailClient() {
           title={error || "Expert not found."}
           description="This expert may no longer be active, or the link is incorrect."
           actionLabel="Back to experts"
-          onAction={() => router.push("/experts")}
+          onAction={() => router.push("/booking?tab=experts")}
         />
       </div>
     );
@@ -229,7 +229,7 @@ export function ExpertDetailClient() {
         {/* Nav */}
         <div className="relative mx-auto max-w-6xl px-6 pt-6">
           <div className="flex items-center justify-between">
-            <Link href="/experts" className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white/80 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white">
+            <Link href="/booking?tab=experts" className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white/80 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white">
               <ArrowLeft className="h-3.5 w-3.5" /> All experts
             </Link>
             <Link href="/experts/sessions" className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white/80 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white">

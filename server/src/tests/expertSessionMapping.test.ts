@@ -1,12 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  EXPERT_BOOKING_SPORT,
   HOLD_EXPIRY_REASON,
   deriveSlotFromInstant,
   mapBookingStatusToExpertStatus,
   mapExpertCanceller,
   mapExpertStatusToBookingStatus,
+  projectExpertSessionAsBooking,
   slotCrossesMidnightIST,
+  type ExpertSessionForProjection,
 } from "../utils/expertSessionMapping";
 
 // ───────────────── status: expert -> booking ─────────────────
@@ -261,4 +264,121 @@ test("produces zero-padded HH:mm", () => {
   assert.equal(slot.startTime, "03:05");
   assert.equal(slot.endTime, "03:10");
   assert.match(slot.startTime, /^\d{2}:\d{2}$/);
+});
+
+// ───────────────── read-time projection: session -> booking ─────────────────
+
+const sessionFixture = (
+  overrides: Partial<ExpertSessionForProjection> = {},
+): ExpertSessionForProjection => ({
+  _id: "sess-1",
+  userId: "user-1",
+  expertId: "expert-1",
+  amount: 1500,
+  durationMinutes: 60,
+  // 2026-08-20T04:30:00Z is 10:00 IST.
+  scheduledAt: new Date("2026-08-20T04:30:00.000Z"),
+  status: "SCHEDULED",
+  createdAt: new Date("2026-08-01T00:00:00.000Z"),
+  updatedAt: new Date("2026-08-02T00:00:00.000Z"),
+  ...overrides,
+});
+
+test("projects an accepted session as a CONFIRMED expert booking", () => {
+  const row = projectExpertSessionAsBooking(
+    sessionFixture({ expertAcceptance: "ACCEPTED" }),
+  );
+  assert.equal(row.providerType, "EXPERT");
+  assert.equal(row.status, "CONFIRMED");
+  assert.equal(row.sport, EXPERT_BOOKING_SPORT);
+  assert.equal(row.totalAmount, 1500);
+  assert.equal(row.startTime, "10:00");
+  assert.equal(row.endTime, "11:00");
+  assert.equal(row.bookingType, "INDIVIDUAL");
+});
+
+test("carries the session id so a migrated copy can be de-duplicated", () => {
+  const row = projectExpertSessionAsBooking(sessionFixture());
+  assert.equal(
+    (row.expert as { legacySessionId?: string }).legacySessionId,
+    "sess-1",
+  );
+});
+
+test("leaves refundStatus unset so the client does not poll for a refund that never lands", () => {
+  const row = projectExpertSessionAsBooking(
+    sessionFixture({ refundStatus: "REQUIRED" }),
+  );
+  assert.equal(row.refundStatus, undefined);
+  assert.equal(
+    (row.expert as { manualRefundStatus?: string }).manualRefundStatus,
+    "REQUIRED",
+  );
+});
+
+test("an unscheduled paid session still gets slot fields, with scheduledAt null", () => {
+  const row = projectExpertSessionAsBooking(
+    sessionFixture({ status: "PAID", scheduledAt: null }),
+  );
+  assert.equal(row.status, "AWAITING_PROVIDER");
+  assert.equal(row.scheduledAt, null);
+  // Derived from createdAt rather than left undefined, since Booking requires them.
+  assert.ok(typeof row.startTime === "string" && row.startTime.length === 5);
+  assert.ok(row.date instanceof Date);
+});
+
+test("renames the canceller from EXPERT to PROVIDER", () => {
+  const row = projectExpertSessionAsBooking(
+    sessionFixture({
+      status: "CANCELLED",
+      cancelledBy: "EXPERT",
+      cancelReason: "Unwell",
+    }),
+  );
+  assert.equal(row.status, "CANCELLED");
+  assert.equal(row.cancelledBy, "PROVIDER");
+  assert.equal(row.cancellationReason, "Unwell");
+});
+
+test("a lapsed hold projects as EXPIRED, not CANCELLED", () => {
+  const row = projectExpertSessionAsBooking(
+    sessionFixture({
+      status: "CANCELLED",
+      cancelledBy: "SYSTEM",
+      cancelReason: HOLD_EXPIRY_REASON,
+    }),
+  );
+  assert.equal(row.status, "EXPIRED");
+});
+
+test("passes a populated expert through in place of the raw id", () => {
+  const expert = { id: "expert-1", name: "Jatin" };
+  const row = projectExpertSessionAsBooking(sessionFixture(), expert);
+  assert.deepEqual(row.expertId, expert);
+  // Without one, the raw reference is kept so the row is still identifiable.
+  assert.equal(projectExpertSessionAsBooking(sessionFixture()).expertId, "expert-1");
+});
+
+test("the projected status always round-trips through the reverse mapping", () => {
+  // PAID means "paid, no time agreed yet", so it must be modelled without a
+  // scheduledAt — that field is the only thing separating it from SCHEDULED on
+  // the way back, since both map to AWAITING_PROVIDER.
+  const cases = [
+    { status: "PENDING_PAYMENT" as const, scheduledAt: null },
+    { status: "PAID" as const, scheduledAt: null },
+    { status: "SCHEDULED" as const, expertAcceptance: "ACCEPTED" as const },
+    { status: "COMPLETED" as const },
+  ];
+
+  for (const overrides of cases) {
+    const row = projectExpertSessionAsBooking(sessionFixture(overrides));
+    assert.equal(
+      mapBookingStatusToExpertStatus({
+        status: row.status,
+        scheduledAt: row.scheduledAt as Date | null,
+      }),
+      overrides.status,
+      `round trip failed for ${overrides.status}`,
+    );
+  }
 });
