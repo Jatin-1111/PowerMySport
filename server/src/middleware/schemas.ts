@@ -479,6 +479,19 @@ export const communityVoteSchema = z.object({
   value: z.union([z.literal(1), z.literal(-1)]),
 });
 
+const communityFollowTargetSchema = z.object({
+  kind: z.enum(["GROUP", "TOPIC"]),
+  targetId: z.string().trim().min(1, "Target is required").max(80),
+});
+
+export const communityFollowToggleSchema = communityFollowTargetSchema;
+
+// Bounded at 200 to match the per-user follow cap — a legacy localStorage blob
+// is the only caller, and one that large is already a corrupt payload.
+export const communityFollowImportSchema = z.object({
+  items: z.array(communityFollowTargetSchema).max(200),
+});
+
 export const communityModerationActionSchema = z.object({
   status: z.enum(["UNDER_REVIEW", "RESOLVED", "REJECTED"]),
   resolutionNote: z.string().trim().max(1000).optional(),

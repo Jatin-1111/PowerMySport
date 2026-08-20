@@ -83,20 +83,28 @@ export default function CommunityOverviewPanel({ page }: Props) {
           }}
           isGroupFollowed={(groupId) => followedGroupIds.includes(groupId)}
           onToggleGroupFollow={(group) => {
-            const result = communityFollowStore.toggle({
-              kind: "group",
-              id: group.id,
-              label: group.name,
-              href: `/`,
-            });
-            setFollowedGroupIds(
-              communityFollowStore.getByKind("group").map((item) => item.id),
-            );
-            toast.success(
-              result.following
-                ? `Following ${group.name}`
-                : `Unfollowed ${group.name}`,
-            );
+            void (async () => {
+              try {
+                const result = await communityFollowStore.toggle({
+                  kind: "GROUP",
+                  targetId: group.id,
+                });
+                setFollowedGroupIds(
+                  await communityFollowStore.getIdsByKind("GROUP"),
+                );
+                toast.success(
+                  result.following
+                    ? `Following ${group.name}`
+                    : `Unfollowed ${group.name}`,
+                );
+              } catch (error) {
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to update follow",
+                );
+              }
+            })();
           }}
           onViewAll={() => {
             setActiveSidebarTab("conversations");

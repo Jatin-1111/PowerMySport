@@ -482,10 +482,15 @@ export default function QnAFeedClient() {
   }, [searchInput]);
 
   useEffect(() => {
-    const followed = communityFollowStore
-      .getByKind("topic")
-      .map((item) => item.id.toLowerCase());
-    setFollowedTopics(followed);
+    let cancelled = false;
+    void communityFollowStore.getIdsByKind("TOPIC").then((ids) => {
+      if (!cancelled) {
+        setFollowedTopics(ids);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -708,25 +713,34 @@ export default function QnAFeedClient() {
     [spotlight.popularTags],
   );
 
-  const toggleTopicFollow = (topic: string) => {
+  const toggleTopicFollow = async (topic: string) => {
     const normalized = topic.trim().toLowerCase();
     if (!normalized) {
       return;
     }
 
-    const result = communityFollowStore.toggle({
-      kind: "topic",
-      id: normalized,
-      label: `#${topic}`,
-      href: `/questions?tag=${encodeURIComponent(normalized)}`,
-    });
+    // Following is a per-account action, so a guest gets the login redirect
+    // rather than a silent no-op that looks like a broken button.
+    if (!hasAuthToken()) {
+      redirectToMainLogin();
+      return;
+    }
 
-    setFollowedTopics(
-      communityFollowStore.getByKind("topic").map((item) => item.id),
-    );
-    toast.success(
-      result.following ? `Following #${topic}` : `Unfollowed #${topic}`,
-    );
+    try {
+      const result = await communityFollowStore.toggle({
+        kind: "TOPIC",
+        targetId: normalized,
+      });
+
+      setFollowedTopics(await communityFollowStore.getIdsByKind("TOPIC"));
+      toast.success(
+        result.following ? `Following #${topic}` : `Unfollowed #${topic}`,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update follow",
+      );
+    }
   };
 
   return (
@@ -987,7 +1001,7 @@ export default function QnAFeedClient() {
                             value ? (
                               <button
                                 type="button"
-                                onClick={() => toggleTopicFollow(value)}
+                                onClick={() => void toggleTopicFollow(value)}
                                 className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition ${
                                   followedTopics.includes(value.toLowerCase())
                                     ? "border-emerald-300 bg-emerald-50 text-emerald-700"

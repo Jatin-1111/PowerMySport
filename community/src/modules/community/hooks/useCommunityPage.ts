@@ -858,10 +858,15 @@ export function useCommunityPage(options?: {
     void loadBootstrap();
   }, [loadBootstrap]);
   useEffect(() => {
-    const followed = communityFollowStore
-      .getByKind("group")
-      .map((item) => item.id);
-    setFollowedGroupIds(followed);
+    let cancelled = false;
+    void communityFollowStore.getIdsByKind("GROUP").then((ids) => {
+      if (!cancelled) {
+        setFollowedGroupIds(ids);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {

@@ -5,33 +5,70 @@ import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, Heart, Layers } from "lucide-react";
 import {
   communityFollowStore,
-  CommunityFollowItem,
+  CommunityFollowRecord,
 } from "@/modules/community/lib/followStore";
+import { hasAuthToken } from "@/lib/auth/token";
+import { redirectToMainLogin } from "@/lib/auth/redirect";
+import { toast } from "@/lib/toast";
 
 export default function FollowingPage() {
-  const [items, setItems] = useState<CommunityFollowItem[]>([]);
+  const [items, setItems] = useState<CommunityFollowRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSignedIn, setIsSignedIn] = useState(true);
 
   useEffect(() => {
-    setItems(communityFollowStore.getAll());
+    // Follows live on the account now, so this page has nothing to show a
+    // guest — say so rather than render a permanently empty list.
+    if (!hasAuthToken()) {
+      setIsSignedIn(false);
+      setIsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    void communityFollowStore
+      .getAll()
+      .then((followed) => {
+        if (!cancelled) {
+          setItems(followed);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  // Keeps this list in step if a follow is toggled elsewhere in the tab.
+  useEffect(() => communityFollowStore.subscribe(setItems), []);
+
   const followedGroups = useMemo(
-    () => items.filter((item) => item.kind === "group"),
+    () => items.filter((item) => item.kind === "GROUP"),
     [items],
   );
   const followedTopics = useMemo(
-    () => items.filter((item) => item.kind === "topic"),
+    () => items.filter((item) => item.kind === "TOPIC"),
     [items],
   );
 
-  const remove = (item: CommunityFollowItem) => {
-    communityFollowStore.toggle({
-      kind: item.kind,
-      id: item.id,
-      label: item.label,
-      href: item.href,
-    });
-    setItems(communityFollowStore.getAll());
+  const remove = async (item: CommunityFollowRecord) => {
+    try {
+      await communityFollowStore.toggle({
+        kind: item.kind,
+        targetId: item.targetId,
+      });
+      setItems(await communityFollowStore.getAll());
+      toast.success(`Unfollowed ${item.label}`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to unfollow",
+      );
+    }
   };
 
   return (
@@ -46,7 +83,22 @@ export default function FollowingPage() {
             Groups and topics you follow for faster discovery.
           </p>
 
-          {items.length === 0 ? (
+          {!isSignedIn ? (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm text-slate-500">
+                Sign in to see the groups and topics you follow. They are saved
+                to your account, so they follow you across devices.
+              </p>
+              <button
+                onClick={() => redirectToMainLogin()}
+                className="rounded-lg bg-power-orange px-3 py-2 text-sm font-semibold text-white"
+              >
+                Sign in
+              </button>
+            </div>
+          ) : isLoading ? (
+            <p className="mt-4 text-sm text-slate-500">Loading your follows...</p>
+          ) : items.length === 0 ? (
             <p className="mt-4 text-sm text-slate-500">
               No followed items yet.
             </p>
@@ -65,14 +117,14 @@ export default function FollowingPage() {
                   ) : (
                     followedGroups.map((item) => (
                       <div
-                        key={`${item.kind}-${item.id}`}
+                        key={`${item.kind}-${item.targetId}`}
                         className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
                       >
                         <p className="text-sm font-medium text-slate-800">
                           {item.label}
                         </p>
                         <button
-                          onClick={() => remove(item)}
+                          onClick={() => void remove(item)}
                           className="text-xs font-semibold text-slate-500 hover:text-slate-700"
                         >
                           Unfollow
@@ -95,7 +147,7 @@ export default function FollowingPage() {
                   ) : (
                     followedTopics.map((item) => (
                       <div
-                        key={`${item.kind}-${item.id}`}
+                        key={`${item.kind}-${item.targetId}`}
                         className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
                       >
                         <p className="text-sm font-medium text-slate-800">
@@ -110,7 +162,7 @@ export default function FollowingPage() {
                             <ExternalLink size={12} />
                           </Link>
                           <button
-                            onClick={() => remove(item)}
+                            onClick={() => void remove(item)}
                             className="text-xs font-semibold text-slate-500 hover:text-slate-700"
                           >
                             Unfollow

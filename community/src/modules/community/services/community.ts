@@ -17,6 +17,8 @@ import {
   ConversationItem,
   ConversationMessage,
   CommunityFeedSort,
+  CommunityFollowKind,
+  CommunityFollowRecord,
   CommunityFeedSortDirection,
   MessagePrivacy,
 } from "../types";
@@ -836,6 +838,41 @@ export const communityService = {
       },
       5000,
     );
+  },
+
+  async listFollows(): Promise<CommunityFollowRecord[]> {
+    return withRequestCache(
+      "follows:me",
+      async () => {
+        const response = await axiosInstance.get<
+          ApiResponse<{ items: CommunityFollowRecord[] }>
+        >("/community/follows");
+        return response.data.data.items || [];
+      },
+      5000,
+    );
+  },
+
+  async toggleFollow(payload: {
+    kind: CommunityFollowKind;
+    targetId: string;
+  }): Promise<{ following: boolean }> {
+    const response = await axiosInstance.post<
+      ApiResponse<{ following: boolean }>
+    >("/community/follows/toggle", payload);
+    clearCacheByPrefixes(["follows:"]);
+    return response.data.data;
+  },
+
+  async importFollows(
+    items: { kind: CommunityFollowKind; targetId: string }[],
+  ): Promise<{ imported: number }> {
+    const response = await axiosInstance.post<ApiResponse<{ imported: number }>>(
+      "/community/follows/import",
+      { items },
+    );
+    clearCacheByPrefixes(["follows:"]);
+    return response.data.data;
   },
 
   async listPosts(

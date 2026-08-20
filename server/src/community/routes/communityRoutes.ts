@@ -13,6 +13,9 @@ import {
   deleteGroup,
   getCommunityPostDetails,
   getMyCommunityReputation,
+  importCommunityFollows,
+  listCommunityFollows,
+  toggleCommunityFollow,
   editMessage,
   getBlockedUsers,
   getCommunityProfile,
@@ -50,6 +53,8 @@ import {
   communityCreateAnswerSchema,
   communityCreateGroupSchema,
   communityCreatePostSchema,
+  communityFollowImportSchema,
+  communityFollowToggleSchema,
   communityReportSchema,
   communityUpdateGroupSchema,
   communityUpdateGroupSettingsSchema,
@@ -182,6 +187,20 @@ router.post(
 router.get("/reports/my", authMiddleware, listMyCommunityReports);
 
 router.get("/reputation", authMiddleware, getMyCommunityReputation);
+
+router.get("/follows", authMiddleware, listCommunityFollows);
+router.post(
+  "/follows/toggle",
+  authMiddleware,
+  validateRequest(communityFollowToggleSchema),
+  toggleCommunityFollow,
+);
+router.post(
+  "/follows/import",
+  authMiddleware,
+  validateRequest(communityFollowImportSchema),
+  importCommunityFollows,
+);
 // Public — Q&A list/detail feed the community landing page, shared post
 // links, and the sitemap generator.
 router.get("/posts", optionalAuthMiddleware, listCommunityPosts);

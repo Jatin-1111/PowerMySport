@@ -327,3 +327,14 @@ export interface CommunityActivityItem {
     // COMMUNITY_GROUP_JOINED | COMMUNITY_GROUP_LEFT
   };
 }
+export type CommunityFollowKind = "GROUP" | "TOPIC";
+
+/** As returned by the server: `label` and `href` are resolved from the group or
+ *  tag at read time, never stored, so a renamed group shows its current name. */
+export interface CommunityFollowRecord {
+  kind: CommunityFollowKind;
+  targetId: string;
+  label: string;
+  href: string;
+  createdAt: string;
+}

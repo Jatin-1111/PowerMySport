@@ -469,7 +469,15 @@ export const createGroup = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { name, description, sport, city, audience, profilePicture, profilePictureKey } = req.body as {
+    const {
+      name,
+      description,
+      sport,
+      city,
+      audience,
+      profilePicture,
+      profilePictureKey,
+    } = req.body as {
       name: string;
       description?: string;
       sport?: string;
@@ -529,7 +537,15 @@ export const updateGroup = async (
 ): Promise<void> => {
   try {
     const groupId = String(req.params.groupId || "");
-    const { name, description, sport, city, audience, profilePicture, profilePictureKey } = req.body as {
+    const {
+      name,
+      description,
+      sport,
+      city,
+      audience,
+      profilePicture,
+      profilePictureKey,
+    } = req.body as {
       name?: string;
       description?: string;
       sport?: string;
@@ -816,6 +832,64 @@ export const getMyCommunityReputation = async (
     });
   } catch (error) {
     handleError(res, error, "Failed to fetch reputation");
+  }
+};
+
+export const listCommunityFollows = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const data = await CommunityService.listFollows(getUserId(req));
+    res.status(200).json({
+      success: true,
+      message: "Follows fetched",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to fetch follows");
+  }
+};
+
+export const toggleCommunityFollow = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { kind, targetId } = req.body as {
+      kind: "GROUP" | "TOPIC";
+      targetId: string;
+    };
+    const data = await CommunityService.toggleFollow(getUserId(req), {
+      kind,
+      targetId,
+    });
+    res.status(200).json({
+      success: true,
+      message: data.following ? "Followed" : "Unfollowed",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to update follow");
+  }
+};
+
+export const importCommunityFollows = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { items } = req.body as {
+      items: { kind: "GROUP" | "TOPIC"; targetId: string }[];
+    };
+    const data = await CommunityService.importFollows(getUserId(req), items);
+    res.status(200).json({
+      success: true,
+      message: "Follows imported",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to import follows");
   }
 };
 

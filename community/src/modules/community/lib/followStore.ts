@@ -1,94 +1,167 @@
-export type CommunityFollowKind = "group" | "topic";
+import { communityService } from "@/modules/community/services/community";
+import { hasAuthToken } from "@/lib/auth/token";
+import type {
+  CommunityFollowKind,
+  CommunityFollowRecord,
+} from "@/modules/community/types";
 
-export interface CommunityFollowItem {
-  id: string;
-  label: string;
-  href: string;
-  kind: CommunityFollowKind;
-  createdAt: string;
+export type { CommunityFollowKind, CommunityFollowRecord };
+
+/**
+ * Follows used to live only in this localStorage key, which meant they did not
+ * survive a device change and nothing server-side could act on them. They are
+ * persisted per-user now; the key is read once to migrate whatever a returning
+ * user still has locally, then removed.
+ */
+const LEGACY_STORAGE_KEY = "pms:community:follows:v1";
+
+interface LegacyFollowItem {
+  id?: unknown;
+  kind?: unknown;
 }
 
-const STORAGE_KEY = "pms:community:follows:v1";
+/** The legacy store used lowercase kinds; the API uses uppercase. */
+const toApiKind = (kind: unknown): CommunityFollowKind | null => {
+  if (kind === "group") return "GROUP";
+  if (kind === "topic") return "TOPIC";
+  return null;
+};
 
-const parse = (value: string | null): CommunityFollowItem[] => {
-  if (!value) {
+const readLegacyItems = (): { kind: CommunityFollowKind; targetId: string }[] => {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  const raw = window.localStorage.getItem(LEGACY_STORAGE_KEY);
+  if (!raw) {
     return [];
   }
 
   try {
-    const parsed = JSON.parse(value) as CommunityFollowItem[];
+    const parsed = JSON.parse(raw) as LegacyFollowItem[];
     if (!Array.isArray(parsed)) {
       return [];
     }
 
-    return parsed.filter(
-      (item) =>
-        item &&
-        typeof item.id === "string" &&
-        typeof item.label === "string" &&
-        typeof item.href === "string" &&
-        (item.kind === "group" || item.kind === "topic"),
-    );
+    return parsed.flatMap((item) => {
+      const kind = toApiKind(item?.kind);
+      const targetId = typeof item?.id === "string" ? item.id.trim() : "";
+      return kind && targetId ? [{ kind, targetId }] : [];
+    });
   } catch {
     return [];
   }
 };
 
-const readAll = () => {
-  if (typeof window === "undefined") {
-    return [] as CommunityFollowItem[];
-  }
+let cache: CommunityFollowRecord[] | null = null;
+let inFlight: Promise<CommunityFollowRecord[]> | null = null;
+let migrationDone = false;
 
-  return parse(window.localStorage.getItem(STORAGE_KEY));
+const subscribers = new Set<(items: CommunityFollowRecord[]) => void>();
+
+const publish = (items: CommunityFollowRecord[]) => {
+  cache = items;
+  for (const subscriber of subscribers) {
+    subscriber(items);
+  }
 };
 
-const writeAll = (items: CommunityFollowItem[]) => {
-  if (typeof window === "undefined") {
+/**
+ * Runs at most once per page load, and only for a signed-in user — a guest has
+ * nowhere to migrate to, and clearing their key would lose follows they would
+ * otherwise keep after logging in.
+ */
+const migrateLegacyFollows = async (): Promise<void> => {
+  if (migrationDone || typeof window === "undefined") {
+    return;
+  }
+  migrationDone = true;
+
+  const legacy = readLegacyItems();
+  if (legacy.length === 0) {
+    // Nothing to move, but drop an empty/corrupt key so this never re-runs.
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
     return;
   }
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  try {
+    await communityService.importFollows(legacy);
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    // Leave the key in place so the next load can retry. Losing a follow list
+    // silently is worse than importing it a page-load later.
+    migrationDone = false;
+  }
+};
+
+const fetchAll = async (): Promise<CommunityFollowRecord[]> => {
+  if (!hasAuthToken()) {
+    return [];
+  }
+
+  await migrateLegacyFollows();
+  const items = await communityService.listFollows();
+  publish(items);
+  return items;
 };
 
 export const communityFollowStore = {
-  getAll(): CommunityFollowItem[] {
-    return readAll().sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
-  },
-
-  getByKind(kind: CommunityFollowKind): CommunityFollowItem[] {
-    return this.getAll().filter((item) => item.kind === kind);
-  },
-
-  isFollowing(kind: CommunityFollowKind, id: string): boolean {
-    return readAll().some((item) => item.kind === kind && item.id === id);
-  },
-
-  toggle(item: Omit<CommunityFollowItem, "createdAt">): { following: boolean } {
-    const current = readAll();
-    const exists = current.some(
-      (existing) => existing.kind === item.kind && existing.id === item.id,
-    );
-
-    if (exists) {
-      writeAll(
-        current.filter(
-          (existing) =>
-            !(existing.kind === item.kind && existing.id === item.id),
-        ),
-      );
-      return { following: false };
+  /** Cached read. Returns `[]` for guests rather than throwing — the Q&A feed
+   *  and landing page are publicly readable and call this on mount. */
+  async getAll(): Promise<CommunityFollowRecord[]> {
+    if (cache) {
+      return cache;
+    }
+    if (inFlight) {
+      return inFlight;
     }
 
-    writeAll([
-      ...current,
-      {
-        ...item,
-        createdAt: new Date().toISOString(),
-      },
-    ]);
-    return { following: true };
+    inFlight = fetchAll()
+      .catch(() => [] as CommunityFollowRecord[])
+      .finally(() => {
+        inFlight = null;
+      });
+
+    return inFlight;
+  },
+
+  async getByKind(kind: CommunityFollowKind): Promise<CommunityFollowRecord[]> {
+    const items = await this.getAll();
+    return items.filter((item) => item.kind === kind);
+  },
+
+  async getIdsByKind(kind: CommunityFollowKind): Promise<string[]> {
+    const items = await this.getByKind(kind);
+    return items.map((item) => item.targetId);
+  },
+
+  async isFollowing(
+    kind: CommunityFollowKind,
+    targetId: string,
+  ): Promise<boolean> {
+    const items = await this.getByKind(kind);
+    return items.some((item) => item.targetId === targetId);
+  },
+
+  async toggle(payload: {
+    kind: CommunityFollowKind;
+    targetId: string;
+  }): Promise<{ following: boolean }> {
+    const result = await communityService.toggleFollow(payload);
+    // Re-read rather than patch the cache locally: the server resolves the
+    // label and prunes follows whose group has gone, so its list is the one
+    // that renders correctly.
+    cache = null;
+    publish(await communityService.listFollows());
+    return result;
+  },
+
+  /** Notifies on every change so two panels showing follow state stay in step.
+   *  Returns its own unsubscribe. */
+  subscribe(listener: (items: CommunityFollowRecord[]) => void): () => void {
+    subscribers.add(listener);
+    return () => {
+      subscribers.delete(listener);
+    };
   },
 };
