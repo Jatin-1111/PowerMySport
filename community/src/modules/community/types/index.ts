@@ -180,6 +180,10 @@ export interface CommunityPost {
   answerCount: number;
   viewCount: number;
   myVote: -1 | 0 | 1;
+  /** The answer the asker marked as the solution, if they have picked one. */
+  acceptedAnswerId?: string | null;
+  /** True only for the asker — including on their own anonymous post. */
+  canAccept?: boolean;
   createdAt: string;
   updatedAt: string;
   author: CommunityAuthorSummary;
@@ -194,6 +198,7 @@ export interface CommunityAnswer {
   upvoteCount: number;
   downvoteCount: number;
   myVote: -1 | 0 | 1;
+  isAccepted?: boolean;
   createdAt: string;
   updatedAt: string;
   author: CommunityAuthorSummary;

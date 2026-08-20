@@ -105,6 +105,7 @@ const COMMUNITY_POINTS = {
   CREATE_POST: 5,
   CREATE_ANSWER: 8,
   RECEIVE_UPVOTE: 2,
+  ANSWER_ACCEPTED: 15,
 } as const;
 
 const s3Service = new S3Service();
@@ -200,6 +201,40 @@ const trackCommunityRoleMixEvent = (
 ) => {
   // Phase-3 telemetry hook: swap with analytics sink when available.
   console.info("[community-role-mix]", event, payload);
+};
+
+/** Accepted-answer points, applied in both directions so un-accepting and
+ *  re-accepting cannot be farmed. Floors at zero — a historical accept that
+ *  predates this counter must not push someone negative. */
+const adjustAcceptedAnswerReputation = async (
+  userId: string,
+  direction: 1 | -1,
+): Promise<void> => {
+  const delta = direction * COMMUNITY_POINTS.ANSWER_ACCEPTED;
+
+  if (delta < 0) {
+    const current = await CommunityReputation.findOne({ userId })
+      .select("totalPoints")
+      .lean();
+    const safeDelta = Math.max(delta, -(current?.totalPoints || 0));
+    if (safeDelta === 0) {
+      return;
+    }
+    await CommunityReputation.updateOne(
+      { userId },
+      { $inc: { totalPoints: safeDelta } },
+    );
+    return;
+  }
+
+  await CommunityReputation.updateOne(
+    { userId },
+    {
+      $setOnInsert: { questionCount: 0, answerCount: 0, receivedUpvotes: 0 },
+      $inc: { totalPoints: delta },
+    },
+    { upsert: true },
+  );
 };
 
 const sendCommunityNotification = (
@@ -801,6 +836,9 @@ export const CommunityService = {
             downvoteCount: post.downvoteCount || 0,
             answerCount: post.answerCount || 0,
             viewCount: post.viewCount || 0,
+            acceptedAnswerId: post.acceptedAnswerId
+              ? String(post.acceptedAnswerId)
+              : null,
             createdAt: post.createdAt,
             updatedAt: post.updatedAt,
             myVote: voteMap.get(String(post._id))?.value || 0,
@@ -857,11 +895,22 @@ export const CommunityService = {
 
     const [answers, answerTotal, postAuthor, postAuthorProfile, myPostVote] =
       await Promise.all([
-        CommunityAnswer.find({ postId: post._id, isDeleted: false })
-          .sort({ voteScore: -1, createdAt: 1 })
-          .skip(skip)
-          .limit(safeLimit)
-          .lean(),
+        // Aggregate rather than find(): the accepted answer has to sort first
+        // on every page, not just be moved to the top of page one — otherwise
+        // it disappears below the fold on a thread with 20+ answers.
+        CommunityAnswer.aggregate([
+          { $match: { postId: post._id, isDeleted: false } },
+          {
+            $addFields: {
+              isAccepted: {
+                $eq: ["$_id", post.acceptedAnswerId || null],
+              },
+            },
+          },
+          { $sort: { isAccepted: -1, voteScore: -1, createdAt: 1 } },
+          { $skip: skip },
+          { $limit: safeLimit },
+        ]),
         CommunityAnswer.countDocuments({ postId: post._id, isDeleted: false }),
         User.findById(post.authorId)
           .select("_id name photoUrl photoS3Key role")
@@ -936,6 +985,12 @@ export const CommunityService = {
         downvoteCount: post.downvoteCount || 0,
         answerCount: post.answerCount || 0,
         viewCount: (post.viewCount || 0) + 1,
+        acceptedAnswerId: post.acceptedAnswerId
+          ? String(post.acceptedAnswerId)
+          : null,
+        // Only the asker sees the accept controls, and an anonymous asker is
+        // still the asker — `isPostAuthorSelf` already accounts for that.
+        canAccept: isPostAuthorSelf,
         createdAt: post.createdAt,
         updatedAt: post.updatedAt,
         myVote: myPostVote?.value || 0,
@@ -978,6 +1033,8 @@ export const CommunityService = {
             createdAt: answer.createdAt,
             updatedAt: answer.updatedAt,
             myVote: answerVoteMap.get(String(answer._id))?.value || 0,
+            isAccepted:
+              String(post.acceptedAnswerId || "") === String(answer._id),
             author: {
               id: isAnswerAnon ? "anon" : answerAuthorId,
               displayName: answer.isAnonymous
@@ -1288,10 +1345,98 @@ export const CommunityService = {
       { $inc: { answerCount: -1 } },
     );
 
+    // A deleted answer must not stay marked as the accepted one — the post
+    // would keep a "solved" badge pointing at content nobody can read, and the
+    // author would keep points for it.
+    const clearedAccepted = await CommunityPost.findOneAndUpdate(
+      { _id: answer.postId, acceptedAnswerId: answer._id },
+      { $set: { acceptedAnswerId: null } },
+    );
+
+    if (clearedAccepted) {
+      await adjustAcceptedAnswerReputation(String(answer.authorId), -1);
+    }
+
     return {
       id: String(answer._id),
       postId: String(answer.postId),
       deleted: true,
+    };
+  },
+
+  /**
+   * Marks an answer as the one that solved the question, or clears it when the
+   * same answer is passed again. Only the asker can do this — including on
+   * their own anonymous post, where they are still the author server-side.
+   */
+  async acceptAnswer(userId: string, postId: string, answerId: string) {
+    await ensureProfile(userId);
+
+    const post = await CommunityPost.findOne({ _id: postId, isDeleted: false });
+    if (!post) {
+      throw new Error("post not found");
+    }
+
+    if (String(post.authorId) !== userId) {
+      throw new Error("Only the person who asked can accept an answer");
+    }
+
+    const answer = await CommunityAnswer.findOne({
+      _id: answerId,
+      postId: post._id,
+      isDeleted: false,
+    });
+    if (!answer) {
+      throw new Error("answer not found");
+    }
+
+    const answerAuthorId = String(answer.authorId);
+    const wasAccepted = String(post.acceptedAnswerId || "") === String(answer._id);
+    const previouslyAcceptedId = post.acceptedAnswerId;
+
+    post.acceptedAnswerId = wasAccepted ? null : answer._id;
+    await post.save();
+
+    if (wasAccepted) {
+      await adjustAcceptedAnswerReputation(answerAuthorId, -1);
+    } else {
+      // Switching from another answer: take the points back from the previous
+      // author before awarding the new one, or accepting repeatedly inflates
+      // reputation across the thread.
+      if (previouslyAcceptedId) {
+        const previous = await CommunityAnswer.findById(previouslyAcceptedId)
+          .select("authorId")
+          .lean();
+        if (previous) {
+          await adjustAcceptedAnswerReputation(String(previous.authorId), -1);
+        }
+      }
+
+      await adjustAcceptedAnswerReputation(answerAuthorId, 1);
+
+      if (answerAuthorId !== userId) {
+        sendCommunityNotification(
+          answerAuthorId,
+          "Your answer was accepted",
+          `Your answer was marked as the solution on "${post.title}".`,
+          {
+            event: "COMMUNITY_ANSWER_ACCEPTED",
+            postId: String(post._id),
+            targetId: String(answer._id),
+            targetType: "ANSWER",
+            actorUserId: userId,
+          },
+        );
+      }
+    }
+
+    return {
+      postId: String(post._id),
+      answerId: String(answer._id),
+      accepted: !wasAccepted,
+      acceptedAnswerId: post.acceptedAnswerId
+        ? String(post.acceptedAnswerId)
+        : null,
     };
   },
 

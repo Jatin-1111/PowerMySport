@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
 import {
   acceptConversationRequest,
+  acceptCommunityAnswer,
   addGroupMember,
   blockUser,
   createCommunityAnswer,
@@ -233,6 +234,12 @@ router.patch(
   updateCommunityAnswer,
 );
 router.delete("/answers/:answerId", authMiddleware, deleteCommunityAnswer);
+
+router.post(
+  "/posts/:postId/accept/:answerId",
+  authMiddleware,
+  acceptCommunityAnswer,
+);
 router.post(
   "/votes",
   authMiddleware,

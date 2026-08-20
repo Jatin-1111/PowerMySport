@@ -1186,6 +1186,27 @@ export const communityService = {
     return response.data.data;
   },
 
+  async acceptAnswer(
+    postId: string,
+    answerId: string,
+  ): Promise<{
+    postId: string;
+    answerId: string;
+    accepted: boolean;
+    acceptedAnswerId: string | null;
+  }> {
+    const response = await axiosInstance.post<
+      ApiResponse<{
+        postId: string;
+        answerId: string;
+        accepted: boolean;
+        acceptedAnswerId: string | null;
+      }>
+    >(`/community/posts/${postId}/accept/${answerId}`);
+    clearCacheByPrefixes(["post:", "posts"]);
+    return response.data.data;
+  },
+
   async vote(payload: {
     targetType: "POST" | "ANSWER";
     targetId: string;

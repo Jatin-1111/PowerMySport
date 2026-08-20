@@ -29,6 +29,9 @@ export interface CommunityPostDocument extends Document {
   downvoteCount: number;
   answerCount: number;
   viewCount: number;
+  /** The answer the asker marked as the one that solved it. Null until they
+   *  choose, and cleared if that answer is later deleted. */
+  acceptedAnswerId?: mongoose.Types.ObjectId | null;
   status: CommunityPostStatus;
   isDeleted: boolean;
   deletedAt?: Date | null;
@@ -80,6 +83,11 @@ const communityPostSchema = new Schema<CommunityPostDocument>(
     downvoteCount: { type: Number, default: 0 },
     answerCount: { type: Number, default: 0, index: true },
     viewCount: { type: Number, default: 0 },
+    acceptedAnswerId: {
+      type: Schema.Types.ObjectId,
+      ref: "CommunityAnswer",
+      default: null,
+    },
     status: {
       type: String,
       enum: ["OPEN", "CLOSED"],

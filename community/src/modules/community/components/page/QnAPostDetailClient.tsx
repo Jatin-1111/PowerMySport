@@ -7,6 +7,7 @@ import {
   ArrowBigDown,
   ArrowBigUp,
   CalendarDays,
+  CheckCircle2,
   ChevronLeft,
   EyeOff,
   Flag,
@@ -88,8 +89,52 @@ export default function QnAPostDetailClient({
     null,
   );
 
+  const [isAcceptingId, setIsAcceptingId] = useState<string | null>(null);
+
+  const toggleAccepted = async (answer: CommunityAnswer) => {
+    if (!post) {
+      return;
+    }
+
+    try {
+      setIsAcceptingId(answer.id);
+      const result = await communityService.acceptAnswer(post.id, answer.id);
+
+      // Patch locally rather than refetching: the thread can be long and a
+      // full reload would scroll the reader away from the answer they just
+      // marked. The realtime event reconciles everyone else.
+      setPost((current) =>
+        current
+          ? { ...current, acceptedAnswerId: result.acceptedAnswerId }
+          : current,
+      );
+      setAnswers((current) =>
+        current.map((item) => ({
+          ...item,
+          isAccepted: item.id === result.acceptedAnswerId,
+        })),
+      );
+
+      toast.success(
+        result.accepted ? "Marked as the answer" : "Removed the accepted mark",
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to accept answer",
+      );
+    } finally {
+      setIsAcceptingId(null);
+    }
+  };
+
   const sortedAnswers = useMemo(() => {
     return [...answers].sort((a, b) => {
+      // Mirrors the server's ordering so the accepted answer does not jump
+      // position between the server render and the first client refresh.
+      if (Boolean(a.isAccepted) !== Boolean(b.isAccepted)) {
+        return a.isAccepted ? -1 : 1;
+      }
+
       if (b.voteScore !== a.voteScore) {
         return b.voteScore - a.voteScore;
       }
@@ -196,6 +241,7 @@ export default function QnAPostDetailClient({
     socket.on("community:qnaAnswerUpdated", handleAnswerEvent);
     socket.on("community:qnaAnswerDeleted", handleAnswerEvent);
     socket.on("community:qnaVoteUpdated", handleVoteEvent);
+    socket.on("community:qnaAnswerAccepted", handleAnswerEvent);
 
     const unsubscribe = subscribeToCommunityRoom(qnaPostRoom(postId));
 
@@ -207,6 +253,7 @@ export default function QnAPostDetailClient({
       socket.off("community:qnaAnswerUpdated", handleAnswerEvent);
       socket.off("community:qnaAnswerDeleted", handleAnswerEvent);
       socket.off("community:qnaVoteUpdated", handleVoteEvent);
+      socket.off("community:qnaAnswerAccepted", handleAnswerEvent);
     };
   }, [loadDetails, postId]);
 
@@ -799,7 +846,11 @@ export default function QnAPostDetailClient({
           sortedAnswers.map((answer, index) => (
             <article
               key={answer.id}
-              className="group relative flex gap-0 overflow-hidden rounded-lg border border-slate-200 bg-white transition-all hover:border-slate-300 hover:shadow-md"
+              className={`group relative flex gap-0 overflow-hidden rounded-lg border bg-white transition-all hover:shadow-md ${
+                answer.isAccepted
+                  ? "border-emerald-300 ring-1 ring-emerald-200"
+                  : "border-slate-200 hover:border-slate-300"
+              }`}
             >
               {/* Voting Sidebar */}
               <div className="flex w-16 shrink-0 flex-col items-center gap-0.5 border-r border-slate-200 bg-slate-50 px-2.5 py-3 group-hover:bg-slate-100">
@@ -909,7 +960,28 @@ export default function QnAPostDetailClient({
                 )}
 
                 {/* Actions */}
-                <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+                  {answer.isAccepted ? (
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700">
+                      <CheckCircle2 size={13} /> Accepted answer
+                    </span>
+                  ) : null}
+
+                  {post.canAccept && editingAnswerId !== answer.id ? (
+                    <button
+                      onClick={() => void toggleAccepted(answer)}
+                      disabled={isAcceptingId === answer.id}
+                      className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:opacity-60 ${
+                        answer.isAccepted
+                          ? "text-slate-600 hover:bg-slate-100"
+                          : "text-emerald-700 hover:bg-emerald-50"
+                      }`}
+                    >
+                      <CheckCircle2 size={13} />
+                      {answer.isAccepted ? "Unaccept" : "Accept answer"}
+                    </button>
+                  ) : null}
+
                   {answer.author.id === currentUserId &&
                   editingAnswerId !== answer.id ? (
                     <>

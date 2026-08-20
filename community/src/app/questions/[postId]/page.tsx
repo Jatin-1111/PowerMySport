@@ -59,10 +59,16 @@ export default async function CommunityQnADetailPage({
   const post = detail?.post;
   const answers = detail?.answers ?? [];
 
-  // Every answer is a `suggestedAnswer`. The previous version advertised the
-  // top-voted one as `acceptedAnswer`, which claims the asker marked it as the
-  // answer — nothing in the data says that. Real accepted answers are a
-  // separate piece of work; until then, not claiming it is the honest shape.
+  // `acceptedAnswer` is emitted only when the asker actually accepted one.
+  // Everything else is a `suggestedAnswer` — the earlier version advertised the
+  // top-voted answer as accepted, which claimed something the data never said.
+  const acceptedAnswer = answers.find(
+    (answer) => answer.id === post?.acceptedAnswerId,
+  );
+  const suggestedAnswers = answers.filter(
+    (answer) => answer.id !== acceptedAnswer?.id,
+  );
+
   const answerSchema = (answer: (typeof answers)[number]) => ({
     "@type": "Answer",
     text: clampText(answer.content, 500),
@@ -91,8 +97,11 @@ export default async function CommunityQnADetailPage({
             name: post.author?.displayName || "PowerMySport Community",
           },
           url: communityUrl(`/questions/${postId}`),
-          ...(answers.length
-            ? { suggestedAnswer: answers.map(answerSchema) }
+          ...(acceptedAnswer
+            ? { acceptedAnswer: answerSchema(acceptedAnswer) }
+            : {}),
+          ...(suggestedAnswers.length
+            ? { suggestedAnswer: suggestedAnswers.map(answerSchema) }
             : {}),
         },
       }

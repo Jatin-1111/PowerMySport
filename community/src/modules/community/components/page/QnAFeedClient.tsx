@@ -10,6 +10,7 @@ import {
   ArrowBigDown,
   ArrowBigUp,
   CalendarDays,
+  CheckCircle2,
   Dumbbell,
   Filter,
   LoaderCircle,
@@ -457,6 +458,7 @@ export default function QnAFeedClient() {
     socket.on("community:qnaAnswerCreated", refreshFeed);
     socket.on("community:qnaAnswerDeleted", refreshFeed);
     socket.on("community:qnaVoteUpdated", refreshFeed);
+    socket.on("community:qnaAnswerAccepted", refreshFeed);
     socket.on("notification:new", handleNotificationEvent);
 
     const unsubscribe = subscribeToCommunityRoom(QNA_FEED_ROOM);
@@ -469,6 +471,7 @@ export default function QnAFeedClient() {
       socket.off("community:qnaAnswerCreated", refreshFeed);
       socket.off("community:qnaAnswerDeleted", refreshFeed);
       socket.off("community:qnaVoteUpdated", refreshFeed);
+      socket.off("community:qnaAnswerAccepted", refreshFeed);
       socket.off("notification:new", handleNotificationEvent);
     };
   }, [loadFeed, loadActivity]);
@@ -1318,6 +1321,10 @@ export default function QnAFeedClient() {
                               {post.answerCount === 0 ? (
                                 <span className="inline-flex rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
                                   Unanswered
+                                </span>
+                              ) : post.acceptedAnswerId ? (
+                                <span className="inline-flex items-center gap-1 rounded-md border border-emerald-300 bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                                  <CheckCircle2 size={12} /> Solved
                                 </span>
                               ) : (
                                 <span className="inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">

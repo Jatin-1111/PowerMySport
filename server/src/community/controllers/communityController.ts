@@ -1264,6 +1264,40 @@ export const deleteCommunityAnswer = async (
   }
 };
 
+export const acceptCommunityAnswer = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const postId = String(req.params.postId || "");
+    const answerId = String(req.params.answerId || "");
+
+    const data = await CommunityService.acceptAnswer(
+      getUserId(req),
+      postId,
+      answerId,
+    );
+
+    emitCommunityQnaEvent(
+      "community:qnaAnswerAccepted",
+      {
+        postId: data.postId,
+        answerId: data.answerId,
+        acceptedAnswerId: data.acceptedAnswerId,
+      },
+      [QNA_FEED_ROOM, qnaPostRoom(data.postId)],
+    );
+
+    res.status(200).json({
+      success: true,
+      message: data.accepted ? "Answer accepted" : "Answer unaccepted",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to accept answer");
+  }
+};
+
 export const voteCommunityTarget = async (
   req: Request,
   res: Response,
