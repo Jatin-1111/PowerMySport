@@ -161,7 +161,10 @@ export interface CommunityAuthorSummary {
   isIdentityPublic: boolean;
   photoUrl?: string | null;
   isVerifiedExpert?: boolean;
+  /** Server-supplied badge text, so the wording cannot drift between the feed,
+   *  the thread and the JSON-LD. Absent when the author is not verified. */
   expertTitle?: string;
+  credentialKind?: "VERIFIED_EXPERT" | "VERIFIED_COACH";
 }
 
 export interface CommunityPost {

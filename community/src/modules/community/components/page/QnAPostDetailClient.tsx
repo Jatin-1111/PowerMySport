@@ -710,7 +710,7 @@ export default function QnAPostDetailClient({
               </span>
               {post.author.isVerifiedExpert ? (
                 <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
-                  ★ {post.author.expertTitle || "Verified Coach"}
+                  ★ {post.author.expertTitle}
                 </span>
               ) : null}
               <span className="inline-flex items-center gap-1 text-slate-500">
@@ -896,10 +896,12 @@ export default function QnAPostDetailClient({
                         </span>
                         {answer.author.isVerifiedExpert ? (
                           <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
-                            ★ {answer.author.expertTitle || "Verified Coach"}
+                            ★ {answer.author.expertTitle}
                           </span>
                         ) : null}
-                        {index === 0 && answer.voteScore > 0 ? (
+                        {index === 0 &&
+                        answer.voteScore > 0 &&
+                        !answer.isAccepted ? (
                           <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase">
                             Top Answer
                           </span>

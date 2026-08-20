@@ -34,6 +34,7 @@ import {
   type CommunityRole,
 } from "./communityPolicy";
 import { getVoteTransitionDeltas, normalizeTags } from "./communityQnaUtils";
+import { resolveCommunityCredentials } from "./communityCredentials";
 import {
   addMember,
   countMembers,
@@ -810,6 +811,9 @@ export const CommunityService = {
       profiles.map((profile) => [String(profile.userId), profile]),
     );
     const voteMap = new Map(votes.map((vote) => [String(vote.targetId), vote]));
+    const credentialMap = await resolveCommunityCredentials(
+      posts.map((post) => String(post.authorId)),
+    );
 
     return {
       items: await Promise.all(
@@ -819,7 +823,11 @@ export const CommunityService = {
           const profile = profileMap.get(authorId);
           const isSelf = Boolean(userId) && authorId === userId;
           const isPostAnon = post.isAnonymous && !isSelf;
-          const isVerifiedExpert = !isPostAnon && authorUser?.role === "Coach";
+          // Anonymous posts carry no badge — a credential is an identity
+          // claim, and showing it would narrow who wrote it.
+          const credential = isPostAnon
+            ? undefined
+            : credentialMap.get(authorId);
 
           return {
             id: String(post._id),
@@ -857,8 +865,9 @@ export const CommunityService = {
                 : profile?.isIdentityPublic && authorUser
                   ? await resolveUserPhotoUrl(authorUser)
                   : null,
-              isVerifiedExpert,
-              expertTitle: isVerifiedExpert ? "Verified Coach" : undefined,
+              isVerifiedExpert: Boolean(credential),
+              expertTitle: credential?.title,
+              credentialKind: credential?.kind,
             },
           };
         }),
@@ -967,7 +976,14 @@ export const CommunityService = {
     const postAuthorId = String(post.authorId);
     const isPostAuthorSelf = Boolean(userId) && postAuthorId === userId;
     const isPostAnon = post.isAnonymous && !isPostAuthorSelf;
-    const isPostAuthorExpert = !isPostAnon && postAuthor?.role === "Coach";
+
+    const credentialMap = await resolveCommunityCredentials([
+      postAuthorId,
+      ...answerAuthorIds,
+    ]);
+    const postAuthorCredential = isPostAnon
+      ? undefined
+      : credentialMap.get(postAuthorId);
 
     return {
       post: {
@@ -1009,8 +1025,9 @@ export const CommunityService = {
             : postAuthorProfile?.isIdentityPublic && postAuthor
               ? await resolveUserPhotoUrl(postAuthor)
               : null,
-          isVerifiedExpert: isPostAuthorExpert,
-          expertTitle: isPostAuthorExpert ? "Verified Coach" : undefined,
+          isVerifiedExpert: Boolean(postAuthorCredential),
+          expertTitle: postAuthorCredential?.title,
+          credentialKind: postAuthorCredential?.kind,
         },
       },
       answers: await Promise.all(
@@ -1020,7 +1037,9 @@ export const CommunityService = {
           const answerProfile = answerProfileMap.get(answerAuthorId);
           const isAnswerSelf = Boolean(userId) && answerAuthorId === userId;
           const isAnswerAnon = answer.isAnonymous && !isAnswerSelf;
-          const isAnswerExpert = !isAnswerAnon && answerUser?.role === "Coach";
+          const answerCredential = isAnswerAnon
+            ? undefined
+            : credentialMap.get(answerAuthorId);
 
           return {
             id: String(answer._id),
@@ -1050,8 +1069,9 @@ export const CommunityService = {
                 : answerProfile?.isIdentityPublic && answerUser
                   ? await resolveUserPhotoUrl(answerUser)
                   : null,
-              isVerifiedExpert: isAnswerExpert,
-              expertTitle: isAnswerExpert ? "Verified Coach" : undefined,
+              isVerifiedExpert: Boolean(answerCredential),
+              expertTitle: answerCredential?.title,
+              credentialKind: answerCredential?.kind,
             },
           };
         }),

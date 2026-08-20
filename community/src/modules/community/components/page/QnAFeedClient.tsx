@@ -1181,8 +1181,7 @@ export default function QnAFeedClient() {
                           {featuredPost.author.isVerifiedExpert ? (
                             <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
                               ★{" "}
-                              {featuredPost.author.expertTitle ||
-                                "Verified Coach"}
+                              {featuredPost.author.expertTitle}
                             </span>
                           ) : null}
                           <span className="inline-flex items-center gap-1 text-slate-500">
@@ -1302,7 +1301,7 @@ export default function QnAFeedClient() {
                               {post.author.isVerifiedExpert ? (
                                 <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
                                   ★{" "}
-                                  {post.author.expertTitle || "Verified Coach"}
+                                  {post.author.expertTitle}
                                 </span>
                               ) : null}
                               <span className="inline-flex items-center gap-1 text-slate-400">

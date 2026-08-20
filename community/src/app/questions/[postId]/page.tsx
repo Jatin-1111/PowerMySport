@@ -69,16 +69,25 @@ export default async function CommunityQnADetailPage({
     (answer) => answer.id !== acceptedAnswer?.id,
   );
 
+  // `jobTitle` carries the verification a reader sees on the badge, so the
+  // credential travels with the answer into search results. Only set when the
+  // server actually granted one.
+  const personSchema = (author?: {
+    displayName?: string;
+    expertTitle?: string;
+  }) => ({
+    "@type": "Person",
+    name: author?.displayName || "PowerMySport Community",
+    ...(author?.expertTitle ? { jobTitle: author.expertTitle } : {}),
+  });
+
   const answerSchema = (answer: (typeof answers)[number]) => ({
     "@type": "Answer",
     text: clampText(answer.content, 500),
     upvoteCount: answer.upvoteCount,
     datePublished: answer.createdAt,
     url: communityUrl(`/questions/${postId}`),
-    author: {
-      "@type": "Person",
-      name: answer.author?.displayName || "PowerMySport Community",
-    },
+    author: personSchema(answer.author),
   });
 
   const qaSchema = post
@@ -92,10 +101,7 @@ export default async function CommunityQnADetailPage({
           answerCount: post.answerCount,
           upvoteCount: post.upvoteCount,
           datePublished: post.createdAt,
-          author: {
-            "@type": "Person",
-            name: post.author?.displayName || "PowerMySport Community",
-          },
+          author: personSchema(post.author),
           url: communityUrl(`/questions/${postId}`),
           ...(acceptedAnswer
             ? { acceptedAnswer: answerSchema(acceptedAnswer) }
