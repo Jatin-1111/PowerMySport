@@ -364,6 +364,96 @@ export const CommunityService = {
     };
   },
 
+  /**
+   * Ranked by the same `totalPoints` the page already shows as "Your Points".
+   * The previous client-side leaderboard scored a different formula over the
+   * most recent posts, so a user's rank had no relationship to their points —
+   * and because `listPosts` caps `limit` at 50, it ranked 50 posts while
+   * asking for 120.
+   */
+  async listLeaderboard(userId: string, limit = 15) {
+    await ensureProfile(userId);
+
+    const safeLimit = Math.min(50, Math.max(1, limit));
+
+    const top = await CommunityReputation.find({ totalPoints: { $gt: 0 } })
+      .sort({ totalPoints: -1, updatedAt: 1 })
+      .limit(safeLimit)
+      .lean();
+
+    const [users, profiles] = await Promise.all([
+      User.find({ _id: { $in: top.map((row) => row.userId) } })
+        .select("_id name photoUrl photoS3Key")
+        .lean(),
+      CommunityProfile.find({ userId: { $in: top.map((row) => row.userId) } })
+        .select("userId anonymousAlias isIdentityPublic")
+        .lean(),
+    ]);
+
+    const userById = new Map(users.map((user) => [String(user._id), user]));
+    const profileByUserId = new Map(
+      profiles.map((profile) => [String(profile.userId), profile]),
+    );
+
+    const items = await Promise.all(
+      top.map(async (row, index) => {
+        const rowUserId = String(row.userId);
+        const user = userById.get(rowUserId);
+        const profile = profileByUserId.get(rowUserId);
+        const isSelf = rowUserId === userId;
+        // A member who keeps their identity private is ranked but not named —
+        // reputation is public, the person behind it is theirs to reveal.
+        const isPublic = profile?.isIdentityPublic ?? true;
+
+        return {
+          id: isPublic || isSelf ? rowUserId : "",
+          name: isSelf
+            ? user?.name || "Me"
+            : isPublic
+              ? user?.name || "Player"
+              : profile?.anonymousAlias || "Anonymous Player",
+          photoUrl:
+            isPublic && user ? await resolveUserPhotoUrl(user) : null,
+          isIdentityPublic: isPublic,
+          rank: index + 1,
+          posts: row.questionCount || 0,
+          answers: row.answerCount || 0,
+          upvotes: row.receivedUpvotes || 0,
+          score: row.totalPoints || 0,
+        };
+      }),
+    );
+
+    // The caller's own standing, resolved even when they sit outside the page
+    // so the UI can pin a "you are #204" row rather than showing nothing.
+    const mine = await CommunityReputation.findOne({ userId })
+      .select("totalPoints questionCount answerCount receivedUpvotes")
+      .lean();
+
+    let me: (typeof items)[number] | null = null;
+    if (mine && (mine.totalPoints || 0) > 0) {
+      const ahead = await CommunityReputation.countDocuments({
+        totalPoints: { $gt: mine.totalPoints },
+      });
+      const self =
+        userById.get(userId) ||
+        (await User.findById(userId).select("_id name photoUrl photoS3Key").lean());
+      me = {
+        id: userId,
+        name: self?.name || "Me",
+        photoUrl: self ? await resolveUserPhotoUrl(self) : null,
+        isIdentityPublic: true,
+        rank: ahead + 1,
+        posts: mine.questionCount || 0,
+        answers: mine.answerCount || 0,
+        upvotes: mine.receivedUpvotes || 0,
+        score: mine.totalPoints || 0,
+      };
+    }
+
+    return { items, me };
+  },
+
   // ─── Follows ────────────────────────────────────────────────────────────────
   // Replaces a localStorage-only store, so these are deliberately forgiving:
   // the same follow arriving twice is a no-op rather than an error, and a
@@ -545,6 +635,7 @@ export const CommunityService = {
       city?: string;
       category?: string;
       mine?: boolean;
+      authorId?: string;
     },
   ) {
     userId = await resolvePublicViewerId(userId);
@@ -568,6 +659,17 @@ export const CommunityService = {
 
     if (filters?.mine && userId) {
       query.authorId = userId;
+    }
+
+    const authorFilter = normalizeOptionalText(filters?.authorId);
+    if (authorFilter && mongoose.Types.ObjectId.isValid(authorFilter)) {
+      query.authorId = authorFilter;
+      if (authorFilter !== userId) {
+        // Someone else's posts: anonymous ones stay out. Otherwise this filter
+        // becomes a deanonymizer — pass an author id, get back the posts they
+        // chose to publish without their name on them.
+        query.isAnonymous = { $ne: true };
+      }
     }
 
     const search = (filters?.q || "").trim();

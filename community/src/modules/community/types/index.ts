@@ -338,3 +338,22 @@ export interface CommunityFollowRecord {
   href: string;
   createdAt: string;
 }
+export interface CommunityLeaderboardEntry {
+  /** Empty when the member keeps their identity private — there is no profile
+   *  to open, so the row renders as a name without a link. */
+  id: string;
+  name: string;
+  photoUrl?: string | null;
+  isIdentityPublic: boolean;
+  rank: number;
+  posts: number;
+  answers: number;
+  upvotes: number;
+  score: number;
+}
+
+export interface CommunityLeaderboardResponse {
+  items: CommunityLeaderboardEntry[];
+  /** The caller's own standing, present even when they rank outside the page. */
+  me: CommunityLeaderboardEntry | null;
+}

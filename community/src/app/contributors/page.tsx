@@ -4,7 +4,10 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { HelpCircle, MessageSquare, Star, ThumbsUp, Users } from "lucide-react";
 import { communityService } from "@/modules/community/services/community";
-import { CommunityPost } from "@/modules/community/types";
+import {
+  CommunityLeaderboardResponse,
+  CommunityPost,
+} from "@/modules/community/types";
 import { isCommunityEligibleRole } from "@/lib/auth/roles";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { toast } from "@/lib/toast";
@@ -32,7 +35,12 @@ export default function ContributorsPage() {
 
 function ContributorsPageContent() {
   const [isLoading, setIsLoading] = useState(true);
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [leaderboard, setLeaderboard] =
+    useState<CommunityLeaderboardResponse | null>(null);
+  const [threadState, setThreadState] = useState<{
+    forId: string;
+    items: CommunityPost[];
+  } | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [selectedContributorId, setSelectedContributorId] = useState<
     string | null
@@ -55,13 +63,13 @@ function ContributorsPageContent() {
         }
         setCurrentUserId(session.id);
 
-        const [rep, list] = await Promise.all([
+        const [rep, board] = await Promise.all([
           communityService.getMyReputation(),
-          communityService.listPosts(1, 120, { sort: "TOP" }),
+          communityService.listLeaderboard(LEADERBOARD_SIZE),
         ]);
 
         setMyReputation(rep);
-        setPosts(list.items || []);
+        setLeaderboard(board);
       } catch (error) {
         toast.error(
           error instanceof Error
@@ -76,64 +84,71 @@ function ContributorsPageContent() {
     void load();
   }, []);
 
-  // Full ranked leaderboard, derived from post authorship (posts, answers received, upvotes received).
-  const fullLeaderboard = useMemo<LeaderboardItem[]>(() => {
-    const byAuthor = new Map<
-      string,
-      Omit<LeaderboardItem, "rank">
-    >();
-
-    for (const post of posts) {
-      const existing = byAuthor.get(post.author.id) || {
-        id: post.author.id,
-        name: post.author.displayName,
-        photoUrl: post.author.photoUrl,
-        posts: 0,
-        answers: 0,
-        upvotes: 0,
-        score: 0,
-      };
-
-      existing.posts += 1;
-      existing.answers += post.answerCount;
-      existing.upvotes += post.upvoteCount;
-      existing.score = existing.posts * 2 + existing.answers * 3 + existing.upvotes * 2;
-      byAuthor.set(post.author.id, existing);
-    }
-
-    return [...byAuthor.values()]
-      .sort((a, b) => b.score - a.score)
-      .map((item, index) => ({ ...item, rank: index + 1 }));
-  }, [posts]);
-
-  const myEntry = useMemo(
-    () => fullLeaderboard.find((item) => item.id === currentUserId) || null,
-    [fullLeaderboard, currentUserId],
+  const rows = useMemo<LeaderboardItem[]>(
+    () => leaderboard?.items ?? [],
+    [leaderboard],
   );
 
-  // "You" pinned first (true rank preserved), then fill to LEADERBOARD_SIZE with the rest.
+  const myEntry = leaderboard?.me ?? null;
+
+  // "You" pinned first with your real rank, then the top of the board. Ranks
+  // come from the server now, so a pinned #204 stays #204 instead of being
+  // renumbered against whatever subset the page happened to load.
   const displayRows = useMemo(() => {
-    const others = fullLeaderboard.filter((item) => item.id !== myEntry?.id);
+    const others = rows.filter((item) => item.id !== myEntry?.id);
     const slotsForOthers = myEntry ? LEADERBOARD_SIZE - 1 : LEADERBOARD_SIZE;
     const rest = others.slice(0, Math.max(0, slotsForOthers));
     return myEntry ? [myEntry, ...rest] : rest;
-  }, [fullLeaderboard, myEntry]);
+  }, [rows, myEntry]);
 
   const selectedContributor = useMemo(
     () =>
-      fullLeaderboard.find((item) => item.id === selectedContributorId) ||
-      null,
-    [fullLeaderboard, selectedContributorId],
+      displayRows.find((item) => item.id === selectedContributorId) || null,
+    [displayRows, selectedContributorId],
   );
-  const selectedContributorThreads = useMemo(
-    () =>
-      selectedContributorId
-        ? posts
-            .filter((post) => post.author.id === selectedContributorId)
-            .slice(0, 12)
-        : [],
-    [posts, selectedContributorId],
-  );
+
+  // Fetched per contributor rather than sliced out of a bulk post prefetch —
+  // the server filters by author and leaves out anything they posted
+  // anonymously.
+  //
+  // The result is tagged with the contributor it belongs to so both "which
+  // threads" and "still loading" are derived rather than held in their own
+  // state: nothing is set synchronously in the effect body, and a slow response
+  // for a previously-opened contributor cannot paint into the current one.
+  useEffect(() => {
+    if (!selectedContributorId) {
+      return;
+    }
+
+    let cancelled = false;
+    void communityService
+      .listPosts(1, 12, { sort: "TOP", authorId: selectedContributorId })
+      .then((list) => {
+        if (!cancelled) {
+          setThreadState({
+            forId: selectedContributorId,
+            items: list.items || [],
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setThreadState({ forId: selectedContributorId, items: [] });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedContributorId]);
+
+  const threads =
+    threadState && threadState.forId === selectedContributorId
+      ? threadState.items
+      : [];
+  const isLoadingThreads =
+    Boolean(selectedContributorId) &&
+    threadState?.forId !== selectedContributorId;
 
   return (
     <div className="community-page-shell">
@@ -218,8 +233,11 @@ function ContributorsPageContent() {
                       const isMe = item.id === currentUserId;
                       return (
                         <motion.button
-                          key={item.id}
-                          onClick={() => setSelectedContributorId(item.id)}
+                          key={`${item.rank}-${item.id || item.name}`}
+                          disabled={!item.id}
+                          onClick={() =>
+                            item.id && setSelectedContributorId(item.id)
+                          }
                           whileHover={{ backgroundColor: "rgba(248,250,252,1)" }}
                           className={`grid w-full min-w-[560px] grid-cols-[3.5rem_1fr_5rem_5rem_5rem_5.5rem] items-center gap-2 border-l-[3px] px-5 py-3 text-left transition ${
                             isMe
@@ -275,7 +293,8 @@ function ContributorsPageContent() {
 
         <ContributorModal
           contributor={selectedContributor}
-          threads={selectedContributorThreads}
+          threads={threads}
+          isLoadingThreads={isLoadingThreads}
           onClose={() => setSelectedContributorId(null)}
         />
 

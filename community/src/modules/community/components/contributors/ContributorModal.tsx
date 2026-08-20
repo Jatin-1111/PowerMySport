@@ -11,10 +11,12 @@ import { LeaderboardItem } from "./types";
 export function ContributorModal({
   contributor,
   threads,
+  isLoadingThreads = false,
   onClose,
 }: {
   contributor: LeaderboardItem | null;
   threads: CommunityPost[];
+  isLoadingThreads?: boolean;
   onClose: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
@@ -132,7 +134,11 @@ export function ContributorModal({
                     <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
                       Questions Asked
                     </p>
-                    {threads.length === 0 ? (
+                    {isLoadingThreads ? (
+                      <p className="py-4 text-center text-sm text-slate-500">
+                        Loading threads...
+                      </p>
+                    ) : threads.length === 0 ? (
                       <p className="py-4 text-center text-sm text-slate-500">
                         No thread history available.
                       </p>

@@ -18,6 +18,7 @@ import {
   ConversationMessage,
   CommunityFeedSort,
   CommunityFollowKind,
+  CommunityLeaderboardResponse,
   CommunityFollowRecord,
   CommunityFeedSortDirection,
   MessagePrivacy,
@@ -168,6 +169,7 @@ const buildPostsKey = (
     city?: string;
     category?: string;
     mine?: boolean;
+    authorId?: string;
   },
 ) =>
   [
@@ -182,6 +184,7 @@ const buildPostsKey = (
     params?.city || "",
     params?.category || "",
     params?.mine ? "mine" : "all",
+    params?.authorId || "",
   ].join(":");
 const buildPostDetailsKey = (postId: string, page: number, limit: number) =>
   `post:${postId}:${page}:${limit}`;
@@ -840,6 +843,19 @@ export const communityService = {
     );
   },
 
+  async listLeaderboard(limit = 15): Promise<CommunityLeaderboardResponse> {
+    return withRequestCache(
+      `leaderboard:${limit}`,
+      async () => {
+        const response = await axiosInstance.get<
+          ApiResponse<CommunityLeaderboardResponse>
+        >(`/community/leaderboard?limit=${limit}`);
+        return response.data.data;
+      },
+      15000,
+    );
+  },
+
   async listFollows(): Promise<CommunityFollowRecord[]> {
     return withRequestCache(
       "follows:me",
@@ -887,6 +903,7 @@ export const communityService = {
       city?: string;
       category?: string;
       mine?: boolean;
+      authorId?: string;
     },
   ): Promise<CommunityPostListResponse> {
     const cacheKey = buildPostsKey(page, limit, params);
@@ -905,6 +922,7 @@ export const communityService = {
           ...(params?.city ? { city: params.city } : {}),
           ...(params?.category ? { category: params.category } : {}),
           ...(params?.mine ? { mine: true } : {}),
+          ...(params?.authorId ? { authorId: params.authorId } : {}),
         },
       });
       return response.data.data;

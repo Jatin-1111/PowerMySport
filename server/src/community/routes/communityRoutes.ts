@@ -15,6 +15,7 @@ import {
   getMyCommunityReputation,
   importCommunityFollows,
   listCommunityFollows,
+  listCommunityLeaderboard,
   toggleCommunityFollow,
   editMessage,
   getBlockedUsers,
@@ -187,6 +188,7 @@ router.post(
 router.get("/reports/my", authMiddleware, listMyCommunityReports);
 
 router.get("/reputation", authMiddleware, getMyCommunityReputation);
+router.get("/leaderboard", authMiddleware, listCommunityLeaderboard);
 
 router.get("/follows", authMiddleware, listCommunityFollows);
 router.post(

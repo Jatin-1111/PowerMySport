@@ -835,6 +835,23 @@ export const getMyCommunityReputation = async (
   }
 };
 
+export const listCommunityLeaderboard = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const limit = Number(req.query.limit) || 15;
+    const data = await CommunityService.listLeaderboard(getUserId(req), limit);
+    res.status(200).json({
+      success: true,
+      message: "Leaderboard fetched",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to fetch leaderboard");
+  }
+};
+
 export const listCommunityFollows = async (
   req: Request,
   res: Response,
@@ -921,6 +938,8 @@ export const listCommunityPosts = async (
       typeof req.query.mine === "string"
         ? req.query.mine.toLowerCase() === "true"
         : false;
+    const authorId =
+      typeof req.query.authorId === "string" ? req.query.authorId : "";
 
     const data = await CommunityService.listPosts(getOptionalUserId(req), page, limit, {
       sort,
@@ -931,6 +950,7 @@ export const listCommunityPosts = async (
       city,
       category,
       mine,
+      authorId,
     });
 
     res.status(200).json({
