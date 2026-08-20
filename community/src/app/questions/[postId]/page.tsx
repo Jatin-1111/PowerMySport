@@ -29,7 +29,7 @@ export async function generateMetadata({
       title: "Community Question",
       description:
         "Ask sports questions and get answers from players, coaches, and parents on PowerMySport.",
-      path: `/q/${postId}`,
+      path: `/questions/${postId}`,
     });
   }
 
@@ -40,7 +40,7 @@ export async function generateMetadata({
   return buildMetadata({
     title: post.title,
     description: clampText(post.body, 160),
-    path: `/q/${postId}`,
+    path: `/questions/${postId}`,
     keywords: [...(post.tags ?? []), ...contextTags],
     type: "article",
     publishedTime: post.createdAt,
@@ -75,7 +75,7 @@ export default async function CommunityQnADetailPage({
             "@type": "Person",
             name: post.author?.displayName || "PowerMySport Community",
           },
-          url: communityUrl(`/q/${postId}`),
+          url: communityUrl(`/questions/${postId}`),
           ...(topAnswer
             ? {
                 acceptedAnswer: {
@@ -83,7 +83,7 @@ export default async function CommunityQnADetailPage({
                   text: clampText(topAnswer.content, 500),
                   upvoteCount: topAnswer.upvoteCount,
                   datePublished: topAnswer.createdAt,
-                  url: communityUrl(`/q/${postId}`),
+                  url: communityUrl(`/questions/${postId}`),
                   author: {
                     "@type": "Person",
                     name:
@@ -104,8 +104,8 @@ export default async function CommunityQnADetailPage({
             qaSchema,
             breadcrumbSchema([
               { name: "Community", path: "/" },
-              { name: "Q&A", path: "/q" },
-              { name: post.title, path: `/q/${postId}` },
+              { name: "Q&A", path: "/questions" },
+              { name: post.title, path: `/questions/${postId}` },
             ]),
           ]}
         />

@@ -2,22 +2,17 @@ import {
   ArrowRight,
   BadgeCheck,
   BrainCircuit,
-  CheckCircle2,
   Compass,
-  Crown,
-  HeartHandshake,
   MessageCircle,
+  MessageSquare,
   MessageSquareQuote,
-  Search,
+  Newspaper,
   ShieldCheck,
-  Star,
-  Trophy,
   Users,
 } from "lucide-react";
 import Link from "next/link";
 import { getMainAppUrl } from "@/lib/auth/redirect";
 import DynamicCommunityPosts from "@/modules/community/components/page/home/DynamicCommunityPosts";
-import DynamicCommunityPulse from "@/modules/community/components/page/home/DynamicCommunityPulse";
 import DynamicFeaturedQA from "@/modules/community/components/page/home/DynamicFeaturedQA";
 import FeatureWaitlist from "@/components/FeatureWaitlist";
 import {
@@ -37,78 +32,116 @@ export const metadata = buildMetadata({
 type ValueProp = {
   title: string;
   description: string;
+  href: string;
+  cta: string;
   icon: typeof ShieldCheck;
-};
-
-type CoachCard = {
-  name: string;
-  sport: string;
-  rating: string;
-  location: string;
-  badges: string[];
-  specialties: string[];
-  imageSeed: string;
 };
 
 const valueProps: ValueProp[] = [
   {
-    title: "Real Parent Experiences",
+    title: "Groups & People Near You",
     description:
-      "Learn from the journeys of other parents who have navigated youth sports in your area.",
-    icon: Users,
-  },
-  {
-    title: "Expert Insights",
-    description:
-      "Get answers from verified coaches, former athletes, and sports professionals.",
-    icon: BadgeCheck,
-  },
-  {
-    title: "Pathway Planning",
-    description:
-      "Discuss and refine your child's athletic roadmap before making any commitments.",
+      "Browse sport-wise groups and find parents, players, and coaches in your city to follow and talk to.",
+    href: "/discover",
+    cta: "Open Discover",
     icon: Compass,
+  },
+  {
+    title: "Stories & Expert Advice",
+    description:
+      "Read coaching tips, training insights, and first-hand journeys written by coaches, parents, and players.",
+    href: "/blog",
+    cta: "Read the blog",
+    icon: Newspaper,
+  },
+  {
+    title: "Questions & Answers",
+    description:
+      "Ask about coaching, training, gear, injuries, nutrition, or tournaments and get answers from people who have been there.",
+    href: "/questions",
+    cta: "Browse Q&A",
+    icon: MessageSquare,
   },
 ];
 
-const marketplaceCoaches: CoachCard[] = [
+type HeroStep = {
+  title: string;
+  description: string;
+  cta: string;
+  icon: typeof ShieldCheck;
+  /** Absolute for the main app, root-relative for a community route. */
+  href: string;
+  external?: boolean;
+};
+
+const heroSteps: HeroStep[] = [
   {
-    name: "Aarav Mehta",
-    sport: "Tennis",
-    rating: "4.9",
-    location: "3.2 km away",
-    badges: ["Verified Safety Check", "Top Parent Pick"],
-    specialties: ["Beginners", "Footwork", "Confidence Building"],
-    imageSeed: "tennis-coach-aarav",
+    title: "Read what others did",
+    description:
+      "First-hand write-ups from parents and coaches on trials, training, and picking a sport.",
+    cta: "Open the blog",
+    icon: Newspaper,
+    href: "/blog",
   },
   {
-    name: "Sana Kapoor",
-    sport: "Football",
-    rating: "4.8",
-    location: "4.6 km away",
-    badges: ["Background Verified", "Fast Booking"],
-    specialties: ["Girls Teams", "Youth Fitness", "Match Awareness"],
-    imageSeed: "football-coach-sana",
+    title: "Ask what worries you",
+    description:
+      "Put your question to parents and coaches who have already made the same call.",
+    cta: "Go to Q&A",
+    icon: MessageCircle,
+    href: "/questions",
   },
   {
-    name: "Vikram Singh",
-    sport: "Basketball",
-    rating: "5.0",
-    location: "2.1 km away",
-    badges: ["Elite Coach", "Parent Approved"],
-    specialties: ["Ball Handling", "Confidence", "Small Group Sessions"],
-    imageSeed: "basketball-coach-vikram",
-  },
-  {
-    name: "Nina Fernandez",
-    sport: "Swimming",
-    rating: "4.9",
-    location: "6.0 km away",
-    badges: ["Safety First", "Weekend Slots"],
-    specialties: ["Beginners", "Technique", "Comfort in Water"],
-    imageSeed: "swim-coach-nina",
+    title: "Then book with confidence",
+    description:
+      "Pick a verified coach or venue once you know what your child actually needs.",
+    cta: "Browse coaches",
+    icon: BadgeCheck,
+    href: `${getMainAppUrl()}/coaches`,
+    external: true,
   },
 ];
+
+function HeroStep({ step, index }: { step: HeroStep; index: number }) {
+  const { title, description, cta, icon: Icon, href, external } = step;
+  const inner = (
+    <>
+      <span className="relative z-10 flex h-11 w-11 flex-none items-center justify-center rounded-2xl border border-slate-200 bg-white text-power-orange shadow-sm transition group-hover:border-power-orange/40">
+        <Icon className="h-[18px] w-[18px]" />
+      </span>
+      <span className="min-w-0">
+        <span className="flex items-baseline gap-2">
+          <span className="text-[11px] font-bold tabular-nums text-slate-300">
+            0{index + 1}
+          </span>
+          <span className="text-[15px] font-semibold text-slate-900">
+            {title}
+          </span>
+        </span>
+        <span className="mt-1 block text-[13px] leading-5 text-slate-500">
+          {description}
+        </span>
+        <span className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-semibold text-power-orange">
+          {cta}
+          <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+        </span>
+      </span>
+    </>
+  );
+
+  const className =
+    "group flex gap-3 rounded-2xl p-2 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange";
+
+  return external ? (
+    <a href={href} className={className}>
+      {inner}
+    </a>
+  ) : (
+    <Link href={href} className={className}>
+      {inner}
+    </Link>
+  );
+}
 
 function SectionHeading({
   eyebrow,
@@ -134,82 +167,32 @@ function SectionHeading({
   );
 }
 
-function ValuePropCard({ title, description, icon: Icon }: ValueProp) {
+function ValuePropCard({
+  title,
+  description,
+  href,
+  cta,
+  icon: Icon,
+}: ValueProp) {
   return (
-    <div className="group rounded-3xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-900/10">
+    <Link
+      href={href}
+      className="group flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5 transition hover:-translate-y-0.5 hover:border-power-orange/40 hover:shadow-lg hover:shadow-slate-900/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2"
+    >
       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(233,115,22,0.14),rgba(245,158,11,0.16))] text-power-orange">
         <Icon className="h-5 w-5" />
       </div>
-      <h3 className="mt-4 text-lg font-semibold text-slate-900">{title}</h3>
+      <h3 className="mt-4 text-balance text-lg font-semibold text-slate-900">
+        {title}
+      </h3>
       <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
-    </div>
-  );
-}
-
-function CoachMarketplaceCard({ coach }: { coach: CoachCard }) {
-  return (
-    <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-900/10">
-      <div className="relative h-40 bg-[linear-gradient(135deg,rgba(15,23,42,0.92),rgba(51,65,85,0.85))]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(233,115,22,0.18),transparent_36%),radial-gradient(circle_at_bottom_left,rgba(34,197,94,0.16),transparent_32%)]" />
-        <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 text-white">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-              Local coach
-            </p>
-            <h3 className="mt-1 text-xl font-semibold tracking-tight">
-              {coach.name}
-            </h3>
-            <p className="mt-1 text-sm text-white/80">{coach.sport}</p>
-          </div>
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-xs font-bold uppercase tracking-wide text-white backdrop-blur">
-            {coach.name
-              .split(" ")
-              .map((part) => part[0])
-              .join("")
-              .slice(0, 2)}
-          </div>
-        </div>
-      </div>
-      <div className="space-y-4 p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
-            <Star className="h-4 w-4 text-amber-500" />
-            {coach.rating}
-            <span className="text-slate-400">·</span>
-            <span className="text-sm font-medium text-slate-500">
-              {coach.location}
-            </span>
-          </div>
-          <BadgeCheck className="h-5 w-5 text-emerald-600" />
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {coach.badges.map((badge) => (
-            <span
-              key={badge}
-              className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600"
-            >
-              {badge}
-            </span>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {coach.specialties.map((specialty) => (
-            <span
-              key={specialty}
-              className="inline-flex items-center rounded-full bg-power-orange/10 px-2.5 py-1 text-[11px] font-semibold text-power-orange"
-            >
-              {specialty}
-            </span>
-          ))}
-        </div>
-
-        <button className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-          View profile <ArrowRight className="h-4 w-4" />
-        </button>
-      </div>
-    </article>
+      {/* mt-auto pins the CTA to the card's bottom edge so a longer or shorter
+          description can't shift it out of line with the sibling cards. */}
+      <span className="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold text-power-orange">
+        {cta}
+        <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+      </span>
+    </Link>
   );
 }
 
@@ -240,69 +223,82 @@ export default function CommunityLandingPage() {
       <JsonLd data={[organizationSchema, websiteSchema]} />
       <main className="relative isolate flex-1 overflow-hidden bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.10),transparent_34%),radial-gradient(circle_at_85%_10%,rgba(16,185,129,0.08),transparent_22%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)] text-slate-900">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.85),transparent_22%),radial-gradient(circle_at_80%_10%,rgba(255,255,255,0.55),transparent_18%)]" />
-        <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-5 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-          <section className="overflow-hidden rounded-[2rem] border border-white/70 bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(255,250,245,0.94))] shadow-xl shadow-slate-900/5">
-            <div className="grid gap-8 px-5 py-6 sm:px-8 sm:py-10 lg:grid-cols-[1.25fr_0.85fr] lg:items-center lg:px-10 lg:py-12">
+        <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-7 px-3 py-4 sm:px-4 sm:py-6 lg:px-6 lg:py-7">
+          <section className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-[linear-gradient(120deg,#ffffff_0%,rgba(255,251,246,0.96)_45%,rgba(255,244,235,0.94)_100%)] shadow-xl shadow-slate-900/5">
+            {/* Warm glow + faint grid: gives the panel some depth so the
+                headline isn't sitting on a flat white rectangle. */}
+            <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(233,115,22,0.20),transparent_65%)] blur-2xl" />
+            <div className="pointer-events-none absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.14),transparent_65%)] blur-2xl" />
+            <div className="pointer-events-none absolute inset-0 opacity-60 [background-image:linear-gradient(to_right,rgba(15,23,42,0.045)_1px,transparent_1px),linear-gradient(to_bottom,rgba(15,23,42,0.045)_1px,transparent_1px)] [background-size:44px_44px] [mask-image:radial-gradient(circle_at_15%_0%,black,transparent_65%)]" />
+
+            <div className="relative grid gap-7 px-5 py-7 sm:px-7 sm:py-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-10 lg:px-9 lg:py-9">
               <div>
-                <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/90 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">
+                <span className="inline-flex items-center gap-2 rounded-full border border-power-orange/25 bg-white/90 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-power-orange">
+                  <Users className="h-3.5 w-3.5" />
                   Parent-first youth sports community
                 </span>
-                <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-                  Learn, connect, and plan your child's sports journey.
+                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl lg:text-[2.9rem] lg:leading-[1.08]">
+                  Learn, connect, and plan your{" "}
+                  <span className="bg-[linear-gradient(100deg,#E97316,#F59E0B)] bg-clip-text text-transparent">
+                    child&apos;s sports journey.
+                  </span>
                 </h1>
-                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+                <p className="mt-4 max-w-xl text-[15px] leading-7 text-slate-600 sm:text-base">
                   Before you book a coach or a venue, get the knowledge you
-                  need. Ask questions, read expert insights, and connect with
-                  parents who have been there.
+                  need. Ask questions, read what other parents did, and hear
+                  from the people who have already been through it.
                 </p>
 
-                <div className="mt-6 flex flex-wrap gap-3 text-sm text-slate-600">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-slate-200">
+                <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
+                  <Link
+                    href="/questions"
+                    className="group inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                  >
+                    Ask a question
+                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                  </Link>
+                  <Link
+                    href="/discover"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                  >
+                    <Compass className="h-4 w-4" />
+                    Find parents near you
+                  </Link>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-[13px] font-medium text-slate-500">
+                  <span className="inline-flex items-center gap-1.5">
                     <MessageSquareQuote className="h-4 w-4 text-power-orange" />
                     Parent-to-parent advice
                   </span>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-slate-200">
+                  <span className="inline-flex items-center gap-1.5">
                     <BadgeCheck className="h-4 w-4 text-emerald-600" />
                     Verified expert answers
                   </span>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-slate-200">
-                    <MessageCircle className="h-4 w-4 text-sky-600" />
-                    Ask the community
+                  <span className="inline-flex items-center gap-1.5">
+                    <ShieldCheck className="h-4 w-4 text-sky-600" />
+                    Moderated discussions
                   </span>
-                </div>
-
-                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                  <Link
-                    href="/q"
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
-                  >
-                    Ask Question <MessageCircle className="h-4 w-4" />
-                  </Link>
-                  <a
-                    href={`${getMainAppUrl()}/roadmap`}
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-                  >
-                    Explore Sports Roadmaps <Compass className="h-4 w-4" />
-                  </a>
                 </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                <DynamicCommunityPulse />
-
-                <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(135deg,rgba(233,115,22,0.08),rgba(255,255,255,0.98))] p-5 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                    Smarter Planning
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-slate-900">
-                    Learn before you commit.
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Use our roadmap to see the big picture, get a personalised
-                    AI plan, and ask the community for local insights before
-                    booking any sessions.
-                  </p>
-                </div>
+              <div className="rounded-[1.6rem] border border-slate-200/80 bg-white/85 p-5 shadow-lg shadow-slate-900/5 backdrop-blur">
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                  How parents use PowerMySport
+                </p>
+                <ol className="mt-4 space-y-1">
+                  {heroSteps.map((step, index) => (
+                    <li key={step.title} className="relative">
+                      {index < heroSteps.length - 1 && (
+                        <span
+                          aria-hidden
+                          className="absolute left-[1.35rem] top-11 h-[calc(100%-1.75rem)] w-px bg-gradient-to-b from-slate-200 to-transparent"
+                        />
+                      )}
+                      <HeroStep step={step} index={index} />
+                    </li>
+                  ))}
+                </ol>
               </div>
             </div>
           </section>
@@ -310,8 +306,8 @@ export default function CommunityLandingPage() {
           <section className="space-y-6">
             <SectionHeading
               eyebrow="Why join the community"
-              title="A smarter way to navigate youth sports"
-              description="Make confident decisions by combining our structured pathways with real-world experiences from local parents and experts."
+              title="Three ways to get answers before you commit"
+              description="Find the people going through the same thing, read what coaches and parents have written, or just ask your question outright."
             />
             <div className="grid gap-4 md:grid-cols-3">
               {valueProps.map((prop) => (
@@ -363,21 +359,6 @@ export default function CommunityLandingPage() {
               </div>
             </div>
           </section>
-
-          {/* 
-          <section className="space-y-6">
-            <SectionHeading
-              eyebrow="Trending marketplace"
-              title="Top-rated local coaches ready for parent discovery"
-              description="Browse strong-fit coaching profiles with rating context, safety badges, and sport-specific specialties before you commit."
-            />
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-              {marketplaceCoaches.map((coach) => (
-                <CoachMarketplaceCard key={coach.name} coach={coach} />
-              ))}
-            </div>
-          </section> 
-          */}
         </div>
       </main>
     </div>

@@ -11,7 +11,7 @@ export const metadata = buildMetadata({
   title: "Sports Q&A — Ask & Answer Community Questions",
   description:
     "Ask sports questions and get answers from players, coaches, and parents. Browse advice on coaching, training, equipment, injuries, nutrition, and tournaments.",
-  path: "/q",
+  path: "/questions",
 });
 
 interface QuestionRow {
@@ -37,16 +37,16 @@ export default async function CommunityQnAPage() {
         data={[
           breadcrumbSchema([
             { name: "Community", path: "/" },
-            { name: "Q&A", path: "/q" },
+            { name: "Q&A", path: "/questions" },
           ]),
           ...(questions.length
             ? [
                 itemListSchema({
                   name: "Latest questions in the PowerMySport community",
-                  path: "/q",
+                  path: "/questions",
                   items: questions.map((row) => ({
                     name: row.name,
-                    path: `/q/${row.id}`,
+                    path: `/questions/${row.id}`,
                   })),
                 }),
               ]
@@ -60,7 +60,7 @@ export default async function CommunityQnAPage() {
               <div className="h-5 w-40 animate-pulse rounded-full bg-slate-200" />
               <div className="mt-4 h-24 animate-pulse rounded-2xl bg-slate-100" />
               <p className="mt-4 text-sm text-slate-500">
-                Loading knowledge feed...
+                Loading questions...
               </p>
             </div>
           </div>

@@ -59,7 +59,7 @@ export default function CommunityOverviewPanel({ page }: Props) {
                   Open chats
                 </button>
                 <Link
-                  href="/q"
+                  href="/questions"
                   className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
                 >
                   Explore Q&A

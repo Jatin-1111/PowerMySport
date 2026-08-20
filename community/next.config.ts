@@ -8,6 +8,19 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(process.cwd(), ".."),
   },
+  // /q and /q/<id> were the live, indexed URLs for the Q&A feed before it was
+  // renamed to /questions. Permanent redirects keep those inbound links and
+  // Search Console entries pointing at the new canonical path.
+  async redirects() {
+    return [
+      { source: "/q", destination: "/questions", permanent: true },
+      {
+        source: "/q/:postId",
+        destination: "/questions/:postId",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

@@ -23,7 +23,7 @@ type IncomingNotification = {
 
 const buildActionHref = (payload: IncomingNotification): string | null => {
   if (payload.data?.postId) {
-    return `/q/${payload.data.postId}`;
+    return `/questions/${payload.data.postId}`;
   }
 
   if (payload.data?.conversationId) {

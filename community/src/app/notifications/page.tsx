@@ -95,7 +95,7 @@ const getEventLabel = (item: CommunityActivityItem): string => {
 
 const buildActionHref = (item: CommunityActivityItem): string | null => {
   if (item.data?.postId) {
-    return `/q/${item.data.postId}`;
+    return `/questions/${item.data.postId}`;
   }
 
   if (item.data?.conversationId) {

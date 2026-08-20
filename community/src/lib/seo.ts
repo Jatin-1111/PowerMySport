@@ -106,7 +106,7 @@ export async function fetchPublicData<T>(path: string): Promise<T | null> {
 interface BuildMetadataInput {
   title?: string;
   description?: string;
-  /** Path relative to the community base, e.g. "/blog" or "/q/123". */
+  /** Path relative to the community base, e.g. "/blog" or "/questions/123". */
   path?: string;
   keywords?: string[];
   /** Absolute image URL. Defaults to the shared Open Graph image. */

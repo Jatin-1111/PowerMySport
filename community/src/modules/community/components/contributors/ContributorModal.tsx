@@ -141,7 +141,7 @@ export function ContributorModal({
                         {threads.map((post) => (
                           <Link
                             key={post.id}
-                            href={`/q/${post.id}`}
+                            href={`/questions/${post.id}`}
                             onClick={onClose}
                             className="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-power-orange/40 hover:bg-white"
                           >

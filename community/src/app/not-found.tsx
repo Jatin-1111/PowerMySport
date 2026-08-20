@@ -41,7 +41,7 @@ export default function NotFound() {
             <Home className="h-4 w-4" /> Community home
           </Link>
           <Link
-            href="/q"
+            href="/questions"
             className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
           >
             <Compass className="h-4 w-4" /> Browse Q&amp;A

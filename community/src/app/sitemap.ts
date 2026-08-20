@@ -20,7 +20,7 @@ const staticRoutes: {
 }[] = [
   { path: "/", priority: 1, changeFrequency: "daily" },
   { path: "/blog", priority: 0.9, changeFrequency: "daily" },
-  { path: "/q", priority: 0.9, changeFrequency: "daily" },
+  { path: "/questions", priority: 0.9, changeFrequency: "daily" },
   { path: "/discover", priority: 0.8, changeFrequency: "weekly" },
 ];
 
@@ -108,7 +108,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   for (const post of posts) {
     entries.push({
-      url: `${COMMUNITY_BASE_URL}/q/${post.id}`,
+      url: `${COMMUNITY_BASE_URL}/questions/${post.id}`,
       lastModified: toDate(post.updatedAt || post.createdAt),
       changeFrequency: "weekly",
       priority: 0.6,

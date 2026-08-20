@@ -139,7 +139,7 @@ export default function CommunityTopNav() {
 
   // ── primary nav-link style helper (center) ───────────────────────────────
   const navLinkCls = (active: boolean) =>
-    `inline-flex min-h-10 items-center gap-1.5 rounded-2xl px-2 lg:px-3 py-2 text-[13px] font-bold whitespace-nowrap transition-all duration-200 ${
+    `inline-flex min-h-10 items-center gap-1.5 rounded-2xl px-2 py-2 text-[13px] font-bold whitespace-nowrap transition-all duration-200 xl:px-3 ${
       active
         ? "bg-power-orange/10 text-power-orange"
         : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-900"
@@ -147,8 +147,8 @@ export default function CommunityTopNav() {
 
   return (
     <header className="sticky top-0 z-120 border-b border-white/70 bg-white/90 backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/75 px-3 py-2.5 shadow-sm shadow-slate-900/5 backdrop-blur sm:px-4">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 py-2.5 sm:px-4 sm:py-3 lg:px-6">
+        <div className="flex items-center justify-between gap-2 rounded-2xl border border-white/70 bg-white/75 px-2.5 py-2 shadow-sm shadow-slate-900/5 backdrop-blur sm:px-3 lg:gap-3">
           {/* Left section: Back button & Logo */}
           <div className="flex items-center flex-shrink-0">
             {/* ── Logo ──────────────────────────────────────────────────────── */}
@@ -156,7 +156,7 @@ export default function CommunityTopNav() {
               href="/"
               className="inline-flex h-full flex-col items-start justify-center"
             >
-              <span className="font-title text-2xl font-extrabold tracking-tight leading-none">
+              <span className="font-title text-xl font-extrabold leading-none tracking-tight xl:text-2xl">
                 <span className="text-slate-900">Power</span>
                 <span className="text-power-orange">My</span>
                 <span className="text-slate-900">Sport</span>
@@ -168,7 +168,7 @@ export default function CommunityTopNav() {
           </div>
 
           {/* ── Desktop Center Nav ────────────────────────────────────────── */}
-          <div className="hidden xl:flex flex-1 items-center justify-center gap-0.5 mx-2">
+          <div className="hidden lg:flex flex-1 items-center justify-center gap-0.5 lg:mx-1 xl:mx-2">
             <Link href="/" className={navLinkCls(pathname === "/")}>
               <House size={16} />
               Home
@@ -203,9 +203,9 @@ export default function CommunityTopNav() {
               Blog
             </Link>
 
-            <Link href="/q" className={navLinkCls(pathname.startsWith("/q"))}>
+            <Link href="/questions" className={navLinkCls(pathname.startsWith("/questions"))}>
               <MessageSquare size={16} />
-              Knowledge
+              Questions
             </Link>
 
             <Link
@@ -218,7 +218,7 @@ export default function CommunityTopNav() {
           </div>
 
           {/* ── Desktop Right Actions ─────────────────────────────────────── */}
-          <div className="hidden xl:flex items-center justify-end gap-3 flex-shrink-0">
+          <div className="hidden lg:flex items-center justify-end gap-2 xl:gap-3 flex-shrink-0">
             {/* Notifications */}
             <Link
               href="/notifications"
@@ -237,7 +237,7 @@ export default function CommunityTopNav() {
               <button
                 type="button"
                 onClick={() => setIsSettingsOpen((prev) => !prev)}
-                className={`inline-flex min-h-10 items-center gap-1 rounded-xl px-3 py-2 text-[13px] font-bold transition ${
+                className={`inline-flex min-h-10 items-center gap-1 rounded-xl px-2.5 py-2 text-[13px] font-bold transition xl:px-3 ${
                   isSettingsActive
                     ? "bg-power-orange/10 text-power-orange"
                     : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-900"
@@ -287,7 +287,7 @@ export default function CommunityTopNav() {
           </div>
 
           {/* ── Mobile hamburger ──────────────────────────────────────────── */}
-          <div className="flex xl:hidden items-center gap-2">
+          <div className="flex lg:hidden items-center gap-2">
             <Link
               href="/notifications"
               className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-slate-600 transition hover:bg-slate-100"
@@ -321,7 +321,7 @@ export default function CommunityTopNav() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm xl:hidden"
+                className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm lg:hidden"
                 style={{ zIndex: 2147483000 }}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
@@ -388,7 +388,7 @@ export default function CommunityTopNav() {
                       },
                       { href: "/discover", icon: Compass, label: "Discover" },
                       { href: "/blog", icon: Newspaper, label: "Blog" },
-                      { href: "/q", icon: MessageSquare, label: "Knowledge" },
+                      { href: "/questions", icon: MessageSquare, label: "Questions" },
                       {
                         href: "/contributors",
                         icon: Trophy,

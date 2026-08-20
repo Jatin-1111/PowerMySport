@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import QuoteOfTheDay from "@/modules/community/components/page/QuoteOfTheDay";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle,
   ArrowBigDown,
@@ -229,6 +230,8 @@ export default function QnAFeedClient() {
   const [sportOptions, setSportOptions] = useState<string[]>([]);
   const [cityOptions, setCityOptions] = useState<string[]>([]);
   const [showAskForm, setShowAskForm] = useState(false);
+  // Honour prefers-reduced-motion: the hero blobs loop forever otherwise.
+  const reduceMotion = useReducedMotion();
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [filterPanelSettled, setFilterPanelSettled] = useState(false);
   const [isUrlHydrated, setIsUrlHydrated] = useState(false);
@@ -712,7 +715,7 @@ export default function QnAFeedClient() {
       kind: "topic",
       id: normalized,
       label: `#${topic}`,
-      href: `/q?tag=${encodeURIComponent(normalized)}`,
+      href: `/questions?tag=${encodeURIComponent(normalized)}`,
     });
 
     setFollowedTopics(
@@ -735,64 +738,82 @@ export default function QnAFeedClient() {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.14)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.14)_1px,transparent_1px)] bg-size-[42px_42px] opacity-40" />
       </div>
 
-      <div className="mx-auto w-full max-w-7xl space-y-5 px-4 py-5 sm:space-y-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl space-y-5 px-3 py-4 sm:space-y-6 sm:px-4 sm:py-6 lg:px-6">
         <motion.section
-          initial={{ opacity: 0, y: 14 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: "easeOut" }}
-          className="relative overflow-hidden rounded-3xl border border-white/80 bg-[linear-gradient(125deg,#fafdff_0%,#eaf4ff_36%,#fff1dc_100%)] px-4 py-8 text-slate-900 shadow-sm sm:rounded-4xl sm:px-10 sm:py-14"
+          aria-labelledby="qna-hero-title"
+          className="relative overflow-hidden rounded-3xl border border-white/80 bg-[linear-gradient(125deg,#fafdff_0%,#eaf4ff_36%,#fff1dc_100%)] px-4 py-6 text-slate-900 shadow-sm sm:rounded-4xl sm:px-8 sm:py-8"
         >
           <motion.div
             aria-hidden="true"
-            animate={{ x: [0, -10, 0], y: [0, 10, 0] }}
+            animate={reduceMotion ? undefined : { x: [0, -10, 0], y: [0, 10, 0] }}
             transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-            className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-sky-300/25 blur-3xl"
+            className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-sky-300/25 blur-3xl"
           />
           <motion.div
             aria-hidden="true"
-            animate={{ x: [0, 12, 0], y: [0, -8, 0] }}
+            animate={reduceMotion ? undefined : { x: [0, 12, 0], y: [0, -8, 0] }}
             transition={{ duration: 17, repeat: Infinity, ease: "easeInOut" }}
-            className="pointer-events-none absolute -bottom-24 left-0 h-72 w-72 rounded-full bg-amber-200/30 blur-3xl"
+            className="pointer-events-none absolute -bottom-24 left-0 h-64 w-64 rounded-full bg-amber-200/30 blur-3xl"
           />
 
-          <div className="relative flex flex-wrap items-center justify-between gap-6">
-            <div className="max-w-3xl">
-              <p className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
-                <Sparkles size={12} className="text-power-orange" />
-                Community Knowledge Exchange
+          <div className="relative grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.78fr)] lg:gap-9">
+            <div>
+              <p className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-600">
+                <Sparkles
+                  size={12}
+                  className="text-power-orange"
+                  aria-hidden="true"
+                />
+                Community knowledge exchange
               </p>
-              <h1 className="font-title mt-4 text-3xl font-semibold leading-[1.08] tracking-tight sm:text-4xl lg:text-5xl">
-                Ask Better Questions. Share Better Answers.
+              <h1
+                id="qna-hero-title"
+                className="font-title mt-3 text-2xl font-semibold leading-[1.1] tracking-tight sm:text-3xl lg:text-[2.4rem]"
+              >
+                Ask better questions.{" "}
+                <span className="text-slate-500">Share better answers.</span>
               </h1>
-              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
-                A player-to-player learning space where practical advice wins.
+              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-700">
+                Post what you are stuck on and get practical answers from
+                players, parents, and coaches who have solved it before.
               </p>
+
+              <div className="mt-5 flex flex-wrap items-center gap-2.5">
+                <motion.button
+                  type="button"
+                  aria-haspopup="dialog"
+                  whileHover={reduceMotion ? undefined : { scale: 1.03 }}
+                  whileTap={reduceMotion ? undefined : { scale: 0.97 }}
+                  onClick={() => {
+                    if (!hasAuthToken()) {
+                      redirectToMainLogin();
+                      return;
+                    }
+                    setShowAskForm((v) => !v);
+                  }}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                >
+                  <Plus size={16} aria-hidden="true" />
+                  Ask a question
+                </motion.button>
+                <Link
+                  href="/contributors"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-white hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                >
+                  <Trophy
+                    size={16}
+                    className="text-amber-600"
+                    aria-hidden="true"
+                  />
+                  Leaderboard
+                </Link>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 self-end sm:gap-3">
-              <Link
-                href="/contributors"
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
-              >
-                <Trophy size={16} className="text-amber-500" />
-                Leaderboard
-              </Link>
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => {
-                  if (!hasAuthToken()) {
-                    redirectToMainLogin();
-                    return;
-                  }
-                  setShowAskForm((v) => !v);
-                }}
-                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700"
-              >
-                <Plus size={16} />
-                Ask Question
-              </motion.button>
-            </div>
+            <QuoteOfTheDay />
           </div>
         </motion.section>
 
@@ -1098,7 +1119,7 @@ export default function QnAFeedClient() {
                       </div>
 
                       <Link
-                        href={`/q/${featuredPost.id}`}
+                        href={`/questions/${featuredPost.id}`}
                         className="block font-title text-2xl font-bold leading-tight text-slate-900 transition-colors hover:text-power-orange"
                       >
                         {featuredPost.title}
@@ -1208,7 +1229,7 @@ export default function QnAFeedClient() {
                         <div className="flex-1 overflow-hidden p-4 sm:p-5">
                           {/* Title */}
                           <Link
-                            href={`/q/${post.id}`}
+                            href={`/questions/${post.id}`}
                             className="block font-title text-lg font-semibold text-slate-900 transition-colors hover:text-power-orange"
                           >
                             {post.title}
@@ -1414,7 +1435,7 @@ export default function QnAFeedClient() {
                   <AnimatePresence initial={false}>
                     {activity.map((item) => {
                       const postLink = item.data?.postId
-                        ? `/q/${item.data.postId}`
+                        ? `/questions/${item.data.postId}`
                         : null;
 
                       return (
@@ -1492,7 +1513,7 @@ export default function QnAFeedClient() {
                     {urgentUnanswered.map((item) => (
                       <Link
                         key={`urgent-${item.id}`}
-                        href={`/q/${item.id}`}
+                        href={`/questions/${item.id}`}
                         className="block rounded-xl border border-amber-200/70 bg-white/90 px-3 py-2 text-sm font-medium text-slate-800 transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-white hover:shadow-sm"
                       >
                         <span className="line-clamp-1">{item.title}</span>

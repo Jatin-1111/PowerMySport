@@ -341,7 +341,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
       setIsMutatingPost(true);
       await communityService.deletePost(post.id);
       toast.success("Question deleted");
-      router.push("/q");
+      router.push("/questions");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to delete question",
@@ -488,7 +488,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
       <div className="mx-auto max-w-5xl px-4 py-6 text-center sm:py-10">
         <p className="text-slate-700">Question not found.</p>
         <Link
-          href="/q"
+          href="/questions"
           className="mt-4 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
         >
           Back to Feed
@@ -502,7 +502,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
       {/* Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
         <Link
-          href="/q"
+          href="/questions"
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 transition hover:text-slate-900"
         >
           <ChevronLeft size={16} />

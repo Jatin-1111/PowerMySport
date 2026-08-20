@@ -22,7 +22,7 @@ The `community` project is the social hub for PowerMySport. It allows users to a
 |------|---------|-------------|--------------|
 | `layout.tsx` | Main layout, sets up Socket provider and Toast listener | `RootLayout` | Initializes global providers |
 | `chats/page.tsx` | Main real-time chat interface (DMs and Groups) | `ChatsPage` | None |
-| `q/page.tsx` | Q&A feed for asking and answering questions | `CommunityQnAPage` | None |
+| `questions/page.tsx` | Q&A feed for asking and answering questions | `CommunityQnAPage` | None |
 | `discover/page.tsx` | Discover groups, trending topics, and players | `DiscoverPage` | None |
 | `notifications/page.tsx` | Community-specific notifications | `CommunityNotificationsPage`| None |
 
@@ -70,8 +70,8 @@ The `community` project is the social hub for PowerMySport. It allows users to a
 - `/` - Community Landing Page
 - `/chats` - Active conversations and DMs
 - `/discover` - Find new groups and users
-- `/q` - Questions and Answers feed
-- `/q/[postId]` - Detailed view of a Q&A post
+- `/questions` - Questions and Answers feed
+- `/questions/[postId]` - Detailed view of a Q&A post
 - `/members/[userId]` - View a community member's profile
 - `/following` - Manage followed groups and topics
 
