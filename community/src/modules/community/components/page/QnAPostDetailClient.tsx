@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowBigDown,
   ArrowBigUp,
@@ -19,6 +19,7 @@ import { communityService } from "@/modules/community/services/community";
 import {
   CommunityAnswer,
   CommunityPost,
+  CommunityPostDetailResponse,
   CommunityVoteResult,
 } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
@@ -41,20 +42,43 @@ const formatPostedDate = (value: string): string => {
   });
 };
 
-export default function QnAPostDetailClient({ postId }: { postId: string }) {
+export default function QnAPostDetailClient({
+  postId,
+  initialData = null,
+}: {
+  postId: string;
+  /**
+   * The server already fetched this to build the page's JSON-LD, so passing it
+   * down costs nothing and puts the question and its answers in the SSR HTML.
+   * Without it the server shipped rich QAPage structured data describing
+   * answers, while the body said "Loading question..." — structured data that
+   * does not match visible content.
+   */
+  initialData?: CommunityPostDetailResponse | null;
+}) {
   const router = useRouter();
   const [currentUserId, setCurrentUserId] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initialData);
   const [isLoadingMoreAnswers, setIsLoadingMoreAnswers] = useState(false);
-  const [post, setPost] = useState<CommunityPost | null>(null);
-  const [answers, setAnswers] = useState<CommunityAnswer[]>([]);
+  const [post, setPost] = useState<CommunityPost | null>(
+    initialData?.post ?? null,
+  );
+  const [answers, setAnswers] = useState<CommunityAnswer[]>(
+    initialData?.answers ?? [],
+  );
   const [answerPage, setAnswerPage] = useState(1);
-  const [hasMoreAnswers, setHasMoreAnswers] = useState(false);
+  const [hasMoreAnswers, setHasMoreAnswers] = useState(
+    (initialData?.pagination?.totalPages || 0) > 1,
+  );
   const [answerDraft, setAnswerDraft] = useState("");
   const [answerIsAnonymous, setAnswerIsAnonymous] = useState(false);
   const [isEditingPost, setIsEditingPost] = useState(false);
-  const [postTitleDraft, setPostTitleDraft] = useState("");
-  const [postBodyDraft, setPostBodyDraft] = useState("");
+  const [postTitleDraft, setPostTitleDraft] = useState(
+    initialData?.post?.title ?? "",
+  );
+  const [postBodyDraft, setPostBodyDraft] = useState(
+    initialData?.post?.body ?? "",
+  );
   const [editingAnswerId, setEditingAnswerId] = useState<string | null>(null);
   const [editingAnswerDraft, setEditingAnswerDraft] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,12 +98,18 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
     });
   }, [answers]);
 
+  // Whether anything is on screen yet. Once it is — from the server render or
+  // a previous fetch — a refresh must never swap the page back to a loading
+  // message: that would undo the SSR content on hydrate, and it also made every
+  // realtime event (a vote, a new answer) blank the whole thread for a moment.
+  const hasContentRef = useRef(Boolean(initialData?.post));
+
   const loadDetails = useCallback(
     async (targetPage = 1, append = false) => {
       try {
         if (append) {
           setIsLoadingMoreAnswers(true);
-        } else {
+        } else if (!hasContentRef.current) {
           setIsLoading(true);
         }
 
@@ -89,6 +119,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
           20,
         );
         setPost(data.post);
+        hasContentRef.current = true;
         setPostTitleDraft(data.post.title);
         setPostBodyDraft(data.post.body);
 

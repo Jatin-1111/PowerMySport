@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -36,20 +36,35 @@ const authorHref = (author: BlogDetail["author"]) =>
     ? `/blog/writer/${author.username}`
     : `/blog/writer/${author.id}`;
 
-export default function BlogDetailClient({ blogId }: { blogId: string }) {
+export default function BlogDetailClient({
+  blogId,
+  initialBlog = null,
+}: {
+  blogId: string;
+  /** Already fetched by the page for its metadata, so passing it down puts the
+   *  story in the SSR HTML instead of shipping a loading message to crawlers. */
+  initialBlog?: BlogDetail | null;
+}) {
   const router = useRouter();
-  const [blog, setBlog] = useState<BlogDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [blog, setBlog] = useState<BlogDetail | null>(initialBlog);
+  const [isLoading, setIsLoading] = useState(!initialBlog);
   const [likePending, setLikePending] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Never swap rendered content back to a loading state on refresh — that
+  // would undo the server render the moment the client hydrates.
+  const hasContentRef = useRef(Boolean(initialBlog));
+
   const load = useCallback(async () => {
     try {
-      setIsLoading(true);
+      if (!hasContentRef.current) {
+        setIsLoading(true);
+      }
       // This page is a shareable public link — no session required to read it.
       const data = await blogService.getBlog(blogId);
       setBlog(data);
+      hasContentRef.current = true;
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to load story",

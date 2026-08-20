@@ -58,7 +58,22 @@ export default async function CommunityQnADetailPage({
   const detail = await getPost(postId);
   const post = detail?.post;
   const answers = detail?.answers ?? [];
-  const topAnswer = [...answers].sort((a, b) => b.voteScore - a.voteScore)[0];
+
+  // Every answer is a `suggestedAnswer`. The previous version advertised the
+  // top-voted one as `acceptedAnswer`, which claims the asker marked it as the
+  // answer — nothing in the data says that. Real accepted answers are a
+  // separate piece of work; until then, not claiming it is the honest shape.
+  const answerSchema = (answer: (typeof answers)[number]) => ({
+    "@type": "Answer",
+    text: clampText(answer.content, 500),
+    upvoteCount: answer.upvoteCount,
+    datePublished: answer.createdAt,
+    url: communityUrl(`/questions/${postId}`),
+    author: {
+      "@type": "Person",
+      name: answer.author?.displayName || "PowerMySport Community",
+    },
+  });
 
   const qaSchema = post
     ? {
@@ -76,21 +91,8 @@ export default async function CommunityQnADetailPage({
             name: post.author?.displayName || "PowerMySport Community",
           },
           url: communityUrl(`/questions/${postId}`),
-          ...(topAnswer
-            ? {
-                acceptedAnswer: {
-                  "@type": "Answer",
-                  text: clampText(topAnswer.content, 500),
-                  upvoteCount: topAnswer.upvoteCount,
-                  datePublished: topAnswer.createdAt,
-                  url: communityUrl(`/questions/${postId}`),
-                  author: {
-                    "@type": "Person",
-                    name:
-                      topAnswer.author?.displayName || "PowerMySport Community",
-                  },
-                },
-              }
+          ...(answers.length
+            ? { suggestedAnswer: answers.map(answerSchema) }
             : {}),
         },
       }
@@ -110,7 +112,7 @@ export default async function CommunityQnADetailPage({
           ]}
         />
       ) : null}
-      <QnAPostDetailClient postId={postId} />
+      <QnAPostDetailClient postId={postId} initialData={detail} />
     </div>
   );
 }

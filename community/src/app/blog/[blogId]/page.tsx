@@ -101,7 +101,7 @@ export default async function CommunityBlogDetailPage({
           ]}
         />
       ) : null}
-      <BlogDetailClient blogId={blogId} />
+      <BlogDetailClient blogId={blogId} initialBlog={blog} />
     </>
   );
 }
