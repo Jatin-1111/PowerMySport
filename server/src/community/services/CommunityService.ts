@@ -3,7 +3,10 @@ import {
   CommunityConversation,
   CommunityConversationDocument,
 } from "../models/CommunityConversation";
-import { CommunityGroup } from "../models/CommunityGroup";
+import {
+  CommunityGroup,
+  type CommunityGroupVisibility,
+} from "../models/CommunityGroup";
 import { CommunityMessage } from "../models/CommunityMessage";
 import {
   CommunityMessagePrivacy,
@@ -31,6 +34,20 @@ import {
   type CommunityRole,
 } from "./communityPolicy";
 import { getVoteTransitionDeltas, normalizeTags } from "./communityQnaUtils";
+import {
+  addMember,
+  countMembers,
+  getMemberRole,
+  ensureGroupHasAdmin,
+  isGroupAdmin,
+  isGroupMember,
+  listAdminIds,
+  listMemberIds,
+  membershipMapFor,
+  removeAllMembers,
+  removeMember,
+} from "./communityGroupMembership";
+import { CommunityGroupMember } from "../models/CommunityGroupMember";
 
 const buildParticipantKey = (a: string, b: string): string =>
   [a, b].sort().join(":");
@@ -1727,22 +1744,30 @@ export const CommunityService = {
       ? new RegExp(escapeRegex(normalizedQuery), "i")
       : null;
 
+    // PRIVATE groups are unlisted, so discovery only ever shows PUBLIC and
+    // INVITE_ONLY. A private group the user is already in still reaches them
+    // through their conversation list, which is keyed on membership.
+    const discoverable = { $in: ["PUBLIC", "INVITE_ONLY"] };
     const filter = regex
       ? {
-          visibility: "PUBLIC",
+          visibility: discoverable,
           $or: [{ name: regex }, { sport: regex }, { city: regex }],
         }
-      : { visibility: "PUBLIC" };
+      : { visibility: discoverable };
 
     const groups = await CommunityGroup.find(filter)
       .sort({ updatedAt: -1 })
       .limit(safeLimit)
       .lean();
 
+    const membership = await membershipMapFor(
+      userId,
+      groups.map((group) => String(group._id)),
+    );
+
     return Promise.all(
       groups.map(async (group) => {
-        const memberIds = group.members.map((memberId) => String(memberId));
-        const adminIds = group.admins.map((adminId) => String(adminId));
+        const role = membership.get(String(group._id));
         return {
           id: String(group._id),
           name: group.name,
@@ -1753,9 +1778,9 @@ export const CommunityService = {
           city: group.city || "",
           createdBy: String(group.createdBy),
           profilePicture: await resolveGroupPhotoUrl(group),
-          memberCount: memberIds.length,
-          isMember: userId ? memberIds.includes(userId) : false,
-          isAdmin: userId ? adminIds.includes(userId) : false,
+          memberCount: group.memberCount || 0,
+          isMember: Boolean(role),
+          isAdmin: role === "ADMIN",
           isOwner: userId ? String(group.createdBy) === userId : false,
           memberAddPolicy: group.memberAddPolicy || "ADMIN_ONLY",
         };
@@ -1773,6 +1798,7 @@ export const CommunityService = {
       profilePicture?: string;
       profilePictureKey?: string;
       audience?: CommunityGroupAudience;
+      visibility?: CommunityGroupVisibility;
     },
   ) {
     await ensureProfile(userId);
@@ -1794,17 +1820,21 @@ export const CommunityService = {
           city: payload.city || "",
           profilePicture: payload.profilePicture || "",
           profilePictureKey: payload.profilePictureKey || "",
-          visibility: "PUBLIC",
+          visibility: payload.visibility || "PUBLIC",
           memberAddPolicy: "ADMIN_ONLY",
           audience: payload.audience || COMMUNITY_DEFAULT_GROUP_AUDIENCE,
           createdBy: new mongoose.Types.ObjectId(userId),
-          members: [new mongoose.Types.ObjectId(userId)],
-          admins: [new mongoose.Types.ObjectId(userId)],
+          memberCount: 0,
           inviteCode: generateInviteCode(),
         },
       },
       { upsert: true, new: true },
     );
+
+    // The creator is the first member and its first admin. `addMember` is a
+    // no-op on the upsert path where the group already existed, so re-creating
+    // a group by the same name does not double-count them.
+    await addMember(String(group._id), userId, "ADMIN");
 
     trackCommunityRoleMixEvent("group_created", {
       groupId: String(group._id),
@@ -1839,7 +1869,7 @@ export const CommunityService = {
       createdBy: String(group.createdBy),
       profilePicture: await resolveGroupPhotoUrl(group),
       memberAddPolicy: group.memberAddPolicy || "ADMIN_ONLY",
-      memberCount: group.members.length,
+      memberCount: await countMembers(String(group._id)),
       isMember: true,
       isAdmin: true,
       isOwner: true,
@@ -1858,6 +1888,7 @@ export const CommunityService = {
       profilePicture?: string;
       profilePictureKey?: string;
       audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+      visibility?: CommunityGroupVisibility;
     },
   ) {
     await ensureProfile(userId);
@@ -1867,10 +1898,7 @@ export const CommunityService = {
       throw new Error("Group not found");
     }
 
-    const requesterIsAdmin = group.admins.some(
-      (adminId) => String(adminId) === userId,
-    );
-    if (!requesterIsAdmin) {
+    if (!(await isGroupAdmin(groupId, userId))) {
       throw new Error("Only group admins can update the group");
     }
 
@@ -1881,11 +1909,14 @@ export const CommunityService = {
     if (typeof payload.profilePicture === "string") group.profilePicture = payload.profilePicture;
     if (typeof payload.profilePictureKey === "string") group.profilePictureKey = payload.profilePictureKey;
     if (payload.audience) group.audience = payload.audience;
+    if (payload.visibility) group.visibility = payload.visibility;
 
     await group.save();
 
-    const memberIds = group.members.map((memberId) => String(memberId));
-    const adminIds = group.admins.map((adminId) => String(adminId));
+    const [memberCount, role] = await Promise.all([
+      countMembers(groupId),
+      getMemberRole(groupId, userId),
+    ]);
 
     return {
       id: String(group._id),
@@ -1899,9 +1930,9 @@ export const CommunityService = {
       createdBy: String(group.createdBy),
       profilePicture: await resolveGroupPhotoUrl(group),
       memberAddPolicy: group.memberAddPolicy || "ADMIN_ONLY",
-      memberCount: memberIds.length,
-      isMember: memberIds.includes(userId),
-      isAdmin: adminIds.includes(userId),
+      memberCount,
+      isMember: Boolean(role),
+      isAdmin: role === "ADMIN",
       isOwner: String(group.createdBy) === userId,
     };
   },
@@ -1918,10 +1949,7 @@ export const CommunityService = {
       throw new Error("Group not found");
     }
 
-    const requesterIsAdmin = group.admins.some(
-      (adminId) => String(adminId) === userId,
-    );
-    if (!requesterIsAdmin) {
+    if (!(await isGroupAdmin(groupId, userId))) {
       throw new Error("Only group admins can update settings");
     }
 
@@ -1951,12 +1979,18 @@ export const CommunityService = {
       throw new Error("This group is not available for your role");
     }
 
-    const alreadyMember = group.members.some(
-      (memberId) => String(memberId) === userId,
-    );
+    // Self-service joining is a PUBLIC-only affair. INVITE_ONLY groups are
+    // discoverable so they can be found and asked about, but getting in still
+    // needs a code or an admin; PRIVATE ones are not listed at all.
+    const alreadyMember = await isGroupMember(groupId, userId);
+    if (!alreadyMember && group.visibility !== "PUBLIC") {
+      throw new Error(
+        "This group is invite-only. Ask an admin for an invite link.",
+      );
+    }
+
     if (!alreadyMember) {
-      group.members.push(new mongoose.Types.ObjectId(userId));
-      await group.save();
+      await addMember(groupId, userId);
 
       trackCommunityRoleMixEvent("group_joined", {
         groupId,
@@ -1984,9 +2018,9 @@ export const CommunityService = {
     );
 
     if (!alreadyMember) {
-      const adminIds = group.admins
-        .map((adminId) => String(adminId))
-        .filter((adminId) => adminId !== userId);
+      const adminIds = (await listAdminIds(groupId)).filter(
+        (adminId) => adminId !== userId,
+      );
 
       for (const adminId of adminIds) {
         sendCommunityNotification(
@@ -2006,7 +2040,7 @@ export const CommunityService = {
     return {
       groupId: String(group._id),
       conversationId: String(conversation?._id || ""),
-      memberCount: group.members.length,
+      memberCount: await countMembers(groupId),
     };
   },
 
@@ -2019,7 +2053,7 @@ export const CommunityService = {
     }
 
     const isCreator = String(group.createdBy) === userId;
-    const isAdmin = group.admins.some((adminId) => String(adminId) === userId);
+    const isAdmin = await isGroupAdmin(groupId, userId);
 
     if (!isCreator && !isAdmin) {
       throw new Error("Only group admins can delete the group");
@@ -2039,7 +2073,10 @@ export const CommunityService = {
       ]);
     }
 
-    await CommunityGroup.deleteOne({ _id: group._id });
+    await Promise.all([
+      CommunityGroup.deleteOne({ _id: group._id }),
+      removeAllMembers(groupId),
+    ]);
 
     return { groupId: String(group._id), deletedGroup: true };
   },
@@ -2052,24 +2089,15 @@ export const CommunityService = {
       throw new Error("Group not found");
     }
 
-    const wasMember = group.members.some(
-      (memberId) => String(memberId) === userId,
-    );
+    const wasMember = await removeMember(groupId, userId);
     if (!wasMember) {
       return { groupId, removed: false };
     }
 
-    group.members = group.members.filter(
-      (memberId) => String(memberId) !== userId,
-    );
-    group.admins = group.admins.filter((adminId) => String(adminId) !== userId);
-
-    if (!group.admins.length && group.members.length) {
-      const fallbackAdmin = group.members[0];
-      if (fallbackAdmin) {
-        group.admins = [fallbackAdmin];
-      }
-    }
+    // Promote someone if that was the last admin, or everyone still in the
+    // group is locked out of settings, invites and deletion.
+    await ensureGroupHasAdmin(groupId);
+    const remainingMembers = await countMembers(groupId);
 
     const groupConversation = await CommunityConversation.findOne({
       conversationType: "GROUP",
@@ -2081,7 +2109,7 @@ export const CommunityService = {
         (participantId) => String(participantId) !== userId,
       );
 
-      if (!groupConversation.participants.length || !group.members.length) {
+      if (!groupConversation.participants.length || remainingMembers === 0) {
         await Promise.all([
           CommunityMessage.deleteMany({
             conversationId: groupConversation._id,
@@ -2093,16 +2121,17 @@ export const CommunityService = {
       }
     }
 
-    if (!group.members.length) {
-      await CommunityGroup.deleteOne({ _id: group._id });
+    if (remainingMembers === 0) {
+      await Promise.all([
+        CommunityGroup.deleteOne({ _id: group._id }),
+        removeAllMembers(groupId),
+      ]);
       return { groupId: String(group._id), removed: true, deletedGroup: true };
     }
 
-    await group.save();
-
-    const remainingAdminIds = group.admins
-      .map((adminId) => String(adminId))
-      .filter((adminId) => adminId !== userId);
+    const remainingAdminIds = (await listAdminIds(groupId)).filter(
+      (adminId) => adminId !== userId,
+    );
 
     for (const adminId of remainingAdminIds) {
       sendCommunityNotification(
@@ -2160,13 +2189,9 @@ export const CommunityService = {
       });
     }
 
-    const requesterIsAdmin = group.admins.some(
-      (adminId) => String(adminId) === userId,
-    );
-    const requesterIsMember = group.members.some(
-      (memberId) => String(memberId) === userId,
-    );
-    if (!requesterIsMember) {
+    const requesterRoleInGroup = await getMemberRole(groupId, userId);
+    const requesterIsAdmin = requesterRoleInGroup === "ADMIN";
+    if (!requesterRoleInGroup) {
       throw new Error("Only group members can add members");
     }
 
@@ -2180,13 +2205,10 @@ export const CommunityService = {
       throw new Error("Cannot add this user due to privacy settings");
     }
 
-    const alreadyMember = group.members.some(
-      (memberId) => String(memberId) === targetUserId,
-    );
-    if (!alreadyMember) {
-      group.members.push(new mongoose.Types.ObjectId(targetUserId));
-      await group.save();
-    }
+    // `addMember` reports whether a row was actually inserted, so this stays
+    // correct if two admins add the same person at once.
+    const added = await addMember(groupId, targetUserId);
+    const alreadyMember = !added;
 
     const conversation = await CommunityConversation.findOneAndUpdate(
       { conversationType: "GROUP", groupId: group._id },
@@ -2223,7 +2245,7 @@ export const CommunityService = {
     return {
       groupId: String(group._id),
       conversationId: String(conversation?._id || ""),
-      memberCount: group.members.length,
+      memberCount: await countMembers(groupId),
       addedUserId: targetUserId,
       alreadyMember,
     };
@@ -2539,7 +2561,7 @@ export const CommunityService = {
         },
       ]),
       CommunityGroup.find({ _id: { $in: groupConversationIds } })
-        .select("_id name description visibility sport city members")
+        .select("_id name description visibility sport city memberCount")
         .lean(),
     ]);
 
@@ -2591,7 +2613,7 @@ export const CommunityService = {
         const group = conversation.groupId
           ? groupMap.get(String(conversation.groupId))
           : null;
-        const groupMemberCount = group?.members?.length || 0;
+        const groupMemberCount = group?.memberCount || 0;
 
         return {
           id: String(conversation._id),
@@ -2906,7 +2928,7 @@ export const CommunityService = {
     const group =
       conversationType === "GROUP" && conversation.groupId
         ? await CommunityGroup.findById(conversation.groupId)
-            .select("_id name description visibility sport city members")
+            .select("_id name description visibility sport city memberCount")
             .lean()
         : null;
 
@@ -2925,7 +2947,7 @@ export const CommunityService = {
                 visibility: group?.visibility || "PUBLIC",
                 sport: group?.sport || "",
                 city: group?.city || "",
-                memberCount: group?.members?.length || 0,
+                memberCount: group?.memberCount || 0,
               }
             : null,
       },
@@ -3395,49 +3417,58 @@ export const CommunityService = {
   async getGroupMembers(userId: string, groupId: string) {
     await ensureProfile(userId);
 
-    const group = await CommunityGroup.findById(groupId)
-      .populate("members", "_id name photoUrl photoS3Key")
-      .lean();
-
+    const group = await CommunityGroup.findById(groupId).select("_id").lean();
     if (!group) {
       throw new Error("Group not found");
     }
 
-    const isMember = group.members.some((member: any) => {
-      const memberId = member?._id ? String(member._id) : String(member);
-      return memberId === userId;
-    });
-    if (!isMember) {
+    if (!(await isGroupMember(groupId, userId))) {
       throw new Error("Access denied");
     }
 
-    const memberProfiles = await CommunityProfile.find({
-      userId: { $in: group.members.map((m) => m._id) },
-    })
-      .select(
-        "userId anonymousAlias isIdentityPublic photoUrl photoS3Key lastSeenAt",
-      )
+    const memberRows = await CommunityGroupMember.find({ groupId })
+      .select("userId role")
+      .sort({ createdAt: 1 })
       .lean();
 
+    const memberIds = memberRows.map((row) => String(row.userId));
+
+    const [users, memberProfiles] = await Promise.all([
+      User.find({ _id: { $in: memberIds } })
+        .select("_id name photoUrl photoS3Key")
+        .lean(),
+      CommunityProfile.find({ userId: { $in: memberIds } })
+        .select(
+          "userId anonymousAlias isIdentityPublic photoUrl photoS3Key lastSeenAt",
+        )
+        .lean(),
+    ]);
+
+    const userMap = new Map(users.map((user) => [String(user._id), user]));
     const profileMap = new Map(
-      memberProfiles.map((p) => [String(p.userId), p]),
+      memberProfiles.map((profile) => [String(profile.userId), profile]),
     );
 
     return Promise.all(
-      group.members.map(async (member: any) => {
-        const memberId = String(member._id);
+      memberRows.map(async (row) => {
+        const memberId = String(row.userId);
+        const member = userMap.get(memberId);
         const profile = profileMap.get(memberId);
         const isIdentityPublic = profile?.isIdentityPublic ?? true;
 
         return {
           id: memberId,
-          name: member.name || "Unknown",
+          name: member?.name || "Unknown",
           displayName: isIdentityPublic
-            ? member.name
+            ? member?.name || "Unknown"
             : profile?.anonymousAlias || "Anonymous",
-          photoUrl: isIdentityPublic ? await resolveUserPhotoUrl(member) : null,
+          photoUrl:
+            isIdentityPublic && member
+              ? await resolveUserPhotoUrl(member)
+              : null,
           isIdentityPublic,
           alias: profile?.anonymousAlias || "Anonymous",
+          role: row.role,
         };
       }),
     );
@@ -3467,9 +3498,8 @@ export const CommunityService = {
       );
     }
 
-    const alreadyMember = group.members.some(
-      (memberId) => String(memberId) === userId,
-    );
+    const groupId = String(group._id);
+    const alreadyMember = await isGroupMember(groupId, userId);
     if (alreadyMember) {
       // Already a member, just return the group info
       const conversation = await CommunityConversation.findOne({
@@ -3478,14 +3508,15 @@ export const CommunityService = {
       });
 
       return {
-        groupId: String(group._id),
+        groupId,
         conversationId: String(conversation?._id || ""),
-        memberCount: group.members.length,
+        memberCount: await countMembers(groupId),
       };
     }
 
-    group.members.push(new mongoose.Types.ObjectId(userId));
-    await group.save();
+    // An invite code is the way into an INVITE_ONLY or PRIVATE group, so no
+    // visibility check here — holding the code is the permission.
+    await addMember(groupId, userId);
 
     const conversation = await CommunityConversation.findOneAndUpdate(
       { conversationType: "GROUP", groupId: group._id },
@@ -3504,9 +3535,9 @@ export const CommunityService = {
       { upsert: true, new: true },
     );
 
-    const adminIds = group.admins
-      .map((adminId) => String(adminId))
-      .filter((adminId) => adminId !== userId);
+    const adminIds = (await listAdminIds(groupId)).filter(
+      (adminId) => adminId !== userId,
+    );
 
     for (const adminId of adminIds) {
       sendCommunityNotification(
@@ -3523,9 +3554,9 @@ export const CommunityService = {
     }
 
     return {
-      groupId: String(group._id),
+      groupId,
       conversationId: String(conversation?._id || ""),
-      memberCount: group.members.length,
+      memberCount: await countMembers(groupId),
     };
   },
 
@@ -3538,8 +3569,7 @@ export const CommunityService = {
       throw new Error("Group not found");
     }
 
-    const isAdmin = group.admins.some((adminId) => String(adminId) === userId);
-    if (!isAdmin) {
+    if (!(await isGroupAdmin(groupId, userId))) {
       throw new Error("Only group admins can get invite code");
     }
 

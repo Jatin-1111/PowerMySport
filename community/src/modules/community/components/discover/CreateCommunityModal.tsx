@@ -3,7 +3,10 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { communityService } from "@/modules/community/services/community";
-import { CommunityGroupAudience } from "@/modules/community/types";
+import {
+  CommunityGroupAudience,
+  CommunityGroupVisibility,
+} from "@/modules/community/types";
 import SportsSelect from "@/modules/sports/components/SportsSelect";
 import {
   X,
@@ -22,6 +25,28 @@ interface CreateCommunityModalProps {
   onSuccess: () => void;
 }
 
+const VISIBILITY_OPTIONS: {
+  value: CommunityGroupVisibility;
+  label: string;
+  hint: string;
+}[] = [
+  {
+    value: "PUBLIC",
+    label: "Public",
+    hint: "Listed in Discover. Anyone eligible can join.",
+  },
+  {
+    value: "INVITE_ONLY",
+    label: "Invite only",
+    hint: "Listed in Discover, but joining needs an invite link or an admin.",
+  },
+  {
+    value: "PRIVATE",
+    label: "Private",
+    hint: "Not listed anywhere. Invite link or an admin only.",
+  },
+];
+
 export default function CreateCommunityModal({
   isOpen,
   onClose,
@@ -34,6 +59,8 @@ export default function CreateCommunityModal({
   const [sport, setSport] = useState("");
   const [city, setCity] = useState("");
   const [audience, setAudience] = useState<CommunityGroupAudience>("ALL");
+  const [visibility, setVisibility] =
+    useState<CommunityGroupVisibility>("PUBLIC");
 
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -92,6 +119,7 @@ export default function CreateCommunityModal({
         sport,
         city: city || undefined,
         audience,
+        visibility,
         profilePicture: finalProfilePicture || undefined,
         profilePictureKey: finalProfilePictureKey || undefined,
       });
@@ -291,6 +319,41 @@ export default function CreateCommunityModal({
                           }`}
                         >
                           {opt.replace("_", " ")}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Visibility */}
+                  <div>
+                    <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-900">
+                      <Shield size={16} className="text-slate-500" />
+                      Who can find it?
+                    </label>
+                    <div className="flex flex-col gap-2">
+                      {VISIBILITY_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setVisibility(opt.value)}
+                          className={`rounded-xl border px-4 py-3 text-left transition-all ${
+                            visibility === opt.value
+                              ? "border-slate-900 bg-slate-900 text-white shadow-md"
+                              : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                          }`}
+                        >
+                          <span className="block text-xs font-semibold uppercase tracking-wide">
+                            {opt.label}
+                          </span>
+                          <span
+                            className={`mt-0.5 block text-xs ${
+                              visibility === opt.value
+                                ? "text-white/70"
+                                : "text-slate-500"
+                            }`}
+                          >
+                            {opt.hint}
+                          </span>
                         </button>
                       ))}
                     </div>

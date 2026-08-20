@@ -139,6 +139,7 @@ export const communityCreateGroupSchema = z.object({
   profilePicture: z.string().url("Must be a valid URL").optional(),
   profilePictureKey: z.string().optional(),
   audience: z.enum(["ALL", "PLAYERS_ONLY", "COACHES_ONLY"]).optional(),
+  visibility: z.enum(["PUBLIC", "INVITE_ONLY", "PRIVATE"]).optional(),
 });
 
 export const communityUpdateGroupSchema = z.object({
@@ -166,6 +167,7 @@ export const communityUpdateGroupSchema = z.object({
   profilePicture: z.string().url("Must be a valid URL").optional(),
   profilePictureKey: z.string().optional(),
   audience: z.enum(["ALL", "PLAYERS_ONLY", "COACHES_ONLY"]).optional(),
+  visibility: z.enum(["PUBLIC", "INVITE_ONLY", "PRIVATE"]).optional(),
 });
 
 export const communityGroupUploadUrlSchema = z.object({

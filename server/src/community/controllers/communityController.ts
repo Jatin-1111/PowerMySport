@@ -7,6 +7,8 @@ import {
 } from "../services/CommunityRealtimeService";
 import { s3Service } from "../../shared/services/S3Service";
 
+type GroupVisibilityInput = "PUBLIC" | "INVITE_ONLY" | "PRIVATE";
+
 const getUserId = (req: Request): string => {
   if (!req.user?.id) {
     throw new Error("Unauthorized");
@@ -475,6 +477,7 @@ export const createGroup = async (
       sport,
       city,
       audience,
+      visibility,
       profilePicture,
       profilePictureKey,
     } = req.body as {
@@ -483,6 +486,7 @@ export const createGroup = async (
       sport?: string;
       city?: string;
       audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+      visibility?: GroupVisibilityInput;
       profilePicture?: string;
       profilePictureKey?: string;
     };
@@ -493,6 +497,7 @@ export const createGroup = async (
       sport?: string;
       city?: string;
       audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+      visibility?: GroupVisibilityInput;
       profilePicture?: string;
       profilePictureKey?: string;
     } = { name };
@@ -511,6 +516,13 @@ export const createGroup = async (
       audience === "COACHES_ONLY"
     ) {
       payload.audience = audience;
+    }
+    if (
+      visibility === "PUBLIC" ||
+      visibility === "INVITE_ONLY" ||
+      visibility === "PRIVATE"
+    ) {
+      payload.visibility = visibility;
     }
     if (typeof profilePicture === "string") {
       payload.profilePicture = profilePicture;
@@ -543,6 +555,7 @@ export const updateGroup = async (
       sport,
       city,
       audience,
+      visibility,
       profilePicture,
       profilePictureKey,
     } = req.body as {
@@ -551,6 +564,7 @@ export const updateGroup = async (
       sport?: string;
       city?: string;
       audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+      visibility?: GroupVisibilityInput;
       profilePicture?: string;
       profilePictureKey?: string;
     };
@@ -561,6 +575,7 @@ export const updateGroup = async (
       sport?: string;
       city?: string;
       audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+      visibility?: GroupVisibilityInput;
       profilePicture?: string;
       profilePictureKey?: string;
     } = {};
@@ -569,6 +584,7 @@ export const updateGroup = async (
     if (typeof sport === "string") payload.sport = sport;
     if (typeof city === "string") payload.city = city;
     if (audience) payload.audience = audience;
+    if (visibility) payload.visibility = visibility;
     if (typeof profilePicture === "string") payload.profilePicture = profilePicture;
     if (typeof profilePictureKey === "string") payload.profilePictureKey = profilePictureKey;
 

@@ -496,6 +496,13 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
         ).CommunityFollow.deleteMany({ userId }),
     ],
     [
+      "CommunityGroupMember",
+      async () =>
+        (
+          await import("../../community/models/CommunityGroupMember")
+        ).CommunityGroupMember.deleteMany({ userId }),
+    ],
+    [
       "BlogLike",
       async () =>
         (await import("../../community/models/BlogLike")).BlogLike.deleteMany({

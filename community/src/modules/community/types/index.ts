@@ -47,11 +47,18 @@ export interface ConversationListResponse {
   };
 }
 
+/**
+ * PUBLIC      — listed in Discover, anyone eligible can join themselves.
+ * INVITE_ONLY — listed, but joining needs an invite link or an admin.
+ * PRIVATE     — not listed at all; invite link or admin only.
+ */
+export type CommunityGroupVisibility = "PUBLIC" | "INVITE_ONLY" | "PRIVATE";
+
 export interface CommunityGroupSummary {
   id: string;
   name: string;
   description: string;
-  visibility: "PUBLIC";
+  visibility: CommunityGroupVisibility;
   audience?: CommunityGroupAudience;
   memberAddPolicy?: "ADMIN_ONLY" | "ANY_MEMBER";
   sport: string;
@@ -327,6 +334,7 @@ export interface CommunityActivityItem {
     // COMMUNITY_GROUP_JOINED | COMMUNITY_GROUP_LEFT
   };
 }
+
 export type CommunityFollowKind = "GROUP" | "TOPIC";
 
 /** As returned by the server: `label` and `href` are resolved from the group or
@@ -338,6 +346,7 @@ export interface CommunityFollowRecord {
   href: string;
   createdAt: string;
 }
+
 export interface CommunityLeaderboardEntry {
   /** Empty when the member keeps their identity private — there is no profile
    *  to open, so the row renders as a name without a link. */

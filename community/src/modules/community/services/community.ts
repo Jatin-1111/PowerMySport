@@ -5,6 +5,7 @@ import {
   CommunityUserSearchResult,
   CommunityAnswer,
   CommunityGroupSummary,
+  CommunityGroupVisibility,
   CommunityPost,
   CommunityPostDetailResponse,
   CommunityPostListResponse,
@@ -565,6 +566,7 @@ export const communityService = {
     profilePicture?: string;
     profilePictureKey?: string;
     audience?: CommunityGroupAudience;
+    visibility?: CommunityGroupVisibility;
   }): Promise<CommunityGroupSummary & { conversationId: string }> {
     const response = await axiosInstance.post<
       ApiResponse<CommunityGroupSummary & { conversationId: string }>
@@ -583,6 +585,7 @@ export const communityService = {
       profilePicture?: string;
       profilePictureKey?: string;
       audience?: CommunityGroupAudience;
+      visibility?: CommunityGroupVisibility;
     },
   ): Promise<CommunityGroupSummary> {
     const response = await axiosInstance.patch<
