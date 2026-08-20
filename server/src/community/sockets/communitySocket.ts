@@ -6,6 +6,7 @@ import {
   touchUserLastActive,
 } from "../../shared/services/UserPresenceService";
 import { isTokenRevoked, verifyToken } from "../../utils/jwt";
+import { assertSubscribableRoom } from "../services/CommunityRealtimeService";
 
 const extractTokenFromCookie = (cookieHeader?: string): string | null => {
   if (!cookieHeader) {
@@ -174,6 +175,43 @@ export const setupCommunitySocket = (io: Server): void => {
     socket.on("community:leaveGroupRoom", (groupId) => {
       if (groupId) {
         socket.leave(`group:${groupId}`);
+      }
+    });
+
+    // Q&A and blog rooms. These carry no private data — every event they
+    // deliver mirrors a public GET — so the only gate is the room-name
+    // allowlist, which stops a client using this to slip into a `conversation:`
+    // or `group:` room it was never access-checked for.
+    //
+    // Rate-limited because these fire on every client-side navigation, and a
+    // socket that floods joins would otherwise pin itself to every room on the
+    // server and undo the whole point of scoping.
+    socket.on("community:subscribe", (room) => {
+      const name = String(room || "");
+      if (!name || !assertSubscribableRoom(name)) {
+        return;
+      }
+
+      const allowed = consumeRateLimit(
+        socketRateLimit,
+        "community:subscribe",
+        60,
+        10_000,
+      );
+      if (!allowed) {
+        socket.emit("community:error", {
+          message: "Too many subscribe requests, please slow down",
+        });
+        return;
+      }
+
+      socket.join(name);
+    });
+
+    socket.on("community:unsubscribe", (room) => {
+      const name = String(room || "");
+      if (name && assertSubscribableRoom(name)) {
+        socket.leave(name);
       }
     });
 

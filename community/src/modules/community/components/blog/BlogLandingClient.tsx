@@ -6,7 +6,11 @@ import { blogService } from "@/modules/community/services/blog";
 import { BlogListItem } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { hasAuthToken } from "@/lib/auth/token";
-import { getCommunitySocket } from "@/lib/realtime/socket";
+import {
+  getCommunitySocket,
+  BLOG_FEED_ROOM,
+  subscribeToCommunityRoom,
+} from "@/lib/realtime/socket";
 import { toast } from "@/lib/toast";
 import { Search } from "lucide-react";
 import BlogHero from "./BlogHero";
@@ -102,8 +106,9 @@ export default function BlogLandingClient() {
     const refresh = () => void loadRef.current(1, false);
     socket.on("community:blogCreated", refresh);
     socket.on("community:blogDeleted", refresh);
-    if (!socket.connected) socket.connect();
+    const unsubscribe = subscribeToCommunityRoom(BLOG_FEED_ROOM);
     return () => {
+      unsubscribe();
       socket.off("community:blogCreated", refresh);
       socket.off("community:blogDeleted", refresh);
     };

@@ -34,7 +34,11 @@ import {
 } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { hasAuthToken } from "@/lib/auth/token";
-import { getCommunitySocket } from "@/lib/realtime/socket";
+import {
+  getCommunitySocket,
+  QNA_FEED_ROOM,
+  subscribeToCommunityRoom,
+} from "@/lib/realtime/socket";
 import { communityFollowStore } from "@/modules/community/lib/followStore";
 import { toast } from "@/lib/toast";
 import { useMutationState } from "@/lib/hooks/useMutationState";
@@ -455,11 +459,10 @@ export default function QnAFeedClient() {
     socket.on("community:qnaVoteUpdated", refreshFeed);
     socket.on("notification:new", handleNotificationEvent);
 
-    if (!socket.connected) {
-      socket.connect();
-    }
+    const unsubscribe = subscribeToCommunityRoom(QNA_FEED_ROOM);
 
     return () => {
+      unsubscribe();
       socket.off("community:qnaPostCreated", refreshFeed);
       socket.off("community:qnaPostUpdated", refreshFeed);
       socket.off("community:qnaPostDeleted", refreshFeed);

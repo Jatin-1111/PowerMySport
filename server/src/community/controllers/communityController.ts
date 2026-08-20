@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import { CommunityService } from "../services/CommunityService";
-import { emitCommunityQnaEvent } from "../services/CommunityRealtimeService";
+import {
+  emitCommunityQnaEvent,
+  qnaPostRoom,
+  QNA_FEED_ROOM,
+} from "../services/CommunityRealtimeService";
 import { s3Service } from "../../shared/services/S3Service";
 
 const getUserId = (req: Request): string => {
@@ -939,10 +943,11 @@ export const createCommunityPost = async (
 
     const data = await CommunityService.createPost(getUserId(req), payload);
 
-    emitCommunityQnaEvent("community:qnaPostCreated", {
-      postId: data.id,
-      authorId: getUserId(req),
-    });
+    emitCommunityQnaEvent(
+      "community:qnaPostCreated",
+      { postId: data.id, authorId: getUserId(req) },
+      [QNA_FEED_ROOM],
+    );
 
     res.status(201).json({
       success: true,
@@ -1007,11 +1012,11 @@ export const updateCommunityPost = async (
       payload,
     );
 
-    emitCommunityQnaEvent("community:qnaPostUpdated", {
-      postId: data.id,
-      authorId: getUserId(req),
-      status: data.status,
-    });
+    emitCommunityQnaEvent(
+      "community:qnaPostUpdated",
+      { postId: data.id, authorId: getUserId(req), status: data.status },
+      [QNA_FEED_ROOM, qnaPostRoom(data.id)],
+    );
 
     res.status(200).json({
       success: true,
@@ -1035,10 +1040,11 @@ export const deleteCommunityPost = async (
 
     const data = await CommunityService.deletePost(getUserId(req), postId);
 
-    emitCommunityQnaEvent("community:qnaPostDeleted", {
-      postId,
-      authorId: getUserId(req),
-    });
+    emitCommunityQnaEvent(
+      "community:qnaPostDeleted",
+      { postId, authorId: getUserId(req) },
+      [QNA_FEED_ROOM, qnaPostRoom(postId)],
+    );
 
     res.status(200).json({
       success: true,
@@ -1071,11 +1077,11 @@ export const createCommunityAnswer = async (
       isAnonymous === true,
     );
 
-    emitCommunityQnaEvent("community:qnaAnswerCreated", {
-      postId: data.postId,
-      answerId: data.id,
-      authorId: getUserId(req),
-    });
+    emitCommunityQnaEvent(
+      "community:qnaAnswerCreated",
+      { postId: data.postId, answerId: data.id, authorId: getUserId(req) },
+      [QNA_FEED_ROOM, qnaPostRoom(data.postId)],
+    );
 
     res.status(201).json({
       success: true,
@@ -1104,11 +1110,11 @@ export const updateCommunityAnswer = async (
       content,
     );
 
-    emitCommunityQnaEvent("community:qnaAnswerUpdated", {
-      postId: data.postId,
-      answerId: data.id,
-      authorId: getUserId(req),
-    });
+    emitCommunityQnaEvent(
+      "community:qnaAnswerUpdated",
+      { postId: data.postId, answerId: data.id, authorId: getUserId(req) },
+      [qnaPostRoom(data.postId)],
+    );
 
     res.status(200).json({
       success: true,
@@ -1132,11 +1138,11 @@ export const deleteCommunityAnswer = async (
 
     const data = await CommunityService.deleteAnswer(getUserId(req), answerId);
 
-    emitCommunityQnaEvent("community:qnaAnswerDeleted", {
-      postId: data.postId,
-      answerId,
-      authorId: getUserId(req),
-    });
+    emitCommunityQnaEvent(
+      "community:qnaAnswerDeleted",
+      { postId: data.postId, answerId, authorId: getUserId(req) },
+      [QNA_FEED_ROOM, qnaPostRoom(data.postId)],
+    );
 
     res.status(200).json({
       success: true,
@@ -1165,14 +1171,20 @@ export const voteCommunityTarget = async (
       value,
     });
 
-    emitCommunityQnaEvent("community:qnaVoteUpdated", {
-      targetType: data.targetType,
-      targetId: data.targetId,
-      postId: data.postId || null,
-      voteScore: data.voteScore,
-      upvoteCount: data.upvoteCount,
-      downvoteCount: data.downvoteCount,
-    });
+    emitCommunityQnaEvent(
+      "community:qnaVoteUpdated",
+      {
+        targetType: data.targetType,
+        targetId: data.targetId,
+        postId: data.postId || null,
+        voteScore: data.voteScore,
+        upvoteCount: data.upvoteCount,
+        downvoteCount: data.downvoteCount,
+      },
+      data.postId
+        ? [QNA_FEED_ROOM, qnaPostRoom(data.postId)]
+        : [QNA_FEED_ROOM],
+    );
 
     res.status(200).json({
       success: true,

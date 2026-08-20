@@ -682,21 +682,31 @@ export const BlogService = {
     userId: string,
     targetType: BlogLikeTargetType,
     targetId: string,
-  ): Promise<{ liked: boolean; likeCount: number }> {
+  ): Promise<{ liked: boolean; likeCount: number; blogId: string }> {
     await ensureBlogProfile(userId);
     const id = toObjectId(targetId, "target id");
 
     const Model = (
       targetType === "BLOG" ? BlogPost : BlogComment
     ) as mongoose.Model<{ likeCount: number }>;
+    // A comment like has to resolve its parent blog so the realtime event can
+    // be addressed to that blog's room rather than to everyone.
     const target = await Model.findOne({ _id: id, isDeleted: false }).select(
-      "_id",
+      targetType === "BLOG" ? "_id" : "_id blogId",
     );
     if (!target) {
       throw new Error(
         targetType === "BLOG" ? "Blog not found" : "Comment not found",
       );
     }
+
+    const blogId =
+      targetType === "BLOG"
+        ? String(id)
+        : String(
+            (target as unknown as { blogId?: mongoose.Types.ObjectId }).blogId ||
+              "",
+          );
 
     const existing = await BlogLike.findOne({
       userId,
@@ -723,7 +733,7 @@ export const BlogService = {
     }
 
     const updated = await Model.findById(id).select("likeCount").lean();
-    return { liked, likeCount: Math.max(0, updated?.likeCount || 0) };
+    return { liked, likeCount: Math.max(0, updated?.likeCount || 0), blogId };
   },
 
   async listComments(

@@ -17,7 +17,11 @@ import { blogService } from "@/modules/community/services/blog";
 import { BlogDetail } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { hasAuthToken } from "@/lib/auth/token";
-import { getCommunitySocket } from "@/lib/realtime/socket";
+import {
+  getCommunitySocket,
+  blogRoom,
+  subscribeToCommunityRoom,
+} from "@/lib/realtime/socket";
 import { toast } from "@/lib/toast";
 import { getBlogTopic } from "@/modules/community/constants/blogTopics";
 import { formatBlogDate } from "@/modules/community/utils/blogFormat";
@@ -81,8 +85,9 @@ export default function BlogDetailClient({ blogId }: { blogId: string }) {
       }
     };
     socket.on("community:blogLiked", handleLike);
-    if (!socket.connected) socket.connect();
+    const unsubscribe = subscribeToCommunityRoom(blogRoom(blogId));
     return () => {
+      unsubscribe();
       socket.off("community:blogLiked", handleLike);
     };
   }, [blogId]);

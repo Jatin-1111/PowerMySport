@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import { BlogService } from "../services/BlogService";
-import { emitCommunityBlogEvent } from "../services/CommunityRealtimeService";
+import {
+  emitCommunityBlogEvent,
+  blogRoom,
+  BLOG_FEED_ROOM,
+} from "../services/CommunityRealtimeService";
 
 const getUserId = (req: Request): string => {
   if (!req.user?.id) {
@@ -80,10 +84,11 @@ export const createBlog = async (
   try {
     const userId = getUserId(req);
     const data = await BlogService.createBlog(userId, req.body);
-    emitCommunityBlogEvent("community:blogCreated", {
-      blogId: data.id,
-      authorId: userId,
-    });
+    emitCommunityBlogEvent(
+      "community:blogCreated",
+      { blogId: data.id, authorId: userId },
+      [BLOG_FEED_ROOM],
+    );
     res.status(201).json({ success: true, message: "Blog published", data });
   } catch (error) {
     handleError(res, error, "Failed to publish blog");
@@ -101,7 +106,11 @@ export const updateBlog = async (
       String(req.params.blogId || ""),
       req.body,
     );
-    emitCommunityBlogEvent("community:blogUpdated", { blogId: data.id });
+    emitCommunityBlogEvent(
+      "community:blogUpdated",
+      { blogId: data.id },
+      [BLOG_FEED_ROOM, blogRoom(data.id)],
+    );
     res.status(200).json({ success: true, message: "Blog updated", data });
   } catch (error) {
     handleError(res, error, "Failed to update blog");
@@ -118,7 +127,11 @@ export const deleteBlog = async (
       userId,
       String(req.params.blogId || ""),
     );
-    emitCommunityBlogEvent("community:blogDeleted", { blogId: data.id });
+    emitCommunityBlogEvent(
+      "community:blogDeleted",
+      { blogId: data.id },
+      [BLOG_FEED_ROOM, blogRoom(data.id)],
+    );
     res.status(200).json({ success: true, message: "Blog deleted", data });
   } catch (error) {
     handleError(res, error, "Failed to delete blog");
@@ -140,11 +153,11 @@ export const toggleBlogLike = async (
       targetType,
       targetId,
     );
-    emitCommunityBlogEvent("community:blogLiked", {
-      targetType,
-      targetId,
-      likeCount: data.likeCount,
-    });
+    emitCommunityBlogEvent(
+      "community:blogLiked",
+      { targetType, targetId, blogId: data.blogId, likeCount: data.likeCount },
+      data.blogId ? [blogRoom(data.blogId)] : [],
+    );
     res.status(200).json({ success: true, message: "Reaction updated", data });
   } catch (error) {
     handleError(res, error, "Failed to update reaction");
@@ -187,7 +200,9 @@ export const createBlogComment = async (
       content,
       parentId,
     );
-    emitCommunityBlogEvent("community:blogCommented", { blogId });
+    emitCommunityBlogEvent("community:blogCommented", { blogId }, [
+      blogRoom(blogId),
+    ]);
     res.status(201).json({ success: true, message: "Comment posted", data });
   } catch (error) {
     handleError(res, error, "Failed to post comment");

@@ -23,7 +23,11 @@ import {
 } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { hasAuthToken } from "@/lib/auth/token";
-import { getCommunitySocket } from "@/lib/realtime/socket";
+import {
+  getCommunitySocket,
+  qnaPostRoom,
+  subscribeToCommunityRoom,
+} from "@/lib/realtime/socket";
 import { toast } from "@/lib/toast";
 import AuthorAvatar from "@/modules/community/components/page/AuthorAvatar";
 
@@ -162,11 +166,10 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
     socket.on("community:qnaAnswerDeleted", handleAnswerEvent);
     socket.on("community:qnaVoteUpdated", handleVoteEvent);
 
-    if (!socket.connected) {
-      socket.connect();
-    }
+    const unsubscribe = subscribeToCommunityRoom(qnaPostRoom(postId));
 
     return () => {
+      unsubscribe();
       socket.off("community:qnaPostUpdated", handlePostEvent);
       socket.off("community:qnaPostDeleted", handlePostEvent);
       socket.off("community:qnaAnswerCreated", handleAnswerEvent);
