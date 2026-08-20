@@ -10,7 +10,9 @@ export type CommunityQnaEventName =
   | "community:qnaAnswerUpdated"
   | "community:qnaAnswerDeleted"
   | "community:qnaVoteUpdated"
-  | "community:qnaAnswerAccepted";
+  | "community:qnaAnswerAccepted"
+  | "community:qnaCommentCreated"
+  | "community:qnaCommentDeleted";
 
 export type CommunityBlogEventName =
   | "community:blogCreated"

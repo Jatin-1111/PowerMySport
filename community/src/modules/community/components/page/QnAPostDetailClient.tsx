@@ -19,6 +19,7 @@ import {
 import { communityService } from "@/modules/community/services/community";
 import {
   CommunityAnswer,
+  CommunityAnswerComment,
   CommunityPost,
   CommunityPostDetailResponse,
   CommunityVoteResult,
@@ -88,6 +89,86 @@ export default function QnAPostDetailClient({
   const [isMutatingAnswerId, setIsMutatingAnswerId] = useState<string | null>(
     null,
   );
+
+  const [openCommentsFor, setOpenCommentsFor] = useState<string | null>(null);
+  const [commentDraft, setCommentDraft] = useState("");
+  const [isCommenting, setIsCommenting] = useState(false);
+
+  const submitComment = async (answer: CommunityAnswer) => {
+    const trimmed = commentDraft.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    if (!hasAuthToken()) {
+      redirectToMainLogin();
+      return;
+    }
+
+    try {
+      setIsCommenting(true);
+      const created = await communityService.createAnswerComment(
+        answer.id,
+        trimmed,
+      );
+
+      // Appended locally rather than refetching, so a long thread does not
+      // scroll away from the answer being discussed.
+      setAnswers((current) =>
+        current.map((item) =>
+          item.id === answer.id
+            ? {
+                ...item,
+                comments: [
+                  ...(item.comments || []),
+                  {
+                    ...created,
+                    canDelete: true,
+                    author: {
+                      id: currentUserId,
+                      displayName: "Me",
+                      isIdentityPublic: true,
+                    },
+                  },
+                ],
+              }
+            : item,
+        ),
+      );
+      setCommentDraft("");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to post comment",
+      );
+    } finally {
+      setIsCommenting(false);
+    }
+  };
+
+  const removeComment = async (
+    answerId: string,
+    comment: CommunityAnswerComment,
+  ) => {
+    try {
+      await communityService.deleteAnswerComment(comment.id);
+      setAnswers((current) =>
+        current.map((item) =>
+          item.id === answerId
+            ? {
+                ...item,
+                comments: (item.comments || []).filter(
+                  (existing) => existing.id !== comment.id,
+                ),
+              }
+            : item,
+        ),
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete comment",
+      );
+    }
+  };
 
   const [isAcceptingId, setIsAcceptingId] = useState<string | null>(null);
 
@@ -242,6 +323,8 @@ export default function QnAPostDetailClient({
     socket.on("community:qnaAnswerDeleted", handleAnswerEvent);
     socket.on("community:qnaVoteUpdated", handleVoteEvent);
     socket.on("community:qnaAnswerAccepted", handleAnswerEvent);
+    socket.on("community:qnaCommentCreated", handleAnswerEvent);
+    socket.on("community:qnaCommentDeleted", handleAnswerEvent);
 
     const unsubscribe = subscribeToCommunityRoom(qnaPostRoom(postId));
 
@@ -254,6 +337,8 @@ export default function QnAPostDetailClient({
       socket.off("community:qnaAnswerDeleted", handleAnswerEvent);
       socket.off("community:qnaVoteUpdated", handleVoteEvent);
       socket.off("community:qnaAnswerAccepted", handleAnswerEvent);
+      socket.off("community:qnaCommentCreated", handleAnswerEvent);
+      socket.off("community:qnaCommentDeleted", handleAnswerEvent);
     };
   }, [loadDetails, postId]);
 
@@ -1002,7 +1087,73 @@ export default function QnAPostDetailClient({
                       </button>
                     </>
                   ) : null}
+
+                  <button
+                    onClick={() =>
+                      setOpenCommentsFor((current) => {
+                        setCommentDraft("");
+                        return current === answer.id ? null : answer.id;
+                      })
+                    }
+                    className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                  >
+                    <MessageCircle size={13} />
+                    {answer.comments?.length
+                      ? `${answer.comments.length} comment${
+                          answer.comments.length === 1 ? "" : "s"
+                        }`
+                      : "Comment"}
+                  </button>
                 </div>
+
+                {openCommentsFor === answer.id ? (
+                  <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+                    {(answer.comments || []).map((comment) => (
+                      <div
+                        key={comment.id}
+                        className="flex items-start justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2"
+                      >
+                        <p className="min-w-0 text-xs leading-relaxed text-slate-700">
+                          <span className="font-semibold text-slate-900">
+                            {comment.author.displayName}
+                          </span>{" "}
+                          {comment.content}
+                        </p>
+                        {comment.canDelete ? (
+                          <button
+                            onClick={() =>
+                              void removeComment(answer.id, comment)
+                            }
+                            aria-label="Delete comment"
+                            className="shrink-0 rounded p-1 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        ) : null}
+                      </div>
+                    ))}
+
+                    <div className="flex items-start gap-2">
+                      <textarea
+                        value={commentDraft}
+                        onChange={(event) =>
+                          setCommentDraft(event.target.value)
+                        }
+                        rows={2}
+                        maxLength={600}
+                        placeholder="Add a short comment..."
+                        className="min-w-0 flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:border-power-orange focus:outline-none"
+                      />
+                      <button
+                        onClick={() => void submitComment(answer)}
+                        disabled={isCommenting || !commentDraft.trim()}
+                        className="shrink-0 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                      >
+                        {isCommenting ? "Posting..." : "Post"}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </article>
           ))

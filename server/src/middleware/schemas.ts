@@ -475,6 +475,15 @@ export const communityCreateAnswerSchema = z.object({
     .max(5000, "Answer cannot exceed 5000 characters"),
 });
 
+export const communityAnswerCommentSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, "Comment cannot be empty")
+    .max(600, "Comment cannot exceed 600 characters"),
+  isAnonymous: z.boolean().optional(),
+});
+
 export const communityVoteSchema = z.object({
   targetType: z.enum(["POST", "ANSWER"]),
   targetId: z.string().min(1, "Target ID is required"),

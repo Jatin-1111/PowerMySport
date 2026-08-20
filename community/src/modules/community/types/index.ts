@@ -192,6 +192,18 @@ export interface CommunityPost {
   author: CommunityAuthorSummary;
 }
 
+export interface CommunityAnswerComment {
+  id: string;
+  answerId: string;
+  postId: string;
+  content: string;
+  isAnonymous: boolean;
+  createdAt: string;
+  /** True for the comment's author and for whoever asked the question. */
+  canDelete: boolean;
+  author: CommunityAuthorSummary;
+}
+
 export interface CommunityAnswer {
   id: string;
   postId: string;
@@ -202,6 +214,7 @@ export interface CommunityAnswer {
   downvoteCount: number;
   myVote: -1 | 0 | 1;
   isAccepted?: boolean;
+  comments?: CommunityAnswerComment[];
   createdAt: string;
   updatedAt: string;
   author: CommunityAuthorSummary;

@@ -4,6 +4,7 @@ import {
   CommunityGroupAudience,
   CommunityUserSearchResult,
   CommunityAnswer,
+  CommunityAnswerComment,
   CommunityGroupSummary,
   CommunityGroupVisibility,
   CommunityPost,
@@ -1183,6 +1184,26 @@ export const communityService = {
       ApiResponse<{ id: string; postId: string; deleted: boolean }>
     >(`/community/answers/${answerId}`);
     clearCacheByPrefixes(["posts", "post:", "qna-activity"]);
+    return response.data.data;
+  },
+
+  async createAnswerComment(
+    answerId: string,
+    content: string,
+    isAnonymous = false,
+  ): Promise<CommunityAnswerComment> {
+    const response = await axiosInstance.post<
+      ApiResponse<CommunityAnswerComment>
+    >(`/community/answers/${answerId}/comments`, { content, isAnonymous });
+    clearCacheByPrefixes(["post:"]);
+    return response.data.data;
+  },
+
+  async deleteAnswerComment(commentId: string): Promise<{ id: string }> {
+    const response = await axiosInstance.delete<ApiResponse<{ id: string }>>(
+      `/community/answer-comments/${commentId}`,
+    );
+    clearCacheByPrefixes(["post:"]);
     return response.data.data;
   },
 

@@ -1264,6 +1264,69 @@ export const deleteCommunityAnswer = async (
   }
 };
 
+export const createCommunityAnswerComment = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const answerId = String(req.params.answerId || "");
+    const { content, isAnonymous } = req.body as {
+      content: string;
+      isAnonymous?: boolean;
+    };
+
+    const data = await CommunityService.createAnswerComment(
+      getUserId(req),
+      answerId,
+      content,
+      Boolean(isAnonymous),
+    );
+
+    // Comment volume is only rendered inside an open thread, so this stays out
+    // of the feed room.
+    emitCommunityQnaEvent(
+      "community:qnaCommentCreated",
+      { postId: data.postId, answerId: data.answerId, commentId: data.id },
+      [qnaPostRoom(data.postId)],
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Comment posted",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to post comment");
+  }
+};
+
+export const deleteCommunityAnswerComment = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const commentId = String(req.params.commentId || "");
+    const data = await CommunityService.deleteAnswerComment(
+      getUserId(req),
+      commentId,
+    );
+
+    emitCommunityQnaEvent(
+      "community:qnaCommentDeleted",
+      { postId: data.postId, answerId: data.answerId, commentId: data.id },
+      [qnaPostRoom(data.postId)],
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Comment deleted",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to delete comment");
+  }
+};
+
 export const acceptCommunityAnswer = async (
   req: Request,
   res: Response,

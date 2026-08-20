@@ -16,6 +16,7 @@ import { User } from "../../client/models/User";
 import { CommunityReport } from "../models/CommunityReport";
 import { CommunityPost } from "../models/CommunityPost";
 import { CommunityAnswer } from "../models/CommunityAnswer";
+import { CommunityAnswerComment } from "../models/CommunityAnswerComment";
 import { CommunityVote } from "../models/CommunityVote";
 import { CommunityReputation } from "../models/CommunityReputation";
 import {
@@ -977,10 +978,80 @@ export const CommunityService = {
     const isPostAuthorSelf = Boolean(userId) && postAuthorId === userId;
     const isPostAnon = post.isAnonymous && !isPostAuthorSelf;
 
+    // Fetched for the whole page at once — a request per answer would be 20
+    // round-trips on a busy thread, and comments are small.
+    const comments = await CommunityAnswerComment.find({
+      answerId: { $in: answers.map((item) => item._id) },
+      isDeleted: false,
+    })
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const commentAuthorIds = comments.map((item) => String(item.authorId));
+
     const credentialMap = await resolveCommunityCredentials([
       postAuthorId,
       ...answerAuthorIds,
+      ...commentAuthorIds,
     ]);
+
+    const [commentUsers, commentProfiles] = await Promise.all([
+      User.find({ _id: { $in: commentAuthorIds } })
+        .select("_id name photoUrl photoS3Key")
+        .lean(),
+      CommunityProfile.find({ userId: { $in: commentAuthorIds } })
+        .select("userId anonymousAlias isIdentityPublic")
+        .lean(),
+    ]);
+    const commentUserMap = new Map(
+      commentUsers.map((item) => [String(item._id), item]),
+    );
+    const commentProfileMap = new Map(
+      commentProfiles.map((item) => [String(item.userId), item]),
+    );
+
+    const commentsByAnswer = new Map<string, typeof comments>();
+    for (const comment of comments) {
+      const key = String(comment.answerId);
+      const bucket = commentsByAnswer.get(key);
+      if (bucket) {
+        bucket.push(comment);
+      } else {
+        commentsByAnswer.set(key, [comment]);
+      }
+    }
+
+    const shapeComment = (comment: (typeof comments)[number]) => {
+      const commentAuthorId = String(comment.authorId);
+      const commentUser = commentUserMap.get(commentAuthorId);
+      const commentProfile = commentProfileMap.get(commentAuthorId);
+      const isCommentSelf = Boolean(userId) && commentAuthorId === userId;
+      const isCommentAnon = comment.isAnonymous && !isCommentSelf;
+
+      return {
+        id: String(comment._id),
+        answerId: String(comment.answerId),
+        postId: String(comment.postId),
+        content: comment.content,
+        isAnonymous: comment.isAnonymous || false,
+        createdAt: comment.createdAt,
+        canDelete: isCommentSelf || postAuthorId === userId,
+        author: {
+          id: isCommentAnon ? "anon" : commentAuthorId,
+          displayName: comment.isAnonymous
+            ? "Anonymous"
+            : isCommentSelf
+              ? commentUser?.name || "Me"
+              : commentProfile?.isIdentityPublic
+                ? commentUser?.name || "Player"
+                : commentProfile?.anonymousAlias || "Anonymous Player",
+          isIdentityPublic: comment.isAnonymous
+            ? false
+            : (commentProfile?.isIdentityPublic ?? true),
+          photoUrl: null,
+        },
+      };
+    };
     const postAuthorCredential = isPostAnon
       ? undefined
       : credentialMap.get(postAuthorId);
@@ -1054,6 +1125,9 @@ export const CommunityService = {
             myVote: answerVoteMap.get(String(answer._id))?.value || 0,
             isAccepted:
               String(post.acceptedAnswerId || "") === String(answer._id),
+            comments: (commentsByAnswer.get(String(answer._id)) || []).map(
+              shapeComment,
+            ),
             author: {
               id: isAnswerAnon ? "anon" : answerAuthorId,
               displayName: answer.isAnonymous
@@ -1365,6 +1439,13 @@ export const CommunityService = {
       { $inc: { answerCount: -1 } },
     );
 
+    // Comments hang off the answer; leaving them behind would orphan them and
+    // let a deleted answer's discussion linger on the next page load.
+    await CommunityAnswerComment.updateMany(
+      { answerId: answer._id, isDeleted: false },
+      { $set: { isDeleted: true, deletedAt: new Date() } },
+    );
+
     // A deleted answer must not stay marked as the accepted one — the post
     // would keep a "solved" badge pointing at content nobody can read, and the
     // author would keep points for it.
@@ -1380,6 +1461,103 @@ export const CommunityService = {
     return {
       id: String(answer._id),
       postId: String(answer.postId),
+      deleted: true,
+    };
+  },
+
+  async createAnswerComment(
+    userId: string,
+    answerId: string,
+    content: string,
+    isAnonymous = false,
+  ) {
+    await ensureProfile(userId);
+    const userRole = await getCommunityRole(userId);
+    ensureQnaAllowedForRole(userRole);
+
+    const answer = await CommunityAnswer.findOne({
+      _id: answerId,
+      isDeleted: false,
+    })
+      .select("_id postId authorId")
+      .lean();
+    if (!answer) {
+      throw new Error("answer not found");
+    }
+
+    const trimmed = content.trim();
+    if (!trimmed) {
+      throw new Error("Comment cannot be empty");
+    }
+
+    const comment = await CommunityAnswerComment.create({
+      answerId: answer._id,
+      postId: answer.postId,
+      authorId: new mongoose.Types.ObjectId(userId),
+      content: trimmed,
+      isAnonymous,
+    });
+
+    // No reputation for commenting, by design — a comment carries no score, so
+    // there is nothing to farm. Anything worth points belongs in an answer.
+    if (String(answer.authorId) !== userId) {
+      sendCommunityNotification(
+        String(answer.authorId),
+        "New comment on your answer",
+        "Someone replied to your answer.",
+        {
+          event: "COMMUNITY_ANSWER_COMMENTED",
+          postId: String(answer.postId),
+          targetId: String(answer._id),
+          targetType: "ANSWER",
+          actorUserId: userId,
+        },
+      );
+    }
+
+    return {
+      id: String(comment._id),
+      answerId: String(comment.answerId),
+      postId: String(comment.postId),
+      content: comment.content,
+      isAnonymous: comment.isAnonymous,
+      createdAt: comment.createdAt,
+    };
+  },
+
+  /**
+   * Removable by whoever wrote it, and by whoever asked the question — the
+   * asker owns their thread and needs a way to clear noise off it without
+   * waiting on a moderator.
+   */
+  async deleteAnswerComment(userId: string, commentId: string) {
+    await ensureProfile(userId);
+
+    const comment = await CommunityAnswerComment.findOne({
+      _id: commentId,
+      isDeleted: false,
+    });
+    if (!comment) {
+      throw new Error("comment not found");
+    }
+
+    if (String(comment.authorId) !== userId) {
+      const post = await CommunityPost.findById(comment.postId)
+        .select("authorId")
+        .lean();
+      if (!post || String(post.authorId) !== userId) {
+        throw new Error("You cannot delete this comment");
+      }
+    }
+
+    comment.isDeleted = true;
+    comment.deletedAt = new Date();
+    await comment.save();
+
+    return {
+      id: String(comment._id),
+      answerId: String(comment.answerId),
+      postId: String(comment.postId),
       deleted: true,
     };
   },

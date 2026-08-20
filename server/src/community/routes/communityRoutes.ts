@@ -3,6 +3,8 @@ import rateLimit from "express-rate-limit";
 import {
   acceptConversationRequest,
   acceptCommunityAnswer,
+  createCommunityAnswerComment,
+  deleteCommunityAnswerComment,
   addGroupMember,
   blockUser,
   createCommunityAnswer,
@@ -54,6 +56,7 @@ import {
   communityAddGroupMemberSchema,
   communityCreateAnswerSchema,
   communityCreateGroupSchema,
+  communityAnswerCommentSchema,
   communityCreatePostSchema,
   communityFollowImportSchema,
   communityFollowToggleSchema,
@@ -239,6 +242,18 @@ router.post(
   "/posts/:postId/accept/:answerId",
   authMiddleware,
   acceptCommunityAnswer,
+);
+
+router.post(
+  "/answers/:answerId/comments",
+  authMiddleware,
+  validateRequest(communityAnswerCommentSchema),
+  createCommunityAnswerComment,
+);
+router.delete(
+  "/answer-comments/:commentId",
+  authMiddleware,
+  deleteCommunityAnswerComment,
 );
 router.post(
   "/votes",
