@@ -14,7 +14,6 @@ import Link from "next/link";
 import { getMainAppUrl } from "@/lib/auth/redirect";
 import DynamicCommunityPosts from "@/modules/community/components/page/home/DynamicCommunityPosts";
 import DynamicFeaturedQA from "@/modules/community/components/page/home/DynamicFeaturedQA";
-import FeatureWaitlist from "@/components/FeatureWaitlist";
 import {
   JsonLd,
   organizationSchema,
@@ -197,27 +196,6 @@ function ValuePropCard({
 }
 
 export default function CommunityLandingPage() {
-  const isCommunityLive = process.env.NEXT_PUBLIC_COMMUNITY_IS_LIVE !== "false";
-
-  if (!isCommunityLive) {
-    return (
-      <FeatureWaitlist
-        title="Community."
-        subtitle={
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-power-orange to-amber-500">
-            Coming Soon.
-          </span>
-        }
-        description="Our Community platform is almost here. Get ready to connect with parents, coaches, and sports enthusiasts."
-        icon={Users}
-        gradientFrom="#E97316"
-        gradientTo="#F59E0B"
-        shadowColorClass="shadow-power-orange/30"
-        buttonColorClass="bg-power-orange"
-      />
-    );
-  }
-
   return (
     <div className="flex min-h-full flex-col overflow-x-hidden">
       <JsonLd data={[organizationSchema, websiteSchema]} />

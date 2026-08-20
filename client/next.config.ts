@@ -67,6 +67,15 @@ const nextConfig: NextConfig = {
         destination: "/booking?tab=experts",
         permanent: true,
       },
+      // Community shipped, so its "coming soon" waitlist page is gone. It was
+      // indexed and sitemap-listed, so it redirects into the community app
+      // rather than 404ing. `/community` is a rewrite (see below) — redirects
+      // run first, so this resolves to the redirect, then the rewrite.
+      {
+        source: "/community-waitlist",
+        destination: "/community",
+        permanent: true,
+      },
     ];
   },
   async rewrites() {

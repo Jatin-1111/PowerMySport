@@ -68,21 +68,6 @@ export const revalidate = 3600;
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  // When the community is switched off, `proxy.ts` rewrites every path to `/`
-  // and renders the waitlist. Listing /blog, /q and every post would then
-  // submit hundreds of URLs that all serve the same waitlist page — textbook
-  // duplicate content, and a self-inflicted one.
-  if (process.env.NEXT_PUBLIC_COMMUNITY_IS_LIVE === "false") {
-    return [
-      {
-        url: COMMUNITY_BASE_URL,
-        lastModified: now,
-        changeFrequency: "weekly",
-        priority: 0.5,
-      },
-    ];
-  }
-
   const entries: MetadataRoute.Sitemap = staticRoutes.map((route) => ({
     url: communityUrl(route.path),
     lastModified: now,

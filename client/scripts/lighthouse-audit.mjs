@@ -12,7 +12,6 @@ const ROUTES = [
   "/",
   "/about",
   "/careers",
-  "/community-waitlist",
   "/contact",
   "/content-policy",
   "/cookies",

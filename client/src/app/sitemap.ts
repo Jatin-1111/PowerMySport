@@ -308,12 +308,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // place: it is `noindex` and disallowed in robots.txt (see robots.ts), so
     // submitting it would just trade three crawlable URLs for one Search
     // Console "blocked by robots.txt" error.
-    {
-      url: `${siteUrl}/community-waitlist`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.4,
-    },
+    //
+    // /community-waitlist was here too, until community shipped; it now 308s
+    // into the community app, which publishes its own sitemap.
 
     // ── Legal ── (low priority, don't waste crawl budget) ──
     {
