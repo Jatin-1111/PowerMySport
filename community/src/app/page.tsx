@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { HeroSearch } from "@/modules/community/components/page/HeroSearch";
 import DynamicCommunityPosts from "@/modules/community/components/page/home/DynamicCommunityPosts";
 import DynamicFeaturedQA from "@/modules/community/components/page/home/DynamicFeaturedQA";
 import {
@@ -151,6 +152,8 @@ export default function CommunityLandingPage() {
                   need. Ask questions, read what other parents did, and hear
                   from the people who have already been through it.
                 </p>
+
+                <HeroSearch />
 
                 <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:justify-center">
                   <Link
