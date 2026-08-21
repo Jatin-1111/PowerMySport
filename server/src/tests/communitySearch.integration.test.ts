@@ -184,6 +184,27 @@ describe("community search", () => {
     assert.equal(items[0].isSolved, true);
   });
 
+  it("still returns questions when the blog index is missing", async () => {
+    await seedPost("Racket advice", "A question about rackets.");
+    await seedBlog("Racket story", "About rackets", "<p>Rackets again.</p>");
+
+    // A `$text` query with no text index is rejected by MongoDB, not degraded
+    // to a scan. Both halves run in one Promise.all, so without per-side
+    // handling an unbuilt or mid-rebuild blog index takes down the whole
+    // endpoint — including the questions that could have answered.
+    await BlogPost.collection.dropIndexes();
+
+    const { items } = await CommunityService.searchCommunity(undefined, "racket");
+
+    assert.ok(items.length > 0, "questions should still come back");
+    assert.ok(
+      items.every((item: { kind: string }) => item.kind === "POST"),
+      "only questions can answer while the blog index is gone",
+    );
+
+    await BlogPost.syncIndexes();
+  });
+
   it("respects the result limit", async () => {
     for (let i = 0; i < 8; i += 1) {
       await seedPost(`Racket question ${i}`, "Another question about rackets.");

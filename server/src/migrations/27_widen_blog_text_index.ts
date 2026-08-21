@@ -17,11 +17,20 @@ import { BlogPost } from "../community/models/BlogPost";
  * app would keep running against the narrow index with nobody the wiser.
  *
  * ── Cost ─────────────────────────────────────────────────────────────────────
- * Dropping the text index makes blog search fall back to a collection scan for
- * the duration of the rebuild, and the new index covers full article bodies so
- * it is meaningfully larger than the old one. Run it during a quiet window.
- * The dry run reports the document count so that size is a decision rather
- * than a surprise.
+ * MongoDB permits only one text index, so the old one must be dropped before
+ * the new one is built. In that window a `$text` query on blogs does NOT fall
+ * back to a scan — MongoDB rejects it — so blog search returns nothing until
+ * the build finishes. (searchCommunity degrades per-collection rather than
+ * failing the request, so questions keep working meanwhile.) The new index
+ * covers full article bodies and is therefore larger than the old one. Run it
+ * during a quiet window; the dry run reports the document count so that size
+ * is a decision rather than a surprise.
+ *
+ * ── A limit worth knowing ────────────────────────────────────────────────────
+ * A text index only indexes string values. Posts still stored in the legacy
+ * block-editor format keep `content` as an array of blocks, so widening the
+ * index does nothing for them — their bodies stay unsearchable until that
+ * content is converted to the Tiptap HTML string format.
  *
  * Idempotent: the target index is named, so a second run sees it already
  * present and does nothing.
@@ -92,7 +101,8 @@ export const up = async (options: Options = {}) => {
   }
 
   // Drop first: MongoDB refuses a second text index, so these cannot overlap.
-  // Blog search falls back to a collection scan in this window.
+  // Blog `$text` queries are rejected in this window, not slowed — blog
+  // results are simply absent until the build below finishes.
   for (const index of textIndexes) {
     if (index.name) {
       console.log(`  dropping ${index.name}...`);

@@ -48,32 +48,57 @@ export const communitySearchService = {
     const wantPosts = type === "ALL" || type === "POST";
     const wantBlogs = type === "ALL" || type === "BLOG";
 
+    /**
+     * A `$text` query against a collection with no text index does not degrade
+     * to a scan — MongoDB rejects it outright. Both halves run in one
+     * Promise.all, so an unbuilt or mid-rebuild index on either collection
+     * would take down the whole search endpoint rather than the half that
+     * cannot answer. Each side therefore fails to an empty result and says so
+     * in the log, which is the difference between "no stories matched" and a
+     * 500.
+     */
+    const searchSide = async <T>(
+      label: string,
+      run: () => Promise<T[]>,
+    ): Promise<T[]> => {
+      try {
+        return await run();
+      } catch (error) {
+        console.error(`Community search: ${label} half failed`, error);
+        return [];
+      }
+    };
+
     const [posts, blogs] = await Promise.all([
       wantPosts
-        ? CommunityPost.find(
-            {
-              $text: { $search: term },
-              isDeleted: false,
-              status: { $in: ["OPEN", "CLOSED"] },
-            },
-            { score: { $meta: "textScore" } },
+        ? searchSide("questions", () =>
+            CommunityPost.find(
+              {
+                $text: { $search: term },
+                isDeleted: false,
+                status: { $in: ["OPEN", "CLOSED"] },
+              },
+              { score: { $meta: "textScore" } },
+            )
+              .sort({ score: { $meta: "textScore" } })
+              .limit(perSide)
+              .lean(),
           )
-            .sort({ score: { $meta: "textScore" } })
-            .limit(perSide)
-            .lean()
         : Promise.resolve([]),
       wantBlogs
-        ? BlogPost.find(
-            {
-              $text: { $search: term },
-              isDeleted: false,
-              status: "PUBLISHED",
-            },
-            { score: { $meta: "textScore" } },
+        ? searchSide("stories", () =>
+            BlogPost.find(
+              {
+                $text: { $search: term },
+                isDeleted: false,
+                status: "PUBLISHED",
+              },
+              { score: { $meta: "textScore" } },
+            )
+              .sort({ score: { $meta: "textScore" } })
+              .limit(perSide)
+              .lean(),
           )
-            .sort({ score: { $meta: "textScore" } })
-            .limit(perSide)
-            .lean()
         : Promise.resolve([]),
     ]);
 
