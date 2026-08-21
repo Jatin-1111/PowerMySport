@@ -303,8 +303,15 @@ const legacyBlocksToHtml = (blocks: LegacyBlogBlock[]): string =>
     .filter(Boolean)
     .join("");
 
-/** Normalize a post's persisted `content` to HTML, upgrading legacy block arrays. */
-const toContentHtml = (content: unknown): string =>
+/**
+ * Normalize a post's persisted `content` to HTML, upgrading legacy block
+ * arrays.
+ *
+ * Exported so migration 28 converts stored content with exactly the function
+ * that renders it today — anything else risks the migration and the reader
+ * disagreeing about what a post says.
+ */
+export const toContentHtml = (content: unknown): string =>
   Array.isArray(content)
     ? legacyBlocksToHtml(content as LegacyBlogBlock[])
     : (content as string) || "";
