@@ -114,6 +114,7 @@ export const communitySendMessageSchema = z.object({
       fileSize: z.number().min(0).optional(),
       mimeType: z.string().max(100).optional(),
       durationMs: z.number().min(0).optional(),
+      waveform: z.array(z.number().min(0).max(100)).max(64).optional(),
     })
     .optional(),
 });

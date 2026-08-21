@@ -5,7 +5,6 @@ import {
   Check,
   CheckCheck,
   ChevronLeft,
-  FileText,
   Loader2,
   Megaphone,
   Mic,
@@ -78,7 +77,6 @@ export default function CommunityChatPanel({ page }: Props) {
     pendingImageFile,
     setPendingImageFile,
     imageInputRef,
-    documentInputRef,
     handleSendAttachment,
     isRecording,
     toggleVoiceRecording,
@@ -797,30 +795,26 @@ export default function CommunityChatPanel({ page }: Props) {
       {/* ── Composer ── */}
       <div className="z-20 shrink-0 border-t border-slate-200/40 bg-white/90 backdrop-blur-2xl px-3 py-2.5 sm:px-4 shadow-[0_-2px_16px_rgba(0,0,0,0.02)] supports-[backdrop-filter]:bg-white/70">
         {/* Hidden file input */}
+        {/* One picker for both kinds. Two buttons that both opened a file
+            dialog read as duplicates; which dialog you wanted was a decision
+            the app can make from the file itself. */}
         <input
           ref={imageInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png,image/webp,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx"
           className="sr-only"
           aria-hidden="true"
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) setPendingImageFile(file);
-            e.target.value = "";
-          }}
-        />
-
-        {/* Hidden document input — the accept list mirrors the server's
-            allowlist, which is what actually enforces it. */}
-        <input
-          ref={documentInputRef}
-          type="file"
-          accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx"
-          className="sr-only"
-          aria-hidden="true"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) void handleSendAttachment(file, "FILE");
+            if (file) {
+              // Images get the preview-and-caption flow; anything else uploads
+              // straight away, since there is nothing to preview.
+              if (file.type.startsWith("image/")) {
+                setPendingImageFile(file);
+              } else {
+                void handleSendAttachment(file, "FILE");
+              }
+            }
             e.target.value = "";
           }}
         />
@@ -947,7 +941,7 @@ export default function CommunityChatPanel({ page }: Props) {
               isUploadingImage
             }
             onClick={() => imageInputRef.current?.click()}
-            aria-label="Attach image"
+            aria-label="Attach a photo or file"
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-power-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isUploadingImage ? (
@@ -955,21 +949,6 @@ export default function CommunityChatPanel({ page }: Props) {
             ) : (
               <Paperclip size={19} strokeWidth={2} />
             )}
-          </button>
-
-          {/* Attach document */}
-          <button
-            type="button"
-            disabled={
-              !canSendSelectedConversationMessage ||
-              isSending ||
-              isUploadingImage
-            }
-            onClick={() => documentInputRef.current?.click()}
-            aria-label="Attach file"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-power-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <FileText size={18} strokeWidth={2} />
           </button>
 
           {/* Record a voice note */}

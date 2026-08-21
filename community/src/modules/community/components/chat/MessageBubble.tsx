@@ -17,6 +17,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { ConversationMessage } from "@/modules/community/types";
+import { VoiceMessagePlayer } from "./VoiceMessagePlayer";
 import {
   getAvatarCharacter,
   getMessageTimestamp,
@@ -64,15 +65,6 @@ function formatFileSize(bytes?: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-/** mm:ss for a voice clip. */
-function formatDuration(ms?: number): string {
-  const total = Math.round((ms || 0) / 1000);
-  if (total <= 0) return "";
-  const minutes = Math.floor(total / 60);
-  const seconds = total % 60;
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 /** Skeleton shown while an image is uploading (optimistic state). */
@@ -456,19 +448,12 @@ export const MessageBubble = memo(function MessageBubble({
                   Voice message deleted
                 </div>
               ) : (
-                <div className="flex items-center gap-2 py-0.5">
-                  <audio
-                    controls
-                    preload="none"
-                    src={buildChatImageUrl(message.content)}
-                    className="h-8 max-w-[210px]"
-                  />
-                  {message.metadata?.durationMs ? (
-                    <span className="shrink-0 text-[11px] opacity-70">
-                      {formatDuration(message.metadata.durationMs)}
-                    </span>
-                  ) : null}
-                </div>
+                <VoiceMessagePlayer
+                  src={buildChatImageUrl(message.content)}
+                  durationMs={message.metadata?.durationMs}
+                  waveform={message.metadata?.waveform}
+                  isOwnMessage={isOwnMessage}
+                />
               )
             ) : (
               /* ── Text message ── */

@@ -157,6 +157,8 @@ export interface ConversationMessage {
     mimeType?: string;
     /** VOICE: clip length, so a duration renders before the audio loads. */
     durationMs?: number;
+    /** VOICE: amplitude peaks 0-100, computed once when recorded. */
+    waveform?: number[];
   } | null;
   replyTo?: ConversationReplyPreview | null;
   reactions?: MessageReaction[];

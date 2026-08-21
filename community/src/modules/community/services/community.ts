@@ -526,6 +526,7 @@ export const communityService = {
       fileSize?: number;
       mimeType?: string;
       durationMs?: number;
+      waveform?: number[];
     },
   ): Promise<ConversationMessage> {
     const response = await axiosInstance.post<ApiResponse<ConversationMessage>>(

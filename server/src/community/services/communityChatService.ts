@@ -869,6 +869,7 @@ export const communityChatService = {
         fileSize?: number;
         mimeType?: string;
         durationMs?: number;
+        waveform?: number[];
       };
       replyToId?: string;
     },

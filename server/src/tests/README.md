@@ -14,12 +14,18 @@ file dies during startup rather than any assertion failing. It surfaced twice
 as `Unable to deserialize cloned data due to invalid or unsupported version`,
 which is the runner losing a child process, not a test problem.
 
-Bounding concurrency at 4 was still flaky. Serial has been stable across
-repeated runs and costs about two minutes for ~345 tests. A suite that has to
-be re-run to be believed is not a safety net, so the two minutes are worth it.
+Bounding concurrency at 4 was still flaky. Serial is markedly better but has
+still produced roughly one bad run in seven, so it reduces the problem rather
+than solving it. It costs about two minutes for ~345 tests, which is worth it
+for the reduction, but do not treat a green run as proof the flake is gone.
 
-If this becomes too slow, the fix is to share one `MongoMemoryServer` across
-files (a global setup hook) rather than to raise the concurrency again.
+The 134 community tests have never flaked on their own, in or out of the wider
+suite — the instability travels with the number of concurrent in-memory servers
+across the whole run, not with any one file.
+
+The real fix is to share one `MongoMemoryServer` across all files via a global
+setup hook, so the suite starts one mongod instead of sixteen. That is the next
+piece of work here; raising concurrency again is not.
 
 ## Writing an integration test
 

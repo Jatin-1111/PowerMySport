@@ -7,6 +7,7 @@ import { toast } from "@/lib/toast";
 import { communityService } from "@/modules/community/services/community";
 import { communityFollowStore } from "@/modules/community/lib/followStore";
 import { uploadChatImage } from "@/modules/community/hooks/useChatImageUpload";
+import { computeWaveform } from "@/modules/community/utils/audioWaveform";
 import {
   COMMUNITY_PINNED_KEY,
   COMMUNITY_MUTED_KEY,
@@ -317,7 +318,6 @@ export function useCommunityPage(options?: {
   const [selectedConversationPinnedId, setSelectedConversationPinnedId] =
     useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
-  const documentInputRef = useRef<HTMLInputElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingChunksRef = useRef<Blob[]>([]);
   const recordingStartedAtRef = useRef<number>(0);
@@ -2306,6 +2306,7 @@ export function useCommunityPage(options?: {
     file: File,
     kind: "FILE" | "VOICE",
     durationMs?: number,
+    waveform?: number[],
   ) => {
     if (!selectedConversation) return;
 
@@ -2323,6 +2324,7 @@ export function useCommunityPage(options?: {
         fileSize: file.size,
         mimeType: file.type,
         ...(durationMs ? { durationMs } : {}),
+        ...(waveform?.length ? { waveform } : {}),
       },
       createdAt: new Date().toISOString(),
       messageStatus: "SENDING",
@@ -2361,6 +2363,7 @@ export function useCommunityPage(options?: {
         fileSize: file.size,
         mimeType: file.type,
         ...(durationMs ? { durationMs } : {}),
+        ...(waveform?.length ? { waveform } : {}),
       };
 
       const socket = getCommunitySocket();
@@ -2464,6 +2467,7 @@ export function useCommunityPage(options?: {
       };
 
       recorder.onstop = () => {
+        void (async () => {
         // Release the mic straight away — a live indicator lingering after the
         // clip is sent reads as the app still listening.
         stream.getTracks().forEach((track) => track.stop());
@@ -2480,11 +2484,15 @@ export function useCommunityPage(options?: {
           return;
         }
 
+
         const extension = preferred === "audio/webm" ? "webm" : "m4a";
         const file = new File([blob], `voice-message.${extension}`, {
           type: preferred,
         });
-        void handleSendAttachment(file, "VOICE", durationMs);
+        // Peaks are computed here, once, by the device that recorded the clip.
+        const waveform = await computeWaveform(blob);
+        void handleSendAttachment(file, "VOICE", durationMs, waveform);
+        })();
       };
 
       mediaRecorderRef.current = recorder;
@@ -2749,7 +2757,6 @@ export function useCommunityPage(options?: {
     handleSendMessage,
     handleReactToMessage,
     handleSendAttachment,
-    documentInputRef,
     isRecording,
     toggleVoiceRecording,
     replyingTo,

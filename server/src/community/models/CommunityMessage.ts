@@ -19,6 +19,11 @@ export interface CommunityMessageDocument extends Document {
     /** VOICE: clip length, so the player can render a duration before the
      *  audio has loaded. */
     durationMs?: number;
+    /** VOICE: amplitude peaks, 0-100, computed once by the recorder. Storing
+     *  them means every viewer draws the same waveform without downloading and
+     *  decoding the audio first — a thread of voice notes would otherwise fetch
+     *  and decode every clip just to paint bars. */
+    waveform?: number[];
   };
   /** The message this one is a reply to. Kept as a reference rather than a
    *  copied snippet so an edit to the original is reflected in the quote,
@@ -71,6 +76,14 @@ const communityMessageSchema = new Schema<CommunityMessageDocument>(
       fileSize: { type: Number, min: 0 },
       mimeType: { type: String, maxlength: 100 },
       durationMs: { type: Number, min: 0 },
+      waveform: {
+        type: [Number],
+        default: undefined,
+        validate: {
+          validator: (value: number[]) => !value || value.length <= 64,
+          message: "A waveform can have at most 64 bars",
+        },
+      },
     },
     replyToId: {
       type: Schema.Types.ObjectId,

@@ -433,6 +433,7 @@ export const setupCommunitySocket = (io: Server): void => {
               fileSize?: number;
               mimeType?: string;
               durationMs?: number;
+              waveform?: number[];
             }
           | undefined =
           messageType !== "TEXT" && payload?.metadata
@@ -465,6 +466,17 @@ export const setupCommunitySocket = (io: Server): void => {
                   typeof payload.metadata.durationMs === "number"
                     ? payload.metadata.durationMs
                     : undefined,
+                // Clamped here as well as in the HTTP schema — this path has
+                // not been through zod.
+                waveform: Array.isArray(payload.metadata.waveform)
+                  ? payload.metadata.waveform
+                      .slice(0, 64)
+                      .map((value: unknown) =>
+                        typeof value === "number"
+                          ? Math.max(0, Math.min(100, Math.round(value)))
+                          : 0,
+                      )
+                  : undefined,
               }
             : undefined;
 
