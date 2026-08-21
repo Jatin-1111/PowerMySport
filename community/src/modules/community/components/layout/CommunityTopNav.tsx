@@ -31,7 +31,11 @@ import {
 } from "lucide-react";
 
 // ─── Additional Settings dropdown items ────────────────────────────────────
+/** The "More" menu. Following lives here rather than in the main bar, which is
+ *  already carrying seven items — but it has to be somewhere on desktop: it was
+ *  only in the mobile drawer, so /following was unreachable on a large screen. */
 const SETTINGS_ITEMS = [
+  { href: "/following", icon: Heart, label: "Following" },
   { href: "/reports", icon: FileWarning, label: "Reports" },
   { href: "/safety", icon: UserX, label: "Safety" },
   { href: "/privacy", icon: Shield, label: "Privacy" },
@@ -204,7 +208,10 @@ export default function CommunityTopNav() {
               Blog
             </Link>
 
-            <Link href="/questions" className={navLinkCls(pathname.startsWith("/questions"))}>
+            <Link
+              href="/questions"
+              className={navLinkCls(pathname.startsWith("/questions"))}
+            >
               <MessageSquare size={16} />
               Questions
             </Link>
@@ -212,6 +219,7 @@ export default function CommunityTopNav() {
               href="/search"
               className={navLinkCls(pathname.startsWith("/search"))}
             >
+              <Search size={16} />
               Search
             </Link>
 
