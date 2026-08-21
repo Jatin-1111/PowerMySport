@@ -24,13 +24,6 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        // Hero background. Hotlinked rather than vendored, so the image is not
-        // in this repo and swapping it is a one-line change.
-        protocol: "https",
-        hostname: "images.unsplash.com",
-        pathname: "/**",
-      },
-      {
         // Allow Next.js <Image> to load from the S3 chat bucket (public-read)
         protocol: "https",
         hostname: "*.amazonaws.com",

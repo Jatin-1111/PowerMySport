@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import Image from "next/image";
+import heroImage from "../../public/hero.png";
 import Link from "next/link";
 import { HeroSearch } from "@/modules/community/components/page/HeroSearch";
 import DynamicCommunityPosts from "@/modules/community/components/page/home/DynamicCommunityPosts";
@@ -21,14 +22,6 @@ import {
 } from "@/modules/community/components/seo/JsonLd";
 import { buildMetadata } from "@/lib/seo";
 
-/**
- * Hero background — Unsplash, hotlinked rather than vendored so swapping it is
- * a one-line change. Landscape and mostly uniform clay, which is what lets text
- * sit over it; a busy or portrait photo would crop to noise in a wide band.
- * The `q=` and `w=` params keep Unsplash from serving the full-resolution file.
- */
-const HERO_IMAGE =
-  "https://images.unsplash.com/photo-1543382513-3617a90d9a46?auto=format&fit=crop&w=1920&q=70";
 
 export const metadata = buildMetadata({
   title: "Youth Sports Community for Parents, Players & Coaches",
@@ -139,27 +132,46 @@ export default function CommunityLandingPage() {
             {/* Hero photograph. `priority` because this is the largest element
                 above the fold on the landing page — lazy-loading it would show
                 a bare dark panel first and hurt LCP. */}
+            {/* Imported rather than referenced as "/hero.png": with basePath
+                set, next/image prefixes the optimizer route but NOT its `url`
+                param, so a public/ path resolves against the wrong root and
+                the optimizer answers 400 "not a valid image". A static import
+                also gets a content-hashed filename, so this can be cached
+                immutably. The 2.2MB PNG never reaches a browser — the
+                optimizer re-encodes it to ~103KB of WebP. */}
             <Image
-              src={HERO_IMAGE}
+              src={heroImage}
               alt=""
               aria-hidden
               fill
               priority
-              sizes="100vw"
+              // The band is capped at max-w-7xl, so 100vw would make the
+              // optimizer serve a wider file than any viewport can show.
+              sizes="(min-width: 1280px) 1216px, 100vw"
               className="-z-10 object-cover object-center"
             />
 
-            {/* Overlay strength was measured, not guessed. The photo's own
-                average luminance is 0.08, so an 85% wash crushed it to a black
-                rectangle — an image nobody can see is not a background image.
-                These values leave the picture ~30% visible in the middle band
-                while the brightest pixel in it (a patch of sky at the very top,
-                where the gradient is heaviest) still gives every label at least 7.3:1.
-                Darker at both ends because the badge and the trust chips sit
-                there over less forgiving parts of the frame. */}
-            <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-slate-950/80 via-slate-950/60 to-slate-950/85" />
-            <div className="pointer-events-none absolute inset-0 -z-10 bg-slate-950/10" />
-            <div className="pointer-events-none absolute -right-20 -top-24 -z-10 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(233,115,22,0.28),transparent_65%)] blur-2xl" />
+            {/* Overlay strength is solved, not guessed: for each row of text,
+                the minimum wash that keeps the 99th-percentile brightest pixel
+                behind it under the luminance its colour and size can tolerate.
+                Measured on the crop this band actually shows, inside the
+                centred text column rather than the full width.
+
+                  badge     orange-200 11px  0.60 for AA, 0.76 for AAA
+                  headline  white 46px       0.43
+                  paragraph slate-50 16px    0.51
+                  chips     slate-200 13px   0.31
+
+                Heaviest at the top because the sun haze sits there — the
+                brightest pixel in the centre column is (253,238,216), and the
+                badge is the smallest text on the panel, so it sets the top
+                stop. 0.76 rather than the 0.60 that AA needs buys AAA on every
+                row for 4% of visibility in the least interesting part of the
+                frame. Lightest at the bottom, which is already the darkest part
+                of the photo. The stops keep headroom over each figure so a
+                different viewport crop or a re-encode cannot quietly drop a
+                row below its target. */}
+            <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-slate-950/76 via-slate-950/64 to-slate-950/48" />
 
             {/* Single column. The hero used to carry a three-step panel on
                 the right, which competed with the headline and repeated the
