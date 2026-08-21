@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import redis from "../../config/redis";
 import { normalizeStateName } from "../../constants/indianStates";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("geo");
 
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 const isDev = process.env.NODE_ENV === "development";
@@ -48,7 +50,7 @@ const fetchJson = async (url: string): Promise<any> => {
 
   try {
     if (isDev) {
-      console.log(`[GEO] Fetching: ${url}`);
+      log.info(`[GEO] Fetching: ${url}`);
     }
     const response = await fetch(url, {
       headers: {
@@ -59,14 +61,14 @@ const fetchJson = async (url: string): Promise<any> => {
 
     if (!response.ok) {
       if (isDev) {
-        console.error(`[GEO] HTTP ${response.status}`);
+        log.error(`[GEO] HTTP ${response.status}`);
       }
       throw new Error(`Request failed with status ${response.status}`);
     }
 
     const data = await response.json();
     if (isDev) {
-      console.log(
+      log.info(
         `[GEO] Response received:`,
         JSON.stringify(data).substring(0, 200),
       );
@@ -74,7 +76,7 @@ const fetchJson = async (url: string): Promise<any> => {
     return data;
   } catch (error) {
     if (isDev) {
-      console.error(`[GEO] Fetch error:`, error);
+      log.error(`[GEO] Fetch error:`, error);
     }
     throw error;
   } finally {
@@ -163,7 +165,7 @@ export const lookupPincode = async (req: Request, res: Response) => {
     });
   } catch (error) {
     if (isDev) {
-      console.error("[GEO] Pincode lookup error:", error);
+      log.error("[GEO] Pincode lookup error:", error);
     }
     return res.status(502).json({
       success: false,
@@ -213,7 +215,7 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
     }
 
     if (isDev) {
-      console.log(`[GEO] Autocomplete query: "${query}"`);
+      log.info(`[GEO] Autocomplete query: "${query}"`);
     }
     const googleUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
       query,
@@ -223,7 +225,7 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
 
     if (googleData?.status !== "OK") {
       if (isDev) {
-        console.error(
+        log.error(
           `[GEO] Google status: ${googleData?.status} - ${googleData?.error_message}`,
         );
       }
@@ -301,7 +303,7 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
     setCache(cacheKey, results);
 
     if (isDev) {
-      console.log(`[GEO] Total results: ${results.length}`);
+      log.info(`[GEO] Total results: ${results.length}`);
     }
     return res.json({
       success: true,
@@ -310,7 +312,7 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
     });
   } catch (error) {
     if (isDev) {
-      console.error(`[GEO] Autocomplete error:`, error);
+      log.error(`[GEO] Autocomplete error:`, error);
     }
     return res.status(500).json({
       success: false,
@@ -354,7 +356,7 @@ export const geocodeAddress = async (req: Request, res: Response) => {
     }
 
     if (isDev) {
-      console.log(`[GEO] Geocoding address: "${address}"`);
+      log.info(`[GEO] Geocoding address: "${address}"`);
     }
     const googleUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
       address,
@@ -364,7 +366,7 @@ export const geocodeAddress = async (req: Request, res: Response) => {
 
     if (googleData?.status !== "OK" || !googleData?.results?.[0]) {
       if (isDev) {
-        console.error(`[GEO] Geocode status: ${googleData?.status}`);
+        log.error(`[GEO] Geocode status: ${googleData?.status}`);
       }
       setCache(cacheKey, null);
       return res.json({
@@ -376,7 +378,7 @@ export const geocodeAddress = async (req: Request, res: Response) => {
 
     const result = googleData.results[0];
     if (isDev) {
-      console.log(`[GEO] Geocoded: ${result.formatted_address}`);
+      log.info(`[GEO] Geocoded: ${result.formatted_address}`);
     }
 
     const payload = {
@@ -394,7 +396,7 @@ export const geocodeAddress = async (req: Request, res: Response) => {
     });
   } catch (error) {
     if (isDev) {
-      console.error(`[GEO] Geocode error:`, error);
+      log.error(`[GEO] Geocode error:`, error);
     }
     return res.status(500).json({
       success: false,
@@ -440,7 +442,7 @@ export const reverseGeocode = async (req: Request, res: Response) => {
     }
 
     if (isDev) {
-      console.log(`[GEO] Reverse geocoding: lat=${lat}, lon=${lon}`);
+      log.info(`[GEO] Reverse geocoding: lat=${lat}, lon=${lon}`);
     }
     const googleUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${encodeURIComponent(
       String(lat),
@@ -452,7 +454,7 @@ export const reverseGeocode = async (req: Request, res: Response) => {
 
     if (googleData?.status !== "OK" || !googleData?.results?.[0]) {
       if (isDev) {
-        console.error(`[GEO] Reverse geocode status: ${googleData?.status}`);
+        log.error(`[GEO] Reverse geocode status: ${googleData?.status}`);
       }
       setCache(cacheKey, null);
       return res.json({
@@ -464,7 +466,7 @@ export const reverseGeocode = async (req: Request, res: Response) => {
 
     const result = googleData.results[0];
     if (isDev) {
-      console.log(`[GEO] Reverse geocoded: ${result.formatted_address}`);
+      log.info(`[GEO] Reverse geocoded: ${result.formatted_address}`);
     }
 
     const payload = {
@@ -482,7 +484,7 @@ export const reverseGeocode = async (req: Request, res: Response) => {
     });
   } catch (error) {
     if (isDev) {
-      console.error(`[GEO] Reverse geocode error:`, error);
+      log.error(`[GEO] Reverse geocode error:`, error);
     }
     return res.status(500).json({
       success: false,

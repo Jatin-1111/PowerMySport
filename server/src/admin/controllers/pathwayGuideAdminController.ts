@@ -9,6 +9,8 @@ import {
   PathwayGuideSchema,
 } from "../../shared/validation/pathwayGuideFormat";
 import { recordAuditLog } from "../services/AuditLogService";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("pathwayGuideAdmin");
 
 // ─── Pathway CMS (admin) ─────────────────────────────────────────────────────
 //
@@ -80,7 +82,7 @@ const notFound = (res: Response, message = "No pathway guide with that id."): vo
 };
 
 const failed = (res: Response, scope: string, error: unknown): void => {
-  console.error(`[pathwayGuideAdmin] ${scope} failed`, error);
+  log.error(`[pathwayGuideAdmin] ${scope} failed`, error);
   res.status(500).json({ success: false, message: `Failed to ${scope}.` });
 };
 

@@ -1,8 +1,11 @@
 import cron, { ScheduledTask } from "node-cron";
+import { bootFact } from "./boot";
 import {
   AitaRankingIngestService,
   STALENESS_ALERT_DAYS,
 } from "../shared/services/aita/AitaRankingIngestService";
+import { log as __rootLog } from "./logger";
+const log = __rootLog.child("aitaRanking");
 
 /**
  * Scheduling for the AITA ranking mirror.
@@ -50,7 +53,7 @@ export function initializeAitaRankingScheduler(): {
   healthJob: ScheduledTask;
 } | null {
   if (process.env.AITA_RANKINGS_CRON_DISABLED === "true") {
-    console.log("⏭  AITA ranking scheduler disabled by env");
+    bootFact("jobs", "aita disabled");
     return null;
   }
 
@@ -63,20 +66,20 @@ export function initializeAitaRankingScheduler(): {
         const { hasNewWork, sourceLatest, storedLatest } = await service.pollSentinel();
         if (!hasNewWork) return;
 
-        console.log(
-          `🎾 [aita-rankings] source moved to ${sourceLatest} (had ${storedLatest ?? "nothing"}) — sweeping`,
+        log.info(
+          `[aita-rankings] source moved to ${sourceLatest} (had ${storedLatest ?? "nothing"}) — sweeping`,
         );
         const report = await service.sweepLiveCombos();
         if (report.published > 0) {
           suppressPollUntil = nextMondayMidnight();
-          console.log(
-            `🎾 [aita-rankings] published ${report.published} list(s); ` +
+          log.info(
+            `[aita-rankings] published ${report.published} list(s); ` +
               `next poll window opens ${suppressPollUntil.toISOString()}`,
           );
         }
         if (report.quarantined > 0 || report.failed > 0) {
-          console.warn(
-            `⚠️  [aita-rankings] ${report.quarantined} quarantined, ${report.failed} failed — review needed`,
+          log.warn(
+            `[aita-rankings] ${report.quarantined} quarantined, ${report.failed} failed — review needed`,
           );
         }
       });
@@ -90,8 +93,8 @@ export function initializeAitaRankingScheduler(): {
     async () => {
       await runGuarded("weekly-sweep", async () => {
         const report = await service.sweepLiveCombos();
-        console.log(
-          `🎾 [aita-rankings] weekly sweep: ${report.published} published, ` +
+        log.info(
+          `[aita-rankings] weekly sweep: ${report.published} published, ` +
             `${report.quarantined} quarantined, ${report.failed} failed`,
         );
       });
@@ -106,27 +109,25 @@ export function initializeAitaRankingScheduler(): {
       try {
         const health = await service.getHealth();
         if (health.stale) {
-          console.error(
-            `🚨 [aita-rankings] STALE — nothing published for ${health.daysSincePublish ?? "?"} days ` +
+          log.error(
+            `[aita-rankings] STALE — nothing published for ${health.daysSincePublish ?? "?"} days ` +
               `(latest ${health.latestAsOnDate ?? "none"}, threshold ${STALENESS_ALERT_DAYS}). ` +
               `The source layout or URLs may have changed.`,
           );
         }
         if (health.quarantinedCount > 0) {
-          console.warn(
-            `⚠️  [aita-rankings] ${health.quarantinedCount} snapshot(s) awaiting review`,
+          log.warn(
+            `[aita-rankings] ${health.quarantinedCount} snapshot(s) awaiting review`,
           );
         }
       } catch (error) {
-        console.error("[aita-rankings] health check failed:", error);
+        log.error("[aita-rankings] health check failed:", error);
       }
     },
     { timezone: TIMEZONE },
   );
 
-  console.log(
-    "🎾 AITA ranking scheduler initialized (poll: hourly w/ back-off, sweep: Thu 03:00 IST)",
-  );
+  bootFact("jobs", "aita hourly + Thu sweep");
   return { pollJob, sweepJob, healthJob };
 }
 
@@ -139,14 +140,14 @@ export function stopAitaRankingScheduler(): void {
 
 async function runGuarded(label: string, fn: () => Promise<void>): Promise<void> {
   if (running) {
-    console.warn(`[aita-rankings] ${label} skipped — a run is already in progress`);
+    log.warn(`[aita-rankings] ${label} skipped — a run is already in progress`);
     return;
   }
   running = true;
   try {
     await fn();
   } catch (error) {
-    console.error(`[aita-rankings] ${label} failed:`, error);
+    log.error(`[aita-rankings] ${label} failed:`, error);
   } finally {
     running = false;
   }

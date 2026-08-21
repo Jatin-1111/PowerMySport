@@ -15,6 +15,8 @@ import {
   getPhonePeOrderStatus,
   initiatePhonePeRefund,
 } from "./PhonePeService";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("payment");
 
 // ============ PAYMENT GATEWAY SERVICE INTERFACE ============
 
@@ -141,7 +143,7 @@ export class PhonePeGatewayService implements IPaymentGatewayService {
       if (result.state === "PENDING") return PaymentStatus.PENDING;
       return PaymentStatus.FAILED;
     } catch (error: any) {
-      console.error("PhonePe status error:", error.message);
+      log.error("PhonePe status error:", error.message);
       return PaymentStatus.FAILED;
     }
   }

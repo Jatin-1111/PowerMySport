@@ -43,6 +43,8 @@ import {
   trackCommunityRoleMixEvent,
 } from "./communityShared";
 import mongoose from "mongoose";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("communityQna");
 
 /**
  * Questions, answers, answer comments, accepted answers and voting.
@@ -720,7 +722,7 @@ export const communityQnaService = {
           event: "COMMUNITY_ANSWER_CREATED",
         },
       }).catch((error: unknown) => {
-        console.error("Failed to send community answer notification:", error);
+        log.error("Failed to send community answer notification:", error);
       });
     }
 
@@ -1150,7 +1152,7 @@ export const communityQnaService = {
               : payload.targetId,
         },
       }).catch((error: unknown) => {
-        console.error("Failed to send community upvote notification:", error);
+        log.error("Failed to send community upvote notification:", error);
       });
     }
 

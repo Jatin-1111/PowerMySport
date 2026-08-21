@@ -6,6 +6,8 @@ import {
   sendSupportTicketReceivedEmail,
   sendSupportTicketStatusEmail,
 } from "../../utils/email";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("supportTicket");
 
 const parsePagination = (pageRaw: unknown, limitRaw: unknown) => {
   const page = Math.max(1, Number(pageRaw) || 1);
@@ -159,7 +161,7 @@ const createTicketFromRequest = async (
         });
       }
     } catch (error) {
-      console.error("Failed to send support ticket received email:", error);
+      log.error("Failed to send support ticket received email:", error);
     }
   })();
 
@@ -373,7 +375,7 @@ export const updateSupportTicketByAdmin = async (
           status,
           note: note?.trim() || undefined,
         }).catch((error) =>
-          console.error("Failed to send support ticket status email:", error),
+          log.error("Failed to send support ticket status email:", error),
         );
       }
     }

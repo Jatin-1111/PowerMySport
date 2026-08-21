@@ -16,6 +16,8 @@ import {
   transformDocument,
   transformDocuments,
 } from "../../middleware/responseTransform";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("venue");
 
 interface DiscoveryContext {
   page: number;
@@ -89,9 +91,9 @@ export const createNewVenue = async (
   res: Response,
 ): Promise<void> => {
   try {
-    console.log("=== Create Venue Request ===");
-    console.log("User:", req.user);
-    console.log("Request body:", req.body);
+    log.info("=== Create Venue Request ===");
+    log.info("User:", req.user);
+    log.info("Request body:", req.body);
 
     if (!req.user?.id) {
       res.status(401).json({
@@ -113,7 +115,7 @@ export const createNewVenue = async (
       return;
     }
 
-    console.log("Venue Lister user:", {
+    log.info("Venue Lister user:", {
       id: user._id,
       role: user.role,
     });
@@ -132,7 +134,7 @@ export const createNewVenue = async (
       data: venueData,
     });
   } catch (error) {
-    console.error("Venue creation error:", error);
+    log.error("Venue creation error:", error);
     res.status(400).json({
       success: false,
       message:
@@ -203,7 +205,7 @@ export const getMyVenues = async (
       },
     });
   } catch (error) {
-    console.error("Get my venues error:", error);
+    log.error("Get my venues error:", error);
     res.status(500).json({
       success: false,
       message:
@@ -231,7 +233,7 @@ export const discoverNearby = async (
     const totalDurationMs = Date.now() - requestStartedAt;
     const venueCount = venuesResult?.venues?.length ?? 0;
 
-    console.info(
+    log.info(
       "[discoverNearby]",
       JSON.stringify({
         hasLocation: context.hasLocation,

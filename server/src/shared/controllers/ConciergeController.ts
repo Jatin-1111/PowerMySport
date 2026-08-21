@@ -4,6 +4,8 @@ import { s3Service } from "../services/S3Service";
 import { ConciergeRequest } from "../models/ConciergeRequest";
 import { sendEmail } from "../../utils/email";
 import { User } from "../../client/models/User";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("concierge");
 
 const escHtml = (str: unknown): string =>
   String(str ?? "")
@@ -72,7 +74,7 @@ export const getPresignedUploadUrl = async (
 
     res.status(200).json({ uploadUrl, downloadUrl, key });
   } catch (error) {
-    console.error("Error generating presigned URL:", error);
+    log.error("Error generating presigned URL:", error);
     res.status(500).json({ error: "Failed to generate upload URL" });
   }
 };
@@ -170,7 +172,7 @@ export const submitConciergeRequest = async (
       .status(201)
       .json({ message: "Concierge request submitted successfully", request });
   } catch (error) {
-    console.error("Error submitting concierge request:", error);
+    log.error("Error submitting concierge request:", error);
     res.status(500).json({ error: "Failed to submit request" });
   }
 };
@@ -213,7 +215,7 @@ export const getUserConciergeRequests = async (
       },
     });
   } catch (error) {
-    console.error("Error fetching concierge requests:", error);
+    log.error("Error fetching concierge requests:", error);
     res.status(500).json({ error: "Failed to fetch requests" });
   }
 };

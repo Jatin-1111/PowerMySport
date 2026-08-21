@@ -103,7 +103,9 @@ const tournamentSchema = new Schema<TournamentDocument>(
     isVerified: { type: Boolean, default: false },
     lastScrapedAt: { type: Date, default: Date.now },
 
-    slug: { type: String, lowercase: true, trim: true, sparse: true },
+    // No `sparse` here: at field level it implies an index of its own, which
+    // duplicates the explicit unique+sparse index declared further down.
+    slug: { type: String, lowercase: true, trim: true },
     isCurated: { type: Boolean, default: false, index: true },
     federation: { type: federationSchema },
     federationSlug: { type: String, lowercase: true, trim: true, index: true },

@@ -49,6 +49,8 @@ import {
 } from "../../utils/email";
 import { NotificationService } from "../../client/services/NotificationService";
 import { isPhonePeGatewayError } from "../../shared/services/PhonePeService";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("admin");
 
 const auditContext = (
   req: Request,
@@ -1107,7 +1109,7 @@ export const updateUserSafetyStatus = async (
         action,
         reason: reason?.trim() || undefined,
       }).catch((error) =>
-        console.error("Failed to send account status email:", error),
+        log.error("Failed to send account status email:", error),
       );
     }
 
@@ -1866,7 +1868,7 @@ export const handleDispute = async (
             resolution,
             refundAmount: refundResult?.refundAmount,
           }).catch((error) =>
-            console.error("Failed to send dispute email:", error),
+            log.error("Failed to send dispute email:", error),
           );
         }
 
@@ -1893,7 +1895,7 @@ export const handleDispute = async (
         });
       }
     } catch (notifError) {
-      console.error(
+      log.error(
         "[handleDispute] Failed to send dispute notification:",
         notifError,
       );
@@ -2057,11 +2059,11 @@ export const approveCoachVerification = async (
             verifiedAt: new Date().toISOString(),
           },
         }).catch((err: Error) =>
-          console.error("Failed to send verification notification:", err),
+          log.error("Failed to send verification notification:", err),
         );
       }
     } catch (emailError) {
-      console.error("Failed to send coach verification email:", emailError);
+      log.error("Failed to send coach verification email:", emailError);
     }
 
     void recordAuditLog({
@@ -2144,11 +2146,11 @@ export const rejectCoachVerification = async (
             rejectedAt: new Date().toISOString(),
           },
         }).catch((err: Error) =>
-          console.error("Failed to send rejection notification:", err),
+          log.error("Failed to send rejection notification:", err),
         );
       }
     } catch (emailError) {
-      console.error("Failed to send coach verification email:", emailError);
+      log.error("Failed to send coach verification email:", emailError);
     }
 
     void recordAuditLog({
@@ -2225,11 +2227,11 @@ export const markCoachVerificationForReview = async (
             reviewStartedAt: new Date().toISOString(),
           },
         }).catch((err: Error) =>
-          console.error("Failed to send review notification:", err),
+          log.error("Failed to send review notification:", err),
         );
       }
     } catch (emailError) {
-      console.error("Failed to send coach verification email:", emailError);
+      log.error("Failed to send coach verification email:", emailError);
     }
 
     res.status(200).json({
@@ -2337,7 +2339,7 @@ export const notifyCoachVerificationPending = async (
         remindedAt: new Date().toISOString(),
       },
     }).catch((err: Error) =>
-      console.error("Failed to send in-app verification reminder:", err),
+      log.error("Failed to send in-app verification reminder:", err),
     );
 
     res.status(200).json({
@@ -2577,7 +2579,7 @@ export const updateVenueAdminHandler = async (
           loginUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/login`,
         });
       } catch (emailError) {
-        console.error("Failed to send venue credentials email:", emailError);
+        log.error("Failed to send venue credentials email:", emailError);
       }
     }
 
@@ -2774,7 +2776,7 @@ export const createCoachAdminHandler = async (
           loginUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/login`,
         });
       } catch (emailError) {
-        console.error("Failed to send coach credentials email:", emailError);
+        log.error("Failed to send coach credentials email:", emailError);
       }
     }
 
@@ -2791,10 +2793,10 @@ export const createCoachAdminHandler = async (
           createdAt: new Date().toISOString(),
         },
       }).catch((err: Error) =>
-        console.error("Failed to send coach creation notification:", err),
+        log.error("Failed to send coach creation notification:", err),
       );
     } catch (notificationError) {
-      console.error("Failed to send in-app notification:", notificationError);
+      log.error("Failed to send in-app notification:", notificationError);
     }
 
     res.status(201).json({

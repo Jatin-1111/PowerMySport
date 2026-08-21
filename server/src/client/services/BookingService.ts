@@ -52,6 +52,8 @@ import {
   getPhonePeRefundStatus,
   initiatePhonePeRefund,
 } from "../../shared/services/PhonePeService";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("booking");
 
 /**
  * Booking State Machine:
@@ -497,7 +499,7 @@ const createBookingAtomically = async (
           }
         }
 
-        console.log(
+        log.info(
           "[createBookingAtomically] about to construct Booking. userId:",
           JSON.stringify(payload.userId),
           "venueId:",
@@ -746,7 +748,7 @@ export const initiateBooking = async (
     }
 
     // --- BOOKING DEBUG LOG START ---
-    console.log(
+    log.info(
       "[initiateBooking] RAW PAYLOAD:",
       JSON.stringify({
         userId: payload.userId,
@@ -774,7 +776,7 @@ export const initiateBooking = async (
     // --- BOOKING DEBUG LOG END ---
 
     // Fetch user for participant information
-    console.log(
+    log.info(
       "[initiateBooking] STEP 1: validating userId =",
       JSON.stringify(payload.userId),
       "type:",
@@ -787,7 +789,7 @@ export const initiateBooking = async (
     if (!user) {
       throw new Error("User not found");
     }
-    console.log("[initiateBooking] STEP 1 OK: user =", user._id.toString());
+    log.info("[initiateBooking] STEP 1 OK: user =", user._id.toString());
 
     // Clean up any existing abandoned booking for this exact same slot by this user
     // This allows them to "try again" immediately without hitting "Coach/Venue is not available"
@@ -814,7 +816,7 @@ export const initiateBooking = async (
 
     const deletedAbandoned = await Booking.deleteMany(cleanupQuery);
     if (deletedAbandoned.deletedCount > 0) {
-      console.log(
+      log.info(
         `[initiateBooking] Cleaned up ${deletedAbandoned.deletedCount} abandoned booking(s) for user ${user._id} attempting to re-book`,
       );
     }
@@ -825,7 +827,7 @@ export const initiateBooking = async (
     let participantAge: number | undefined = undefined;
 
     if (payload.dependentId) {
-      console.log(
+      log.info(
         "[initiateBooking] STEP 2: validating dependentId =",
         JSON.stringify(payload.dependentId),
       );
@@ -853,7 +855,7 @@ export const initiateBooking = async (
       participantName = dependent.name;
       participantId = dependent._id;
       participantAge = dependent.age;
-      console.log(
+      log.info(
         "[initiateBooking] STEP 2 OK: dependent =",
         dependent._id.toString(),
         "participantId type:",
@@ -876,7 +878,7 @@ export const initiateBooking = async (
     } else {
       // Booking is for the parent/user themselves
       participantId = user._id;
-      console.log(
+      log.info(
         "[initiateBooking] STEP 2: no dependent, participantId =",
         participantId?.toString(),
       );
@@ -885,7 +887,7 @@ export const initiateBooking = async (
     let venue: VenueDocument | null = null;
 
     if (payload.venueId) {
-      console.log(
+      log.info(
         "[initiateBooking] STEP 3: validating venueId =",
         JSON.stringify(payload.venueId),
       );
@@ -896,7 +898,7 @@ export const initiateBooking = async (
       if (!venue) {
         throw new Error("Venue not found");
       }
-      console.log(
+      log.info(
         "[initiateBooking] STEP 3 OK: venue =",
         venue._id.toString(),
         "ownerId raw =",
@@ -974,7 +976,7 @@ export const initiateBooking = async (
       if (!coach) {
         throw new Error("Coach not found");
       }
-      console.log(
+      log.info(
         "[initiateBooking] STEP 4 OK: coach =",
         coach._id.toString(),
         "userId raw =",
@@ -1201,7 +1203,7 @@ export const initiateBooking = async (
         }
       }
 
-      console.log(
+      log.info(
         "[initiateBooking] STEP 5 splits input: venueOwnerIdStr =",
         JSON.stringify(venueOwnerIdStr),
         "venueOwnerIdValid:",
@@ -1235,7 +1237,7 @@ export const initiateBooking = async (
         academyOwnerIdStr,
       );
 
-      console.log(
+      log.info(
         "[initiateBooking] STEP 5 calculatedSplits:",
         JSON.stringify(calculatedSplits),
       );
@@ -1249,7 +1251,7 @@ export const initiateBooking = async (
           status: p.status,
         }));
 
-      console.log(
+      log.info(
         "[initiateBooking] STEP 5 singlePaymentSplits after filter:",
         JSON.stringify(singlePaymentSplits),
       );
@@ -1277,7 +1279,7 @@ export const initiateBooking = async (
       payments: singlePaymentSplits,
     };
 
-    console.log(
+    log.info(
       "[initiateBooking] STEP 6 bookingPayload:",
       JSON.stringify({
         userId: bookingPayload.userId,
@@ -1377,7 +1379,7 @@ export const initiateBooking = async (
       booking,
     };
   } catch (error) {
-    console.error("[initiateBooking] error:", error);
+    log.error("[initiateBooking] error:", error);
     throw new Error(
       `Failed to initiate booking: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
@@ -1812,7 +1814,7 @@ const sendBookingLifecycleEmails = async (
           ...extra,
         });
       } catch (error) {
-        console.error(
+        log.error(
           `Failed to send booking lifecycle email to ${recipient.email}:`,
           error,
         );
@@ -1926,7 +1928,7 @@ const initiateBookingRefunds = async (
       await transaction.save();
       hasPending = true;
       totalRefundPaise += target.amountPaise;
-      console.error(
+      log.error(
         `[initiateBookingRefunds] PhonePe call failed for booking ${booking._id}, will retry:`,
         err,
       );
@@ -2290,7 +2292,7 @@ export const cancelBooking = async (
             refundPercentage,
           },
         }).catch((err: Error) =>
-          console.error(
+          log.error(
             `Failed to send booking cancellation notification to ${participantId}:`,
             err,
           ),
@@ -2317,7 +2319,7 @@ export const cancelBooking = async (
     ScheduledNotificationService.cancelBookingReminders(
       updatedBooking._id,
     ).catch((err: Error) =>
-      console.error(
+      log.error(
         `Failed to cancel booking reminders for ${updatedBooking._id}:`,
         err,
       ),
@@ -2348,10 +2350,10 @@ export const cancelBooking = async (
             cancellationReason: cancellationReason || "Cancelled by user",
           },
         }).catch((err: Error) =>
-          console.error(`Failed to send refund notification:`, err),
+          log.error(`Failed to send refund notification:`, err),
         );
       } catch (refundError) {
-        console.error(
+        log.error(
           `Failed to initiate refund for booking ${updatedBooking._id.toString()}:`,
           refundError,
         );
@@ -2674,7 +2676,7 @@ export const confirmMockPaymentSuccess = async (
       totalAmount: updatedBooking.totalAmount,
     },
   }).catch((err: Error) =>
-    console.error(
+    log.error(
       `Failed to send payment confirmation notification to ${userId}:`,
       err,
     ),
@@ -2734,7 +2736,7 @@ export const confirmMockPaymentSuccess = async (
         inApp: user.notificationPreferences?.inApp?.bookingReminders ?? true,
       },
     ).catch((err: Error) =>
-      console.error(`Failed to create booking reminders for ${userId}:`, err),
+      log.error(`Failed to create booking reminders for ${userId}:`, err),
     );
   }
 
@@ -2786,7 +2788,7 @@ const sendBookingPaymentConfirmation = async (
       totalAmount: booking.totalAmount,
     },
   }).catch((err: Error) =>
-    console.error(
+    log.error(
       `Failed to send payment confirmation notification to ${booking.userId.toString()}:`,
       err,
     ),
@@ -2846,7 +2848,7 @@ const sendBookingPaymentConfirmation = async (
         inApp: user.notificationPreferences?.inApp?.bookingReminders ?? true,
       },
     ).catch((err: Error) =>
-      console.error(
+      log.error(
         `Failed to create booking reminders for ${booking.userId.toString()}:`,
         err,
       ),
@@ -3014,7 +3016,7 @@ export const updatePaymentStatus = async (
             ?.amount || 0,
       },
     }).catch((err: Error) =>
-      console.error(
+      log.error(
         `Failed to send payment failed notification to ${payerUserId}:`,
         err,
       ),
@@ -3217,7 +3219,7 @@ export const initiateGroupBooking = async (
             endTime: booking.endTime,
             estimatedAmount: invitation.estimatedAmount,
           }).catch((err: Error) =>
-            console.error(
+            log.error(
               `Failed to send booking invitation email to ${invitee.email}:`,
               err,
             ),
@@ -3241,7 +3243,7 @@ export const initiateGroupBooking = async (
               estimatedAmount: invitation.estimatedAmount,
             },
           }).catch((err: Error) =>
-            console.error(
+            log.error(
               `Failed to send booking invitation notification to ${invitee._id}:`,
               err,
             ),
@@ -3469,7 +3471,7 @@ export const respondToBookingInvitation = async (
           endTime: booking.endTime,
         },
       }).catch((err: Error) =>
-        console.error(
+        log.error(
           `Failed to send booking acceptance notification to organizer:`,
           err,
         ),
@@ -3501,7 +3503,7 @@ export const respondToBookingInvitation = async (
                 status: booking.status,
               },
             }).catch((err: Error) =>
-              console.error(
+              log.error(
                 `Failed to send booking pending notification to ${participant.userId}:`,
                 err,
               ),
@@ -3636,7 +3638,7 @@ export const confirmBookingByProvider = async (
         inApp: user.notificationPreferences?.inApp?.bookingReminders ?? true,
       },
     ).catch((err: Error) =>
-      console.error(
+      log.error(
         `Failed to create booking reminders for ${booking.userId.toString()}:`,
         err,
       ),
@@ -3789,7 +3791,7 @@ export const rejectBookingByProvider = async (
       refundAmount = refund.refundAmount;
       refundStatus = refund.refundStatus;
     } catch (error) {
-      console.error("Failed to process provider rejection refund:", error);
+      log.error("Failed to process provider rejection refund:", error);
     }
   }
 
@@ -3951,7 +3953,7 @@ export const coverUnpaidShares = async (
         organizerId: organizerId,
       },
     }).catch((err: Error) =>
-      console.error(
+      log.error(
         `Failed to send payment split received notification to ${userId}:`,
         err,
       ),
@@ -4161,7 +4163,7 @@ export const reconcileBookingPaymentFromWebhookPayload = async (
         metadata: { merchantOrderId, gatewayState: state, source: "webhook" },
       },
     );
-    console.info(
+    log.info(
       `[BookingWebhook] Payment confirmed for booking ${transaction.bookingId}, merchantOrderId=${merchantOrderId}`,
     );
   } else if (state === "FAILED" && transaction.status !== "FAILED") {
@@ -4177,7 +4179,7 @@ export const reconcileBookingPaymentFromWebhookPayload = async (
         metadata: { merchantOrderId, gatewayState: state, source: "webhook" },
       },
     );
-    console.info(
+    log.info(
       `[BookingWebhook] Payment failed for booking ${transaction.bookingId}, merchantOrderId=${merchantOrderId}`,
     );
   }
@@ -4238,7 +4240,7 @@ const notifyWaitlistForFreedSlot = async (
         entry.status = "NOTIFIED";
         await entry.save();
       } catch (perEntryError) {
-        console.error(
+        log.error(
           "Failed to notify waitlist entry",
           entry._id?.toString(),
           perEntryError,
@@ -4246,6 +4248,6 @@ const notifyWaitlistForFreedSlot = async (
       }
     }
   } catch (error) {
-    console.error("Failed to notify waitlist for freed slot:", error);
+    log.error("Failed to notify waitlist for freed slot:", error);
   }
 };

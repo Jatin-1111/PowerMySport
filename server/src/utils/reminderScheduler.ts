@@ -1,10 +1,13 @@
 import cron, { ScheduledTask } from "node-cron";
+import { bootFact } from "./boot";
 import { ScheduledNotificationService } from "../client/services/ScheduledNotificationService";
 import { ReminderMonitoringService } from "../client/services/ReminderMonitoringService";
 import {
   broadcastStatsUpdate,
   broadcastHealthUpdate,
 } from "../client/sockets/notificationSocket";
+import { log as __rootLog } from "./logger";
+const log = __rootLog.child("reminder");
 
 // Flag to prevent duplicate job execution
 let isProcessing = false;
@@ -26,7 +29,6 @@ const reminderBatchSize = parseInt(
  * Runs on configurable cron cadence to process pending reminders
  */
 export function initializeReminderScheduler() {
-  console.log("📅 Initializing reminder scheduler...");
 
   const job = cron.schedule(
     schedulerCronExpression,
@@ -34,8 +36,8 @@ export function initializeReminderScheduler() {
       // Prevent overlapping executions
       if (isProcessing) {
         if (verboseSchedulerLogs) {
-          console.log(
-            "⏭️  Skipping reminder processing - previous job still running",
+          log.info(
+            "Skipping reminder processing - previous job still running",
           );
         }
         return;
@@ -44,9 +46,7 @@ export function initializeReminderScheduler() {
       try {
         isProcessing = true;
         const timestamp = new Date().toISOString();
-        if (verboseSchedulerLogs) {
-          console.log(`\n🔔 [${timestamp}] Processing pending reminders...`);
-        }
+        if (verboseSchedulerLogs) log.debug("Processing pending reminders");
 
         // Record processing run for monitoring
         ReminderMonitoringService.recordProcessingRun();
@@ -57,18 +57,15 @@ export function initializeReminderScheduler() {
           );
 
         if (stats.processed > 0) {
-          console.log(
-            `✅ [${timestamp}] Processed ${stats.processed} reminders: ` +
-              `${stats.sent} sent, ${stats.failed} failed`,
+          log.info(
+            `Processed ${stats.processed} reminder(s): ${stats.sent} sent, ${stats.failed} failed`,
           );
-        } else if (verboseSchedulerLogs) {
-          console.log(`ℹ️  [${timestamp}] No pending reminders to process`);
         }
 
         // Broadcast updated stats via WebSocket
         await broadcastStatsUpdate();
       } catch (error) {
-        console.error("❌ Error processing reminders:", error);
+        log.error("Error processing reminders:", error);
       } finally {
         isProcessing = false;
       }
@@ -88,7 +85,7 @@ export function initializeReminderScheduler() {
         // Broadcast updated health status via WebSocket
         await broadcastHealthUpdate();
       } catch (error) {
-        console.error("❌ Error in health check:", error);
+        log.error("Error in health check:", error);
       }
     },
     {
@@ -96,19 +93,17 @@ export function initializeReminderScheduler() {
     },
   );
 
-  console.log(
-    `✅ Health monitoring initialized (cron: ${healthCronExpression})`,
-  );
+  bootFact("jobs", `health ${healthCronExpression}`);
 
   // Schedule daily summary at 9:00 AM
   cron.schedule(
     "0 9 * * *",
     async () => {
       try {
-        console.log("📊 Sending daily reminder system summary...");
+        log.info("Sending daily reminder system summary...");
         await ReminderMonitoringService.sendDailySummary();
       } catch (error) {
-        console.error("❌ Error sending daily summary:", error);
+        log.error("Error sending daily summary:", error);
       }
     },
     {
@@ -116,11 +111,11 @@ export function initializeReminderScheduler() {
     },
   );
 
-  console.log("✅ Daily summary scheduled (9:00 AM IST)");
 
   //
-  console.log(
-    `✅ Reminder scheduler initialized (cron: ${schedulerCronExpression}, batch: ${reminderBatchSize})`,
+  bootFact(
+    "jobs",
+    `reminders ${schedulerCronExpression} x${reminderBatchSize}`,
   );
 
   // Return the job so it can be stopped if needed
@@ -131,7 +126,7 @@ export function initializeReminderScheduler() {
  * Stop the reminder scheduler
  */
 export function stopReminderScheduler(job: ScheduledTask) {
-  console.log("🛑 Stopping reminder scheduler...");
+  log.info("Stopping reminder scheduler...");
   job.stop();
-  console.log("✅ Reminder scheduler stopped");
+  log.info("Reminder scheduler stopped");
 }

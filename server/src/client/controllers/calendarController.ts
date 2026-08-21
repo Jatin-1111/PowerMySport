@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { Booking } from "../models/Booking";
 import { UserCalendarEvent } from "../models/UserCalendarEvent";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("calendar");
 
 /**
  * GET /api/calendar/bookings?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
@@ -59,7 +61,7 @@ export const getCalendarBookings = async (
 
     res.json({ success: true, data: { bookings } });
   } catch (error) {
-    console.error("[getCalendarBookings]", error);
+    log.error("[getCalendarBookings]", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to fetch calendar bookings" });
@@ -104,7 +106,7 @@ export const getCalendarEvents = async (
 
     res.json({ success: true, data: { events } });
   } catch (error) {
-    console.error("[getCalendarEvents]", error);
+    log.error("[getCalendarEvents]", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to fetch calendar events" });
@@ -180,7 +182,7 @@ export const createCalendarEvent = async (
       data: { event: (event as any).toJSON() },
     });
   } catch (error) {
-    console.error("[createCalendarEvent]", error);
+    log.error("[createCalendarEvent]", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to create calendar event" });
@@ -241,7 +243,7 @@ export const updateCalendarEvent = async (
 
     res.json({ success: true, data: { event: (event as any).toJSON() } });
   } catch (error) {
-    console.error("[updateCalendarEvent]", error);
+    log.error("[updateCalendarEvent]", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to update calendar event" });
@@ -276,7 +278,7 @@ export const deleteCalendarEvent = async (
 
     res.json({ success: true, message: "Event deleted" });
   } catch (error) {
-    console.error("[deleteCalendarEvent]", error);
+    log.error("[deleteCalendarEvent]", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to delete calendar event" });

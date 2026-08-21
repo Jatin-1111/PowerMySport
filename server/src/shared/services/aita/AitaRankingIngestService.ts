@@ -7,6 +7,8 @@ import { parseRankingPdf } from "./rankingPdfParser";
 import { recomputeSnapshotInsights } from "./recomputeSnapshotInsights";
 import { resolveStateCode } from "./stateCodes";
 import { AitaCategory, LIVE_COMBOS, ParseResult, SENTINEL_COMBO } from "./types";
+import { log as __rootLog } from "../../../utils/logger";
+const logger = __rootLog.child("aitaRankingIngest");
 
 /**
  * Orchestrates discover -> fetch -> archive -> parse -> validate -> publish for
@@ -35,11 +37,13 @@ import { AitaCategory, LIVE_COMBOS, ParseResult, SENTINEL_COMBO } from "./types"
 
 const isDev = process.env.NODE_ENV !== "production";
 const log = {
-  info: (...args: unknown[]) => {
-    if (isDev) console.log(...args);
+  // Dev-only chatter: keep it off the prod stream, but route it through the
+  // real logger so it carries the namespace and request id like everything else.
+  info: (message: string, ...rest: unknown[]) => {
+    if (isDev) logger.info(message, ...rest);
   },
-  warn: (...args: unknown[]) => console.warn(...args),
-  error: (...args: unknown[]) => console.error(...args),
+  warn: (message: string, ...rest: unknown[]) => logger.warn(message, ...rest),
+  error: (message: string, ...rest: unknown[]) => logger.error(message, ...rest),
 };
 
 /** A published list moving more than this against the previous one is suspect. */

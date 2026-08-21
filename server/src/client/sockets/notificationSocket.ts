@@ -6,6 +6,8 @@ import {
   touchUserLastActive,
 } from "../../shared/services/UserPresenceService";
 import { isTokenRevoked, verifyToken } from "../../utils/jwt";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("notification");
 
 let notificationSocketIO: SocketIOServer | null = null;
 
@@ -16,7 +18,7 @@ export const setupNotificationSocket = (io: SocketIOServer) => {
   notificationSocketIO = io;
 
   io.on("connection", (socket) => {
-    console.log(`📡 Notification monitoring client connected: ${socket.id}`);
+    log.info(`Notification monitoring client connected: ${socket.id}`);
 
     // Send initial stats on connection
     ReminderMonitoringService.getMonitoringStats()
@@ -27,7 +29,7 @@ export const setupNotificationSocket = (io: SocketIOServer) => {
         });
       })
       .catch((err) => {
-        console.error("Failed to send initial stats:", err);
+        log.error("Failed to send initial stats:", err);
       });
 
     ReminderMonitoringService.checkSchedulerHealth()
@@ -35,12 +37,12 @@ export const setupNotificationSocket = (io: SocketIOServer) => {
         socket.emit("HEALTH_UPDATE", { type: "HEALTH_UPDATE", health });
       })
       .catch((err) => {
-        console.error("Failed to send health update:", err);
+        log.error("Failed to send health update:", err);
       });
 
     socket.on("disconnect", () => {
-      console.log(
-        `📡 Notification monitoring client disconnected: ${socket.id}`,
+      log.info(
+        `Notification monitoring client disconnected: ${socket.id}`,
       );
     });
   });
@@ -61,7 +63,7 @@ export const broadcastStatsUpdate = async () => {
       stats,
     });
   } catch (error) {
-    console.error("Failed to broadcast stats update:", error);
+    log.error("Failed to broadcast stats update:", error);
   }
 };
 
@@ -80,7 +82,7 @@ export const broadcastHealthUpdate = async () => {
       health,
     });
   } catch (error) {
-    console.error("Failed to broadcast health update:", error);
+    log.error("Failed to broadcast health update:", error);
   }
 };
 

@@ -1,8 +1,7 @@
 import mongoose from "mongoose";
-import dotenv from "dotenv";
+import "../config/env";
 import { Sport } from "../shared/models/Sport";
 
-dotenv.config();
 
 function getCliFlag(name: string): string | undefined {
   const exactPrefix = `--${name}=`;

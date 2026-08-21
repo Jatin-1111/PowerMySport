@@ -46,6 +46,8 @@ import {
 } from "../../shared/services/InvoiceService";
 import { guessPlaceOfSupply } from "../../shared/utils/invoiceGst";
 import { extractPhonePePaymentMethodLabel } from "../../shared/utils/paymentMethod";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("experts");
 
 const fail = (res: Response, error: unknown, code = 400) =>
   res.status(code).json({
@@ -150,7 +152,7 @@ export const createExpert = async (
       password: temporaryPassword,
       loginUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/login`,
     }).catch((err: unknown) =>
-      console.error("Failed to send expert credentials email:", err),
+      log.error("Failed to send expert credentials email:", err),
     );
 
     res
@@ -764,7 +766,7 @@ export const approveExpertAdmin = async (
         email: data.email,
         dashboardUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/expert/dashboard`,
       }).catch((err: unknown) =>
-        console.error("Failed to send expert approval email:", err),
+        log.error("Failed to send expert approval email:", err),
       );
     }
 
@@ -794,7 +796,7 @@ export const rejectExpertAdmin = async (
         reason: reason.trim(),
         dashboardUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/expert/onboarding`,
       }).catch((err: unknown) =>
-        console.error("Failed to send expert rejection email:", err),
+        log.error("Failed to send expert rejection email:", err),
       );
     }
 

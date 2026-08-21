@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import { Venue, VenueDocument } from "../models/Venue";
 import { IGeoLocation } from "../../types/index";
 import { buildSafeSearchRegexSource } from "../../utils/regex";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("venue");
 
 // Matches the GST_REGEX used in ExpertsService.ts / Venue's own schema validator.
 const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
@@ -141,7 +143,7 @@ export const createVenue = async (
       : undefined,
   };
 
-  console.log("Creating venue with data:", {
+  log.info("Creating venue with data:", {
     name: venueData.name,
     ownerId: venueData.ownerId,
     ownerIdType: typeof venueData.ownerId,
@@ -152,7 +154,7 @@ export const createVenue = async (
   const venue = new Venue(venueData);
   await venue.save();
 
-  console.log("Venue saved:", {
+  log.info("Venue saved:", {
     id: venue._id,
     name: venue.name,
     ownerId: venue.ownerId,

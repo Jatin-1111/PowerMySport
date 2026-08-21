@@ -35,9 +35,9 @@ const sportSchema = new Schema<SportDocument>(
     slug: {
       type: String,
       required: true,
+      // `unique` already builds the index; adding `index: true` declares it twice.
       unique: true,
       lowercase: true,
-      index: true,
     },
     description: {
       type: String,

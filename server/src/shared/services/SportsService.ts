@@ -1,7 +1,10 @@
 import { Sport, SportDocument } from "../models/Sport";
 import { GoogleGenAI } from "@google/genai";
 import { buildSafeSearchRegexSource } from "../../utils/regex";
+import { bootFact } from "../../utils/boot";
 import redis from "../../config/redis";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("sports");
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -12,12 +15,12 @@ export class SportsService {
     if (GEMINI_API_KEY) {
       try {
         this.genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-        console.log("✅ Gemini API initialized successfully");
+        bootFact("ai", "gemini");
       } catch (error) {
-        console.error("❌ Failed to initialize Gemini API:", error);
+        log.error("Failed to initialize Gemini API:", error);
       }
     } else {
-      console.warn("⚠️ GEMINI_API_KEY not found in environment variables");
+      log.warn("GEMINI_API_KEY not found in environment variables");
     }
   }
 
@@ -28,7 +31,7 @@ export class SportsService {
     try {
       return await Sport.find({ isVerified: true }).sort({ name: 1 }).lean();
     } catch (error) {
-      console.error("Error fetching sports:", error);
+      log.error("Error fetching sports:", error);
       throw new Error("Failed to fetch sports");
     }
   }
@@ -49,7 +52,7 @@ export class SportsService {
         .limit(20)
         .lean();
     } catch (error) {
-      console.error("Error searching sports:", error);
+      log.error("Error searching sports:", error);
       throw new Error("Failed to search sports");
     }
   }
@@ -82,19 +85,19 @@ Respond with a JSON object only (no markdown, no explanation):
 Examples of valid sports: Cricket, Football, Badminton, Tennis, Yoga, CrossFit, Parkour, Pilates, Drone Racing, E-Sports
 Examples of invalid: "xyz123", "not a sport", nonsensical words`;
 
-      console.log(`🔍 Verifying sport: "${sportName}"`);
+      log.info(`Verifying sport: "${sportName}"`);
       const result = await this.genAI.models.generateContent({
         model: "gemma-4-31b-it",
         contents: prompt,
       });
       const text = result.text ?? "";
 
-      console.log(`✅ Gemini response: ${text}`);
+      log.info(`Gemini response: ${text}`);
 
       // Parse JSON response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        console.warn(`⚠️ Could not parse JSON from Gemini response`);
+        log.warn(`Could not parse JSON from Gemini response`);
         return {
           isValid: false,
           message: "Could not verify sport",
@@ -102,13 +105,13 @@ Examples of invalid: "xyz123", "not a sport", nonsensical words`;
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
-      console.log(`✅ Sport "${sportName}" verification result:`, parsed);
+      log.info(`Sport "${sportName}" verification result:`, parsed);
       return {
         isValid: parsed.isValid,
         message: parsed.explanation,
       };
     } catch (error) {
-      console.error(`❌ Error verifying sport "${sportName}":`, error);
+      log.error(`Error verifying sport "${sportName}":`, error);
       return {
         isValid: false,
         message: "Error verifying sport",
@@ -152,7 +155,7 @@ Examples of invalid: "xyz123", "not a sport", nonsensical words`;
 
       return saved;
     } catch (error) {
-      console.error("Error adding custom sport:", error);
+      log.error("Error adding custom sport:", error);
       throw new Error("Failed to add custom sport");
     }
   }
@@ -166,7 +169,7 @@ Examples of invalid: "xyz123", "not a sport", nonsensical words`;
       const keys = await redis.keys("cache:/api/sports*");
       if (keys.length) await redis.del(...keys);
     } catch (error) {
-      console.warn("Failed to invalidate sports cache:", error);
+      log.warn("Failed to invalidate sports cache:", error);
     }
   }
 
@@ -179,7 +182,7 @@ Examples of invalid: "xyz123", "not a sport", nonsensical words`;
         slug: name.toLowerCase().replace(/\s+/g, "-"),
       }).lean();
     } catch (error) {
-      console.error("Error getting sport:", error);
+      log.error("Error getting sport:", error);
       return null;
     }
   }

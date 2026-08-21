@@ -6,6 +6,8 @@ import { reconcileEcommerceOrderFromWebhookPayload } from "../../shop/services/E
 import { sendEmail } from "../../utils/email";
 import OutboxMessage from "../models/OutboxMessage";
 import PaymentWebhookEvent from "../models/PaymentWebhookEvent";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("outbox");
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_ATTEMPTS = 6;
@@ -56,7 +58,7 @@ export const startOutboxWorker = () => {
                 { persistToDb: true, sendSocket: true, sendPush: true },
               );
             } catch (err) {
-              console.error(
+              log.error(
                 "[outbox][deliver_message] Failed to send notification",
                 {
                   userId,
@@ -108,7 +110,7 @@ export const startOutboxWorker = () => {
               event.processedAt = new Date();
               event.lastError = null;
               await event.save();
-              console.info("[outbox][payment] processed", { eventId });
+              log.info("[outbox][payment] processed", { eventId });
             } catch (procErr) {
               event.status = "FAILED";
               event.lastError =
@@ -117,7 +119,7 @@ export const startOutboxWorker = () => {
                 String(procErr);
               await event.save().catch(() => undefined);
 
-              console.error("[outbox][payment] processing failed", {
+              log.error("[outbox][payment] processing failed", {
                 eventId,
                 error: (procErr as any)?.stack || String(procErr),
               });
@@ -133,13 +135,13 @@ export const startOutboxWorker = () => {
           }
 
           await sendEmail({ to, subject, html, text });
-          console.info("[outbox][email] sent", { to, subject });
+          log.info("[outbox][email] sent", { to, subject });
         }
 
         item.status = "DONE";
         item.lastError = null;
         await item.save();
-        console.info("[outbox] item done", { id: item._id, type: item.type });
+        log.info("[outbox] item done", { id: item._id, type: item.type });
       } catch (procErr) {
         const attempts = (item.attempts || 0) + 1;
         const baseBackoff = Math.min(
@@ -155,7 +157,7 @@ export const startOutboxWorker = () => {
           String(procErr);
         item.status = attempts >= MAX_ATTEMPTS ? "FAILED" : "PENDING";
         await item.save();
-        console.warn("[outbox] item failed, scheduled retry", {
+        log.warn("[outbox] item failed, scheduled retry", {
           id: item._id,
           attempts: item.attempts,
           nextAttemptAt: item.nextAttemptAt,
@@ -164,7 +166,7 @@ export const startOutboxWorker = () => {
       }
     } catch (error) {
       // Top-level worker error — log and continue
-      console.error("Outbox worker error:", error);
+      log.error("Outbox worker error:", error);
     }
   };
 

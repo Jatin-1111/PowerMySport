@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("encryption");
 
 /**
  * Shared AES-256-GCM helpers for financial/tax fields at rest (bank account
@@ -13,7 +15,7 @@ if (!rawEncryptionKey || ENCRYPTION_KEY.length !== 32) {
   if (process.env.NODE_ENV === "production") {
     throw new Error("FATAL: BANK_ENCRYPTION_KEY must be a 32-byte hex string.");
   }
-  console.warn(
+  log.warn(
     "WARNING: BANK_ENCRYPTION_KEY is missing or invalid. Financial fields will not be encrypted correctly.",
   );
 }

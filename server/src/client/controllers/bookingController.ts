@@ -55,6 +55,8 @@ import {
 } from "../../utils/openingHours";
 import { getPaginationParams } from "../../utils/pagination";
 import { transformDocument } from "../../middleware/responseTransform";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("booking");
 
 /**
  * Initiate a new booking
@@ -96,7 +98,7 @@ export const initiateNewBooking = async (
       },
     });
   } catch (error) {
-    console.error("[initiateNewBooking] Error details:", {
+    log.error("[initiateNewBooking] Error details:", {
       body: req.body,
       errorMessage: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
@@ -1883,7 +1885,7 @@ export const payBookingWithWallet = async (
       message: "Paid via wallet successfully",
     });
   } catch (error) {
-    console.error("[payBookingWithWallet]", error);
+    log.error("[payBookingWithWallet]", error);
     res.status(400).json({
       success: false,
       message:

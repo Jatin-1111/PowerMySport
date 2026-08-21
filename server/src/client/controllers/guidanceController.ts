@@ -15,6 +15,8 @@ import { Sport } from "../../shared/models/Sport";
 import { AnalyticsEvent } from "../../admin/models/AnalyticsEvent";
 import { PlanCheckInService } from "../../shared/services/PlanCheckInService";
 import { isSupportedSport, SUPPORTED_SPORTS } from "../../shared/constants/supportedSports";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("guidance");
 
 // ─── Rule-based burnout risk — zero AI cost ───────────────────────────────────
 
@@ -130,7 +132,7 @@ export const submitGuidance = async (
       sourceId: guidanceSubmission._id.toString(),
       sport: parsed.data.sport || "General",
       response: enrichedGuidance,
-    }).catch((err) => console.error("Failed to schedule plan check-in:", err));
+    }).catch((err) => log.error("Failed to schedule plan check-in:", err));
 
     res.status(201).json({
       success: true,

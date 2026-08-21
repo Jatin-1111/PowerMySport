@@ -8,6 +8,8 @@ import {
 } from "../../utils/email";
 import { User } from "../models/User";
 import { S3Service } from "../../shared/services/S3Service";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("friend");
 
 const s3Service = new S3Service();
 
@@ -22,7 +24,7 @@ const resolveUserPhotoUrl = async (user: {
   try {
     return await s3Service.generateDownloadUrl(user.photoS3Key, "images", 3600);
   } catch (error) {
-    console.error("Failed to regenerate notification photo URL:", error);
+    log.error("Failed to regenerate notification photo URL:", error);
     return user.photoUrl;
   }
 };
@@ -98,7 +100,7 @@ export const sendFriendRequest = async (
           sendSocket: true,
           sendEmail: false, // Don't await email - send async below
         },
-      ).catch((err) => console.error("Failed to send notification:", err));
+      ).catch((err) => log.error("Failed to send notification:", err));
 
       // Send detailed email notification asynchronously (don't wait)
       sendFriendRequestEmail({
@@ -107,7 +109,7 @@ export const sendFriendRequest = async (
         requesterName: requester.name,
         ...(requesterPhotoUrl && { requesterPhotoUrl }),
       }).catch((err) =>
-        console.error("Failed to send friend request email:", err),
+        log.error("Failed to send friend request email:", err),
       );
     }
 
@@ -180,7 +182,7 @@ export const acceptFriendRequest = async (
         sendSocket: true,
         sendEmail: false, // Don't await email - send async below
       },
-    ).catch((err) => console.error("Failed to send notification:", err));
+    ).catch((err) => log.error("Failed to send notification:", err));
 
     // Send detailed email notification asynchronously (don't wait)
     sendFriendRequestAcceptedEmail({
@@ -189,7 +191,7 @@ export const acceptFriendRequest = async (
       acceptedByName: acceptedBy.name,
       ...(acceptedByPhotoUrl && { acceptedByPhotoUrl }),
     }).catch((err) =>
-      console.error("Failed to send friend accepted email:", err),
+      log.error("Failed to send friend accepted email:", err),
     );
 
     res.json({

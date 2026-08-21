@@ -6,6 +6,8 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { scoreSports } from "../utils/findSportTestScorer";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("findSportTest");
 
 const wizardAnswersSchema = z.object({
   childName: z.string().default(""),
@@ -55,7 +57,7 @@ export const scoreSport = async (req: Request, res: Response): Promise<void> => 
     const results = scoreSports(parsed.data);
     res.json({ success: true, data: results });
   } catch (error) {
-    console.error("Error scoring sport (test endpoint):", error);
+    log.error("Error scoring sport (test endpoint):", error);
     res.status(500).json({
       success: false,
       message: "Failed to score sport",

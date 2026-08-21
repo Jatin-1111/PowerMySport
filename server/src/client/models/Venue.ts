@@ -6,6 +6,8 @@ import {
   encryptValue,
   decryptValue,
 } from "../../shared/utils/encryption";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("venue");
 
 // Matches the GST_REGEX used in ExpertsService.ts / Academy's Step3Legal.tsx —
 // enforces the literal checksum-style "Z" in the 14th character.
@@ -521,7 +523,7 @@ venueSchema.methods.refreshDocumentUrls = async function () {
             86400,
           );
         } catch (error) {
-          console.error(
+          log.error(
             `Failed to refresh URL for document ${doc.fileName}:`,
             error,
           );
@@ -562,7 +564,7 @@ venueSchema.methods.refreshImageUrls = async function () {
         try {
           return await s3Service.generateDownloadUrl(key, "images", 604800); // 7 days
         } catch (error) {
-          console.error(`Failed to refresh URL for image ${key}:`, error);
+          log.error(`Failed to refresh URL for image ${key}:`, error);
           return "";
         }
       }),
@@ -674,7 +676,7 @@ venueSchema.methods.refreshImageUrls = async function () {
         604800, // 7 days
       );
     } catch (error) {
-      console.error(`Failed to refresh cover photo URL:`, error);
+      log.error(`Failed to refresh cover photo URL:`, error);
     }
   }
 

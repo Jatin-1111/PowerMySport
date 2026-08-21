@@ -131,7 +131,7 @@ const communityGroupSchema = new Schema<CommunityGroupDocument>(
 );
 
 communityGroupSchema.index({ visibility: 1, updatedAt: -1 });
-communityGroupSchema.index({ inviteCode: 1 });
+// inviteCode is already indexed by `unique: true, sparse: true` on the field.
 
 const notifyGroupMembersUpdated = (doc: any) => {
   if (!doc || !doc._id) return;

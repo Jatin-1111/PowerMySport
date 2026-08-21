@@ -19,6 +19,8 @@ import {
 import { doTimesOverlap } from "../../utils/booking";
 import { transformDocument } from "../../middleware/responseTransform";
 import { getPaginationParams } from "../../utils/pagination";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("coach");
 
 interface CoachDiscoveryContext {
   page: number;
@@ -90,7 +92,7 @@ export const discoverCoachesNearby = async (
     const coachesFetchMs = Date.now() - startedAt;
     const totalDurationMs = Date.now() - requestStartedAt;
 
-    console.info(
+    log.info(
       "[discoverCoachesNearby]",
       JSON.stringify({
         hasLocation: context.hasLocation,
@@ -195,7 +197,7 @@ export const createNewCoach = async (
       availabilityBySport,
     });
 
-    console.log("Created coach:", {
+    log.info("Created coach:", {
       id: coach.id,
       serviceMode: coach.serviceMode,
     });
@@ -203,7 +205,7 @@ export const createNewCoach = async (
     // Convert to JSON and transform _id to id
     const coachData = transformDocument(coach.toJSON());
 
-    console.log("Coach JSON response:", {
+    log.info("Coach JSON response:", {
       id: coachData.id,
       serviceMode: coachData.serviceMode,
     });
@@ -299,7 +301,7 @@ export const getMyCoachProfile = async (
     // Convert to JSON and transform _id to id
     const coachData = transformDocument(coach.toJSON());
 
-    console.log("getMyCoachProfile returning:", {
+    log.info("getMyCoachProfile returning:", {
       id: coachData.id,
       serviceMode: coachData.serviceMode,
     });

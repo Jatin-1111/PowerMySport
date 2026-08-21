@@ -18,6 +18,8 @@ import {
 } from "../../shared/services/PhonePeService";
 import { NotificationService } from "./NotificationService";
 import { sendEmail } from "../../utils/email";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("refund");
 
 export type RefundMethod = "ORIGINAL_CARD" | "BANK_TRANSFER" | "STORE_CREDIT";
 
@@ -105,7 +107,7 @@ export async function initiateRefund(
         throw new Error(`Unknown refund method: ${refundMethod}`);
     }
   } catch (error) {
-    console.error("Error initiating refund:", error);
+    log.error("Error initiating refund:", error);
     throw error;
   }
 }
@@ -155,7 +157,7 @@ async function initiateCardRefund(
 
     return response;
   } catch (error) {
-    console.error("PhonePe refund initiation failed:", error);
+    log.error("PhonePe refund initiation failed:", error);
     transaction.refundState = "FAILED";
     transaction.refundAmount = amount;
     await transaction.save();
@@ -235,11 +237,11 @@ async function initiateBankTransferRefund(
         </html>
       `,
     });
-    console.log(
-      `✅ Finance team notified for bank transfer refund ${bankTransferId}`,
+    log.info(
+      `Finance team notified for bank transfer refund ${bankTransferId}`,
     );
   } catch (emailError) {
-    console.error("❌ Failed to send finance team notification:", emailError);
+    log.error("Failed to send finance team notification:", emailError);
     // Don't throw — refund record was already created
   }
 
@@ -260,7 +262,7 @@ async function initiateBankTransferRefund(
       });
     }
   } catch (notifError) {
-    console.error("❌ Failed to send player refund notification:", notifError);
+    log.error("Failed to send player refund notification:", notifError);
   }
 
   return {
@@ -313,7 +315,7 @@ async function initiateStoreCreditRefund(
     response.refundId = storeCreditId;
     return response;
   } catch (error) {
-    console.error("Store credit refund failed:", error);
+    log.error("Store credit refund failed:", error);
     transaction.refundState = "FAILED";
     transaction.refundAmount = amount;
     await transaction.save();
@@ -407,7 +409,7 @@ export async function checkRefundStatus(
 
     return response;
   } catch (error) {
-    console.error("Error checking refund status:", error);
+    log.error("Error checking refund status:", error);
     const response: RefundStatusResponse = {
       transactionId: transaction._id.toString(),
       state: transaction.refundState || "INITIATED",
@@ -480,7 +482,7 @@ export async function updatePendingRefundStatuses(): Promise<{
         failed++;
       }
     } catch (error) {
-      console.error(`Error updating refund ${transaction._id}:`, error);
+      log.error(`Error updating refund ${transaction._id}:`, error);
     }
   }
 

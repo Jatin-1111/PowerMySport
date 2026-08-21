@@ -5,6 +5,7 @@
  * - Images bucket: for venue photos and cover images
  */
 
+import { bootFactOnce } from "../../utils/boot";
 import {
   DeleteObjectCommand,
   DeleteObjectsCommand,
@@ -73,11 +74,12 @@ export class S3Service {
     this.imagesBucket =
       process.env.AWS_S3_IMAGES_BUCKET || "powermysport-images";
 
-    if (process.env.NODE_ENV === "development") {
-      console.log(`[S3Service] Initializing with region: ${this.region}`);
-      console.log(`[S3Service] Images bucket: ${this.imagesBucket}`);
-      console.log(`[S3Service] Documents bucket: ${this.documentsBucket}`);
-    }
+    // This class is constructed in a dozen modules, several at import time, so
+    // logging per-instance printed the same three lines five times at boot.
+    bootFactOnce(
+      "s3",
+      `${this.region} · images=${this.imagesBucket} docs=${this.documentsBucket}`,
+    );
 
     const clientConfig: S3ClientConfig = {
       region: this.region,

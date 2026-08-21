@@ -6,6 +6,8 @@ import { CommunityProfile } from "../../community/models/CommunityProfile";
 import mongoose from "mongoose";
 import { S3Service } from "../../shared/services/S3Service";
 import { buildSafeSearchRegexSource } from "../../utils/regex";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("friend");
 
 type UserWithPhoto = {
   photoUrl?: string;
@@ -29,7 +31,7 @@ export class FriendService {
         3600,
       );
     } catch (error) {
-      console.error("Failed to regenerate friend photo URL:", error);
+      log.error("Failed to regenerate friend photo URL:", error);
       return user.photoUrl;
     }
   }

@@ -10,6 +10,8 @@ import {
   getFlaggedReviews,
   moderateReview as moderateReviewByAction,
 } from "../services/ReviewService";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("review");
 
 type ReviewTargetType = "VENUE" | "Coach";
 
@@ -199,7 +201,7 @@ export const createReview = async (
             reviewText: review || "",
           },
         }).catch((err: Error) =>
-          console.error("Failed to send review notification:", err),
+          log.error("Failed to send review notification:", err),
         );
       }
     } else {
@@ -220,7 +222,7 @@ export const createReview = async (
             coachId: targetId,
           },
         }).catch((err: Error) =>
-          console.error("Failed to send review notification:", err),
+          log.error("Failed to send review notification:", err),
         );
       }
     }

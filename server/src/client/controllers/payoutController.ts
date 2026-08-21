@@ -3,6 +3,8 @@ import { Coach, IPayoutMethod } from "../../client/models/Coach";
 import { Venue } from "../../client/models/Venue";
 import { Expert } from "../../client/models/ExpertProfile";
 import { encryptValue, decryptValue } from "../../shared/utils/encryption";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("payout");
 
 type PayoutMethodRecord = IPayoutMethod & {
   _id?: unknown;
@@ -117,7 +119,7 @@ export const getCoachPayoutMethod = async (
       },
     });
   } catch (error) {
-    console.error("getCoachPayoutMethod error:", error);
+    log.error("getCoachPayoutMethod error:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to retrieve payout method" });
@@ -159,7 +161,7 @@ export const getCoachPayoutMethods = async (
       },
     });
   } catch (error) {
-    console.error("getCoachPayoutMethods error:", error);
+    log.error("getCoachPayoutMethods error:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to retrieve payout methods" });
@@ -311,7 +313,7 @@ export const upsertCoachPayoutMethod = async (
       },
     });
   } catch (error) {
-    console.error("upsertCoachPayoutMethod error:", error);
+    log.error("upsertCoachPayoutMethod error:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to save payout method" });
@@ -384,7 +386,7 @@ export const deleteCoachPayoutMethod = async (
       },
     });
   } catch (error) {
-    console.error("deleteCoachPayoutMethod error:", error);
+    log.error("deleteCoachPayoutMethod error:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to remove payout method" });
@@ -445,7 +447,7 @@ export const setCoachDefaultPayoutMethod = async (
       },
     });
   } catch (error) {
-    console.error("setCoachDefaultPayoutMethod error:", error);
+    log.error("setCoachDefaultPayoutMethod error:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to set default payout method" });
@@ -495,7 +497,7 @@ export const getVenuePayoutMethod = async (
       },
     });
   } catch (error) {
-    console.error("getVenuePayoutMethod error:", error);
+    log.error("getVenuePayoutMethod error:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to retrieve payout method" });
@@ -659,7 +661,7 @@ export const upsertVenuePayoutMethod = async (
       },
     });
   } catch (error) {
-    console.error("upsertVenuePayoutMethod error:", error);
+    log.error("upsertVenuePayoutMethod error:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to save payout method" });
@@ -739,7 +741,7 @@ export const deleteVenuePayoutMethod = async (
       });
     }
   } catch (error) {
-    console.error("deleteVenuePayoutMethod error:", error);
+    log.error("deleteVenuePayoutMethod error:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to remove payout method" });
@@ -809,7 +811,7 @@ export const setVenueDefaultPayoutMethod = async (
       },
     });
   } catch (error) {
-    console.error("setVenueDefaultPayoutMethod error:", error);
+    log.error("setVenueDefaultPayoutMethod error:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to set default payout method" });
@@ -856,7 +858,7 @@ export const getExpertPayoutMethod = async (
       },
     });
   } catch (error) {
-    console.error("getExpertPayoutMethod error:", error);
+    log.error("getExpertPayoutMethod error:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to retrieve payout method" });
@@ -898,7 +900,7 @@ export const getExpertPayoutMethods = async (
       },
     });
   } catch (error) {
-    console.error("getExpertPayoutMethods error:", error);
+    log.error("getExpertPayoutMethods error:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to retrieve payout methods" });
@@ -1065,7 +1067,7 @@ export const upsertExpertPayoutMethod = async (
       },
     });
   } catch (error) {
-    console.error("upsertExpertPayoutMethod error:", error);
+    log.error("upsertExpertPayoutMethod error:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to save payout method" });
@@ -1140,7 +1142,7 @@ export const deleteExpertPayoutMethod = async (
       },
     });
   } catch (error) {
-    console.error("deleteExpertPayoutMethod error:", error);
+    log.error("deleteExpertPayoutMethod error:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to remove payout method" });
@@ -1202,7 +1204,7 @@ export const setExpertDefaultPayoutMethod = async (
       },
     });
   } catch (error) {
-    console.error("setExpertDefaultPayoutMethod error:", error);
+    log.error("setExpertDefaultPayoutMethod error:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to set default payout method" });

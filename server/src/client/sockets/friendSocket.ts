@@ -5,6 +5,8 @@ import {
   touchUserLastActive,
 } from "../../shared/services/UserPresenceService";
 import { isTokenRevoked, verifyToken } from "../../utils/jwt";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("friend");
 
 const extractTokenFromCookie = (cookieHeader?: string): string | null => {
   if (!cookieHeader) {
@@ -57,18 +59,17 @@ export const setupFriendSocket = (io: Server): void => {
   // Use /friends namespace for friend notifications
   const friendsNamespace = io.of("/friends");
 
-  console.log("🔧 Setting up /friends namespace");
 
   friendsNamespace.use(async (socket, next) => {
     const userId = await getSocketUserId(socket);
     if (!userId) {
-      console.log("❌ Friend socket auth failed: No userId found");
+      log.info("Friend socket auth failed: No userId found");
       next(new Error("Unauthorized"));
       return;
     }
 
     socket.data.userId = userId;
-    console.log(`✅ Friend socket auth success: User ${userId}`);
+    log.info(`Friend socket auth success: User ${userId}`);
     next();
   });
 
@@ -82,24 +83,23 @@ export const setupFriendSocket = (io: Server): void => {
 
     const heartbeat = setInterval(() => {
       touchUserLastActive(userId).catch((error: unknown) => {
-        console.error("Failed to persist friend socket heartbeat:", error);
+        log.error("Failed to persist friend socket heartbeat:", error);
       });
     }, 60_000);
 
-    console.log(
-      `👥 Friend socket connected: User ${userId} socket ${socket.id}`,
+    log.info(
+      `Friend socket connected: User ${userId} socket ${socket.id}`,
     );
 
     socket.on("disconnect", () => {
       clearInterval(heartbeat);
       markUserOffline(userId, socket.id).catch((error: unknown) => {
-        console.error("Failed to persist friend socket disconnect:", error);
+        log.error("Failed to persist friend socket disconnect:", error);
       });
-      console.log(`👥 Friend socket disconnected: User ${userId}`);
+      log.info(`Friend socket disconnected: User ${userId}`);
     });
   });
 
-  console.log("✅ /friends namespace setup complete");
 };
 
 // Export a singleton instance that will be set during server initialization

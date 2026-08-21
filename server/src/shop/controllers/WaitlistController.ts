@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { ShopWaitlist } from "../models/ShopWaitlist";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("waitlist");
 
 export const joinWaitlist = async (
   req: Request,
@@ -45,7 +47,7 @@ export const joinWaitlist = async (
       message: "Successfully joined the waitlist",
     });
   } catch (error) {
-    console.error("Waitlist error:", error);
+    log.error("Waitlist error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",

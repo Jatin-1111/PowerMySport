@@ -6,6 +6,8 @@ import { IAcademyPendingReview, IOnboardingUploadUrl } from "../../types/index";
 import { sendEmail } from "../../utils/email";
 import { NotificationService } from "../../client/services/NotificationService";
 import { s3Service } from "../../shared/services/S3Service";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("academyOnboarding");
 
 export const UPLOAD_CONSTRAINTS = {
   IMAGES: {
@@ -592,7 +594,7 @@ export const submitAcademyForApproval = async (
       `,
     });
   } catch (error) {
-    console.error("Failed to send submission confirmation email:", error);
+    log.error("Failed to send submission confirmation email:", error);
   }
 
   return updatedAcademy;
@@ -675,7 +677,7 @@ export const approveAcademy = async (
       `,
     });
   } catch (error) {
-    console.error("Failed to send approval email:", error);
+    log.error("Failed to send approval email:", error);
   }
 
   try {
@@ -693,7 +695,7 @@ export const approveAcademy = async (
       });
     }
   } catch (error) {
-    console.error("Failed to send approval notification:", error);
+    log.error("Failed to send approval notification:", error);
   }
 
   return updatedAcademy;
@@ -730,7 +732,7 @@ export const rejectAcademy = async (
       `,
     });
   } catch (error) {
-    console.error("Failed to send rejection email:", error);
+    log.error("Failed to send rejection email:", error);
   }
 
   try {
@@ -748,7 +750,7 @@ export const rejectAcademy = async (
       });
     }
   } catch (error) {
-    console.error("Failed to send rejection notification:", error);
+    log.error("Failed to send rejection notification:", error);
   }
 
   return updatedAcademy;

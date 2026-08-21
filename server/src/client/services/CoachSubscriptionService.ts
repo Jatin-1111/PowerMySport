@@ -11,6 +11,8 @@ import {
 } from "../models/CoachSubscription";
 import { CoachSubscriptionPackage } from "../models/CoachSubscriptionPackage";
 import { SubscriptionFrequency } from "../models/CoachSubscriptionPackage";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("coachSubscription");
 
 const DEFAULT_GRACE_DAYS = 7;
 
@@ -205,7 +207,7 @@ export const subscribeToCoachPackage = async (params: {
         });
       }
     } catch (emailError) {
-      console.error("Failed to send subscription purchased email:", emailError);
+      log.error("Failed to send subscription purchased email:", emailError);
     }
   })();
 
@@ -319,7 +321,7 @@ export const cancelCoachSubscriptionByUser = async (params: {
         });
       }
     } catch (emailError) {
-      console.error("Failed to send subscription cancelled email:", emailError);
+      log.error("Failed to send subscription cancelled email:", emailError);
     }
   })();
 

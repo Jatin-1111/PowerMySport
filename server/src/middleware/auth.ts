@@ -12,6 +12,8 @@ import {
 import { ADMIN_ROLES } from "../constants/adminPermissions";
 import Admin from "../admin/models/Admin";
 import redis from "../config/redis";
+import { log as __rootLog } from "../utils/logger";
+const log = __rootLog.child("auth");
 
 declare global {
   namespace Express {
@@ -33,12 +35,12 @@ const touchAuthActivity = (userId: string): void => {
           { _id: userId },
           { $set: { lastActiveAt: new Date() } },
         ).catch((error: unknown) => {
-          console.error("Failed to persist auth activity:", error);
+          log.error("Failed to persist auth activity:", error);
         });
       }
     })
     .catch((error) => {
-      console.error("Redis error during touchAuthActivity:", error);
+      log.error("Redis error during touchAuthActivity:", error);
     });
 };
 

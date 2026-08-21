@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs";
 import mongoose, { Document, Schema } from "mongoose";
 import { S3Service } from "../../shared/services/S3Service";
 import { UserRole } from "../../types/index";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("user");
 
 export interface UserDocument extends Document {
   name: string;
@@ -287,7 +289,7 @@ userSchema.methods.refreshPhotoUrl = async function (
       604800,
     );
   } catch (error) {
-    console.error("Failed to refresh profile photo URL:", error);
+    log.error("Failed to refresh profile photo URL:", error);
   }
 };
 

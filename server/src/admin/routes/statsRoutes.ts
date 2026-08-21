@@ -19,6 +19,7 @@ import {
   getFinanceReconciliation,
   getFunnelSummary,
   getObservabilityStats,
+  getLatencyProfileStats,
   trackFunnelEvent,
   trackGuestEvents,
   getGuestActivity,
@@ -118,6 +119,11 @@ router.get(
   "/observability",
   requirePermission("analytics:view"),
   getObservabilityStats,
+);
+router.get(
+  "/observability/latency",
+  requirePermission("analytics:view"),
+  getLatencyProfileStats,
 );
 
 // Entity list/detail endpoints — gated by the same permission as their

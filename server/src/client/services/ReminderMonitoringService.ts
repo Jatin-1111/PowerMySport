@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import { ScheduledNotification } from "../models/ScheduledNotification";
 import { sendEmail } from "../../utils/email";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("reminderMonitoring");
 
 interface MonitoringStats {
   total: number;
@@ -299,9 +301,9 @@ export class ReminderMonitoringService {
         subject: `🚨 [ALERT] Reminder System Health Issues Detected - ${appName}`,
         html,
       });
-      console.log(`📧 Health alert sent to ${adminEmail}`);
+      log.info(`Health alert sent to ${adminEmail}`);
     } catch (error) {
-      console.error("Failed to send health alert email:", error);
+      log.error("Failed to send health alert email:", error);
     }
   }
 
@@ -443,9 +445,9 @@ export class ReminderMonitoringService {
         subject: `📊 Daily Reminder System Report - ${new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}`,
         html,
       });
-      console.log(`📧 Daily summary sent to ${adminEmail}`);
+      log.info(`Daily summary sent to ${adminEmail}`);
     } catch (error) {
-      console.error("Failed to send daily summary email:", error);
+      log.error("Failed to send daily summary email:", error);
     }
   }
 
@@ -479,8 +481,8 @@ export class ReminderMonitoringService {
 
       await reminder.save();
 
-      console.log(
-        `✅ Reminder ${reminderId} reset to PENDING for retry (total attempts: ${reminder.retryCount})`,
+      log.info(
+        `Reminder ${reminderId} reset to PENDING for retry (total attempts: ${reminder.retryCount})`,
       );
 
       return {
@@ -488,7 +490,7 @@ export class ReminderMonitoringService {
         message: `Reminder queued for retry (attempt ${reminder.retryCount + 1})`,
       };
     } catch (error) {
-      console.error("Failed to retry reminder:", error);
+      log.error("Failed to retry reminder:", error);
       return { success: false, message: "Failed to retry reminder" };
     }
   }
@@ -522,10 +524,10 @@ export class ReminderMonitoringService {
     const healthStatus = await this.checkSchedulerHealth();
 
     if (!healthStatus.isHealthy) {
-      console.warn("⚠️ Scheduler health check failed:", healthStatus.issues);
+      log.warn("Scheduler health check failed:", healthStatus.issues);
       await this.sendHealthAlert(healthStatus);
     } else {
-      console.log("✅ Scheduler health check passed");
+      log.info("Scheduler health check passed");
     }
   }
 }

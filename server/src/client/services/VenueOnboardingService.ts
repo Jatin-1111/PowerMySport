@@ -12,6 +12,8 @@ import {
 import { sendEmail } from "../../utils/email";
 import { s3Service } from "../../shared/services/S3Service";
 import { NotificationService } from "./NotificationService";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("venueOnboarding");
 
 /**
  * VenueOnboardingService
@@ -660,7 +662,7 @@ export const approveVenue = async (
       html: approvalEmailHtml,
     });
 
-    console.log(`✅ Approval email sent to ${venue.ownerEmail}`);
+    log.info(`Approval email sent to ${venue.ownerEmail}`);
 
     // Send in-app notification to venue owner
     if (user?._id) {
@@ -677,11 +679,11 @@ export const approveVenue = async (
           ...(isNewUser && tempPassword ? { hasCredentials: true } : {}),
         },
       }).catch((err: Error) =>
-        console.error("Failed to send venue approval notification:", err),
+        log.error("Failed to send venue approval notification:", err),
       );
     }
   } catch (error) {
-    console.error("❌ Failed to send approval email:", error);
+    log.error("Failed to send approval email:", error);
     // Don't throw - approval was successful, just email failed
   }
 
@@ -723,7 +725,7 @@ export const rejectVenue = async (
         rejectedAt: new Date().toISOString(),
       },
     }).catch((err: Error) =>
-      console.error("Failed to send venue rejection notification:", err),
+      log.error("Failed to send venue rejection notification:", err),
     );
   }
 
@@ -787,10 +789,10 @@ export const rejectVenue = async (
         html: rejectionEmailHtml,
       });
 
-      console.log(`✅ Rejection email sent to ${ownerEmail}`);
+      log.info(`Rejection email sent to ${ownerEmail}`);
     }
   } catch (emailError) {
-    console.error("❌ Failed to send venue rejection email:", emailError);
+    log.error("Failed to send venue rejection email:", emailError);
     // Don't throw — rejection status was already saved
   }
 
@@ -832,7 +834,7 @@ export const markVenueForReview = async (
         reviewStartedAt: new Date().toISOString(),
       },
     }).catch((err: Error) =>
-      console.error("Failed to send venue review notification:", err),
+      log.error("Failed to send venue review notification:", err),
     );
   }
 
@@ -897,11 +899,11 @@ export const markVenueForReview = async (
         html: reviewEmailHtml,
       });
 
-      console.log(`✅ Review notification email sent to ${ownerEmail}`);
+      log.info(`Review notification email sent to ${ownerEmail}`);
     }
   } catch (emailError) {
-    console.error(
-      "❌ Failed to send venue review notification email:",
+    log.error(
+      "Failed to send venue review notification email:",
       emailError,
     );
     // Don't throw — review status was already saved

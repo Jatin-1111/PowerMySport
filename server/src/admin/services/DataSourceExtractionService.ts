@@ -2,6 +2,8 @@ import { lookup } from "node:dns/promises";
 import { GoogleGenAI } from "@google/genai";
 import { DataSourceSubmissionDocument } from "../../shared/models/DataSourceSubmission";
 import { s3Service } from "../../shared/services/S3Service";
+import { log as __rootLog } from "../../utils/logger";
+const logger = __rootLog.child("dataSourceExtraction");
 
 /**
  * AI extraction for admin-submitted federation/tournament data sources
@@ -18,11 +20,13 @@ import { s3Service } from "../../shared/services/S3Service";
 
 const isDev = process.env.NODE_ENV !== "production";
 const log = {
-  info: (...args: unknown[]) => {
-    if (isDev) console.log(...args);
+  // Dev-only chatter: keep it off the prod stream, but route it through the
+  // real logger so it carries the namespace and request id like everything else.
+  info: (message: string, ...rest: unknown[]) => {
+    if (isDev) logger.info(message, ...rest);
   },
-  warn: (...args: unknown[]) => console.warn(...args),
-  error: (...args: unknown[]) => console.error(...args),
+  warn: (message: string, ...rest: unknown[]) => logger.warn(message, ...rest),
+  error: (message: string, ...rest: unknown[]) => logger.error(message, ...rest),
 };
 
 /**

@@ -1,8 +1,11 @@
+import { bootFact } from "./boot";
 import { Booking } from "../client/models/Booking";
 import { BookingPaymentTransaction } from "../client/models/BookingPayment";
 import { initiateRefund } from "../client/services/RefundService";
 import { NotificationService } from "../client/services/NotificationService";
 import { recordBookingEventFor } from "../client/services/BookingEventService";
+import { log as __rootLog } from "./logger";
+const log = __rootLog.child("timer");
 
 /**
  * Set booking expiration time (10 minutes from now)
@@ -100,7 +103,7 @@ export const expireOldBookings = async (): Promise<number> => {
               },
             });
 
-            console.log(
+            log.info(
               `Auto-refunded expired booking ${booking._id} (transaction ${transaction._id})`,
             );
 
@@ -118,7 +121,7 @@ export const expireOldBookings = async (): Promise<number> => {
               },
               { sendEmail: true },
             ).catch((notifyError) => {
-              console.error(
+              log.error(
                 `Failed to send expiration/refund notification for booking ${booking._id}:`,
                 notifyError,
               );
@@ -127,7 +130,7 @@ export const expireOldBookings = async (): Promise<number> => {
             // Don't let a refund failure block expiring the rest of the
             // batch — this booking stays EXPIRED and needs manual refund
             // follow-up, which is preferable to silently retrying forever.
-            console.error(
+            log.error(
               `Failed to auto-refund expired booking ${booking._id}:`,
               refundError,
             );
@@ -155,13 +158,13 @@ export const expireOldBookings = async (): Promise<number> => {
           }
         }
       } catch (error) {
-        console.error(`Error expiring booking ${booking._id}:`, error);
+        log.error(`Error expiring booking ${booking._id}:`, error);
       }
     }
 
     return expiredCount;
   } catch (error) {
-    console.error("Error expiring bookings:", error);
+    log.error("Error expiring bookings:", error);
     throw error;
   }
 };
@@ -171,17 +174,17 @@ export const expireOldBookings = async (): Promise<number> => {
  * Call this when the server starts
  */
 export const startExpirationJob = (): NodeJS.Timeout => {
-  console.log("Starting booking expiration job...");
+  bootFact("jobs", "booking-expiry 1m");
 
   // Run immediately on start
   expireOldBookings()
     .then((count) => {
       if (count > 0) {
-        console.log(`Expired ${count} old bookings on startup`);
+        log.info(`Expired ${count} stale booking(s) on startup`);
       }
     })
     .catch((error) => {
-      console.error("Error in initial expiration check:", error);
+      log.error("Error in initial expiration check:", error);
     });
 
   // Then run every minute
@@ -189,11 +192,11 @@ export const startExpirationJob = (): NodeJS.Timeout => {
     expireOldBookings()
       .then((count) => {
         if (count > 0) {
-          console.log(`Expired ${count} bookings`);
+          log.info(`Expired ${count} booking(s)`);
         }
       })
       .catch((error) => {
-        console.error("Error in expiration job:", error);
+        log.error("Error in expiration job:", error);
       });
   }, 60 * 1000); // Every 60 seconds
 

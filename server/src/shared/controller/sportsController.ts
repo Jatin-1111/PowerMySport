@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { sportsService } from "../services/SportsService";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("sports");
 
 /**
  * GET /api/sports
@@ -16,7 +18,7 @@ export const getAllSports = async (
       data: sports,
     });
   } catch (error) {
-    console.error("Error fetching sports:", error);
+    log.error("Error fetching sports:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch sports",
@@ -51,7 +53,7 @@ export const searchSports = async (
       data: sports,
     });
   } catch (error) {
-    console.error("Error searching sports:", error);
+    log.error("Error searching sports:", error);
     res.status(500).json({
       success: false,
       message: "Failed to search sports",
@@ -88,7 +90,7 @@ export const verifySport = async (
       data: verification,
     });
   } catch (error) {
-    console.error("Error verifying sport:", error);
+    log.error("Error verifying sport:", error);
     res.status(500).json({
       success: false,
       message: "Failed to verify sport",
@@ -152,7 +154,7 @@ export const addCustomSport = async (
       data: sport,
     });
   } catch (error) {
-    console.error("Error adding custom sport:", error);
+    log.error("Error adding custom sport:", error);
     res.status(500).json({
       success: false,
       message: "Failed to add custom sport",

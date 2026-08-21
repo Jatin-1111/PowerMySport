@@ -20,6 +20,8 @@ import {
   ProductDocument,
   Product as ProductModel,
 } from "../models/Ecommerce";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("ecommerce");
 
 // ============ INVENTORY SERVICE ============
 
@@ -637,7 +639,7 @@ export class OrderService {
           item.quantity,
         );
       } catch (err) {
-        console.error("[order] inventory deduction failed (non-fatal)", {
+        log.error("[order] inventory deduction failed (non-fatal)", {
           orderId,
           productVariantId: item.productVariantId.toString(),
           error: (err as Error)?.message || String(err),
@@ -649,7 +651,7 @@ export class OrderService {
     try {
       await this.cartService.clearCart(order.userId.toString());
     } catch (err) {
-      console.error("[order] cart clear failed (non-fatal)", {
+      log.error("[order] cart clear failed (non-fatal)", {
         orderId,
         error: (err as Error)?.message || String(err),
       });
@@ -659,7 +661,7 @@ export class OrderService {
     try {
       await this.queueOrderConfirmationEmail(order);
     } catch (err) {
-      console.error("[order] failed to queue confirmation email (non-fatal)", {
+      log.error("[order] failed to queue confirmation email (non-fatal)", {
         orderId,
         error: (err as Error)?.message || String(err),
       });
@@ -740,7 +742,7 @@ export class OrderService {
         status: "PENDING",
         attempts: 0,
       });
-      console.info("[order] queued confirmation email for", {
+      log.info("[order] queued confirmation email for", {
         orderId: order._id.toString(),
         email: user.email,
       });
@@ -1323,7 +1325,7 @@ export async function reconcileEcommerceOrderFromWebhookPayload(
     merchantOrderId,
   );
 
-  console.info("[ecommerce-reconcile] order confirmed from webhook", {
+  log.info("[ecommerce-reconcile] order confirmed from webhook", {
     merchantOrderId,
     orderId: paymentTx.orderId,
   });

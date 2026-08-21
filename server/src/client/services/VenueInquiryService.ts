@@ -2,6 +2,8 @@ import { User } from "../models/User";
 import { Venue } from "../models/Venue";
 import VenueInquiry, { IVenueInquiry } from "../models/VenueInquiry";
 import { sendCredentialsEmail } from "../../utils/email";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("venueInquiry");
 
 interface CreateInquiryPayload {
   venueName: string;
@@ -143,7 +145,7 @@ export const reviewInquiry = async (
         loginUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/login`,
       });
     } catch (error) {
-      console.error("Failed to send credentials email:", error);
+      log.error("Failed to send credentials email:", error);
       // Continue execution, don't fail the approval
     }
 

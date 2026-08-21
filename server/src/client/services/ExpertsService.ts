@@ -25,6 +25,8 @@ import {
 } from "./ExpertAvailabilityService";
 import { encryptValue, decryptValue } from "../../shared/utils/encryption";
 import { isSupportedSport, SUPPORTED_SPORTS } from "../../shared/constants/supportedSports";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("experts");
 
 const toObjectId = (id: string) => new mongoose.Types.ObjectId(id);
 const frontendUrl = () => process.env.FRONTEND_URL || "http://localhost:3000";
@@ -273,7 +275,7 @@ const notify = (
   NotificationService.send(
     { userId: userId.toString(), type, title, message, data },
     { sendEmail: email },
-  ).catch((err) => console.error("[experts] notification failed:", err));
+  ).catch((err) => log.error("[experts] notification failed:", err));
 };
 
 const expertUserIdOf = async (
@@ -1694,7 +1696,7 @@ export const markSessionRefundDone = async (sessionId: string) => {
         amount: session.amount, // ExpertSession.amount is in rupees
       });
     } catch (refundError) {
-      console.error(
+      log.error(
         `PhonePe refund failed for expert session ${sessionId} — manual transfer required:`,
         refundError,
       );
@@ -1702,7 +1704,7 @@ export const markSessionRefundDone = async (sessionId: string) => {
       // is required and will process it via bank transfer if PhonePe fails.
     }
   } else {
-    console.warn(
+    log.warn(
       `Expert session ${sessionId} has no merchantOrderId — cannot auto-refund via PhonePe. Manual bank transfer required.`,
     );
   }
@@ -1986,7 +1988,7 @@ export const reconcileExpertSessionPaymentFromWebhookPayload = async (
   if (["COMPLETED", "SUCCESS", "PAYMENT_SUCCESS"].includes(upper)) {
     await session.save();
     await applyExpertPaymentSuccess(session, { channel: "WEBHOOK" });
-    console.info(
+    log.info(
       `[ExpertWebhook] payment confirmed for session ${session._id}`,
     );
   } else if (
@@ -2002,7 +2004,7 @@ export const reconcileExpertSessionPaymentFromWebhookPayload = async (
       session.set("holdExpiresAt", undefined);
     }
     await session.save();
-    console.info(`[ExpertWebhook] payment failed for session ${session._id}`);
+    log.info(`[ExpertWebhook] payment failed for session ${session._id}`);
   } else {
     await session.save();
   }
@@ -2032,7 +2034,7 @@ export const expireUnpaidExpertHolds = async (): Promise<number> => {
         continue;
       }
     } catch (err) {
-      console.error(
+      log.error(
         `[expireUnpaidExpertHolds] failed to check PhonePe status for session ${session._id}, skipping this run`,
         err,
       );

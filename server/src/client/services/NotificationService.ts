@@ -8,6 +8,8 @@ import { User } from "../models/User";
 import { Server } from "socket.io";
 import { sendEmail } from "../../utils/email";
 import * as pushNotificationService from "./pushNotificationService";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("notification");
 
 export interface NotificationData {
   userId: string;
@@ -164,7 +166,7 @@ export class NotificationService {
       "email name notificationPreferences pushSubscriptions",
     );
     if (!user) {
-      console.error(`User ${data.userId} not found for notification`);
+      log.error(`User ${data.userId} not found for notification`);
       return null;
     }
 
@@ -207,7 +209,7 @@ export class NotificationService {
           emailTemplate,
           emailData,
         ).catch((err) => {
-          console.error("Failed to send email notification:", err);
+          log.error("Failed to send email notification:", err);
         });
       }
     }
@@ -232,7 +234,7 @@ export class NotificationService {
     payload: Record<string, unknown>,
   ): Promise<void> {
     if (!socketInstance) {
-      console.warn("Socket instance not initialized, cannot send notification");
+      log.warn("Socket instance not initialized, cannot send notification");
       return;
     }
 
@@ -341,7 +343,7 @@ export class NotificationService {
         });
       }
     } catch (error) {
-      console.error("Failed to send push notification:", error);
+      log.error("Failed to send push notification:", error);
     }
   }
 

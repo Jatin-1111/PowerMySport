@@ -2,6 +2,8 @@ import crypto from "crypto";
 import { sendEmail } from "../../utils/email";
 import { EmailVerification } from "../models/EmailVerification";
 import { RateLimit } from "../models/RateLimit";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("emailVerification");
 
 // Configuration
 const CODE_EXPIRY_MINUTES = 5;
@@ -213,14 +215,14 @@ export const sendVerificationCode = async (
       html,
     });
 
-    console.log(`✅ Verification code sent to ${email}`);
+    log.info(`Verification code sent to ${email}`);
 
     return {
       success: true,
       message: "Verification code sent successfully",
     };
   } catch (error) {
-    console.error("❌ Failed to send verification code:", error);
+    log.error("Failed to send verification code:", error);
     return {
       success: false,
       message: "Failed to send verification code. Please try again.",

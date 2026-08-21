@@ -13,7 +13,10 @@ import { ConciergeRequest } from "../../shared/models/ConciergeRequest";
 import Academy from "../models/Academy";
 import { DataSourceSubmission } from "../../shared/models/DataSourceSubmission";
 import { WebhookRecoveryService } from "../../shared/controllers/WebhookController";
-import { getObservabilitySnapshot } from "../../middleware/observability";
+import {
+  getLatencyProfiles,
+  getObservabilitySnapshot,
+} from "../../middleware/observability";
 import { transformDocuments } from "../../middleware/responseTransform";
 import { isUserOnline } from "../../shared/services/UserPresenceService";
 import { getAllVenues as getAllVenuesService } from "../../client/services/VenueService";
@@ -1375,6 +1378,36 @@ export const getObservabilityStats = async (
         error instanceof Error
           ? error.message
           : "Failed to retrieve observability stats",
+    });
+  }
+};
+
+
+/**
+ * Lifetime per-route p50/p95/p99 plus budget status. Kept separate from
+ * getObservabilityStats so that payload's shape stays frozen for the
+ * existing admin Server tab.
+ */
+export const getLatencyProfileStats = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: "Latency profiles retrieved",
+      data: {
+        profiles: getLatencyProfiles(),
+        generatedAt: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to retrieve latency profiles",
     });
   }
 };

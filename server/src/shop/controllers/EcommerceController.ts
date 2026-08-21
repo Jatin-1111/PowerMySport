@@ -27,6 +27,8 @@ import {
   OrderService,
   ProductService,
 } from "../services/EcommerceService";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("ecommerce");
 
 const getParam = (value: unknown): string | null =>
   typeof value === "string" && value.trim().length > 0 ? value : null;
@@ -613,7 +615,7 @@ export class EcommerceController {
           confirmedAt: new Date().toISOString(),
         },
       }).catch((err: Error) =>
-        console.error(
+        log.error(
           "[EcommerceController] Failed to send payment notification:",
           err,
         ),
@@ -731,7 +733,7 @@ export class EcommerceController {
             confirmedAt: new Date().toISOString(),
           },
         }).catch((err: Error) =>
-          console.error(
+          log.error(
             "[EcommerceController] Failed to send payment notification:",
             err,
           ),

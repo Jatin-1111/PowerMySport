@@ -1,6 +1,6 @@
 import cookieParser from "cookie-parser";
 import cors, { CorsOptions } from "cors";
-import "dotenv/config";
+import "./config/env";
 import express, { Express } from "express";
 import { hostname as osHostname } from "os";
 import mongoose from "mongoose";
@@ -9,6 +9,8 @@ import { authMiddleware, adminMiddleware } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
 import { errorLogger, requestLogger } from "./middleware/logger";
 import { observabilityMiddleware } from "./middleware/observability";
+import { requestContextMiddleware } from "./utils/requestContext";
+import { installTimingInstrumentation } from "./utils/timings";
 import {
   apiRateLimitMiddleware,
   securityHeadersMiddleware,
@@ -54,6 +56,8 @@ import tournamentEditionRoutes from "./shared/routes/tournamentEditionRoutes";
 import rankingRoutes from "./shared/routes/rankingRoutes";
 import conciergeRoutes from "./shared/routes/conciergeRoutes";
 import ecommerceRoutes from "./shop/routes/ecommerceRoutes";
+import { log as __rootLog } from "./utils/logger";
+const log = __rootLog.child("app");
 
 export const app: Express = express();
 
@@ -117,7 +121,7 @@ const corsOptions: CorsOptions = {
     }
 
     if (process.env.NODE_ENV === "development") {
-      console.warn(`CORS blocked for origin: ${origin}`);
+      log.warn(`CORS blocked for origin: ${origin}`);
     }
 
     callback(null, false);
@@ -136,6 +140,12 @@ const corsOptions: CorsOptions = {
   optionsSuccessStatus: 204,
 };
 
+// Patch mongoose/fetch/axios prototypes so per-request time attribution works.
+installTimingInstrumentation();
+
+// First in the chain: even a rejected preflight or a rate-limited request
+// needs an id to log against.
+app.use(requestContextMiddleware);
 app.use(cors(corsOptions));
 app.use(observabilityMiddleware);
 app.use(securityHeadersMiddleware);
@@ -159,9 +169,10 @@ app.use(
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-if (process.env.NODE_ENV === "development") {
-  app.use(requestLogger);
-}
+// Mounted in every environment now. The middleware itself decides what to
+// emit: full detail in dev, sampled + PII-stripped in production, and nothing
+// at all under LOG_REQUESTS=off.
+app.use(requestLogger);
 
 // Shared Domain
 app.use("/api/auth", authRoutes);
@@ -339,9 +350,7 @@ app.get(
   },
 );
 
-if (process.env.NODE_ENV === "development") {
-  app.use(errorLogger);
-}
+app.use(errorLogger);
 
 app.use(errorHandler);
 

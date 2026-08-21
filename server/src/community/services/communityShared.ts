@@ -55,6 +55,8 @@ import {
   removeMember,
 } from "./communityGroupMembership";
 import { CommunityGroupMember } from "../models/CommunityGroupMember";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("communityShared");
 
 /**
  * Shared building blocks for the community services.
@@ -197,7 +199,7 @@ export const resolveUserPhotoUrl = async (user?: {
       604800,
     );
   } catch (error) {
-    console.error("Failed to refresh community photo URL:", error);
+    log.error("Failed to refresh community photo URL:", error);
     return user.photoUrl || null;
   }
 };
@@ -217,7 +219,7 @@ export const resolveGroupPhotoUrl = async (group: {
       604800,
     );
   } catch (error) {
-    console.error("Failed to refresh community group photo URL:", error);
+    log.error("Failed to refresh community group photo URL:", error);
     return group.profilePicture || "";
   }
 };
@@ -268,7 +270,7 @@ export const trackCommunityRoleMixEvent = (
   payload: Record<string, unknown>,
 ) => {
   // Phase-3 telemetry hook: swap with analytics sink when available.
-  console.info("[community-role-mix]", event, payload);
+  log.info("[community-role-mix]", event, payload);
 };
 
 /** Accepted-answer points, applied in both directions so un-accepting and
@@ -318,7 +320,7 @@ export const sendCommunityNotification = (
     message,
     data,
   }).catch((error: unknown) => {
-    console.error("Failed to send community notification:", error);
+    log.error("Failed to send community notification:", error);
   });
 };
 

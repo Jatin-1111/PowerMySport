@@ -8,6 +8,8 @@ import { NotificationCategory } from "../models/Notification";
 import pushNotificationService from "./pushNotificationService";
 import { sendBookingReminderEmail, sendPlanCheckInEmail } from "../../utils/email";
 import mongoose from "mongoose";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("scheduledNotification");
 
 interface BookingReminderData {
   bookingId: mongoose.Types.ObjectId;
@@ -52,7 +54,7 @@ export class ScheduledNotificationService {
       };
 
       if (!enabled) {
-        console.log("Booking reminders disabled for user:", bookingData.userId);
+        log.info("Booking reminders disabled for user:", bookingData.userId);
         return;
       }
 
@@ -95,7 +97,7 @@ export class ScheduledNotificationService {
 
         // Don't schedule reminders in the past
         if (scheduledFor < new Date()) {
-          console.log(
+          log.info(
             `Skipping ${reminder.interval} reminder for booking ${bookingData.bookingId} - time has passed`,
           );
           continue;
@@ -132,12 +134,12 @@ export class ScheduledNotificationService {
           },
         });
 
-        console.log(
+        log.info(
           `Created ${reminder.interval} reminder for booking ${bookingData.bookingId} at ${scheduledFor.toISOString()}`,
         );
       }
     } catch (error) {
-      console.error("Error creating booking reminders:", error);
+      log.error("Error creating booking reminders:", error);
       throw error;
     }
   }
@@ -159,12 +161,12 @@ export class ScheduledNotificationService {
         },
       );
 
-      console.log(
+      log.info(
         `Cancelled ${result.modifiedCount} reminders for booking ${bookingId}`,
       );
       return result.modifiedCount;
     } catch (error) {
-      console.error("Error cancelling booking reminders:", error);
+      log.error("Error cancelling booking reminders:", error);
       throw error;
     }
   }
@@ -207,7 +209,7 @@ export class ScheduledNotificationService {
               await ScheduledNotification.findByIdAndUpdate(reminder._id, {
                 status: "CANCELLED",
               });
-              console.log(
+              log.info(
                 `Cancelled reminder ${reminder._id} - booking no longer valid`,
               );
               continue;
@@ -278,7 +280,7 @@ export class ScheduledNotificationService {
                     "24_HOURS" | "1_HOUR" | "15_MINUTES",
                   bookingId: reminder.bookingId?.toString() || "",
                 }).catch((err) => {
-                  console.error("Failed to send reminder email:", err);
+                  log.error("Failed to send reminder email:", err);
                   // Return rejected promise to count as failure
                   return Promise.reject(err);
                 }),
@@ -294,7 +296,7 @@ export class ScheduledNotificationService {
                   signals: Array.isArray(data.signals) ? data.signals : [],
                   checkInId: data.checkInId || "",
                 }).catch((err) => {
-                  console.error("Failed to send plan check-in email:", err);
+                  log.error("Failed to send plan check-in email:", err);
                   return Promise.reject(err);
                 }),
               );
@@ -310,11 +312,11 @@ export class ScheduledNotificationService {
           });
 
           stats.sent++;
-          console.log(
+          log.info(
             `Sent reminder ${reminder._id}${booking ? ` for booking ${booking._id}` : ""}`,
           );
         } catch (error) {
-          console.error(`Error processing reminder ${reminder._id}:`, error);
+          log.error(`Error processing reminder ${reminder._id}:`, error);
 
           await ScheduledNotification.findByIdAndUpdate(reminder._id, {
             status: "FAILED",
@@ -328,13 +330,11 @@ export class ScheduledNotificationService {
         }
       }
 
-      console.log(
-        `Processed ${stats.processed} reminders: ${stats.sent} sent, ${stats.failed} failed`,
-      );
+      // The scheduler decides whether this is worth a line — see reminderScheduler.
 
       return stats;
     } catch (error) {
-      console.error("Error processing pending reminders:", error);
+      log.error("Error processing pending reminders:", error);
       throw error;
     }
   }

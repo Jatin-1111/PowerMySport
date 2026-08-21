@@ -3,6 +3,8 @@ import { Review } from "../models/Review";
 import { Dispute } from "../models/Dispute";
 import { User } from "../models/User";
 import { sendDisputeStatusEmail } from "../../utils/email";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("dispute");
 
 /**
  * Automatic dispute resolution based on predefined rules
@@ -100,7 +102,7 @@ export const openDispute = async (
         });
       }
     } catch (emailError) {
-      console.error("Failed to send dispute email:", emailError);
+      log.error("Failed to send dispute email:", emailError);
     }
   })();
 

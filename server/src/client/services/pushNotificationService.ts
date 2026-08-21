@@ -1,7 +1,7 @@
 import webpush from "web-push";
-import dotenv from "dotenv";
-
-dotenv.config();
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("pushNotification");
+import "../../config/env";
 
 // Configure web-push with VAPID details
 const vapidKeys = {
@@ -54,12 +54,12 @@ export async function sendPushNotification(
 
     return true;
   } catch (error: any) {
-    console.error("Error sending push notification:", error);
+    log.error("Error sending push notification:", error);
 
     // Handle specific errors
     if (error.statusCode === 410 || error.statusCode === 404) {
       // Subscription has expired or is no longer valid
-      console.log("Subscription expired or invalid:", subscription.endpoint);
+      log.info("Subscription expired or invalid:", subscription.endpoint);
       return false;
     }
 
@@ -96,7 +96,7 @@ export async function sendPushNotificationToMultiple(
       }
     } catch (error) {
       results.failed++;
-      console.error(
+      log.error(
         `Failed to send notification to ${subscription.endpoint}:`,
         error,
       );

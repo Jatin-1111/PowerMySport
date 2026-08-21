@@ -69,8 +69,6 @@ const communityReportSchema = new Schema<CommunityReportDocument>(
 
 communityReportSchema.index({ targetType: 1, targetId: 1, createdAt: -1 });
 
-communityReportSchema.index({ targetType: 1, targetId: 1, createdAt: -1 });
-
 const notifyReportUpdated = (doc: any) => {
   if (!doc || !doc.reporterUserId) return;
   emitCommunityUserEvent(

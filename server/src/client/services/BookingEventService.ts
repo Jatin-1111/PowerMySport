@@ -9,6 +9,8 @@ import {
   BookingEventSubjectType,
   BookingEventType,
 } from "../models/BookingEvent";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("bookingEvent");
 
 /**
  * Write/read surface for the booking audit log.
@@ -106,7 +108,7 @@ export const recordBookingEvent = async (
   try {
     const subjectId = toObjectId(input.subjectId);
     if (!subjectId) {
-      console.error(
+      log.error(
         "[BookingEventService] refusing to record event without a valid subjectId",
         { type: input.type, subjectId: input.subjectId },
       );
@@ -141,7 +143,7 @@ export const recordBookingEvent = async (
     });
   } catch (error) {
     // Deliberately swallowed — see the contract at the top of this file.
-    console.error(
+    log.error(
       `[BookingEventService] failed to record ${input.type} for ${input.subjectType} ${String(
         input.subjectId,
       )}:`,

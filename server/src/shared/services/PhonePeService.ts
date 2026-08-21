@@ -6,6 +6,8 @@ import {
   StandardCheckoutClient,
   StandardCheckoutPayRequest,
 } from "@phonepe-pg/pg-sdk-node";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("phonePe");
 
 export interface PhonePeInitPaymentResult {
   merchantOrderId: string;
@@ -502,7 +504,7 @@ export const initiatePhonePeRefund = async (payload: {
 }): Promise<PhonePeRefundResult> => {
   const env = (process.env.PHONEPE_ENV || "SANDBOX").toUpperCase();
   const clientId = process.env.PHONEPE_CLIENT_ID || "(not set)";
-  console.info(
+  log.info(
     `[PhonePe] initiateRefund env=${env} clientId=${clientId} merchantRefundId=${payload.merchantRefundId} originalMerchantOrderId=${payload.originalMerchantOrderId} amountRupees=${payload.amount} amountPaise=${Math.round(payload.amount * 100)}`,
   );
 
@@ -513,14 +515,14 @@ export const initiatePhonePeRefund = async (payload: {
       getPhonePeClient().refund(request),
     );
   } catch (err) {
-    console.error(
+    log.error(
       `[PhonePe] initiateRefund FAILED merchantRefundId=${payload.merchantRefundId}`,
       err,
     );
     throw err;
   }
 
-  console.info(
+  log.info(
     `[PhonePe] initiateRefund SUCCESS merchantRefundId=${payload.merchantRefundId} refundId=${response.refundId} state=${response.state} amount=${response.amount}`,
   );
 

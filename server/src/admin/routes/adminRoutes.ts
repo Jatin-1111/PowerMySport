@@ -73,6 +73,8 @@ import {
 } from "../../client/controllers/promoCodeController";
 import { validateRequest } from "../../middleware/validation";
 import { adminLoginRateLimiter } from "../../middleware/rateLimit";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("admin");
 
 const router = Router();
 
@@ -207,7 +209,7 @@ router.post(
         },
       });
     } catch (error) {
-      console.error("Photo upload URL generation error:", error);
+      log.error("Photo upload URL generation error:", error);
       return res.status(500).json({
         success: false,
         message:

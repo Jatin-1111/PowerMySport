@@ -19,6 +19,8 @@ import express from "express";
 import crypto from "crypto";
 import PaymentWebhookEvent from "../models/PaymentWebhookEvent";
 import OutboxMessage from "../models/OutboxMessage";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("phonepeWebhook");
 
 const router = express.Router();
 
@@ -30,14 +32,14 @@ const getSignatureHeader = (req: express.Request) =>
 router.post("/webhook", async (req, res) => {
   const secret = process.env.PHONEPE_WEBHOOK_SECRET;
   if (!secret) {
-    console.error("PHONEPE_WEBHOOK_SECRET not configured");
+    log.error("PHONEPE_WEBHOOK_SECRET not configured");
     return res.status(500).send("server misconfigured");
   }
 
   // Use the rawBody set by express.json verify middleware in app.ts
   const rawBody = (req as any).rawBody as string | undefined;
   if (!rawBody) {
-    console.warn("No rawBody available for signature verification");
+    log.warn("No rawBody available for signature verification");
     return res.status(400).send("raw body required");
   }
 
@@ -51,11 +53,11 @@ router.post("/webhook", async (req, res) => {
     const a = Buffer.from(expected, "utf8");
     const b = Buffer.from(signature, "utf8");
     if (!signature || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-      console.warn("PhonePe webhook signature mismatch");
+      log.warn("PhonePe webhook signature mismatch");
       return res.status(401).send("invalid signature");
     }
   } catch (err) {
-    console.error("signature verify error", err);
+    log.error("signature verify error", err);
     return res.status(401).send("invalid signature");
   }
 
@@ -63,7 +65,7 @@ router.post("/webhook", async (req, res) => {
   try {
     payload = JSON.parse(rawBody);
   } catch (err) {
-    console.error("invalid json payload", err);
+    log.error("invalid json payload", err);
     return res.status(400).send("invalid json");
   }
 
@@ -91,10 +93,10 @@ router.post("/webhook", async (req, res) => {
         attempts: 0,
       });
     } else {
-      console.info("duplicate webhook received, eventId=", eventId);
+      log.info("duplicate webhook received, eventId=", eventId);
     }
   } catch (err) {
-    console.error("failed to persist webhook event", err);
+    log.error("failed to persist webhook event", err);
     return res.status(500).send("db error");
   }
 

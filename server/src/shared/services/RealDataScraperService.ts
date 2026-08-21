@@ -1,11 +1,13 @@
-import dotenv from "dotenv";
+import "../../config/env";
 import { GoogleGenAI } from "@google/genai";
 import { Tournament } from "../models/Tournament";
 import { Scholarship } from "../models/Scholarship";
 import { University } from "../models/University";
 import { AthleteStory } from "../models/AthleteStory";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("realDataScraper");
 
-dotenv.config();
+// Env is loaded once, quietly, by config/env.
 
 type EntityType = "tournament" | "scholarship" | "university" | "story";
 
@@ -266,13 +268,13 @@ async function extractWithGrounding(
     } catch (error) {
       const statusCode = (error as { status?: number }).status;
       if (statusCode === 429) {
-        console.warn(
+        log.warn(
           `[RealDataScraperService] ${type} model ${model} is rate-limited or over quota, trying next candidate.`,
         );
         continue;
       }
 
-      console.error(
+      log.error(
         `[RealDataScraperService] ${type} extraction failed with model ${model}:`,
         error,
       );
@@ -491,7 +493,7 @@ export class RealDataScraperService {
     stories: number;
   }> {
     if (!this.genAI) {
-      console.warn(
+      log.warn(
         "[RealDataScraperService] No GEMINI_API_KEY/GOOGLE_API_KEY set — skipping.",
       );
       return { tournaments: 0, scholarships: 0, universities: 0, stories: 0 };

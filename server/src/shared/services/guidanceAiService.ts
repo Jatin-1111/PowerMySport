@@ -2,6 +2,8 @@ import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import { SportBasePath } from "../models/SportBasePath";
 import { SportStatePath } from "../models/SportStatePath";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("guidanceAi");
 
 export const guidanceRequestSchema = z.object({
   child_age: z.number().int().min(3).max(21),
@@ -470,7 +472,7 @@ export const generateYouthSportsGuidance = async (
       // context, which the prompt already handles — better than grounding a
       // parent's guidance in figures nobody checked.
     } catch (e) {
-      console.error("Failed to fetch grounding context for guidance AI", e);
+      log.error("Failed to fetch grounding context for guidance AI", e);
     }
   }
 

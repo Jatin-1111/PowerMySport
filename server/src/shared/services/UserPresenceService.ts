@@ -1,6 +1,8 @@
 import redis from "../../config/redis";
 import { User } from "../../client/models/User";
 import { getNotificationSocket } from "../../client/sockets/notificationSocket";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("userPresence");
 
 const WRITE_THROTTLE_MS = 60 * 1_000;
 const PRESENCE_TTL_S = 300; // 5-minute safety-net TTL per user key
@@ -29,7 +31,7 @@ const persistLastActive = async (
       { $set: { lastActiveAt: new Date() } },
     );
   } catch (error) {
-    console.error("Failed to persist user lastActiveAt:", error);
+    log.error("Failed to persist user lastActiveAt:", error);
   }
 };
 
@@ -59,7 +61,7 @@ export const markUserOnline = async (
     await redis.hset(key, socketId, "1");
     await redis.expire(key, PRESENCE_TTL_S);
   } catch (err) {
-    console.error("[presence] markUserOnline redis error:", err);
+    log.error("[presence] markUserOnline redis error:", err);
   }
   await persistLastActive(userId);
   emitPresenceUpdate(userId, true);
@@ -84,7 +86,7 @@ export const markUserOffline = async (
       await redis.del(key); // clean up immediately — don't wait for TTL
     }
   } catch (err) {
-    console.error("[presence] markUserOffline redis error:", err);
+    log.error("[presence] markUserOffline redis error:", err);
   }
   await persistLastActive(userId, true);
   emitPresenceUpdate(userId, isStillOnline);

@@ -8,8 +8,11 @@ import {
   cleanupStaleBookingLocks,
 } from "../client/services/BookingService";
 import { cleanupExpiredCodes } from "../shared/services/EmailVerificationService";
+import { bootFact } from "./boot";
 import { cleanupExpiredCoachSubscriptions } from "../client/services/CoachSubscriptionService";
 import { processWaitlistNotifications } from "../shop/services/shopScheduledJobs";
+import { log as __rootLog } from "./logger";
+const log = __rootLog.child("scheduledJobs");
 
 /**
  * Auto-release payments 24 hours after session completion
@@ -40,8 +43,8 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
         status: "COMPLETED",
       });
       if (!confirmedTx) {
-        console.warn(
-          `⚠️ Skipping payout release for booking ${booking._id}: no confirmed payment transaction found`,
+        log.warn(
+          `Skipping payout release for booking ${booking._id}: no confirmed payment transaction found`,
         );
         continue;
       }
@@ -89,12 +92,12 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
     }
 
     if (releasedCount > 0) {
-      console.log(
-        `✅ Auto-released payments for ${releasedCount} completed booking(s)`,
+      log.info(
+        `Auto-released payments for ${releasedCount} completed booking(s)`,
       );
     }
   } catch (error) {
-    console.error("❌ Error releasing completed booking payments:", error);
+    log.error("Error releasing completed booking payments:", error);
   }
 };
 
@@ -186,8 +189,8 @@ export const retryPendingBookingRefunds = async (): Promise<void> => {
           },
         });
       } catch (err) {
-        console.error(
-          `❌ Refund retry failed for booking ${booking._id}:`,
+        log.error(
+          `Refund retry failed for booking ${booking._id}:`,
           err,
         );
         // Leave refundStatus as PENDING — try again next run.
@@ -212,12 +215,12 @@ export const retryPendingBookingRefunds = async (): Promise<void> => {
     }
 
     if (retried > 0) {
-      console.log(
-        `✅ Refund retry: ${retried} attempted, ${succeeded} immediately completed`,
+      log.info(
+        `Refund retry: ${retried} attempted, ${succeeded} immediately completed`,
       );
     }
   } catch (error) {
-    console.error("❌ Error retrying pending booking refunds:", error);
+    log.error("Error retrying pending booking refunds:", error);
   }
 };
 
@@ -232,12 +235,12 @@ export const pollPendingRefunds = async (): Promise<void> => {
     const result = await updatePendingRefundStatuses();
 
     if (result.checked > 0) {
-      console.log(
-        `✅ Refund polling: ${result.checked} checked, ${result.completed} completed, ${result.failed} failed`,
+      log.info(
+        `Refund polling: ${result.checked} checked, ${result.completed} completed, ${result.failed} failed`,
       );
     }
   } catch (error) {
-    console.error("❌ Error polling pending refunds:", error);
+    log.error("Error polling pending refunds:", error);
   }
 };
 
@@ -246,7 +249,7 @@ export const pollPendingRefunds = async (): Promise<void> => {
  * Scheduled to run every 15–60 minutes depending on environment.
  */
 export const runScheduledCleanup = async (): Promise<void> => {
-  console.log("🔄 Starting scheduled cleanup tasks...");
+  const done: string[] = [];
 
   try {
     await retryPendingBookingRefunds();
@@ -254,16 +257,16 @@ export const runScheduledCleanup = async (): Promise<void> => {
     await releaseCompletedBookingPayments();
 
     const expiredBookingsCount = await cleanupExpiredBookings();
-    console.log(`✅ Cancelled ${expiredBookingsCount} expired booking(s)`);
+    if (expiredBookingsCount) done.push(`${expiredBookingsCount} booking(s) cancelled`);
 
     const staleLocks = await cleanupStaleBookingLocks();
-    console.log(`✅ Cleaned up ${staleLocks} stale booking lock(s)`);
+    if (staleLocks) done.push(`${staleLocks} stale lock(s) cleared`);
 
     await cleanupExpiredCodes();
-    console.log(`✅ Cleaned up expired email verification codes`);
 
     const expiredSubscriptions = await cleanupExpiredCoachSubscriptions();
-    console.log(`✅ Expired ${expiredSubscriptions} coach subscription(s)`);
+    if (expiredSubscriptions)
+      done.push(`${expiredSubscriptions} subscription(s) expired`);
 
     await processWaitlistNotifications();
 
@@ -279,28 +282,28 @@ export const runScheduledCleanup = async (): Promise<void> => {
       } = await import("../client/services/ExpertsService");
       const expiredHolds = await expireUnpaidExpertHolds();
       if (expiredHolds > 0)
-        console.log(`✅ Expired ${expiredHolds} unpaid expert hold(s)`);
+        log.info(`Expired ${expiredHolds} unpaid expert hold(s)`);
       const momReminders = await sendExpertMomReminders();
       if (momReminders > 0)
-        console.log(`✅ Sent ${momReminders} session-notes reminder(s)`);
+        log.info(`Sent ${momReminders} session-notes reminder(s)`);
       const reminded = await sendExpertReviewReminders();
       if (reminded > 0)
-        console.log(`✅ Sent ${reminded} expert review reminder(s)`);
+        log.info(`Sent ${reminded} expert review reminder(s)`);
       const releasedPayouts = await releaseExpertSessionPayouts();
       if (releasedPayouts > 0)
-        console.log(
-          `✅ Auto-released ${releasedPayouts} expert session payout(s)`,
+        log.info(
+          `Auto-released ${releasedPayouts} expert session payout(s)`,
         );
       const linkNudges = await sendExpertMeetingLinkNudges();
       if (linkNudges > 0)
-        console.log(`✅ Sent ${linkNudges} meeting-link nudge(s)`);
+        log.info(`Sent ${linkNudges} meeting-link nudge(s)`);
       const startReminders = await sendSessionStartReminders();
       if (startReminders > 0)
-        console.log(
-          `✅ Sent ${startReminders} session-starting-soon reminder(s)`,
+        log.info(
+          `Sent ${startReminders} session-starting-soon reminder(s)`,
         );
     } catch (expertErr) {
-      console.error("❌ Expert session maintenance failed:", expertErr);
+      log.error("Expert session maintenance failed:", expertErr);
     }
 
     // ── Pending account deletions ────────────────────────────────────────────
@@ -310,17 +313,21 @@ export const runScheduledCleanup = async (): Promise<void> => {
       );
       const finalized = await finalizePendingAccountDeletions();
       if (finalized > 0)
-        console.log(`✅ Finalized ${finalized} pending account deletion(s)`);
+        log.info(`Finalized ${finalized} pending account deletion(s)`);
     } catch (deletionErr) {
-      console.error(
-        "❌ Pending account deletion finalization failed:",
+      log.error(
+        "Pending account deletion finalization failed:",
         deletionErr,
       );
     }
 
-    console.log("✅ Scheduled cleanup completed successfully");
+    // Silence when there was nothing to do — this runs every 15 minutes and
+    // a no-op sweep is not news.
+    if (done.length) log.info(`cleanup: ${done.join(", ")}`);
   } catch (error) {
-    console.error("❌ Error during scheduled cleanup:", error);
+    log.error("Scheduled cleanup failed", {
+      err: error instanceof Error ? error.message : String(error),
+    });
     throw error;
   }
 };
@@ -330,7 +337,6 @@ export const runScheduledCleanup = async (): Promise<void> => {
  * Call this once when the server starts.
  */
 export const initializeScheduledJobs = (): void => {
-  console.log("⏰ Initializing scheduled jobs...");
 
   // ── General cleanup ──────────────────────────────────────────────────────
   const defaultCleanupIntervalMinutes =
@@ -347,7 +353,7 @@ export const initializeScheduledJobs = (): void => {
     try {
       await runScheduledCleanup();
     } catch (error) {
-      console.error("❌ Scheduled cleanup failed:", error);
+      log.error("Scheduled cleanup failed:", error);
     }
   }, CLEANUP_INTERVAL);
   cleanupIntervalHandle.unref();
@@ -357,14 +363,12 @@ export const initializeScheduledJobs = (): void => {
     try {
       await runScheduledCleanup();
     } catch (error) {
-      console.error("❌ Initial cleanup failed:", error);
+      log.error("Initial cleanup failed:", error);
     }
   }, 5_000);
   initialCleanupHandle.unref();
 
-  console.log(
-    `⏰ Cleanup jobs scheduled every ${CLEANUP_INTERVAL / 60_000} minutes`,
-  );
+  bootFact("jobs", `cleanup ${CLEANUP_INTERVAL / 60_000}m`);
 
   // ── Pathway pre-warm (once at startup) ───────────────────────────────────
   // Pre-warming of 'any' locality generic sports is disabled.

@@ -2,6 +2,8 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import redis from "../config/redis";
 import { IUserPayload } from "../types";
+import { log as __rootLog } from "./logger";
+const log = __rootLog.child("jwt");
 
 export type DecodedJwtPayload = IUserPayload & {
   jti?: string;
@@ -20,7 +22,7 @@ if (!JWT_SECRET) {
   );
 }
 if (JWT_SECRET.length < 32) {
-  console.warn(
+  log.warn(
     "WARNING: JWT_SECRET is shorter than 32 characters. Use a longer, " +
       "high-entropy secret in production.",
   );

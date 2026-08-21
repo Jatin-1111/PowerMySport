@@ -4,6 +4,8 @@ import { NotificationCategory } from "../models/Notification";
 import { z } from "zod";
 import * as pushNotificationService from "../services/pushNotificationService";
 import { User } from "../models/User";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("notification");
 
 /**
  * Get notifications for the authenticated user
@@ -553,7 +555,7 @@ export const sendTestPushNotification = async (
       },
     });
   } catch (error) {
-    console.error("Error sending test push notification:", error);
+    log.error("Error sending test push notification:", error);
     next(error);
   }
 };

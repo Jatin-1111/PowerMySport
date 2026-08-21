@@ -1,4 +1,7 @@
 import mongoose from "mongoose";
+import { bootFact } from "../utils/boot";
+import { log as __rootLog } from "../utils/logger";
+const log = __rootLog.child("database");
 
 let isListenersAttached = false;
 let connectionPromise: Promise<typeof mongoose> | null = null;
@@ -28,21 +31,21 @@ export const connectDB = async (): Promise<void> => {
 
     if (!isListenersAttached) {
       mongoose.connection.on("connected", () => {
-        console.log("✅ MongoDB connected successfully");
+        bootFact("mongo", "connected");
       });
 
       mongoose.connection.on("error", (err) => {
-        console.error("❌ MongoDB connection error:", err);
+        log.error("MongoDB connection error", { err: err?.message || err });
       });
 
       mongoose.connection.on("disconnected", () => {
-        console.warn("⚠️ MongoDB disconnected");
+        log.warn("MongoDB disconnected");
       });
 
       if (!process.env.VERCEL) {
         process.on("SIGINT", async () => {
           await mongoose.connection.close();
-          console.log("🛑 MongoDB connection closed due to app termination");
+          log.info("MongoDB connection closed due to app termination");
           process.exit(0);
         });
       }
@@ -55,8 +58,9 @@ export const connectDB = async (): Promise<void> => {
     connectionPromise = null;
 
     // Log connection pool stats on startup
-    console.log(
-      `🔌 Database Pool initialized: Min ${options.minPoolSize} / Max ${options.maxPoolSize} connections`,
+    bootFact(
+      "mongo",
+      `pool ${options.minPoolSize}–${options.maxPoolSize}`,
     );
 
     // Drop the old unique index on RoadmapChatSession so multiple sessions per
@@ -65,13 +69,13 @@ export const connectDB = async (): Promise<void> => {
       await mongoose.connection.db
         ?.collection("roadmapchatsessions")
         .dropIndex("userId_1_sportSlug_1");
-      console.log("✅ Dropped unique RoadmapChatSession index (if present)");
+      // Index dropped (or was never there) — not worth a boot line either way.
     } catch {
       // Index already dropped or never existed — fine
     }
   } catch (error) {
     connectionPromise = null;
-    console.error("❌ MongoDB connection failed:", error);
+    log.error("MongoDB connection failed:", error);
     throw error;
   }
 };

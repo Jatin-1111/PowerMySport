@@ -8,6 +8,8 @@ import {
 } from "../models/Coach";
 import { s3Service } from "../../shared/services/S3Service";
 import { ICoach, IOwnVenueDetails, ServiceMode } from "../../types/index";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("coach");
 
 const COACH_LISTING_SELECT =
   "_id userId photoUrl profileImage bio sports hourlyRate sportPricing serviceMode ownVenueDetails rating reviewCount verificationStatus isVerified verifiedAt baseLocation serviceRadiusKm";
@@ -21,7 +23,7 @@ const resolveCoachVenueImageUrl = async (key: string): Promise<string> => {
     try {
       return await s3Service.generateDownloadUrl(key, "verification", 604800);
     } catch (verificationError) {
-      console.error(`Failed to refresh coach venue image URL for ${key}:`, {
+      log.error(`Failed to refresh coach venue image URL for ${key}:`, {
         imageError,
         verificationError,
       });
@@ -172,7 +174,7 @@ const refreshCoachMediaUrls = async <T extends Record<string, any>>(
         604800,
       );
     } catch (error) {
-      console.error("Failed to refresh coach profile photo URL:", error);
+      log.error("Failed to refresh coach profile photo URL:", error);
     }
   }
 

@@ -21,6 +21,8 @@ import { recordAuditLog } from "../services/AuditLogService";
 import { getAdminsWithPermission, resolveAdminAppUrl } from "../services/AdminService";
 import { sendDataSourceReadyForReviewEmail } from "../../utils/email";
 import { SUPPORTED_SPORTS, isSupportedSport, toSupportedSlug } from "../../shared/constants/supportedSports";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("dataSourceAdmin");
 
 const ALLOWED_PDF_TYPES = ["application/pdf"];
 
@@ -64,7 +66,7 @@ async function notifyReviewers(submission: {
       ),
     );
   } catch (error) {
-    console.error("Failed to notify data-source reviewers:", error);
+    log.error("Failed to notify data-source reviewers:", error);
   }
 }
 

@@ -25,6 +25,8 @@ import {
   updateDependent,
   updateProfile,
 } from "../services/AuthService";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("auth");
 
 const authCookieDomain = process.env.AUTH_COOKIE_DOMAIN?.trim();
 
@@ -614,7 +616,7 @@ export const graduateDependentHandler = async (
       },
     });
   } catch (error) {
-    console.error("Graduate dependent error:", error);
+    log.error("Graduate dependent error:", error);
     res.status(400).json({
       success: false,
       message: error instanceof Error ? error.message : "Graduation failed",
@@ -800,7 +802,7 @@ export const getProfilePictureUploadUrlHandler = async (
       data: result,
     });
   } catch (error) {
-    console.error("Profile picture upload URL error:", error);
+    log.error("Profile picture upload URL error:", error);
     res.status(400).json({
       success: false,
       message:

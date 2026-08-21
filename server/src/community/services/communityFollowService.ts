@@ -11,6 +11,8 @@ import {
   normalizeFollowTargetId,
 } from "./communityShared";
 import mongoose from "mongoose";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("communityFollow");
 
 /**
  * Followed groups and topics.
@@ -81,7 +83,7 @@ export const communityFollowService = {
     if (staleIds.length) {
       void CommunityFollow.deleteMany({ _id: { $in: staleIds } }).catch(
         (error: unknown) => {
-          console.error("Failed to prune stale community follows:", error);
+          log.error("Failed to prune stale community follows:", error);
         },
       );
     }

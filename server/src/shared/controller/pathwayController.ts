@@ -4,6 +4,8 @@ import { AthleteStory } from "../models/AthleteStory";
 import { PathwayGuide } from "../models/PathwayGuide";
 import { Tournament } from "../models/Tournament";
 import { realDataScraperService } from "../services/RealDataScraperService";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("pathway");
 
 // ─── Pathways (public) ───────────────────────────────────────────────────────
 //
@@ -249,7 +251,7 @@ export const getPathwayStories = async (
           ...(state && typeof state === "string" ? { city: state.trim() } : {}),
         })
         .catch((err) =>
-          console.error(
+          log.error(
             "[pathwayController] Background story scrape failed:",
             err,
           ),

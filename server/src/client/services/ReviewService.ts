@@ -4,6 +4,8 @@ import { Review, ReviewDocument } from "../models/Review";
 import { Venue } from "../models/Venue";
 import { User } from "../models/User";
 import { sendReviewReceivedEmail } from "../../utils/email";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("review");
 
 export interface CreateReviewPayload {
   bookingId: string;
@@ -131,7 +133,7 @@ export const createReview = async (
         });
       }
     } catch (emailError) {
-      console.error("Failed to send review email:", emailError);
+      log.error("Failed to send review email:", emailError);
     }
   })();
 

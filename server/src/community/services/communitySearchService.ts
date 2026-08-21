@@ -8,6 +8,8 @@ import {
   clampForSnippet,
   stripHtml,
 } from "./communityShared";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("communitySearch");
 
 /**
  * One text search across questions and published stories.
@@ -64,7 +66,7 @@ export const communitySearchService = {
       try {
         return await run();
       } catch (error) {
-        console.error(`Community search: ${label} half failed`, error);
+        log.error(`Community search: ${label} half failed`, error);
         return [];
       }
     };

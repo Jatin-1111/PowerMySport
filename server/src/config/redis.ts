@@ -1,4 +1,7 @@
 import Redis from "ioredis";
+import { bootFact } from "../utils/boot";
+import { log as __rootLog } from "../utils/logger";
+const log = __rootLog.child("redis");
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 
@@ -8,11 +11,11 @@ const redis = new Redis(REDIS_URL, {
 });
 
 redis.on("connect", () => {
-  console.log("✅ Redis connected successfully");
+  bootFact("redis", "connected");
 });
 
 redis.on("error", (err) => {
-  console.warn("[redis] connection error:", err.message);
+  log.warn("[redis] connection error:", err.message);
 });
 
 /**
@@ -42,10 +45,10 @@ export const createRedisPubSub = () => {
   });
 
   pub.on("error", (err) =>
-    console.warn("[redis:pub] connection error:", err.message),
+    log.warn("[redis:pub] connection error:", err.message),
   );
   sub.on("error", (err) =>
-    console.warn("[redis:sub] connection error:", err.message),
+    log.warn("[redis:sub] connection error:", err.message),
   );
 
   return { pub, sub };

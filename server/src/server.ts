@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./config/env";
 import http from "http";
 import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
@@ -27,6 +27,10 @@ import { startOutboxWorker } from "./shared/services/OutboxService";
 import { initializeScraperScheduler } from "./utils/scraperScheduler";
 import { initializeAitaRankingScheduler } from "./utils/aitaRankingScheduler";
 import { initializeScheduledJobs } from "./utils/scheduledJobs";
+import { startLogDigest, stopLogDigest } from "./utils/logDigest";
+import { bootFact, bootReady, bootWarn } from "./utils/boot";
+import { log as __rootLog } from "./utils/logger";
+const log = __rootLog.child("server");
 const PORT = process.env.PORT || 5000;
 
 let stopOutboxWorker: (() => void) | null = null;
@@ -102,12 +106,10 @@ const startServer = async () => {
       io.adapter(createAdapter(pub, sub));
       redisPub = pub;
       redisSub = sub;
-      console.log(
-        "🔴 Redis adapter attached to Socket.IO (multi-instance mode)",
-      );
+      bootFact("redis", "socket.io adapter attached");
     } catch {
-      console.warn(
-        "⚠️  Redis unavailable — running in single-instance mode (start Redis to enable horizontal scaling)",
+      bootWarn(
+        "Redis unavailable — single-instance mode (start Redis to enable horizontal scaling)",
       );
       // Stop ioredis retry loop — without this it floods the logs with
       // connection errors indefinitely even though we've fallen back to
@@ -136,12 +138,10 @@ const startServer = async () => {
     setCommunityRealtimeSocketInstance(io);
     setBookingSocketInstance(io);
 
-    console.log("🔧 Socket.IO namespaces configured:");
-    console.log("   - /community (requires community profile)");
-    console.log("   - /friends (basic auth)");
-    console.log("   - /presence (user presence tracking)");
-    console.log("   - /notifications (real-time monitoring)");
-    console.log("   - /bookings (booking slot locks)");
+    bootFact(
+      "sockets",
+      "/community /friends /presence /notifications /bookings",
+    );
 
     let server: http.Server | null = null;
     let attempts = 5;
@@ -156,10 +156,7 @@ const startServer = async () => {
       io.attach(server);
 
       server.on("listening", () => {
-        console.log(`\n✅ Server is running on http://localhost:${port}`);
-        console.log(`💬 Community socket ready`);
-        console.log(`👥 Friend socket ready`);
-        console.log(`📝 API Documentation:`);
+        bootFact("http", `http://localhost:${port}`);
 
         // Guard: only start background jobs once, even if retried ports.
         if (!jobsStarted) {
@@ -167,19 +164,20 @@ const startServer = async () => {
 
           // Scheduled cleanup jobs (moved from app.ts to here so they only
           // run after the server is confirmed listening).
+          // Periodic terminal digest (dev by default, opt-in via LOG_DIGEST_MS).
+          startLogDigest();
+
           initializeScheduledJobs();
 
           // Start booking expiration job
           startExpirationJob();
-          console.log(`⏰ Booking expiration job started`);
 
           // Start reminder scheduler
           initializeReminderScheduler();
-          console.log(`🔔 Booking reminder scheduler started\n`);
 
           // Start outbox worker to handle message notification delivery and retries
           stopOutboxWorker = startOutboxWorker();
-          console.log("📨 Outbox worker started");
+          bootFact("jobs", "outbox");
 
           // Weekly Lane-B scrapers + every-2-days Lane-A tournament calendar
           // extraction. (Was imported but never invoked before — the weekly
@@ -188,19 +186,22 @@ const startServer = async () => {
 
           // Hourly tripwire + Thursday sweep for the AITA ranking mirror.
           initializeAitaRankingScheduler();
+
+          // Everything above has registered its boot facts; print the block.
+          bootReady();
         }
       });
 
       server.on("error", (err: any) => {
         if (err && err.code === "EADDRINUSE" && attempts > 0) {
-          console.warn(`Port ${port} in use, trying ${port + 1}...`);
+          log.warn(`Port ${port} in use, trying ${port + 1}...`);
           attempts -= 1;
           // Close this server before trying the next port.
           server?.close(() => setTimeout(() => startListening(port + 1), 100));
           return;
         }
 
-        console.error("❌ Failed to start server:", err);
+        log.error("Failed to start server:", err);
         process.exit(1);
       });
 
@@ -209,34 +210,35 @@ const startServer = async () => {
 
     // Graceful shutdown
     const shutdown = async () => {
-      console.log("\n🛑 Shutting down server...");
+      log.info("Shutting down server...");
+      stopLogDigest();
       try {
         if (server) {
           server.close(() => {
-            console.log("🛑 HTTP server closed");
+            log.info("HTTP server closed");
             try {
               stopOutboxWorker?.();
-              console.log("📨 Outbox worker stopped");
+              log.info("Outbox worker stopped");
             } catch (err) {
-              console.error("Failed stopping outbox worker:", err);
+              log.error("Failed stopping outbox worker:", err);
             }
           });
         } else {
           try {
             stopOutboxWorker?.();
-            console.log("📨 Outbox worker stopped");
+            log.info("Outbox worker stopped");
           } catch (err) {
-            console.error("Failed stopping outbox worker:", err);
+            log.error("Failed stopping outbox worker:", err);
           }
         }
 
         // Disconnect Redis pub/sub clients cleanly (only if Redis was available)
         if (redisPub && redisSub) {
           await Promise.allSettled([redisPub.quit(), redisSub.quit()]);
-          console.log("🔴 Redis pub/sub disconnected");
+          log.info("Redis pub/sub disconnected");
         }
       } catch (err) {
-        console.error("Error during shutdown:", err);
+        log.error("Error during shutdown:", err);
       }
     };
 
@@ -245,7 +247,7 @@ const startServer = async () => {
 
     process.on("SIGTERM", shutdown);
   } catch (error) {
-    console.error("❌ Failed to start server:", error);
+    log.error("Failed to start server:", error);
     process.exit(1);
   }
 };

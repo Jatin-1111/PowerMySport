@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { ConciergeRequest } from "../../shared/models/ConciergeRequest";
 import { S3Service } from "../../shared/services/S3Service";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("adminConcierge");
 
 /**
  * Fetch all concierge requests for the admin panel, sorted by newest first
@@ -16,7 +18,7 @@ export const getAllConciergeRequests = async (
 
     res.status(200).json({ success: true, requests });
   } catch (error) {
-    console.error("Error fetching admin concierge requests:", error);
+    log.error("Error fetching admin concierge requests:", error);
     res.status(500).json({ success: false, error: "Failed to fetch requests" });
   }
 };
@@ -55,7 +57,7 @@ export const updateConciergeRequestStatus = async (
 
     res.status(200).json({ success: true, request: updatedRequest });
   } catch (error) {
-    console.error("Error updating concierge request status:", error);
+    log.error("Error updating concierge request status:", error);
     res.status(500).json({ success: false, error: "Failed to update status" });
   }
 };
@@ -97,7 +99,7 @@ export const getConciergeDocumentDownloadUrl = async (
 
     res.status(200).json({ success: true, url: downloadUrl });
   } catch (error) {
-    console.error("Error generating document download URL:", error);
+    log.error("Error generating document download URL:", error);
     res.status(500).json({ success: false, error: "Failed to generate URL" });
   }
 };

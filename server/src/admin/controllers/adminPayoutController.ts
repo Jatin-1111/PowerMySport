@@ -9,6 +9,8 @@ import { markSessionPayoutDone } from "../../client/services/ExpertsService";
 import { sendPayoutProcessedEmail } from "../../utils/email";
 import { decryptValue } from "../../shared/utils/encryption";
 import mongoose from "mongoose";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("adminPayout");
 
 const decryptPayoutMethod = (m: IPayoutMethod): IPayoutMethod => {
   const out: IPayoutMethod = { ...m };
@@ -166,7 +168,7 @@ export const listPendingPayouts = async (
       data: populatedPayouts,
     });
   } catch (error) {
-    console.error("listPendingPayouts error:", error);
+    log.error("listPendingPayouts error:", error);
     res.status(500).json({
       success: false,
       message:
@@ -210,7 +212,7 @@ export const markPayoutsAsPaid = async (
           await markSessionPayoutDone(sessionId);
           updatedCount++;
         } catch (err) {
-          console.warn(
+          log.warn(
             `Skipping expert payout for session ${sessionId}:`,
             err instanceof Error ? err.message : err,
           );
@@ -297,7 +299,7 @@ export const markPayoutsAsPaid = async (
             });
           }
         } catch (emailError) {
-          console.error("Failed to send payout email:", emailError);
+          log.error("Failed to send payout email:", emailError);
         }
       })();
 
@@ -312,7 +314,7 @@ export const markPayoutsAsPaid = async (
       session.endSession();
     }
   } catch (error) {
-    console.error("markPayoutsAsPaid error:", error);
+    log.error("markPayoutsAsPaid error:", error);
     res.status(500).json({
       success: false,
       message:

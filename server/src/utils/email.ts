@@ -1,4 +1,6 @@
 import nodemailer from "nodemailer";
+import { log as __rootLog } from "./logger";
+const log = __rootLog.child("email");
 
 // Create reusable transporter
 const createTransporter = () => {
@@ -76,10 +78,10 @@ export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
       );
     }
 
-    console.log(`✅ Email sent to ${options.to}: ${info.messageId}`);
+    log.info(`Email sent to ${options.to}: ${info.messageId}`);
   } catch (error) {
-    console.error(
-      `❌ Email sending failed [to=${options.to}] [subject=${options.subject}]: ${describeSmtpError(error)}`,
+    log.error(
+      `Email sending failed [to=${options.to}] [subject=${options.subject}]: ${describeSmtpError(error)}`,
     );
     if (options.critical) throw error;
     // Otherwise swallowed by design — see `critical` above.

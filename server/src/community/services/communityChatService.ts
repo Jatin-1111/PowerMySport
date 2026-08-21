@@ -42,6 +42,8 @@ import {
   trackCommunityRoleMixEvent,
 } from "./communityShared";
 import mongoose from "mongoose";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("communityChat");
 
 /**
  * Conversations and messages: sending, editing, reactions, receipts.
@@ -1008,7 +1010,7 @@ export const communityChatService = {
         attempts: 0,
       });
     } catch (err) {
-      console.error("Failed to enqueue outbox delivery:", err);
+      log.error("Failed to enqueue outbox delivery:", err);
       // Fallback to best-effort direct notifications if enqueue fails
       for (const participantId of otherParticipantIds) {
         sendCommunityNotification(

@@ -8,6 +8,8 @@ import {
 } from "../../shared/services/UserPresenceService";
 import { isTokenRevoked, verifyToken } from "../../utils/jwt";
 import { assertSubscribableRoom } from "../services/CommunityRealtimeService";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("community");
 
 const extractTokenFromCookie = (cookieHeader?: string): string | null => {
   if (!cookieHeader) {
@@ -111,12 +113,12 @@ export const setupCommunitySocket = (io: Server): void => {
       await CommunityService.touchLastSeen(userId);
       await markUserOnline(userId, socket.id);
     } catch (error) {
-      console.error("Failed to initialize community socket presence:", error);
+      log.error("Failed to initialize community socket presence:", error);
     }
 
     const heartbeat = setInterval(() => {
       touchUserLastActive(userId).catch((error: unknown) => {
-        console.error("Failed to persist community socket heartbeat:", error);
+        log.error("Failed to persist community socket heartbeat:", error);
       });
     }, 60_000);
 
@@ -709,13 +711,13 @@ export const setupCommunitySocket = (io: Server): void => {
       try {
         await markUserOffline(userId, socket.id);
       } catch (error) {
-        console.error("Failed to mark community user offline:", error);
+        log.error("Failed to mark community user offline:", error);
       }
 
       try {
         await CommunityService.touchLastSeen(userId);
       } catch (error) {
-        console.error(
+        log.error(
           "Failed to persist community last seen on disconnect:",
           error,
         );

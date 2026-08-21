@@ -9,6 +9,8 @@ import {
 import { User } from "../../client/models/User";
 import { S3Service } from "../../shared/services/S3Service";
 import { normalizeTags } from "./communityQnaUtils";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("blog");
 
 const s3Service = new S3Service();
 
@@ -97,7 +99,7 @@ const resolveUserPhotoUrl = async (user?: {
       604800,
     );
   } catch (error) {
-    console.error("Failed to refresh blog author photo URL:", error);
+    log.error("Failed to refresh blog author photo URL:", error);
     return user.photoUrl || null;
   }
 };
@@ -110,7 +112,7 @@ const resolveBlogImageUrl = async (
   try {
     return await s3Service.generateDownloadUrl(key, "images", 604800);
   } catch (error) {
-    console.error("Failed to resolve blog image URL:", error);
+    log.error("Failed to resolve blog image URL:", error);
     return null;
   }
 };

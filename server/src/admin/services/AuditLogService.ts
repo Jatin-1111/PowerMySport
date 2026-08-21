@@ -1,4 +1,6 @@
 import { AdminAuditLog } from "../models/AdminAuditLog";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("auditLog");
 
 interface RecordAuditLogInput {
   adminId: string;
@@ -19,7 +21,7 @@ export const recordAuditLog = async (
   try {
     await AdminAuditLog.create(entry);
   } catch (error) {
-    console.error("Failed to record audit log entry:", error);
+    log.error("Failed to record audit log entry:", error);
   }
 };
 

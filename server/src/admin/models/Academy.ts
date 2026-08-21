@@ -610,8 +610,8 @@ academySchema.pre("save", function () {
   }
 });
 
-// Create index for slug (used in /academies/[slug] route)
-academySchema.index({ slug: 1 });
+// slug is already indexed by `unique: true` on the field itself — declaring it
+// again here is what produced the duplicate-index warning at boot.
 
 // Create geospatial index for location-based queries
 academySchema.index({ location: "2dsphere" });

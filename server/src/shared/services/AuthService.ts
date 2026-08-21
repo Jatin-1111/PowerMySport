@@ -12,6 +12,8 @@ import {
 import { normalizeAddressInput } from "../utils/address";
 import { S3Service } from "./S3Service";
 import { OAuth2Client } from "google-auth-library";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("auth");
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const googleOAuthClient = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -134,7 +136,7 @@ export const registerUser = async (
     email: user.email,
     role: user.role,
   }).catch((error) => {
-    console.error("Failed to send welcome email:", error);
+    log.error("Failed to send welcome email:", error);
   });
 
   return user;
@@ -211,7 +213,7 @@ export const requestPasswordReset = async (email: string): Promise<string> => {
     email: user.email,
     resetToken,
   }).catch((error) => {
-    console.error("Failed to send password reset email:", error);
+    log.error("Failed to send password reset email:", error);
   });
 
   return "If this email is registered, you will receive a reset link shortly.";
@@ -247,7 +249,7 @@ export const resetPassword = async (
   // Security confirmation that the password was changed (fire-and-forget).
   if (user.email) {
     sendPasswordChangedEmail({ name: user.name, email: user.email }).catch(
-      (error) => console.error("Failed to send password-changed email:", error),
+      (error) => log.error("Failed to send password-changed email:", error),
     );
   }
 };
@@ -284,7 +286,7 @@ export const changePassword = async (
 
   if (user.email) {
     sendPasswordChangedEmail({ name: user.name, email: user.email }).catch(
-      (error) => console.error("Failed to send password-changed email:", error),
+      (error) => log.error("Failed to send password-changed email:", error),
     );
   }
 };
@@ -529,7 +531,7 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
     try {
       await run();
     } catch (error) {
-      console.error(
+      log.error(
         `finalizeAccountDeletion: failed to clean up ${label} for user ${userId}:`,
         error,
       );
@@ -548,7 +550,7 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
         try {
           await s3Service.deleteFile(doc.s3Key, "documents");
         } catch (error) {
-          console.error(
+          log.error(
             `finalizeAccountDeletion: failed to delete S3 document ${doc.s3Key} for user ${userId}:`,
             error,
           );
@@ -557,7 +559,7 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
     }
     await ConciergeRequest.deleteMany({ userId });
   } catch (error) {
-    console.error(
+    log.error(
       `finalizeAccountDeletion: failed to clean up ConciergeRequest for user ${userId}:`,
       error,
     );
@@ -569,7 +571,7 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
     const { AnalyticsEvent } = await import("../../admin/models/AnalyticsEvent");
     await AnalyticsEvent.updateMany({ userId }, { $unset: { userId: "" } });
   } catch (error) {
-    console.error(
+    log.error(
       `finalizeAccountDeletion: failed to strip userId from AnalyticsEvent for user ${userId}:`,
       error,
     );
@@ -594,7 +596,7 @@ export const finalizePendingAccountDeletions = async (): Promise<number> => {
     try {
       await finalizeAccountDeletion(candidate._id.toString());
     } catch (error) {
-      console.error(
+      log.error(
         `finalizePendingAccountDeletions: failed to finalize user ${candidate._id.toString()}:`,
         error,
       );
@@ -692,7 +694,7 @@ export const googleLogin = async (
         email: user.email,
         role: user.role,
       }).catch((error) => {
-        console.error("Failed to send welcome email:", error);
+        log.error("Failed to send welcome email:", error);
       });
     }
   }
@@ -774,7 +776,7 @@ export const graduateDependent = async (
       { session },
     );
 
-    console.log(`Transferred ${result.modifiedCount} bookings to new user`);
+    log.info(`Transferred ${result.modifiedCount} bookings to new user`);
 
     // Remove the dependent from Player collection
     await Player.deleteOne({ _id: dependent._id }).session(session);
@@ -788,7 +790,7 @@ export const graduateDependent = async (
       email: newUser.email,
       role: newUser.role,
     }).catch((error) => {
-      console.error("Failed to send welcome email:", error);
+      log.error("Failed to send welcome email:", error);
     });
 
     return newUser;
