@@ -3,7 +3,6 @@ import {
   BadgeCheck,
   BrainCircuit,
   Compass,
-  MessageCircle,
   MessageSquare,
   MessageSquareQuote,
   Newspaper,
@@ -11,7 +10,6 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { getMainAppUrl } from "@/lib/auth/redirect";
 import DynamicCommunityPosts from "@/modules/community/components/page/home/DynamicCommunityPosts";
 import DynamicFeaturedQA from "@/modules/community/components/page/home/DynamicFeaturedQA";
 import {
@@ -38,17 +36,16 @@ type ValueProp = {
 
 const valueProps: ValueProp[] = [
   {
-    title: "Groups & People Near You",
+    title: "Discover",
     description:
-      "Browse sport-wise groups and find parents, players, and coaches in your city to follow and talk to.",
+      "Parents, Players, Coaches in your neighbourhood. Connect & learn.",
     href: "/discover",
     cta: "Open Discover",
     icon: Compass,
   },
   {
-    title: "Stories & Expert Advice",
-    description:
-      "Read coaching tips, training insights, and first-hand journeys written by coaches, parents, and players.",
+    title: "Knowledge",
+    description: "Read & share blogs, experiences.",
     href: "/blog",
     cta: "Read the blog",
     icon: Newspaper,
@@ -56,107 +53,32 @@ const valueProps: ValueProp[] = [
   {
     title: "Questions & Answers",
     description:
-      "Ask about coaching, training, gear, injuries, nutrition, or tournaments and get answers from people who have been there.",
+      "Ask about coaching, training, gear, injuries, nutrition, or tournaments and get answers from experienced parents and experts.",
     href: "/questions",
     cta: "Browse Q&A",
     icon: MessageSquare,
   },
 ];
 
-type HeroStep = {
-  title: string;
-  description: string;
-  cta: string;
-  icon: typeof ShieldCheck;
-  /** Absolute for the main app, root-relative for a community route. */
-  href: string;
-  external?: boolean;
-};
-
-const heroSteps: HeroStep[] = [
-  {
-    title: "Read what others did",
-    description:
-      "First-hand write-ups from parents and coaches on trials, training, and picking a sport.",
-    cta: "Open the blog",
-    icon: Newspaper,
-    href: "/blog",
-  },
-  {
-    title: "Ask what worries you",
-    description:
-      "Put your question to parents and coaches who have already made the same call.",
-    cta: "Go to Q&A",
-    icon: MessageCircle,
-    href: "/questions",
-  },
-  {
-    title: "Then book with confidence",
-    description:
-      "Pick a verified coach or venue once you know what your child actually needs.",
-    cta: "Browse coaches",
-    icon: BadgeCheck,
-    href: `${getMainAppUrl()}/coaches`,
-    external: true,
-  },
-];
-
-function HeroStep({ step, index }: { step: HeroStep; index: number }) {
-  const { title, description, cta, icon: Icon, href, external } = step;
-  const inner = (
-    <>
-      <span className="relative z-10 flex h-11 w-11 flex-none items-center justify-center rounded-2xl border border-slate-200 bg-white text-power-orange shadow-sm transition group-hover:border-power-orange/40">
-        <Icon className="h-[18px] w-[18px]" />
-      </span>
-      <span className="min-w-0">
-        <span className="flex items-baseline gap-2">
-          <span className="text-[11px] font-bold tabular-nums text-slate-300">
-            0{index + 1}
-          </span>
-          <span className="text-[15px] font-semibold text-slate-900">
-            {title}
-          </span>
-        </span>
-        <span className="mt-1 block text-[13px] leading-5 text-slate-500">
-          {description}
-        </span>
-        <span className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-semibold text-power-orange">
-          {cta}
-          <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-        </span>
-      </span>
-    </>
-  );
-
-  const className =
-    "group flex gap-3 rounded-2xl p-2 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange";
-
-  return external ? (
-    <a href={href} className={className}>
-      {inner}
-    </a>
-  ) : (
-    <Link href={href} className={className}>
-      {inner}
-    </Link>
-  );
-}
-
 function SectionHeading({
   eyebrow,
   title,
   description,
 }: {
-  eyebrow: string;
+  /** Optional: a section whose heading already names it does not need an
+   *  eyebrow repeating the same words above it. */
+  eyebrow?: string;
   title: string;
   description: string;
 }) {
   return (
     <div className="max-w-3xl">
-      <p className="text-[11px] font-bold uppercase tracking-[0.26em] text-power-orange">
-        {eyebrow}
-      </p>
-      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+      {eyebrow ? (
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.26em] text-power-orange">
+          {eyebrow}
+        </p>
+      ) : null}
+      <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
         {title}
       </h2>
       <p className="mt-2 text-sm leading-6 text-slate-600 sm:text-base">
@@ -209,8 +131,11 @@ export default function CommunityLandingPage() {
             <div className="pointer-events-none absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.14),transparent_65%)] blur-2xl" />
             <div className="pointer-events-none absolute inset-0 opacity-60 [background-image:linear-gradient(to_right,rgba(15,23,42,0.045)_1px,transparent_1px),linear-gradient(to_bottom,rgba(15,23,42,0.045)_1px,transparent_1px)] [background-size:44px_44px] [mask-image:radial-gradient(circle_at_15%_0%,black,transparent_65%)]" />
 
-            <div className="relative grid gap-7 px-5 py-7 sm:px-7 sm:py-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-10 lg:px-9 lg:py-9">
-              <div>
+            {/* Single column. The hero used to carry a three-step panel on
+                the right, which competed with the headline and repeated the
+                cards immediately below it. */}
+            <div className="relative px-5 py-9 sm:px-7 sm:py-12 lg:px-9 lg:py-16">
+              <div className="mx-auto max-w-3xl text-center">
                 <span className="inline-flex items-center gap-2 rounded-full border border-power-orange/25 bg-white/90 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-power-orange">
                   <Users className="h-3.5 w-3.5" />
                   Parent-first youth sports community
@@ -221,13 +146,13 @@ export default function CommunityLandingPage() {
                     child&apos;s sports journey.
                   </span>
                 </h1>
-                <p className="mt-4 max-w-xl text-[15px] leading-7 text-slate-600 sm:text-base">
+                <p className="mx-auto mt-4 max-w-xl text-[15px] leading-7 text-slate-600 sm:text-base">
                   Before you book a coach or a venue, get the knowledge you
                   need. Ask questions, read what other parents did, and hear
                   from the people who have already been through it.
                 </p>
 
-                <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
+                <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:justify-center">
                   <Link
                     href="/questions"
                     className="group inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
@@ -244,7 +169,7 @@ export default function CommunityLandingPage() {
                   </Link>
                 </div>
 
-                <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-[13px] font-medium text-slate-500">
+                <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[13px] font-medium text-slate-500">
                   <span className="inline-flex items-center gap-1.5">
                     <MessageSquareQuote className="h-4 w-4 text-power-orange" />
                     Parent-to-parent advice
@@ -260,32 +185,13 @@ export default function CommunityLandingPage() {
                 </div>
               </div>
 
-              <div className="rounded-[1.6rem] border border-slate-200/80 bg-white/85 p-5 shadow-lg shadow-slate-900/5 backdrop-blur">
-                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">
-                  How parents use PowerMySport
-                </p>
-                <ol className="mt-4 space-y-1">
-                  {heroSteps.map((step, index) => (
-                    <li key={step.title} className="relative">
-                      {index < heroSteps.length - 1 && (
-                        <span
-                          aria-hidden
-                          className="absolute left-[1.35rem] top-11 h-[calc(100%-1.75rem)] w-px bg-gradient-to-b from-slate-200 to-transparent"
-                        />
-                      )}
-                      <HeroStep step={step} index={index} />
-                    </li>
-                  ))}
-                </ol>
-              </div>
             </div>
           </section>
 
           <section className="space-y-6">
             <SectionHeading
-              eyebrow="Why join the community"
-              title="Three ways to get answers before you commit"
-              description="Find the people going through the same thing, read what coaches and parents have written, or just ask your question outright."
+              title="Why Join the Community"
+              description="Engage, Learn & Share experiences on Sports. Help your child with the right guidance."
             />
             <div className="grid gap-4 md:grid-cols-3">
               {valueProps.map((prop) => (
