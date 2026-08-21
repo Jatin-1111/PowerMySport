@@ -117,7 +117,7 @@ export interface ConversationReplyPreview {
   id: string;
   senderId: string;
   senderDisplayName: string;
-  type: "TEXT" | "IMAGE";
+  type: "TEXT" | "IMAGE" | "FILE" | "VOICE";
   /** Already clamped and, for images, replaced with a label — never the S3 key. */
   content: string;
   isDeleted: boolean;
@@ -137,13 +137,19 @@ export interface ConversationMessage {
   senderDisplayName: string;
   /** TEXT: the message text. IMAGE: the S3 object key (never the full URL). */
   content: string;
-  /** 'IMAGE' when the message is a shared image, 'TEXT' (default) otherwise. */
-  type?: "TEXT" | "IMAGE";
-  /** Present for IMAGE messages — pixel dimensions to prevent layout shift. */
+  /** TEXT (default), IMAGE, FILE (document) or VOICE (recorded clip). */
+  type?: "TEXT" | "IMAGE" | "FILE" | "VOICE";
   metadata?: {
+    /** IMAGE: pixel dimensions, to prevent layout shift. */
     width?: number;
     height?: number;
     caption?: string;
+    /** FILE: the original name, shown and used as the download filename. */
+    fileName?: string;
+    fileSize?: number;
+    mimeType?: string;
+    /** VOICE: clip length, so a duration renders before the audio loads. */
+    durationMs?: number;
   } | null;
   replyTo?: ConversationReplyPreview | null;
   reactions?: MessageReaction[];

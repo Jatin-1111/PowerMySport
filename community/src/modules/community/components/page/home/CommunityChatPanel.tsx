@@ -1,20 +1,23 @@
 "use client";
 
 import {
+  ArrowUp,
+  Check,
+  CheckCheck,
   ChevronLeft,
+  FileText,
+  Loader2,
+  Mic,
+  MoreVertical,
   PanelRightClose,
   PanelRightOpen,
-  RotateCcw,
-  X,
-  Loader2,
-  MoreVertical,
-  Check,
-  Pencil,
-  Smile,
   Paperclip,
-  CheckCheck,
-  ArrowUp,
+  Pencil,
   Pin,
+  RotateCcw,
+  Smile,
+  Square,
+  X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageBubble } from "@/modules/community/components/chat/MessageBubble";
@@ -74,6 +77,10 @@ export default function CommunityChatPanel({ page }: Props) {
     pendingImageFile,
     setPendingImageFile,
     imageInputRef,
+    documentInputRef,
+    handleSendAttachment,
+    isRecording,
+    toggleVoiceRecording,
     hasMoreMessages,
     isLoadingMoreMessages,
     loadMoreMessages,
@@ -782,6 +789,21 @@ export default function CommunityChatPanel({ page }: Props) {
           }}
         />
 
+        {/* Hidden document input — the accept list mirrors the server's
+            allowlist, which is what actually enforces it. */}
+        <input
+          ref={documentInputRef}
+          type="file"
+          accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx"
+          className="sr-only"
+          aria-hidden="true"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void handleSendAttachment(file, "FILE");
+            e.target.value = "";
+          }}
+        />
+
         {/* Pending image preview */}
         <AnimatePresence>
           {pendingImageFile && (
@@ -903,6 +925,40 @@ export default function CommunityChatPanel({ page }: Props) {
             ) : (
               <Paperclip size={19} strokeWidth={2} />
             )}
+          </button>
+
+          {/* Attach document */}
+          <button
+            type="button"
+            disabled={
+              !canSendSelectedConversationMessage ||
+              isSending ||
+              isUploadingImage
+            }
+            onClick={() => documentInputRef.current?.click()}
+            aria-label="Attach file"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-power-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <FileText size={18} strokeWidth={2} />
+          </button>
+
+          {/* Record a voice note */}
+          <button
+            type="button"
+            disabled={
+              !canSendSelectedConversationMessage ||
+              isSending ||
+              isUploadingImage
+            }
+            onClick={() => void toggleVoiceRecording()}
+            aria-label={isRecording ? "Stop recording" : "Record voice message"}
+            className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${
+              isRecording
+                ? "bg-red-50 text-red-600"
+                : "text-slate-500 hover:bg-slate-100 hover:text-power-orange"
+            }`}
+          >
+            {isRecording ? <Square size={16} /> : <Mic size={19} strokeWidth={2} />}
           </button>
 
           {/* Send button */}

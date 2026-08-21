@@ -320,6 +320,10 @@ export function useCommunityPage(options?: {
   const memberProfileRequestIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const documentInputRef = useRef<HTMLInputElement | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordingChunksRef = useRef<Blob[]>([]);
+  const recordingStartedAtRef = useRef<number>(0);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const isInitialMessageLoadRef = useRef<boolean>(false);
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2291,6 +2295,205 @@ export function useCommunityPage(options?: {
     }
   };
 
+  /**
+   * Send a document or a voice clip. Mirrors the image flow: optimistic bubble,
+   * direct-to-S3 upload against a presigned POST, then persist the message
+   * record. The socket path is preferred so other participants see it without
+   * a refetch, with the HTTP route as the offline fallback.
+   */
+  const handleSendAttachment = async (
+    file: File,
+    kind: "FILE" | "VOICE",
+    durationMs?: number,
+  ) => {
+    if (!selectedConversation) return;
+
+    const optimisticId = `temp-att-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const optimisticMessage: ConversationMessage = {
+      id: optimisticId,
+      conversationId: selectedConversation.id,
+      conversationType: selectedConversation.conversationType,
+      senderId: profile?.userId || "me",
+      senderDisplayName: "You",
+      content: "",
+      type: kind,
+      metadata: {
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+        ...(durationMs ? { durationMs } : {}),
+      },
+      createdAt: new Date().toISOString(),
+      messageStatus: "SENDING",
+      readBy: profile?.userId ? [profile.userId] : [],
+      participantIds: [
+        profile?.userId || "me",
+        selectedConversation.otherParticipant.id,
+      ],
+    };
+
+    appendMessage(optimisticMessage);
+    setIsUploadingImage(true);
+
+    try {
+      const presign = await communityService.getAttachmentUploadUrl(
+        selectedConversation.id,
+        file.type,
+        kind,
+      );
+
+      const form = new FormData();
+      Object.entries(presign.fields).forEach(([key, value]) => {
+        form.append(key, value);
+      });
+      // The file part must be appended last — S3 ignores any field that comes
+      // after it in a multipart POST.
+      form.append("file", file);
+
+      const upload = await fetch(presign.url, { method: "POST", body: form });
+      if (!upload.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const metadata = {
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+        ...(durationMs ? { durationMs } : {}),
+      };
+
+      const socket = getCommunitySocket();
+      let confirmedMessage: ConversationMessage;
+      if (socket.connected) {
+        const ack = await new Promise<
+          | { success: true; data: ConversationMessage }
+          | { success: false; message?: string }
+        >((resolve) => {
+          const timeoutId = setTimeout(
+            () => resolve({ success: false, message: "Send timed out" }),
+            15000,
+          );
+          socket.emit(
+            "community:sendMessage",
+            {
+              conversationId: selectedConversation.id,
+              content: presign.key,
+              type: kind,
+              metadata,
+            },
+            (result: unknown) => {
+              clearTimeout(timeoutId);
+              resolve(
+                (result as
+                  | { success: true; data: ConversationMessage }
+                  | { success: false; message?: string }) || {
+                  success: false,
+                  message: "Invalid server response",
+                },
+              );
+            },
+          );
+        });
+        if (!ack.success) {
+          throw new Error(ack.message || "Failed to send attachment");
+        }
+        confirmedMessage = { ...ack.data, messageStatus: "SENT" as const };
+      } else {
+        const sent = await communityService.sendAttachmentMessage(
+          selectedConversation.id,
+          presign.key,
+          kind,
+          metadata,
+        );
+        confirmedMessage = { ...sent, messageStatus: "SENT" as const };
+      }
+
+      removeMessageById(optimisticId);
+      if (confirmedMessage.conversationId === selectedConversation.id) {
+        appendMessage(confirmedMessage);
+      }
+      queueConversationRefresh();
+    } catch (e) {
+      updateMessageById(optimisticId, (msg) => ({
+        ...msg,
+        messageStatus: "FAILED" as const,
+      }));
+      toast.error(
+        e instanceof Error ? e.message : "Failed to send attachment",
+      );
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const [isRecording, setIsRecording] = useState(false);
+
+  /**
+   * Press to start, press again to send. The clip is uploaded on stop rather
+   * than streamed, which keeps it on the same presigned-POST path as every
+   * other attachment.
+   */
+  const toggleVoiceRecording = async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      return;
+    }
+
+    if (typeof window === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      toast.error("Recording is not supported in this browser");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Safari does not produce audio/webm; letting the browser pick and
+      // reading back what it chose keeps the MIME honest for the allowlist.
+      const preferred = MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : "audio/mp4";
+      const recorder = new MediaRecorder(stream, { mimeType: preferred });
+
+      recordingChunksRef.current = [];
+      recordingStartedAtRef.current = Date.now();
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordingChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        // Release the mic straight away — a live indicator lingering after the
+        // clip is sent reads as the app still listening.
+        stream.getTracks().forEach((track) => track.stop());
+        setIsRecording(false);
+
+        const durationMs = Date.now() - recordingStartedAtRef.current;
+        const blob = new Blob(recordingChunksRef.current, {
+          type: preferred,
+        });
+        recordingChunksRef.current = [];
+
+        if (durationMs < 700 || blob.size === 0) {
+          toast.error("That was too short to send");
+          return;
+        }
+
+        const extension = preferred === "audio/webm" ? "webm" : "m4a";
+        const file = new File([blob], `voice-message.${extension}`, {
+          type: preferred,
+        });
+        void handleSendAttachment(file, "VOICE", durationMs);
+      };
+
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setIsRecording(true);
+    } catch {
+      toast.error("Microphone access was denied");
+    }
+  };
+
   // ── Chat Enhancement Handlers ──
 
   const handleClearChat = useCallback(
@@ -2543,6 +2746,10 @@ export function useCommunityPage(options?: {
     handleCopyMessage,
     handleSendMessage,
     handleReactToMessage,
+    handleSendAttachment,
+    documentInputRef,
+    isRecording,
+    toggleVoiceRecording,
     replyingTo,
     setReplyingTo,
     handleSendImageMessage,

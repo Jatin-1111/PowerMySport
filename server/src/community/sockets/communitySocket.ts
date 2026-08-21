@@ -1,5 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { CommunityService } from "../services/CommunityService";
+import type { CommunityMessageType } from "../models/CommunityMessage";
 import {
   markUserOffline,
   markUserOnline,
@@ -414,11 +415,27 @@ export const setupCommunitySocket = (io: Server): void => {
         const conversationId = String(payload?.conversationId || "");
         const content = String(payload?.content || "").trim();
         const rawType = payload?.type;
-        const messageType: "TEXT" | "IMAGE" =
-          rawType === "IMAGE" ? "IMAGE" : "TEXT";
+        const messageType: CommunityMessageType =
+          rawType === "IMAGE" ||
+          rawType === "FILE" ||
+          rawType === "VOICE"
+            ? rawType
+            : "TEXT";
+        // Every field is re-read and re-clamped here rather than trusting the
+        // payload shape: this is the socket path, so nothing has been through
+        // the HTTP request schema.
         const metadata:
-          { width?: number; height?: number; caption?: string } | undefined =
-          messageType === "IMAGE" && payload?.metadata
+          | {
+              width?: number;
+              height?: number;
+              caption?: string;
+              fileName?: string;
+              fileSize?: number;
+              mimeType?: string;
+              durationMs?: number;
+            }
+          | undefined =
+          messageType !== "TEXT" && payload?.metadata
             ? {
                 width:
                   typeof payload.metadata.width === "number"
@@ -431,6 +448,22 @@ export const setupCommunitySocket = (io: Server): void => {
                 caption:
                   typeof payload.metadata.caption === "string"
                     ? payload.metadata.caption.substring(0, 2000)
+                    : undefined,
+                fileName:
+                  typeof payload.metadata.fileName === "string"
+                    ? payload.metadata.fileName.substring(0, 255)
+                    : undefined,
+                fileSize:
+                  typeof payload.metadata.fileSize === "number"
+                    ? payload.metadata.fileSize
+                    : undefined,
+                mimeType:
+                  typeof payload.metadata.mimeType === "string"
+                    ? payload.metadata.mimeType.substring(0, 100)
+                    : undefined,
+                durationMs:
+                  typeof payload.metadata.durationMs === "number"
+                    ? payload.metadata.durationMs
                     : undefined,
               }
             : undefined;

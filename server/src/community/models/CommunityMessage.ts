@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export type CommunityMessageType = "TEXT" | "IMAGE";
+export type CommunityMessageType = "TEXT" | "IMAGE" | "FILE" | "VOICE";
 
 export interface CommunityMessageDocument extends Document {
   conversationId: mongoose.Types.ObjectId;
@@ -11,6 +11,14 @@ export interface CommunityMessageDocument extends Document {
     width?: number;
     height?: number;
     caption?: string;
+    /** FILE: the name to show and to download as — never used as the S3 key,
+     *  which is generated server-side. */
+    fileName?: string;
+    fileSize?: number;
+    mimeType?: string;
+    /** VOICE: clip length, so the player can render a duration before the
+     *  audio has loaded. */
+    durationMs?: number;
   };
   /** The message this one is a reply to. Kept as a reference rather than a
    *  copied snippet so an edit to the original is reflected in the quote,
@@ -42,13 +50,13 @@ const communityMessageSchema = new Schema<CommunityMessageDocument>(
     },
     type: {
       type: String,
-      enum: ["TEXT", "IMAGE"],
+      enum: ["TEXT", "IMAGE", "FILE", "VOICE"],
       default: "TEXT",
       index: true,
     },
     content: {
-      // For TEXT messages: the message text.
-      // For IMAGE messages: the S3 object key (never the full URL).
+      // TEXT: the message text.
+      // IMAGE / FILE / VOICE: the S3 object key (never the full URL).
       type: String,
       required: true,
       trim: true,
@@ -59,6 +67,10 @@ const communityMessageSchema = new Schema<CommunityMessageDocument>(
       width: { type: Number },
       height: { type: Number },
       caption: { type: String, maxlength: 2000 },
+      fileName: { type: String, maxlength: 255 },
+      fileSize: { type: Number, min: 0 },
+      mimeType: { type: String, maxlength: 100 },
+      durationMs: { type: Number, min: 0 },
     },
     replyToId: {
       type: Schema.Types.ObjectId,

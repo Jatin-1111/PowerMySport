@@ -101,6 +101,29 @@ export const communitySendMessageSchema = z.object({
     .min(1, "Message content is required")
     .max(2000, "Message cannot exceed 2000 characters"),
   replyToId: z.string().min(1).optional(),
+  // The HTTP path is the fallback for when the socket is down. It previously
+  // declared neither of these, so zod stripped them and an image sent this way
+  // was stored as a TEXT message whose body was the S3 object key.
+  type: z.enum(["TEXT", "IMAGE", "FILE", "VOICE"]).optional(),
+  metadata: z
+    .object({
+      width: z.number().optional(),
+      height: z.number().optional(),
+      caption: z.string().max(2000).optional(),
+      fileName: z.string().max(255).optional(),
+      fileSize: z.number().min(0).optional(),
+      mimeType: z.string().max(100).optional(),
+      durationMs: z.number().min(0).optional(),
+    })
+    .optional(),
+});
+
+export const communityChatAttachmentUploadUrlSchema = z.object({
+  conversationId: z.string().min(1, "Conversation ID is required"),
+  // The authoritative allowlist lives in S3Service and is enforced in the
+  // presign policy; this only rejects obvious junk before we reach AWS.
+  contentType: z.string().min(3).max(100),
+  kind: z.enum(["FILE", "VOICE"]),
 });
 
 export const communityChatUploadUrlSchema = z.object({

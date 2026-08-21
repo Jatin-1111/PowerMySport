@@ -7,6 +7,7 @@ import {
   CheckCheck,
   Copy,
   CornerUpLeft,
+  FileText,
   Forward,
   ImageIcon,
   Pencil,
@@ -55,6 +56,23 @@ function buildChatImageUrl(s3Key: string): string {
   const domain = process.env.NEXT_PUBLIC_CHAT_BUCKET_DOMAIN;
   if (!domain || !s3Key) return "";
   return `https://${domain}/${s3Key}`;
+}
+
+/** Human-readable size for a file card. */
+function formatFileSize(bytes?: number): string {
+  if (!bytes || bytes <= 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** mm:ss for a voice clip. */
+function formatDuration(ms?: number): string {
+  const total = Math.round((ms || 0) / 1000);
+  if (total <= 0) return "";
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 /** Skeleton shown while an image is uploading (optimistic state). */
@@ -164,6 +182,8 @@ export const MessageBubble = memo(function MessageBubble({
   }
 
   const isImageMessage = message.type === "IMAGE";
+  const isFileMessage = message.type === "FILE";
+  const isVoiceMessage = message.type === "VOICE";
   const isUploading = isImageMessage && message.messageStatus === "SENDING";
   const isFailed = message.messageStatus === "FAILED";
 
@@ -392,6 +412,63 @@ export const MessageBubble = memo(function MessageBubble({
                     </div>
                   )}
                 </>
+              )
+            ) : isFileMessage ? (
+              /* ── File attachment ── */
+              message.isDeleted ? (
+                <div className="px-2 py-1 text-[13px] italic leading-5 opacity-60">
+                  File deleted
+                </div>
+              ) : (
+                <a
+                  href={buildChatImageUrl(message.content)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  // `download` names the saved file after the original rather
+                  // than the generated S3 key.
+                  download={message.metadata?.fileName || undefined}
+                  onClick={(event) => event.stopPropagation()}
+                  className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition ${
+                    isOwnMessage ? "hover:bg-white/20" : "hover:bg-slate-100"
+                  }`}
+                >
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                      isOwnMessage ? "bg-white/25" : "bg-slate-200"
+                    }`}
+                  >
+                    <FileText size={17} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[13px] font-medium">
+                      {message.metadata?.fileName || "Attachment"}
+                    </span>
+                    <span className="block text-[11px] opacity-70">
+                      {formatFileSize(message.metadata?.fileSize) || "Download"}
+                    </span>
+                  </span>
+                </a>
+              )
+            ) : isVoiceMessage ? (
+              /* ── Voice note ── */
+              message.isDeleted ? (
+                <div className="px-2 py-1 text-[13px] italic leading-5 opacity-60">
+                  Voice message deleted
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 py-0.5">
+                  <audio
+                    controls
+                    preload="none"
+                    src={buildChatImageUrl(message.content)}
+                    className="h-8 max-w-[210px]"
+                  />
+                  {message.metadata?.durationMs ? (
+                    <span className="shrink-0 text-[11px] opacity-70">
+                      {formatDuration(message.metadata.durationMs)}
+                    </span>
+                  ) : null}
+                </div>
               )
             ) : (
               /* ── Text message ── */

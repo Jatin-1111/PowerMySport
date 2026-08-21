@@ -17,6 +17,34 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { v4 as uuidv4 } from "uuid";
 
+/**
+ * Chat attachment types the platform accepts. Deliberately a short list of
+ * formats that render or download predictably — an open allowlist here is how
+ * a chat becomes a malware channel.
+ */
+const CHAT_ATTACHMENT_EXTENSIONS: Record<string, string> = {
+  "application/pdf": "pdf",
+  "text/plain": "txt",
+  "text/csv": "csv",
+  "application/msword": "doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    "docx",
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "audio/webm": "webm",
+  "audio/mp4": "m4a",
+  "audio/mpeg": "mp3",
+  "audio/ogg": "ogg",
+};
+
+export const CHAT_ATTACHMENT_CONTENT_TYPES = Object.keys(
+  CHAT_ATTACHMENT_EXTENSIONS,
+);
+
+/** 25 MB. Large enough for a scanned form or a match schedule, small enough
+ *  that a chat bucket does not become file hosting. */
+const CHAT_FILE_MAX_BYTES = 25 * 1024 * 1024;
+
 export interface PresignedUrlConfig {
   bucket: string;
   key: string;
@@ -536,6 +564,51 @@ export class S3Service {
    * @param conversationId - Used as a folder prefix
    * @param contentType - MIME type (must be jpeg/png/webp, validated by caller)
    */
+  /**
+   * Presigned POST for a chat attachment that is not an image — a document or
+   * a voice note.
+   *
+   * The allowlist and the size ceiling are both enforced in the S3 policy, not
+   * just checked here, so a client that skips the API and posts straight at the
+   * bucket is still bound by them. Voice notes get a smaller ceiling than
+   * documents because a recording that large is a mistake, not a message.
+   */
+  async generateChatAttachmentPresignedPost(
+    conversationId: string,
+    contentType: string,
+    kind: "FILE" | "VOICE",
+  ): Promise<{ url: string; fields: Record<string, string>; key: string }> {
+    const chatBucket = process.env.AWS_S3_CHAT_BUCKET;
+    if (!chatBucket) {
+      throw new Error("AWS_S3_CHAT_BUCKET environment variable is not set");
+    }
+
+    const extension = CHAT_ATTACHMENT_EXTENSIONS[contentType];
+    if (!extension) {
+      throw new Error("That file type is not supported");
+    }
+
+    const maxBytes =
+      kind === "VOICE" ? 10 * 1024 * 1024 : CHAT_FILE_MAX_BYTES;
+    const folder = kind === "VOICE" ? "voice" : "files";
+    const key = `chats/${conversationId}/${folder}/${uuidv4()}.${extension}`;
+
+    const { url, fields } = await createPresignedPost(this.s3Client, {
+      Bucket: chatBucket,
+      Key: key,
+      Conditions: [
+        ["content-length-range", 1, maxBytes],
+        ["eq", "$Content-Type", contentType],
+      ],
+      Fields: {
+        "Content-Type": contentType,
+      },
+      Expires: 300,
+    });
+
+    return { url, fields, key };
+  }
+
   async generateChatImagePresignedPost(
     conversationId: string,
     contentType: "image/jpeg" | "image/png" | "image/webp",

@@ -368,17 +368,24 @@ export const sendMessage = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { conversationId, content, replyToId } = req.body as {
-      conversationId: string;
-      content: string;
-      replyToId?: string;
-    };
+    const { conversationId, content, replyToId, type, metadata } =
+      req.body as {
+        conversationId: string;
+        content: string;
+        replyToId?: string;
+        type?: "TEXT" | "IMAGE" | "FILE" | "VOICE";
+        metadata?: Record<string, unknown>;
+      };
 
     const data = await CommunityService.sendMessage(
       getUserId(req),
       conversationId,
       content,
-      replyToId ? { replyToId } : undefined,
+      {
+        ...(type ? { type } : {}),
+        ...(metadata ? { metadata } : {}),
+        ...(replyToId ? { replyToId } : {}),
+      },
     );
 
     res.status(201).json({
@@ -1456,6 +1463,46 @@ export const getCommunityPulseStats = async (
  *  - 5MB limit enforced in S3 policy (via createPresignedPost conditions)
  *  - Rate-limited at the route level (5 requests / 60 s)
  */
+/**
+ * POST /community/chat/attachment-url
+ * Presigned S3 POST for a document or a voice note.
+ *
+ * The allowlist and the size ceiling are enforced in the S3 policy itself, so
+ * a client that posts straight at the bucket is still bound by them; the
+ * participant check here is what stops someone uploading into a conversation
+ * they are not part of.
+ */
+export const getChatAttachmentUploadUrl = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = getUserId(req);
+    const { conversationId, contentType, kind } = req.body as {
+      conversationId: string;
+      contentType: string;
+      kind: "FILE" | "VOICE";
+    };
+
+    await CommunityService.assertConversationAccess(userId, conversationId);
+
+    const { url, fields, key } =
+      await s3Service.generateChatAttachmentPresignedPost(
+        conversationId,
+        contentType,
+        kind,
+      );
+
+    res.status(200).json({
+      success: true,
+      message: "Presigned upload URL generated",
+      data: { url, fields, key },
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to generate upload URL");
+  }
+};
+
 export const getChatImageUploadUrl = async (
   req: Request,
   res: Response,

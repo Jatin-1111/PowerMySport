@@ -497,6 +497,45 @@ export const communityService = {
     return response.data.data;
   },
 
+  async getAttachmentUploadUrl(
+    conversationId: string,
+    contentType: string,
+    kind: "FILE" | "VOICE",
+  ): Promise<{ url: string; fields: Record<string, string>; key: string }> {
+    const response = await axiosInstance.post<
+      ApiResponse<{ url: string; fields: Record<string, string>; key: string }>
+    >("/community/chat/attachment-url", {
+      conversationId,
+      contentType,
+      kind,
+    });
+    return response.data.data;
+  },
+
+  /**
+   * Persist a FILE or VOICE message once the upload has landed in S3.
+   * `content` is the object key; the display name travels in metadata so the
+   * key itself never has to be parsed for one.
+   */
+  async sendAttachmentMessage(
+    conversationId: string,
+    s3Key: string,
+    type: "FILE" | "VOICE",
+    metadata: {
+      fileName?: string;
+      fileSize?: number;
+      mimeType?: string;
+      durationMs?: number;
+    },
+  ): Promise<ConversationMessage> {
+    const response = await axiosInstance.post<ApiResponse<ConversationMessage>>(
+      "/community/messages",
+      { conversationId, content: s3Key, type, metadata },
+    );
+    clearCacheByPrefixes(["conversations", buildMessagesKey(conversationId)]);
+    return response.data.data;
+  },
+
   async getGroupImageUploadUrl(
     contentType: "image/jpeg" | "image/png" | "image/webp",
   ): Promise<{ uploadUrl: string; downloadUrl: string; key: string }> {

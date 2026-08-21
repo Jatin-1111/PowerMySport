@@ -7,7 +7,10 @@ import {
   CommunityGroup,
   type CommunityGroupVisibility,
 } from "../models/CommunityGroup";
-import { CommunityMessage } from "../models/CommunityMessage";
+import {
+  CommunityMessage,
+  type CommunityMessageType,
+} from "../models/CommunityMessage";
 import { CommunityMessageReaction } from "../models/CommunityMessageReaction";
 import {
   CommunityMessagePrivacy,
@@ -74,6 +77,41 @@ const stripHtml = (value: string): string =>
 const clampForSnippet = (value: string, max = 180): string => {
   const text = stripHtml(value || "");
   return text.length <= max ? text : `${text.slice(0, max).trimEnd()}...`;
+};
+
+/** A one-line stand-in for a message with no text of its own. Returns "" for
+ *  TEXT so callers can fall back to the actual body. Never returns `content`
+ *  for the attachment kinds — that field holds the S3 object key. */
+/** Mongoose materialises the nested `metadata` path even when nothing was set,
+ *  yielding an object of undefined keys. Collapse that to null so clients can
+ *  test for presence rather than inspecting every field. */
+const normalizeMessageMetadata = <T extends Record<string, unknown>>(
+  metadata?: T | null,
+): T | null => {
+  if (!metadata) {
+    return null;
+  }
+  const hasValue = Object.values(metadata).some(
+    (value) => value !== undefined && value !== null,
+  );
+  return hasValue ? metadata : null;
+};
+
+const describeNonTextMessage = (
+  type: string | undefined,
+  metadata?: { fileName?: string; durationMs?: number } | null,
+): string => {
+  if (type === "IMAGE") {
+    return "Photo";
+  }
+  if (type === "VOICE") {
+    const seconds = Math.round((metadata?.durationMs || 0) / 1000);
+    return seconds > 0 ? `Voice message (${seconds}s)` : "Voice message";
+  }
+  if (type === "FILE") {
+    return metadata?.fileName || "File";
+  }
+  return "";
 };
 
 const MAX_FOLLOWS_PER_USER = 200;
@@ -3032,6 +3070,7 @@ export const CommunityService = {
             createdAt: { $first: "$createdAt" },
             senderId: { $first: "$senderId" },
             type: { $first: "$type" },
+            metadata: { $first: "$metadata" },
             isDeleted: { $first: "$isDeleted" },
           },
         },
@@ -3140,7 +3179,10 @@ export const CommunityService = {
                   ? "Message deleted"
                   : latest.type === "IMAGE"
                     ? "📷 Image"
-                    : latest.content,
+                    : // Falling through to `content` for FILE/VOICE would put
+                      // an S3 object key in the conversation list.
+                      describeNonTextMessage(latest.type, latest.metadata) ||
+                      latest.content,
                 createdAt: latest.createdAt,
                 senderId: String(latest.senderId),
                 type: latest.type || "TEXT",
@@ -3398,7 +3440,7 @@ export const CommunityService = {
     );
     const replyTargets = replyTargetIds.length
       ? await CommunityMessage.find({ _id: { $in: replyTargetIds } })
-          .select("_id senderId type content isDeleted")
+          .select("_id senderId type content isDeleted metadata")
           .lean()
       : [];
     const replyTargetMap = new Map(
@@ -3432,9 +3474,8 @@ export const CommunityService = {
         // An image quote shows a label, never the S3 key that `content` holds.
         content: target.isDeleted
           ? "Message deleted"
-          : target.type === "IMAGE"
-            ? "Photo"
-            : (target.content || "").slice(0, 140),
+          : describeNonTextMessage(target.type, target.metadata) ||
+            (target.content || "").slice(0, 140),
         isDeleted: Boolean(target.isDeleted),
       };
     };
@@ -3467,7 +3508,7 @@ export const CommunityService = {
             ? sender?.name || "Player"
             : senderProfile?.anonymousAlias || "Anonymous Player",
         content: message.isDeleted ? "Message deleted" : message.content,
-        metadata: message.metadata || null,
+        metadata: normalizeMessageMetadata(message.metadata),
         replyTo: shapeReplyPreview(message.replyToId),
         reactions: (reactionsByMessage.get(String(message._id)) || []).sort(
           (a, b) => b.count - a.count,
@@ -3523,8 +3564,15 @@ export const CommunityService = {
     conversationId: string,
     content: string,
     options?: {
-      type?: "TEXT" | "IMAGE";
-      metadata?: { width?: number; height?: number };
+      type?: CommunityMessageType;
+      metadata?: {
+        width?: number;
+        height?: number;
+        fileName?: string;
+        fileSize?: number;
+        mimeType?: string;
+        durationMs?: number;
+      };
       replyToId?: string;
     },
   ) {
@@ -3576,7 +3624,7 @@ export const CommunityService = {
       content: messageType === "TEXT" ? content.trim() : content,
       readBy: [new mongoose.Types.ObjectId(userId)],
     };
-    if (messageType === "IMAGE" && options?.metadata) {
+    if (messageType !== "TEXT" && options?.metadata) {
       messageDoc.metadata = options.metadata;
     }
 
@@ -3675,7 +3723,7 @@ export const CommunityService = {
     const replyPreview = message.replyToId
       ? await (async () => {
           const target = await CommunityMessage.findById(message.replyToId)
-            .select("_id senderId type content isDeleted")
+            .select("_id senderId type content isDeleted metadata")
             .lean();
           if (!target) {
             return null;
@@ -3696,9 +3744,8 @@ export const CommunityService = {
             type: target.type || "TEXT",
             content: target.isDeleted
               ? "Message deleted"
-              : target.type === "IMAGE"
-                ? "Photo"
-                : (target.content || "").slice(0, 140),
+              : describeNonTextMessage(target.type, target.metadata) ||
+                (target.content || "").slice(0, 140),
             isDeleted: Boolean(target.isDeleted),
           };
         })()
@@ -3712,7 +3759,7 @@ export const CommunityService = {
       type: message.type || "TEXT",
       senderDisplayName,
       content: message.content,
-      metadata: message.metadata || null,
+      metadata: normalizeMessageMetadata(message.metadata),
       replyTo: replyPreview,
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,
@@ -3861,7 +3908,7 @@ export const CommunityService = {
       senderId,
       type: message.type || "TEXT",
       content: message.content,
-      metadata: message.metadata || null,
+      metadata: normalizeMessageMetadata(message.metadata),
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,
       editedAt: message.editedAt,

@@ -28,6 +28,7 @@ import {
   getUnreadConversationCount,
   getGroupInviteCode,
   getGroupMembers,
+  getChatAttachmentUploadUrl,
   getChatImageUploadUrl,
   getGroupImageUploadUrl,
   joinGroup,
@@ -67,6 +68,7 @@ import {
   communityUpdateMessageSchema,
   communityUpdatePostSchema,
   communitySendMessageSchema,
+  communityChatAttachmentUploadUrlSchema,
   communityChatUploadUrlSchema,
   communityGroupUploadUrlSchema,
   communityStartConversationSchema,
@@ -293,6 +295,15 @@ router.post(
   chatUploadRateLimit,
   validateRequest(communityChatUploadUrlSchema),
   getChatImageUploadUrl,
+);
+
+// Shares the image upload rate limit — same bucket, same abuse surface.
+router.post(
+  "/chat/attachment-url",
+  authMiddleware,
+  chatUploadRateLimit,
+  validateRequest(communityChatAttachmentUploadUrlSchema),
+  getChatAttachmentUploadUrl,
 );
 
 export default router;
