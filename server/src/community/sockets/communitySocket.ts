@@ -444,11 +444,18 @@ export const setupCommunitySocket = (io: Server): void => {
           return;
         }
 
+        const replyToId =
+          typeof payload?.replyToId === "string" ? payload.replyToId : "";
+
         const message = await CommunityService.sendMessage(
           userId,
           conversationId,
           content,
-          { type: messageType, ...(metadata ? { metadata } : {}) },
+          {
+            type: messageType,
+            ...(metadata ? { metadata } : {}),
+            ...(replyToId ? { replyToId } : {}),
+          },
         );
 
         communityNamespace

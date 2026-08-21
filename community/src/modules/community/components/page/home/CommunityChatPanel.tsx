@@ -62,6 +62,8 @@ export default function CommunityChatPanel({ page }: Props) {
     handleSaveEditedMessage,
     handleCancelEditMessage,
     newMessage,
+    replyingTo,
+    setReplyingTo,
     setNewMessage,
     canSendSelectedConversationMessage,
     isSending,
@@ -640,6 +642,13 @@ export default function CommunityChatPanel({ page }: Props) {
                 isCopied={copiedMessageId === message.id}
                 isEditing={editingMessageId === message.id}
                 isMutating={isMutatingMessageId === message.id}
+                onReply={(m) => setReplyingTo(m)}
+                onJumpToMessage={(messageId) => {
+                  const node = document.getElementById(`message-${messageId}`);
+                  if (node) {
+                    node.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }
+                }}
                 isPinned={selectedConversation ? pinnedMessages[selectedConversation.id] === message.id : false}
                 onPin={(m) => pinMessageLocal(selectedConversation!.id, m.id)}
                 onForward={(m) => {
@@ -797,6 +806,30 @@ export default function CommunityChatPanel({ page }: Props) {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Replying-to bar */}
+        {replyingTo ? (
+          <div className="mb-2 flex items-start gap-2 rounded-lg border-l-2 border-power-orange bg-slate-50 px-3 py-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold text-power-orange">
+                Replying to {replyingTo.senderDisplayName}
+              </p>
+              <p className="truncate text-xs text-slate-600">
+                {replyingTo.type === "IMAGE"
+                  ? "Photo"
+                  : replyingTo.content}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setReplyingTo(null)}
+              aria-label="Cancel reply"
+              className="shrink-0 rounded p-1 text-slate-400 transition hover:bg-slate-200 hover:text-slate-600"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ) : null}
 
         {/* Input row: Emoji | Input | Attach | Send */}
         <div className="flex items-center gap-2">

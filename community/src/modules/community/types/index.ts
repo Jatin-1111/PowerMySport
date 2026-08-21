@@ -110,6 +110,19 @@ export interface BlockedUser {
   photoUrl?: string | null;
 }
 
+/** The message a reply quotes. Resolved live rather than snapshotted, so an
+ *  edit shows through and a deletion is visible instead of leaving stale text
+ *  quoted. Null when the original has been hard-removed. */
+export interface ConversationReplyPreview {
+  id: string;
+  senderId: string;
+  senderDisplayName: string;
+  type: "TEXT" | "IMAGE";
+  /** Already clamped and, for images, replaced with a label — never the S3 key. */
+  content: string;
+  isDeleted: boolean;
+}
+
 export interface ConversationMessage {
   id: string;
   conversationId: string;
@@ -126,6 +139,7 @@ export interface ConversationMessage {
     height?: number;
     caption?: string;
   } | null;
+  replyTo?: ConversationReplyPreview | null;
   createdAt: string;
   updatedAt?: string;
   editedAt?: string | null;

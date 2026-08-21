@@ -12,6 +12,10 @@ export interface CommunityMessageDocument extends Document {
     height?: number;
     caption?: string;
   };
+  /** The message this one is a reply to. Kept as a reference rather than a
+   *  copied snippet so an edit to the original is reflected in the quote,
+   *  and a deletion is visible rather than leaving stale text quoted. */
+  replyToId?: mongoose.Types.ObjectId | null;
   readBy: mongoose.Types.ObjectId[];
   deliveredTo: mongoose.Types.ObjectId[];
   isDeleted: boolean;
@@ -55,6 +59,11 @@ const communityMessageSchema = new Schema<CommunityMessageDocument>(
       width: { type: Number },
       height: { type: Number },
       caption: { type: String, maxlength: 2000 },
+    },
+    replyToId: {
+      type: Schema.Types.ObjectId,
+      ref: "CommunityMessage",
+      default: null,
     },
     readBy: [
       {

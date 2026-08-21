@@ -368,15 +368,17 @@ export const sendMessage = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { conversationId, content } = req.body as {
+    const { conversationId, content, replyToId } = req.body as {
       conversationId: string;
       content: string;
+      replyToId?: string;
     };
 
     const data = await CommunityService.sendMessage(
       getUserId(req),
       conversationId,
       content,
+      replyToId ? { replyToId } : undefined,
     );
 
     res.status(201).json({

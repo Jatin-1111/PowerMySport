@@ -100,6 +100,7 @@ export const communitySendMessageSchema = z.object({
     .trim()
     .min(1, "Message content is required")
     .max(2000, "Message cannot exceed 2000 characters"),
+  replyToId: z.string().min(1).optional(),
 });
 
 export const communityChatUploadUrlSchema = z.object({

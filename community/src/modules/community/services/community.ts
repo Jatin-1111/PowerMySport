@@ -469,12 +469,14 @@ export const communityService = {
   async sendMessage(
     conversationId: string,
     content: string,
+    replyToId?: string,
   ): Promise<ConversationMessage> {
     const response = await axiosInstance.post<ApiResponse<ConversationMessage>>(
       "/community/messages",
       {
         conversationId,
         content,
+        ...(replyToId ? { replyToId } : {}),
       },
     );
     clearCacheByPrefixes(["conversations", buildMessagesKey(conversationId)]);

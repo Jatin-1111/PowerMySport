@@ -3360,6 +3360,55 @@ export const CommunityService = {
       profiles.map((profile) => [String(profile.userId), profile]),
     );
 
+    // One query for every quoted message on the page, rather than a lookup per
+    // message. Quotes are resolved live rather than snapshotted at send time,
+    // so an edit to the original shows through and a deletion is visible.
+    const replyTargetIds = messages.flatMap((message) =>
+      message.replyToId ? [message.replyToId] : [],
+    );
+    const replyTargets = replyTargetIds.length
+      ? await CommunityMessage.find({ _id: { $in: replyTargetIds } })
+          .select("_id senderId type content isDeleted")
+          .lean()
+      : [];
+    const replyTargetMap = new Map(
+      replyTargets.map((target) => [String(target._id), target]),
+    );
+
+    const shapeReplyPreview = (replyToId?: mongoose.Types.ObjectId | null) => {
+      if (!replyToId) {
+        return null;
+      }
+
+      const target = replyTargetMap.get(String(replyToId));
+      if (!target) {
+        return null;
+      }
+
+      const targetSenderId = String(target.senderId);
+      const targetProfile = profileMap.get(targetSenderId);
+      const targetUser = userMap.get(targetSenderId);
+
+      return {
+        id: String(target._id),
+        senderId: targetSenderId,
+        senderDisplayName:
+          targetSenderId === userId
+            ? targetUser?.name || "Me"
+            : targetProfile?.isIdentityPublic
+              ? targetUser?.name || "Player"
+              : targetProfile?.anonymousAlias || "Anonymous Player",
+        type: target.type || "TEXT",
+        // An image quote shows a label, never the S3 key that `content` holds.
+        content: target.isDeleted
+          ? "Message deleted"
+          : target.type === "IMAGE"
+            ? "Photo"
+            : (target.content || "").slice(0, 140),
+        isDeleted: Boolean(target.isDeleted),
+      };
+    };
+
     const messageItems = messages.reverse().map((message) => {
       const senderId = String(message.senderId);
       const sender = userMap.get(senderId);
@@ -3389,6 +3438,7 @@ export const CommunityService = {
             : senderProfile?.anonymousAlias || "Anonymous Player",
         content: message.isDeleted ? "Message deleted" : message.content,
         metadata: message.metadata || null,
+        replyTo: shapeReplyPreview(message.replyToId),
         createdAt: message.createdAt,
         updatedAt: message.updatedAt,
         editedAt: message.editedAt || null,
@@ -3442,6 +3492,7 @@ export const CommunityService = {
     options?: {
       type?: "TEXT" | "IMAGE";
       metadata?: { width?: number; height?: number };
+      replyToId?: string;
     },
   ) {
     const conversation = await CommunityConversation.findById(conversationId);
@@ -3494,6 +3545,23 @@ export const CommunityService = {
     };
     if (messageType === "IMAGE" && options?.metadata) {
       messageDoc.metadata = options.metadata;
+    }
+
+    // The quoted message has to live in this conversation. Without the check a
+    // client could quote a message out of a chat it cannot read, and the quote
+    // preview would leak its text to everyone here.
+    if (options?.replyToId) {
+      const replyTarget = await CommunityMessage.findOne({
+        _id: options.replyToId,
+        conversationId: conversation._id,
+        isDeleted: false,
+      })
+        .select("_id")
+        .lean();
+      if (!replyTarget) {
+        throw new Error("The message you replied to is no longer available");
+      }
+      messageDoc.replyToId = replyTarget._id;
     }
 
     const message = await CommunityMessage.create(messageDoc);
@@ -3568,6 +3636,41 @@ export const CommunityService = {
       }
     }
 
+    // The sender already has the quoted message on screen, but the payload is
+    // broadcast to everyone in the conversation, so the preview has to travel
+    // with it or their bubble renders a reply to nothing.
+    const replyPreview = message.replyToId
+      ? await (async () => {
+          const target = await CommunityMessage.findById(message.replyToId)
+            .select("_id senderId type content isDeleted")
+            .lean();
+          if (!target) {
+            return null;
+          }
+          const targetSenderId = String(target.senderId);
+          const targetProfile = profiles.find(
+            (profile) => String(profile.userId) === targetSenderId,
+          );
+          const targetUser = participants.find(
+            (participant) => String(participant._id) === targetSenderId,
+          );
+          return {
+            id: String(target._id),
+            senderId: targetSenderId,
+            senderDisplayName: targetProfile?.isIdentityPublic
+              ? targetUser?.name || "Player"
+              : targetProfile?.anonymousAlias || "Anonymous Player",
+            type: target.type || "TEXT",
+            content: target.isDeleted
+              ? "Message deleted"
+              : target.type === "IMAGE"
+                ? "Photo"
+                : (target.content || "").slice(0, 140),
+            isDeleted: Boolean(target.isDeleted),
+          };
+        })()
+      : null;
+
     return {
       id: String(message._id),
       conversationId: String(message.conversationId),
@@ -3577,6 +3680,7 @@ export const CommunityService = {
       senderDisplayName,
       content: message.content,
       metadata: message.metadata || null,
+      replyTo: replyPreview,
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,
       editedAt: null,

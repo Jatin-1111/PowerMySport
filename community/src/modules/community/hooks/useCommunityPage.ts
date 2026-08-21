@@ -1780,6 +1780,7 @@ export function useCommunityPage(options?: {
     async (
       conversationId: string,
       content: string,
+      replyToId?: string,
     ): Promise<ConversationMessage> => {
       const socket = getCommunitySocket();
       if (socket.connected) {
@@ -1794,7 +1795,7 @@ export function useCommunityPage(options?: {
           );
           socket.emit(
             "community:sendMessage",
-            { conversationId, content },
+            { conversationId, content, ...(replyToId ? { replyToId } : {}) },
             (result: unknown) => {
               clearTimeout(timeoutId);
               resolve(
@@ -1811,7 +1812,11 @@ export function useCommunityPage(options?: {
         return { ...ack.data, messageStatus: "SENT" };
       }
       return {
-        ...(await communityService.sendMessage(conversationId, content)),
+        ...(await communityService.sendMessage(
+          conversationId,
+          content,
+          replyToId,
+        )),
         messageStatus: "SENT",
       };
     },
@@ -2031,6 +2036,31 @@ export function useCommunityPage(options?: {
       .catch(() => toast.error("Failed to copy"));
   };
 
+  // The message being replied to, if any. Tagged with the conversation it
+  // belongs to so switching chats drops it without a state write in an effect
+  // — a quote carried into a different conversation would be rejected by the
+  // server anyway, since the target lives elsewhere.
+  const [replyTarget, setReplyTarget] = useState<{
+    conversationId: string;
+    message: ConversationMessage;
+  } | null>(null);
+
+  const replyingTo =
+    replyTarget && replyTarget.conversationId === selectedConversationId
+      ? replyTarget.message
+      : null;
+
+  const setReplyingTo = useCallback(
+    (message: ConversationMessage | null) => {
+      setReplyTarget(
+        message && selectedConversationId
+          ? { conversationId: selectedConversationId, message }
+          : null,
+      );
+    },
+    [selectedConversationId],
+  );
+
   const handleSendMessage = async () => {
     if (!selectedConversation || !newMessage.trim()) return;
     if (selectedConversationNeedsMyApproval)
@@ -2052,16 +2082,34 @@ export function useCommunityPage(options?: {
         profile?.userId || "me",
         selectedConversation.otherParticipant.id,
       ],
+      ...(replyingTo
+        ? {
+            replyTo: {
+              id: replyingTo.id,
+              senderId: replyingTo.senderId,
+              senderDisplayName: replyingTo.senderDisplayName,
+              type: replyingTo.type || "TEXT",
+              content:
+                replyingTo.type === "IMAGE"
+                  ? "Photo"
+                  : (replyingTo.content || "").slice(0, 140),
+              isDeleted: Boolean(replyingTo.isDeleted),
+            },
+          }
+        : {}),
     };
 
     appendMessage(optimisticMessage);
     optimisticUpdateConversationLatestMessage(selectedConversation.id, content, "TEXT");
     setNewMessage("");
+    const replyToId = replyingTo?.id;
+    setReplyingTo(null);
     setIsSending(true);
     try {
       const confirmedMessage = await sendMessageWithTransport(
         selectedConversation.id,
         content,
+        replyToId,
       );
       removeMessageById(optimisticMessageId);
       if (confirmedMessage.conversationId === selectedConversation.id)
@@ -2439,6 +2487,8 @@ export function useCommunityPage(options?: {
     handleDeleteMessage,
     handleCopyMessage,
     handleSendMessage,
+    replyingTo,
+    setReplyingTo,
     handleSendImageMessage,
     pendingImageFile,
     setPendingImageFile,

@@ -1,18 +1,19 @@
 import { memo, useRef, useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  AlertCircle,
+  BookmarkCheck,
   Check,
   CheckCheck,
   Copy,
+  CornerUpLeft,
+  Forward,
   ImageIcon,
   Pencil,
-  RotateCcw,
-  Trash2,
-  AlertCircle,
-  Smile,
   Pin,
-  BookmarkCheck,
-  Forward,
+  RotateCcw,
+  Smile,
+  Trash2,
 } from "lucide-react";
 import type { ConversationMessage } from "@/modules/community/types";
 import {
@@ -36,6 +37,9 @@ type MessageBubbleProps = {
   isEditing: boolean;
   isMutating: boolean;
   onReact?: (message: ConversationMessage, emoji: string) => void;
+  onReply?: (message: ConversationMessage) => void;
+  /** Scrolls the quoted message into view when a quote is tapped. */
+  onJumpToMessage?: (messageId: string) => void;
   onForward?: (message: ConversationMessage) => void;
   onPin?: (message: ConversationMessage) => void;
   onMarkUnread?: (message: ConversationMessage) => void;
@@ -137,6 +141,8 @@ export const MessageBubble = memo(function MessageBubble({
   isEditing,
   isMutating,
   onReact,
+  onReply,
+  onJumpToMessage,
   onForward,
   onPin,
   onMarkUnread,
@@ -268,7 +274,11 @@ export const MessageBubble = memo(function MessageBubble({
       )}
 
       {/* Bubble Wrapper */}
-      <div className={`flex flex-1 gap-2 ${isOwnMessage ? "justify-end" : "justify-start"}`}>
+      {/* The id is the anchor a quoted-message tap scrolls to. */}
+      <div
+        id={`message-${message.id}`}
+        className={`flex flex-1 gap-2 ${isOwnMessage ? "justify-end" : "justify-start"}`}
+      >
         {/* Group avatar (other's messages) */}
         {!isOwnMessage && isGroupConversation && (
           <div 
@@ -325,6 +335,37 @@ export const MessageBubble = memo(function MessageBubble({
                 {message.senderDisplayName}
               </div>
             )}
+
+            {/* ── Quoted message ── */}
+            {message.replyTo ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onJumpToMessage?.(message.replyTo!.id);
+                }}
+                className={`mb-1.5 block w-full rounded-lg border-l-2 px-2 py-1 text-left text-[11px] leading-4 ${
+                  isOwnMessage
+                    ? "border-white/60 bg-white/15"
+                    : "border-power-orange/60 bg-slate-100"
+                }`}
+              >
+                <span
+                  className={`block font-semibold ${
+                    isOwnMessage ? "text-white/90" : "text-power-orange"
+                  }`}
+                >
+                  {message.replyTo.senderDisplayName}
+                </span>
+                <span
+                  className={`block truncate ${
+                    isOwnMessage ? "text-white/75" : "text-slate-600"
+                  } ${message.replyTo.isDeleted ? "italic opacity-70" : ""}`}
+                >
+                  {message.replyTo.content}
+                </span>
+              </button>
+            ) : null}
 
             {/* ── Image message ── */}
             {isImageMessage ? (
@@ -449,6 +490,17 @@ export const MessageBubble = memo(function MessageBubble({
                     )}
                   </AnimatePresence>
                 </div>
+              )}
+
+              {/* Reply */}
+              {!message.isDeleted && onReply && (
+                <button
+                  onClick={() => onReply(message)}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition"
+                  title="Reply"
+                >
+                  <CornerUpLeft size={14} />
+                </button>
               )}
 
               {/* Copy */}
