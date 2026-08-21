@@ -9,6 +9,9 @@ import { emitCommunityGroupEvent } from "../services/CommunityRealtimeService";
  */
 export type CommunityGroupVisibility = "PUBLIC" | "INVITE_ONLY" | "PRIVATE";
 export type CommunityGroupMemberAddPolicy = "ADMIN_ONLY" | "ANY_MEMBER";
+/** ANY_MEMBER: an ordinary group. ADMIN_ONLY: an announcement channel —
+ *  everyone reads, only admins post. */
+export type CommunityGroupPostPolicy = "ANY_MEMBER" | "ADMIN_ONLY";
 export type CommunityGroupAudience = "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
 
 export interface CommunityGroupDocument extends Document {
@@ -20,6 +23,11 @@ export interface CommunityGroupDocument extends Document {
   profilePicture?: string;
   profilePictureKey?: string;
   memberAddPolicy: CommunityGroupMemberAddPolicy;
+  postPolicy: CommunityGroupPostPolicy;
+  /** The message pinned to the top of the group, shared by everyone in it.
+   *  Previously a localStorage key, so a "pinned" message was visible only
+   *  to the person who pinned it — which is the opposite of what a pin is. */
+  pinnedMessageId?: mongoose.Types.ObjectId | null;
   audience: CommunityGroupAudience;
   createdBy: mongoose.Types.ObjectId;
   /** Denormalized count of CommunityGroupMember rows — see the note on the
@@ -75,6 +83,18 @@ const communityGroupSchema = new Schema<CommunityGroupDocument>(
       type: String,
       enum: ["ADMIN_ONLY", "ANY_MEMBER"],
       default: "ADMIN_ONLY",
+    },
+    postPolicy: {
+      type: String,
+      enum: ["ANY_MEMBER", "ADMIN_ONLY"],
+      // Existing groups are ordinary conversations; announcement mode is
+      // something an admin opts into.
+      default: "ANY_MEMBER",
+    },
+    pinnedMessageId: {
+      type: Schema.Types.ObjectId,
+      ref: "CommunityMessage",
+      default: null,
     },
     audience: {
       type: String,

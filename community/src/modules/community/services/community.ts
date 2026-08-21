@@ -567,6 +567,26 @@ export const communityService = {
     return response.data.data;
   },
 
+  async pinGroupMessage(messageId: string): Promise<{
+    groupId: string;
+    conversationId: string;
+    messageId: string;
+    pinned: boolean;
+    pinnedMessageId: string | null;
+  }> {
+    const response = await axiosInstance.post<
+      ApiResponse<{
+        groupId: string;
+        conversationId: string;
+        messageId: string;
+        pinned: boolean;
+        pinnedMessageId: string | null;
+      }>
+    >(`/community/messages/${messageId}/pin`);
+    clearCacheByPrefixes(["conversations"]);
+    return response.data.data;
+  },
+
   async editMessage(
     messageId: string,
     content: string,
@@ -711,7 +731,10 @@ export const communityService = {
 
   async updateGroupSettings(
     groupId: string,
-    payload: { memberAddPolicy: "ADMIN_ONLY" | "ANY_MEMBER" },
+    payload: {
+      memberAddPolicy?: "ADMIN_ONLY" | "ANY_MEMBER";
+      postPolicy?: "ANY_MEMBER" | "ADMIN_ONLY";
+    },
   ): Promise<{
     groupId: string;
     memberAddPolicy: "ADMIN_ONLY" | "ANY_MEMBER";

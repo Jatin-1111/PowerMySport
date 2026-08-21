@@ -203,7 +203,8 @@ export const communityAddGroupMemberSchema = z.object({
 });
 
 export const communityUpdateGroupSettingsSchema = z.object({
-  memberAddPolicy: z.enum(["ADMIN_ONLY", "ANY_MEMBER"]),
+  memberAddPolicy: z.enum(["ADMIN_ONLY", "ANY_MEMBER"]).optional(),
+  postPolicy: z.enum(["ANY_MEMBER", "ADMIN_ONLY"]).optional(),
 });
 
 const geoLocationSchema = z.object({

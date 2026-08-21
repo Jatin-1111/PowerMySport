@@ -61,6 +61,13 @@ export interface CommunityGroupSummary {
   visibility: CommunityGroupVisibility;
   audience?: CommunityGroupAudience;
   memberAddPolicy?: "ADMIN_ONLY" | "ANY_MEMBER";
+  /** ANY_MEMBER, or ADMIN_ONLY for an announcement group. */
+  postPolicy?: "ANY_MEMBER" | "ADMIN_ONLY";
+  /** Shared across the group, not per-device. */
+  pinnedMessageId?: string | null;
+  /** Whether this viewer may post — server-computed, so the composer does not
+   *  have to re-derive the announcement rule. */
+  canPost?: boolean;
   sport: string;
   city: string;
   createdBy?: string;

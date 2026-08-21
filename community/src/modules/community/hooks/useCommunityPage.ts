@@ -226,14 +226,6 @@ export function useCommunityPage(options?: {
   // New features state
   const [blockedUsersList, setBlockedUsersList] = useState<BlockedUser[]>([]);
   const [isLoadingBlockedUsers, setIsLoadingBlockedUsers] = useState(false);
-  const [pinnedMessages, setPinnedMessages] = useState<Record<string, string>>(() => {
-    if (typeof window === "undefined") return {};
-    try {
-      return JSON.parse(localStorage.getItem("COMMUNITY_PINNED_MESSAGES") || "{}");
-    } catch {
-      return {};
-    }
-  });
   const [selectChatsMode, setSelectChatsMode] = useState(false);
   const [selectedChatIds, setSelectedChatIds] = useState<string[]>([]);
   const [showBlockedUsersModal, setShowBlockedUsersModal] = useState(false);
@@ -286,21 +278,24 @@ export function useCommunityPage(options?: {
     }
   }, [showBlockedUsersModal, loadBlockedUsers]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("COMMUNITY_PINNED_MESSAGES", JSON.stringify(pinnedMessages));
-    }
-  }, [pinnedMessages]);
 
-  const pinMessageLocal = useCallback((conversationId: string, messageId: string) => {
-    setPinnedMessages((prev) => {
-      if (prev[conversationId] === messageId) {
-        const { [conversationId]: _, ...rest } = prev;
-        return rest;
-      }
-      return { ...prev, [conversationId]: messageId };
-    });
-  }, []);
+  /**
+   * Pins a message for the whole group. This used to write to localStorage, so
+   * a "pinned" message was visible only to the person who pinned it — the
+   * opposite of what a pin is for. Admin-only, enforced server-side.
+   */
+  const pinGroupMessage = async (messageId: string) => {
+    try {
+      const result = await communityService.pinGroupMessage(messageId);
+      setSelectedConversationPinnedId(result.pinnedMessageId);
+      queueConversationRefresh();
+      toast.success(result.pinned ? "Message pinned" : "Message unpinned");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to pin message",
+      );
+    }
+  };
 
   const toggleChatSelection = useCallback((chatId: string) => {
     setSelectedChatIds((prev) =>
@@ -319,6 +314,8 @@ export function useCommunityPage(options?: {
   >({});
   const memberProfileRequestIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [selectedConversationPinnedId, setSelectedConversationPinnedId] =
+    useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const documentInputRef = useRef<HTMLInputElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -454,7 +451,11 @@ export function useCommunityPage(options?: {
   const canSendSelectedConversationMessage =
     Boolean(selectedConversation) &&
     !selectedConversationNeedsMyApproval &&
-    !selectedConversationIsBlocked;
+    !selectedConversationIsBlocked &&
+    // Announcement groups: read for everyone, post for admins. The server
+    // enforces this too — the flag exists so the composer can be disabled
+    // rather than accepting text that is then rejected.
+    selectedConversation?.group?.canPost !== false;
 
   const activeSidebarTabToUse = options?.forceView || activeSidebarTab;
   const isCommunityView = activeSidebarTabToUse === "community-overview";
@@ -2666,8 +2667,9 @@ export function useCommunityPage(options?: {
     blockedUsersList,
     isLoadingBlockedUsers,
     handleUnblockUserById,
-    pinnedMessages,
-    pinMessageLocal,
+    pinGroupMessage,
+    selectedConversationPinnedId,
+    setSelectedConversationPinnedId,
     selectChatsMode,
     setSelectChatsMode,
     selectedChatIds,

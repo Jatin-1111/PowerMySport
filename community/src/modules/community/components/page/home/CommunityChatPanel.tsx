@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   FileText,
   Loader2,
+  Megaphone,
   Mic,
   MoreVertical,
   PanelRightClose,
@@ -92,8 +93,9 @@ export default function CommunityChatPanel({ page }: Props) {
     setShowEmojiPicker,
     handleMarkAllAsRead,
     handleMarkConversationAsUnread,
-    pinnedMessages,
-    pinMessageLocal,
+    pinGroupMessage,
+    selectedConversationPinnedId,
+    setSelectedConversationPinnedId,
     setForwardingMessages,
     setSelectChatsMode,
     pinnedConversationIds,
@@ -331,6 +333,18 @@ export default function CommunityChatPanel({ page }: Props) {
     : [];
   const isSomeoneTyping = currentlyTypingUsers.length > 0;
   const isGroup = selectedConversation?.conversationType === "GROUP";
+
+  // The group's shared pin, with the local mirror taking precedence so the
+  // banner reacts to this user's own pin before the conversation refetches.
+  const pinnedMessageId =
+    selectedConversationPinnedId ??
+    selectedConversation?.group?.pinnedMessageId ??
+    null;
+  const isAnnouncementGroup =
+    selectedConversation?.group?.postPolicy === "ADMIN_ONLY";
+  // The server computes this; an announcement group offers the pin control
+  // only to admins, and an ordinary group offers it to anyone who can post.
+  const canPinInGroup = selectedConversation?.group?.canPost !== false;
   const hasContent = newMessage.trim().length > 0 || !!pendingImageFile;
 
   // Last seen for DM
@@ -537,7 +551,7 @@ export default function CommunityChatPanel({ page }: Props) {
 
       {/* Pinned Message Banner */}
       <AnimatePresence>
-        {selectedConversation && pinnedMessages[selectedConversation.id] && (
+        {selectedConversation && pinnedMessageId && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -549,11 +563,12 @@ export default function CommunityChatPanel({ page }: Props) {
                 <Pin size={12} className="shrink-0 text-power-orange fill-power-orange" />
                 <p className="truncate text-xs font-medium text-slate-700">
                   <span className="font-semibold text-power-orange mr-1">Pinned:</span>
-                  {messages.find(m => m.id === pinnedMessages[selectedConversation.id])?.content || "Message"}
+                  {messages.find((m) => m.id === pinnedMessageId)?.content ||
+                    "Pinned message"}
                 </p>
               </div>
               <button
-                onClick={() => pinMessageLocal(selectedConversation.id, pinnedMessages[selectedConversation.id])}
+                onClick={() => void pinGroupMessage(pinnedMessageId)}
                 className="shrink-0 rounded-full p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition"
               >
                 <X size={14} />
@@ -658,8 +673,14 @@ export default function CommunityChatPanel({ page }: Props) {
                     node.scrollIntoView({ behavior: "smooth", block: "center" });
                   }
                 }}
-                isPinned={selectedConversation ? pinnedMessages[selectedConversation.id] === message.id : false}
-                onPin={(m) => pinMessageLocal(selectedConversation!.id, m.id)}
+                isPinned={pinnedMessageId === message.id}
+                // Only offered in groups, and only to admins — the server
+                // rejects anyone else, so showing it would be a dead control.
+                onPin={
+                  isGroup && canPinInGroup
+                    ? (m) => void pinGroupMessage(m.id)
+                    : undefined
+                }
                 onForward={(m) => {
                   setForwardingMessages([m]);
                   setSelectChatsMode(true);
@@ -830,6 +851,15 @@ export default function CommunityChatPanel({ page }: Props) {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Announcement notice: says why the composer is disabled, rather
+            than leaving a greyed-out box with no explanation. */}
+        {isAnnouncementGroup && !canPinInGroup ? (
+          <div className="mb-2 flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600">
+            <Megaphone size={14} className="shrink-0 text-slate-500" />
+            Only admins can post in this group.
+          </div>
+        ) : null}
 
         {/* Replying-to bar */}
         {replyingTo ? (

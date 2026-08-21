@@ -2454,7 +2454,10 @@ export const CommunityService = {
   async updateGroupSettings(
     userId: string,
     groupId: string,
-    payload: { memberAddPolicy: "ADMIN_ONLY" | "ANY_MEMBER" },
+    payload: {
+      memberAddPolicy?: "ADMIN_ONLY" | "ANY_MEMBER";
+      postPolicy?: "ANY_MEMBER" | "ADMIN_ONLY";
+    },
   ) {
     await ensureProfile(userId);
 
@@ -2467,7 +2470,12 @@ export const CommunityService = {
       throw new Error("Only group admins can update settings");
     }
 
-    group.memberAddPolicy = payload.memberAddPolicy;
+    if (payload.memberAddPolicy) {
+      group.memberAddPolicy = payload.memberAddPolicy;
+    }
+    if (payload.postPolicy) {
+      group.postPolicy = payload.postPolicy;
+    }
     await group.save();
 
     return {
@@ -3076,7 +3084,7 @@ export const CommunityService = {
         },
       ]),
       CommunityGroup.find({ _id: { $in: groupConversationIds } })
-        .select("_id name description visibility sport city memberCount")
+        .select("_id name description visibility sport city memberCount postPolicy pinnedMessageId")
         .lean(),
     ]);
 
@@ -3527,7 +3535,7 @@ export const CommunityService = {
     const group =
       conversationType === "GROUP" && conversation.groupId
         ? await CommunityGroup.findById(conversation.groupId)
-            .select("_id name description visibility sport city memberCount")
+            .select("_id name description visibility sport city memberCount postPolicy pinnedMessageId")
             .lean()
         : null;
 
@@ -3547,6 +3555,17 @@ export const CommunityService = {
                 sport: group?.sport || "",
                 city: group?.city || "",
                 memberCount: group?.memberCount || 0,
+                postPolicy: group?.postPolicy || "ANY_MEMBER",
+                pinnedMessageId: group?.pinnedMessageId
+                  ? String(group.pinnedMessageId)
+                  : null,
+                // Whether *this* viewer may post, so the composer can be
+                // disabled without the client re-deriving the rule.
+                canPost:
+                  group?.postPolicy === "ADMIN_ONLY"
+                    ? (await getMemberRole(String(group._id), userId)) ===
+                      "ADMIN"
+                    : true,
               }
             : null,
       },
@@ -3586,6 +3605,21 @@ export const CommunityService = {
     );
     if (!isParticipant) {
       throw new Error("Access denied");
+    }
+
+    if (conversation.conversationType === "GROUP" && conversation.groupId) {
+      // Announcement groups: everyone reads, only admins post. Checked here
+      // rather than in the UI because the socket send path bypasses any
+      // client-side gate.
+      const group = await CommunityGroup.findById(conversation.groupId)
+        .select("postPolicy")
+        .lean();
+      if (group?.postPolicy === "ADMIN_ONLY") {
+        const role = await getMemberRole(String(conversation.groupId), userId);
+        if (role !== "ADMIN") {
+          throw new Error("Only admins can post in this group");
+        }
+      }
     }
 
     if (conversation.conversationType !== "GROUP") {
@@ -3856,6 +3890,56 @@ export const CommunityService = {
     };
   },
 
+  /**
+   * Pin a message to the top of a group, or clear the pin by passing the one
+   * already pinned. Admin-only and one at a time: a pin is a group-wide
+   * announcement, not a personal bookmark.
+   */
+  async pinGroupMessage(userId: string, messageId: string) {
+    const message = await CommunityMessage.findById(messageId)
+      .select("_id conversationId isDeleted")
+      .lean();
+    if (!message || message.isDeleted) {
+      throw new Error("Message not found");
+    }
+
+    const conversation = await CommunityConversation.findById(
+      message.conversationId,
+    )
+      .select("groupId conversationType")
+      .lean();
+    if (!conversation?.groupId) {
+      throw new Error("Only group messages can be pinned");
+    }
+
+    const groupId = String(conversation.groupId);
+    if (!(await isGroupAdmin(groupId, userId))) {
+      throw new Error("Only group admins can pin a message");
+    }
+
+    const group = await CommunityGroup.findById(groupId).select(
+      "pinnedMessageId",
+    );
+    if (!group) {
+      throw new Error("Group not found");
+    }
+
+    const alreadyPinned =
+      String(group.pinnedMessageId || "") === String(message._id);
+    group.pinnedMessageId = alreadyPinned ? null : message._id;
+    await group.save();
+
+    return {
+      groupId,
+      conversationId: String(message.conversationId),
+      messageId: String(message._id),
+      pinned: !alreadyPinned,
+      pinnedMessageId: group.pinnedMessageId
+        ? String(group.pinnedMessageId)
+        : null,
+    };
+  },
+
   async editMessage(userId: string, messageId: string, content: string) {
     const message = await CommunityMessage.findById(messageId);
     if (!message) {
@@ -3950,6 +4034,13 @@ export const CommunityService = {
     // A deleted message shows as "This message was deleted"; leaving reactions
     // attached would keep a row of emoji under text nobody can read.
     await CommunityMessageReaction.deleteMany({ messageId: message._id });
+
+    // Same for a pin — a group banner pointing at deleted text is worse than
+    // no banner.
+    await CommunityGroup.updateOne(
+      { pinnedMessageId: message._id },
+      { $set: { pinnedMessageId: null } },
+    );
 
     const conversation = await CommunityConversation.findById(
       message.conversationId,

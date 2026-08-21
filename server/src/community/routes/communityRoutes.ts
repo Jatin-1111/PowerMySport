@@ -36,6 +36,7 @@ import {
   leaveGroup,
   listMyCommunityReports,
   listGroups,
+  pinGroupMessage,
   listCommunityPosts,
   listConversations,
   rejectConversationRequest,
@@ -142,6 +143,7 @@ router.patch(
   validateRequest(communityUpdateMessageSchema),
   editMessage,
 );
+router.post("/messages/:messageId/pin", authMiddleware, pinGroupMessage);
 router.delete("/messages/:messageId", authMiddleware, deleteMessage);
 
 // Public — powers the Discover page's community/group directory for guests.

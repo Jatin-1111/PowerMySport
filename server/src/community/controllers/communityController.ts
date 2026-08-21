@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { CommunityService } from "../services/CommunityService";
 import {
+  emitCommunityGroupEvent,
   emitCommunityQnaEvent,
   qnaPostRoom,
   QNA_FEED_ROOM,
@@ -710,14 +711,16 @@ export const updateGroupSettings = async (
       throw new Error("groupId is required");
     }
 
-    const { memberAddPolicy } = req.body as {
-      memberAddPolicy: "ADMIN_ONLY" | "ANY_MEMBER";
+    const { memberAddPolicy, postPolicy } = req.body as {
+      memberAddPolicy?: "ADMIN_ONLY" | "ANY_MEMBER";
+      postPolicy?: "ANY_MEMBER" | "ADMIN_ONLY";
     };
     const data = await CommunityService.updateGroupSettings(
       getUserId(req),
       groupId,
       {
-        memberAddPolicy,
+        ...(memberAddPolicy ? { memberAddPolicy } : {}),
+        ...(postPolicy ? { postPolicy } : {}),
       },
     );
 
@@ -1363,6 +1366,32 @@ export const deleteCommunityAnswerComment = async (
     });
   } catch (error) {
     handleError(res, error, "Failed to delete comment");
+  }
+};
+
+export const pinGroupMessage = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const messageId = String(req.params.messageId || "");
+    const data = await CommunityService.pinGroupMessage(
+      getUserId(req),
+      messageId,
+    );
+
+    emitCommunityGroupEvent(data.groupId, "community:groupMembersUpdated", {
+      groupId: data.groupId,
+      pinnedMessageId: data.pinnedMessageId,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: data.pinned ? "Message pinned" : "Message unpinned",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to pin message");
   }
 };
 
