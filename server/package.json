@@ -31,7 +31,7 @@
     "purge:venues": "ts-node src/scripts/deleteAllVenueData.ts",
     "purge:smoke-users": "ts-node src/scripts/deleteSmokeUsers.ts",
     "stress:booking-race": "ts-node src/scripts/stressBookingConcurrency.ts",
-    "test": "npm run build && node --test --test-force-exit \"dist/tests/*.test.js\"",
+    "test": "npm run build && node --test --test-concurrency=1 --test-force-exit \"dist/tests/*.test.js\"",
     "test:qna": "npm run build && node --test dist/tests/communityQnaUtils.test.js",
     "test:community-policy": "npm run build && node --test dist/tests/communityPolicy.test.js",
     "test:community": "npm run build && node --test dist/tests/communityQnaUtils.test.js dist/tests/communityPolicy.test.js",
