@@ -387,3 +387,23 @@ export interface CommunityLeaderboardResponse {
   /** The caller's own standing, present even when they rank outside the page. */
   me: CommunityLeaderboardEntry | null;
 }
+
+export interface CommunitySearchItem {
+  kind: "POST" | "BLOG";
+  id: string;
+  title: string;
+  snippet: string;
+  href: string;
+  sport: string;
+  tags: string[];
+  answerCount: number;
+  isSolved: boolean;
+  createdAt: string;
+  /** 0-1, normalized per collection so questions and stories rank together. */
+  relevance: number;
+}
+
+export interface CommunitySearchResponse {
+  items: CommunitySearchItem[];
+  query: string;
+}

@@ -15,6 +15,7 @@
     "migrate:provider-type": "ts-node src/migrations/22_backfill_booking_provider_type.ts",
     "migrate:ranking-insights": "ts-node src/migrations/24_backfill_ranking_insights.ts",
     "migrate:group-members": "ts-node src/migrations/26_extract_community_group_members.ts",
+    "migrate:blog-search": "ts-node src/migrations/27_widen_blog_text_index.ts",
     "migrate:split-pending": "ts-node src/migrations/23_split_pending_confirmation_status.ts",
     "migrate:admin-permissions": "ts-node src/scripts/migrateAdminPermissions.ts",
     "community:players-public": "ts-node src/scripts/makePlayerProfilesPublic.ts",

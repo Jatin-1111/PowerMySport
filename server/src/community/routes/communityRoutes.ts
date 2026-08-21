@@ -39,6 +39,7 @@ import {
   listConversations,
   rejectConversationRequest,
   reportCommunityContent,
+  searchCommunity,
   searchPlayers,
   sendMessage,
   startConversation,
@@ -207,6 +208,10 @@ router.post(
   validateRequest(communityFollowImportSchema),
   importCommunityFollows,
 );
+// Public — questions and published stories are readable without an account,
+// so search over them is too.
+router.get("/search", optionalAuthMiddleware, searchCommunity);
+
 // Public — Q&A list/detail feed the community landing page, shared post
 // links, and the sitemap generator.
 router.get("/posts", optionalAuthMiddleware, listCommunityPosts);

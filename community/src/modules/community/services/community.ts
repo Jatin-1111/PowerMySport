@@ -21,6 +21,7 @@ import {
   CommunityFeedSort,
   CommunityFollowKind,
   CommunityLeaderboardResponse,
+  CommunitySearchResponse,
   CommunityFollowRecord,
   CommunityFeedSortDirection,
   MessagePrivacy,
@@ -844,6 +845,28 @@ export const communityService = {
         return response.data.data;
       },
       5000,
+    );
+  },
+
+  async search(
+    query: string,
+    type: "ALL" | "POST" | "BLOG" = "ALL",
+    limit = 20,
+  ): Promise<CommunitySearchResponse> {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      return { items: [], query: trimmed };
+    }
+
+    return withRequestCache(
+      `search:${type}:${limit}:${trimmed.toLowerCase()}`,
+      async () => {
+        const response = await axiosInstance.get<
+          ApiResponse<CommunitySearchResponse>
+        >("/community/search", { params: { q: trimmed, type, limit } });
+        return response.data.data;
+      },
+      15000,
     );
   },
 

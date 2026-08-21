@@ -84,7 +84,21 @@ blogPostSchema.index({ createdAt: -1 });
 blogPostSchema.index({ topic: 1, createdAt: -1 });
 blogPostSchema.index({ authorId: 1, createdAt: -1 });
 blogPostSchema.index({ status: 1, isDeleted: 1, createdAt: -1 });
-blogPostSchema.index({ title: "text", excerpt: "text", tags: "text" });
+// The article body was missing here, so searching for a phrase that appears in
+// a post found nothing unless it also happened to be in the title or excerpt.
+//
+// MongoDB allows only ONE text index per collection, so this cannot simply be
+// edited in place on a live database: Mongoose will try to build it alongside
+// the old one and MongoDB rejects the conflict. Migration 27 drops the old
+// index and builds this one. The explicit name is what lets the migration
+// recognise its own work on a re-run.
+blogPostSchema.index(
+  { title: "text", excerpt: "text", tags: "text", content: "text" },
+  {
+    name: "blog_search_v2",
+    weights: { title: 10, tags: 6, excerpt: 4, content: 1 },
+  },
+);
 
 export const BlogPost = mongoose.model<BlogPostDocument>(
   "BlogPost",

@@ -851,6 +851,36 @@ export const getMyCommunityReputation = async (
   }
 };
 
+export const searchCommunity = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const q = typeof req.query.q === "string" ? req.query.q : "";
+    const rawType =
+      typeof req.query.type === "string" ? req.query.type.toUpperCase() : "ALL";
+    const type =
+      rawType === "POST" || rawType === "BLOG"
+        ? (rawType as "POST" | "BLOG")
+        : ("ALL" as const);
+    const limit = Number(req.query.limit) || 20;
+
+    const data = await CommunityService.searchCommunity(
+      getOptionalUserId(req),
+      q,
+      { type, limit },
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Search complete",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Search failed");
+  }
+};
+
 export const listCommunityLeaderboard = async (
   req: Request,
   res: Response,

@@ -27,6 +27,7 @@ import {
   Heart,
   Compass,
   Newspaper,
+  Search,
 } from "lucide-react";
 
 // ─── Additional Settings dropdown items ────────────────────────────────────
@@ -206,6 +207,12 @@ export default function CommunityTopNav() {
             <Link href="/questions" className={navLinkCls(pathname.startsWith("/questions"))}>
               <MessageSquare size={16} />
               Questions
+            </Link>
+            <Link
+              href="/search"
+              className={navLinkCls(pathname.startsWith("/search"))}
+            >
+              Search
             </Link>
 
             <Link
@@ -389,6 +396,7 @@ export default function CommunityTopNav() {
                       { href: "/discover", icon: Compass, label: "Discover" },
                       { href: "/blog", icon: Newspaper, label: "Blog" },
                       { href: "/questions", icon: MessageSquare, label: "Questions" },
+                      { href: "/search", icon: Search, label: "Search" },
                       {
                         href: "/contributors",
                         icon: Trophy,
