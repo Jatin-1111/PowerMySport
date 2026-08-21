@@ -148,7 +148,15 @@ export default function CommunityLandingPage() {
               // The band is capped at max-w-7xl, so 100vw would make the
               // optimizer serve a wider file than any viewport can show.
               sizes="(min-width: 1280px) 1216px, 100vw"
-              className="-z-10 object-cover object-center"
+              // The band is portrait below md, where object-cover shows the
+              // full height and only the central 35% of the width — which is
+              // empty field. Everything that carries the picture (parents at
+              // the left edge, coach and children at the right) falls outside
+              // it, so a phone got an empty ground and a clipped child. 88%
+              // frames the coach and the group instead. The parents are lost
+              // at that width; the meaning is on both edges and a focal point
+              // can only choose one.
+              className="-z-10 object-cover object-[88%_center] md:object-center"
             />
 
             {/* Overlay strength is solved, not guessed: for each row of text,
@@ -165,13 +173,14 @@ export default function CommunityLandingPage() {
                 Heaviest at the top because the sun haze sits there — the
                 brightest pixel in the centre column is (253,238,216), and the
                 badge is the smallest text on the panel, so it sets the top
-                stop. 0.76 rather than the 0.60 that AA needs buys AAA on every
-                row for 4% of visibility in the least interesting part of the
-                frame. Lightest at the bottom, which is already the darkest part
+                stop. 0.80 rather than the 0.60 that AA needs buys AAA on every
+                row, on both crops, for 20% of visibility in the least
+                interesting part of the frame — the narrow crop below md swings
+                more sun haze behind the badge, and 0.76 left it at 6.93. Lightest at the bottom, which is already the darkest part
                 of the photo. The stops keep headroom over each figure so a
                 different viewport crop or a re-encode cannot quietly drop a
                 row below its target. */}
-            <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-slate-950/76 via-slate-950/64 to-slate-950/48" />
+            <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-slate-950/80 via-slate-950/64 to-slate-950/48" />
 
             {/* Single column. The hero used to carry a three-step panel on
                 the right, which competed with the headline and repeated the
