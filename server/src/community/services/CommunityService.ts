@@ -8,6 +8,7 @@ import {
   type CommunityGroupVisibility,
 } from "../models/CommunityGroup";
 import { CommunityMessage } from "../models/CommunityMessage";
+import { CommunityMessageReaction } from "../models/CommunityMessageReaction";
 import {
   CommunityMessagePrivacy,
   CommunityProfile,
@@ -3363,6 +3364,35 @@ export const CommunityService = {
     // One query for every quoted message on the page, rather than a lookup per
     // message. Quotes are resolved live rather than snapshotted at send time,
     // so an edit to the original shows through and a deletion is visible.
+    // One query for the whole page's reactions, grouped client-side below.
+    const reactionRows = await CommunityMessageReaction.find({
+      messageId: { $in: messages.map((message) => message._id) },
+    })
+      .select("messageId userId emoji")
+      .lean();
+
+    const reactionsByMessage = new Map<
+      string,
+      { emoji: string; count: number; reactedByMe: boolean }[]
+    >();
+    for (const reaction of reactionRows) {
+      const key = String(reaction.messageId);
+      const bucket = reactionsByMessage.get(key) || [];
+      const existing = bucket.find((item) => item.emoji === reaction.emoji);
+      if (existing) {
+        existing.count += 1;
+        existing.reactedByMe =
+          existing.reactedByMe || String(reaction.userId) === userId;
+      } else {
+        bucket.push({
+          emoji: reaction.emoji,
+          count: 1,
+          reactedByMe: String(reaction.userId) === userId,
+        });
+      }
+      reactionsByMessage.set(key, bucket);
+    }
+
     const replyTargetIds = messages.flatMap((message) =>
       message.replyToId ? [message.replyToId] : [],
     );
@@ -3439,6 +3469,9 @@ export const CommunityService = {
         content: message.isDeleted ? "Message deleted" : message.content,
         metadata: message.metadata || null,
         replyTo: shapeReplyPreview(message.replyToId),
+        reactions: (reactionsByMessage.get(String(message._id)) || []).sort(
+          (a, b) => b.count - a.count,
+        ),
         createdAt: message.createdAt,
         updatedAt: message.updatedAt,
         editedAt: message.editedAt || null,
@@ -3693,6 +3726,89 @@ export const CommunityService = {
     };
   },
 
+  /**
+   * Sets, replaces or clears this user's reaction to a message. One reaction
+   * per person: reacting with a different emoji replaces the previous one
+   * rather than stacking, and reacting with the same one clears it.
+   */
+  async reactToMessage(userId: string, messageId: string, emoji: string) {
+    const trimmed = (emoji || "").trim();
+    if (!trimmed) {
+      throw new Error("An emoji is required");
+    }
+
+    const message = await CommunityMessage.findById(messageId)
+      .select("_id conversationId isDeleted")
+      .lean();
+    if (!message || message.isDeleted) {
+      throw new Error("Message not found");
+    }
+
+    // Reacting is participation, so it needs the same access check as reading.
+    await this.assertConversationAccess(
+      userId,
+      String(message.conversationId),
+    );
+
+    const existing = await CommunityMessageReaction.findOne({
+      messageId: message._id,
+      userId,
+    })
+      .select("_id emoji")
+      .lean();
+
+    if (existing && existing.emoji === trimmed) {
+      await CommunityMessageReaction.deleteOne({ _id: existing._id });
+    } else if (existing) {
+      await CommunityMessageReaction.updateOne(
+        { _id: existing._id },
+        { $set: { emoji: trimmed } },
+      );
+    } else {
+      await CommunityMessageReaction.updateOne(
+        { messageId: message._id, userId },
+        {
+          $setOnInsert: {
+            messageId: message._id,
+            conversationId: message.conversationId,
+            userId: new mongoose.Types.ObjectId(userId),
+          },
+          $set: { emoji: trimmed },
+        },
+        { upsert: true },
+      );
+    }
+
+    const rows = await CommunityMessageReaction.find({
+      messageId: message._id,
+    })
+      .select("userId emoji")
+      .lean();
+
+    const grouped: { emoji: string; count: number; reactedByMe: boolean }[] =
+      [];
+    for (const row of rows) {
+      const bucket = grouped.find((item) => item.emoji === row.emoji);
+      if (bucket) {
+        bucket.count += 1;
+        bucket.reactedByMe =
+          bucket.reactedByMe || String(row.userId) === userId;
+      } else {
+        grouped.push({
+          emoji: row.emoji,
+          count: 1,
+          reactedByMe: String(row.userId) === userId,
+        });
+      }
+    }
+
+    return {
+      messageId: String(message._id),
+      conversationId: String(message.conversationId),
+      reactions: grouped.sort((a, b) => b.count - a.count),
+    };
+  },
+
   async editMessage(userId: string, messageId: string, content: string) {
     const message = await CommunityMessage.findById(messageId);
     if (!message) {
@@ -3783,6 +3899,10 @@ export const CommunityService = {
     message.deletedBy = new mongoose.Types.ObjectId(userId);
     message.content = "Message deleted";
     await message.save();
+
+    // A deleted message shows as "This message was deleted"; leaving reactions
+    // attached would keep a row of emoji under text nobody can read.
+    await CommunityMessageReaction.deleteMany({ messageId: message._id });
 
     const conversation = await CommunityConversation.findById(
       message.conversationId,

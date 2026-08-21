@@ -123,6 +123,12 @@ export interface ConversationReplyPreview {
   isDeleted: boolean;
 }
 
+export interface MessageReaction {
+  emoji: string;
+  count: number;
+  reactedByMe: boolean;
+}
+
 export interface ConversationMessage {
   id: string;
   conversationId: string;
@@ -140,6 +146,7 @@ export interface ConversationMessage {
     caption?: string;
   } | null;
   replyTo?: ConversationReplyPreview | null;
+  reactions?: MessageReaction[];
   createdAt: string;
   updatedAt?: string;
   editedAt?: string | null;

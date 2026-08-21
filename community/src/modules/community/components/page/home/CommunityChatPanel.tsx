@@ -63,6 +63,7 @@ export default function CommunityChatPanel({ page }: Props) {
     handleCancelEditMessage,
     newMessage,
     replyingTo,
+    handleReactToMessage,
     setReplyingTo,
     setNewMessage,
     canSendSelectedConversationMessage,
@@ -643,6 +644,7 @@ export default function CommunityChatPanel({ page }: Props) {
                 isEditing={editingMessageId === message.id}
                 isMutating={isMutatingMessageId === message.id}
                 onReply={(m) => setReplyingTo(m)}
+                onReact={(m, emoji) => void handleReactToMessage(m, emoji)}
                 onJumpToMessage={(messageId) => {
                   const node = document.getElementById(`message-${messageId}`);
                   if (node) {

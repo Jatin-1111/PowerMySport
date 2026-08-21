@@ -25,6 +25,7 @@ import {
   ConversationListResponse,
   ConversationItem,
   ConversationMessage,
+  MessageReaction,
   BlockedUser,
 } from "@/modules/community/types";
 import { GroupMember } from "@/modules/community/components/GroupMembersList";
@@ -1210,6 +1211,21 @@ export function useCommunityPage(options?: {
       updateMessageById(message.id, (current) => ({ ...current, ...message }));
       queueConversationRefresh(120);
     };
+    const handleMessageReacted = (payload: {
+      messageId: string;
+      conversationId: string;
+      reactions: MessageReaction[];
+    }) => {
+      // Patch only what changed: a reaction must not disturb scroll position
+      // or trigger the page refetch that an edit does.
+      if (payload.conversationId !== selectedConversationIdRef.current) {
+        return;
+      }
+      updateMessageById(payload.messageId, (current) => ({
+        ...current,
+        reactions: payload.reactions,
+      }));
+    };
     const handleMessageDeleted = (message: ConversationMessage) => {
       if (message.conversationId !== selectedConversationIdRef.current) {
         queueConversationRefresh();
@@ -1267,6 +1283,7 @@ export function useCommunityPage(options?: {
     socket.on("community:messagesDelivered", handleMessagesDelivered);
     socket.on("community:conversationUpdated", handleConversationUpdated);
     socket.on("community:messageEdited", handleMessageEdited);
+    socket.on("community:messageReacted", handleMessageReacted);
     socket.on("community:messageDeleted", handleMessageDeleted);
     socket.on("community:error", handleCommunityError);
     socket.on("connect_error", handleConnectError);
@@ -1283,6 +1300,7 @@ export function useCommunityPage(options?: {
       socket.off("community:messagesDelivered", handleMessagesDelivered);
       socket.off("community:conversationUpdated", handleConversationUpdated);
       socket.off("community:messageEdited", handleMessageEdited);
+      socket.off("community:messageReacted", handleMessageReacted);
       socket.off("community:messageDeleted", handleMessageDeleted);
       socket.off("community:error", handleCommunityError);
       socket.off("connect_error", handleConnectError);
@@ -2061,6 +2079,43 @@ export function useCommunityPage(options?: {
     [selectedConversationId],
   );
 
+  // A plain function like the other message handlers here: the values it needs
+  // are not memoized, so a useCallback would buy nothing and only add a
+  // stale-closure warning.
+  const handleReactToMessage = async (
+    message: ConversationMessage,
+    emoji: string,
+  ) => {
+    const socket = getCommunitySocket();
+    if (!socket.connected) {
+      // Reactions are socket-only — there is no HTTP fallback route, and
+      // silently doing nothing would read as a broken button.
+      toast.error("Reconnecting — try that again in a moment");
+      return;
+    }
+
+    socket.emit(
+      "community:reactToMessage",
+      { messageId: message.id, emoji },
+      (result: unknown) => {
+        const ack = result as
+          | {
+              success: true;
+              data: { messageId: string; reactions: MessageReaction[] };
+            }
+          | { success: false; message?: string };
+        if (!ack?.success) {
+          toast.error(ack?.message || "Failed to react");
+          return;
+        }
+        updateMessageById(ack.data.messageId, (current) => ({
+          ...current,
+          reactions: ack.data.reactions,
+        }));
+      },
+    );
+  };
+
   const handleSendMessage = async () => {
     if (!selectedConversation || !newMessage.trim()) return;
     if (selectedConversationNeedsMyApproval)
@@ -2487,6 +2542,7 @@ export function useCommunityPage(options?: {
     handleDeleteMessage,
     handleCopyMessage,
     handleSendMessage,
+    handleReactToMessage,
     replyingTo,
     setReplyingTo,
     handleSendImageMessage,

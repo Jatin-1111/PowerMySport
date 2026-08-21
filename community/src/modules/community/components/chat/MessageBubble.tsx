@@ -196,13 +196,16 @@ export const MessageBubble = memo(function MessageBubble({
     null,
   );
   const [showReactionPicker, setShowReactionPicker] = useState(false);
-  const [localReaction, setLocalReaction] = useState<string | null>(null);
 
-  const handleEmojiSelect = useCallback((emoji: string) => {
-    setLocalReaction(emoji);
-    onReact?.(message, emoji);
-    setShowReactionPicker(false);
-  }, [message, onReact]);
+  const handleEmojiSelect = useCallback(
+    (emoji: string) => {
+      // No local echo: the server is the only thing that knows the real count
+      // across participants, and it answers on the same socket round-trip.
+      onReact?.(message, emoji);
+      setShowReactionPicker(false);
+    },
+    [message, onReact],
+  );
 
   const clearLongPressTimeout = useCallback(() => {
     if (longPressTimeoutRef.current) {
@@ -412,18 +415,38 @@ export const MessageBubble = memo(function MessageBubble({
               )}
             </div>
 
-            {/* Reaction display */}
-            <AnimatePresence>
-              {localReaction && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.5, y: -10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  className={`absolute -bottom-3 ${isOwnMessage ? "-left-3" : "-right-3"} z-10 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm text-xs`}
-                >
-                  {localReaction}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Reactions */}
+            {message.reactions && message.reactions.length > 0 && (
+              <div
+                className={`absolute -bottom-3 ${isOwnMessage ? "left-1" : "right-1"} z-10 flex flex-wrap items-center gap-1`}
+              >
+                {message.reactions.map((reaction) => (
+                  <button
+                    key={reaction.emoji}
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onReact?.(message, reaction.emoji);
+                    }}
+                    title={
+                      reaction.reactedByMe
+                        ? "Remove your reaction"
+                        : "React with this"
+                    }
+                    className={`flex h-6 items-center gap-0.5 rounded-full border px-1.5 text-[11px] shadow-sm transition ${
+                      reaction.reactedByMe
+                        ? "border-power-orange/50 bg-orange-50 text-power-orange"
+                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>{reaction.emoji}</span>
+                    {reaction.count > 1 ? (
+                      <span className="font-semibold">{reaction.count}</span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Timestamp below bubble */}

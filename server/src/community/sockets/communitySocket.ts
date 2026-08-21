@@ -486,6 +486,57 @@ export const setupCommunitySocket = (io: Server): void => {
       }
     });
 
+    socket.on("community:reactToMessage", async (payload, callback) => {
+      try {
+        const allowed = consumeRateLimit(
+          socketRateLimit,
+          "community:reactToMessage",
+          60,
+          10_000,
+        );
+        if (!allowed) {
+          const message = "Too many reactions, please slow down";
+          socket.emit("community:error", { message });
+          if (typeof callback === "function") {
+            callback({ success: false, message });
+          }
+          return;
+        }
+
+        const messageId = String(payload?.messageId || "");
+        const emoji = String(payload?.emoji || "");
+        if (!messageId || !emoji) {
+          const message = "messageId and emoji are required";
+          socket.emit("community:error", { message });
+          if (typeof callback === "function") {
+            callback({ success: false, message });
+          }
+          return;
+        }
+
+        const result = await CommunityService.reactToMessage(
+          userId,
+          messageId,
+          emoji,
+        );
+
+        communityNamespace
+          .to(`conversation:${result.conversationId}`)
+          .emit("community:messageReacted", result);
+
+        if (typeof callback === "function") {
+          callback({ success: true, data: result });
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to react";
+        socket.emit("community:error", { message });
+        if (typeof callback === "function") {
+          callback({ success: false, message });
+        }
+      }
+    });
+
     socket.on("community:editMessage", async (payload, callback) => {
       try {
         const allowed = consumeRateLimit(
