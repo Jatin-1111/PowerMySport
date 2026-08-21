@@ -294,7 +294,10 @@ export const setupCommunitySocket = (io: Server): void => {
         const conversationId = payload?.conversationId;
         if (!conversationId) return;
 
-        communityNamespace
+        // `socket.to(...)`, not `communityNamespace.to(...)`: the namespace
+        // form includes the sender, so typing echoed back to the person doing
+        // the typing and rendered as "someone is typing" on their own screen.
+        socket
           .to(`conversation:${conversationId}`)
           .emit("community:userTyping", {
             conversationId,
@@ -321,7 +324,10 @@ export const setupCommunitySocket = (io: Server): void => {
         const conversationId = payload?.conversationId;
         if (!conversationId) return;
 
-        communityNamespace
+        // `socket.to(...)`, not `communityNamespace.to(...)`: the namespace
+        // form includes the sender, so typing echoed back to the person doing
+        // the typing and rendered as "someone is typing" on their own screen.
+        socket
           .to(`conversation:${conversationId}`)
           .emit("community:userTyping", {
             conversationId,

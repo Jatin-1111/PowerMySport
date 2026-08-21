@@ -117,7 +117,7 @@ export function VoiceMessagePlayer({
   const pendingBar = isOwnMessage ? "bg-orange-200" : "bg-slate-300";
 
   return (
-    <div className="flex items-center gap-2.5 py-0.5 pr-1">
+    <div className="flex w-fit items-center gap-2.5 py-0.5 pr-1">
       <audio ref={audioRef} preload="metadata" src={src} className="hidden" />
 
       <button
@@ -146,7 +146,11 @@ export function VoiceMessagePlayer({
           seekTo(event);
         }}
         role="presentation"
-        className="flex h-8 min-w-[120px] flex-1 cursor-pointer items-center gap-[2px]"
+        // Sized by its bars rather than `flex-1`. Stretching to the bubble's
+        // max-width spread 40 hairlines across ~400px, which reads as a
+        // progress-bar texture rather than a waveform. Bars and gaps shrink
+        // on small screens so the bubble stays inside its 82% cap there.
+        className="flex h-8 shrink-0 cursor-pointer items-center gap-[1px] sm:gap-[2px]"
       >
         {bars.map((height, index) => {
           // (index + 1), not index: at zero progress `0 / n <= 0` is true, which
@@ -155,8 +159,8 @@ export function VoiceMessagePlayer({
           return (
             <span
               key={index}
-              style={{ height: `${Math.max(10, (height / 100) * 100)}%` }}
-              className={`w-[2px] shrink-0 rounded-full transition-colors ${
+              style={{ height: `${Math.max(12, height)}%` }}
+              className={`w-[2px] shrink-0 rounded-full transition-colors sm:w-[3px] ${
                 isPlayed ? playedBar : pendingBar
               }`}
             />

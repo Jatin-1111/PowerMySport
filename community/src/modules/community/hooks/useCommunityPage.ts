@@ -310,6 +310,10 @@ export function useCommunityPage(options?: {
   }, []);
 
   const selectedConversationIdRef = useRef<string | null>(null);
+  // The socket listeners below are bound once, before `profile` has
+  // loaded. Reading `profile` from their closure therefore compares against
+  // undefined forever, so "is this mine?" checks go through this ref.
+  const profileUserIdRef = useRef<string | undefined>(undefined);
   const typingTimeoutsRef = useRef<
     Record<string, ReturnType<typeof setTimeout>>
   >({});
@@ -892,6 +896,10 @@ export function useCommunityPage(options?: {
   useEffect(() => {
     selectedConversationIdRef.current = selectedConversationId;
   }, [selectedConversationId]);
+
+  useEffect(() => {
+    profileUserIdRef.current = profile?.userId;
+  }, [profile?.userId]);
   useEffect(() => {
     if (typeof window !== "undefined")
       window.localStorage.setItem(COMMUNITY_ACTIVE_TAB_KEY, activeSidebarTab);
@@ -1145,7 +1153,7 @@ export function useCommunityPage(options?: {
     };
     const handleDisconnect = () => setIsSocketConnected(false);
     const handleNewMessage = (message: ConversationMessage) => {
-      if (message.senderId !== profile?.userId) {
+      if (message.senderId !== profileUserIdRef.current) {
         socket.emit("community:markConversationAsDelivered", {
           conversationId: message.conversationId,
         });
@@ -1158,7 +1166,10 @@ export function useCommunityPage(options?: {
         });
       } else {
         // Notification for new messages in other chats
-        if (!mutedConversationIdsRef.current.includes(message.conversationId) && message.senderId !== profile?.userId) {
+        if (
+          !mutedConversationIdsRef.current.includes(message.conversationId) &&
+          message.senderId !== profileUserIdRef.current
+        ) {
           toast.success(`New message from ${message.senderDisplayName || "someone"}`);
         }
       }
@@ -1253,7 +1264,7 @@ export function useCommunityPage(options?: {
       isTyping: boolean;
     }) => {
       const { conversationId, userId, isTyping } = payload;
-      if (userId === profile?.userId) return;
+      if (userId === profileUserIdRef.current) return;
 
       setTypingUsers((current) => {
         const users = current[conversationId] || [];
