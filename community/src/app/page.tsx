@@ -197,10 +197,11 @@ export default function CommunityLandingPage() {
                     child&apos;s sports journey.
                   </span>
                 </h1>
-                <p className="mx-auto mt-4 max-w-xl text-[15px] leading-7 text-slate-50 sm:text-base">
-                  Before you book a coach or a venue, get the knowledge you
-                  need. Ask questions, read what other parents did, and hear
-                  from the people who have already been through it.
+                <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-slate-50 sm:text-base">
+                  From choosing the right academy or coach to planning
+                  tournaments, exploring scholarships and careers, learn from
+                  parents who have already navigated the path—and share your
+                  own experiences to support the community.
                 </p>
 
                 <HeroSearch />
