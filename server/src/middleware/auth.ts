@@ -157,7 +157,13 @@ export const authMiddleware = async (
 
         status = {
           isActive: userRecord.isActive !== false,
-          suspensionReason: userRecord.suspensionReason,
+          // Coerced to "" rather than left undefined: with
+          // exactOptionalPropertyTypes on, assigning `undefined` to an
+          // optional string property is a type error (absent vs.
+          // present-but-undefined are distinct types). "" is also what the
+          // schema itself defaults this field to, so this changes nothing
+          // about the fallback message below (both are falsy).
+          suspensionReason: userRecord.suspensionReason ?? "",
         };
 
         if (decoded.id) {
@@ -243,7 +249,7 @@ export const optionalAuthMiddleware = async (
 
           status = {
             isActive: userRecord.isActive !== false,
-            suspensionReason: userRecord.suspensionReason,
+            suspensionReason: userRecord.suspensionReason ?? "",
           };
 
           if (decoded.id) {

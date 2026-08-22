@@ -2,6 +2,7 @@
 
 import { BackButton } from "@/modules/shared/ui/BackButton";
 import { getCommunityAppUrl } from "@/lib/community/url";
+import { queryKeys } from "@/lib/query/keys";
 import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { bookingApi } from "@/modules/booking/services/booking";
@@ -12,6 +13,7 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { Availability, ReviewItem, ReviewSummary, Venue } from "@/types";
 import { getVenueImageUrls, getVenueSportImageUrls } from "@/utils/venueImages";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Calendar,
   Check,
@@ -31,9 +33,28 @@ export function VenueDetailClient() {
   const router = useRouter();
   const { user } = useAuthStore();
   const venueId = params.venueId as string;
+  const queryClient = useQueryClient();
 
-  const [venue, setVenue] = useState<Venue | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Primary venue fetch, via React Query instead of a bespoke
+  // useEffect+useState pair. Two things fall out of that:
+  // - page.tsx (the server component above this one) prefetches this exact
+  //   query key and hands the cache over already hydrated, so a fresh
+  //   navigation here can skip the loading spinner entirely instead of
+  //   fetching from scratch on the client;
+  // - handleSubmitReview below now invalidates this query key instead of
+  //   calling a manual reload function.
+  const {
+    data: venue = null,
+    isLoading: loading,
+    isError: venueLoadFailed,
+  } = useQuery({
+    queryKey: queryKeys.discovery.venue(venueId),
+    queryFn: async () => {
+      const response = await discoveryApi.getVenueById(venueId);
+      return response.success ? ((response.data as Venue) ?? null) : null;
+    },
+    enabled: Boolean(venueId),
+  });
   // Use local date (not UTC) so midnight-to-dawn visitors see today's date,
   // not yesterday's (which toISOString() would return for IST before 05:30 UTC).
   const getLocalDateString = () => {
@@ -124,9 +145,21 @@ export function VenueDetailClient() {
     return `${sport}: ${count} photos`;
   };
 
+  // Re-derive the default selected sport whenever the venue query resolves
+  // (first load, or the refetch triggered from handleSubmitReview) — same
+  // behavior the old loadVenueDetails() had, just keyed off the query's data
+  // instead of an imperative call.
   useEffect(() => {
-    if (venueId) loadVenueDetails();
-  }, [venueId]);
+    if (venue?.sports && venue.sports.length > 0) {
+      setSelectedSport(venue.sports[0]);
+    }
+  }, [venue]);
+
+  useEffect(() => {
+    if (venueLoadFailed) {
+      toast.error("Failed to load venue details");
+    }
+  }, [venueLoadFailed]);
 
   useEffect(() => {
     if (venueId && selectedDate) loadAvailability();
@@ -198,23 +231,6 @@ export function VenueDetailClient() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [lightboxOpen, venueImages.length]);
-
-  const loadVenueDetails = async () => {
-    try {
-      const response = await discoveryApi.getVenueById(venueId);
-      if (response.success && response.data) {
-        setVenue(response.data);
-        if (response.data.sports && response.data.sports.length > 0) {
-          setSelectedSport(response.data.sports[0]);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load venue details:", error);
-      toast.error("Failed to load venue details");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadAvailability = async () => {
     try {
@@ -292,7 +308,12 @@ export function VenueDetailClient() {
         setReviewRating(0);
         setReviewText("");
         setEligibleBookingId(null);
-        await Promise.all([loadReviews(), loadVenueDetails()]);
+        await Promise.all([
+          loadReviews(),
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.discovery.venue(venueId),
+          }),
+        ]);
       }
     } catch (error: any) {
       toast.error(

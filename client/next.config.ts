@@ -103,6 +103,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(process.cwd(), ".."),
   },
+  experimental: {
+    // Next already auto-optimizes a default list of packages; naming these
+    // explicitly is a cheap guarantee for the two icon/date libs this app
+    // imports from broadly (lucide-react, date-fns) rather than relying on
+    // whatever happens to be in that default list for this Next version.
+    optimizePackageImports: ["lucide-react", "date-fns"],
+  },
   images: {
     dangerouslyAllowLocalIP: true,
     remotePatterns: [
