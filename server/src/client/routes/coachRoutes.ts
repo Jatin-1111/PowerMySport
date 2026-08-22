@@ -221,8 +221,8 @@ router.get("/availability/:coachId", getCoachAvailability);
 // Get coach's subscription packages (public)
 router.get("/:coachId/subscription-packages", getCoachPublicPackagesHandler);
 
-// Get coach by ID (public)
-router.get("/:coachId", getCoach);
+// Get coach by ID (public) — 60s Redis cache, same pattern as /discover.
+router.get("/:coachId", cacheResponse(60), getCoach);
 
 // Update coach profile
 router.put("/:coachId", authMiddleware, updateCoachProfile);

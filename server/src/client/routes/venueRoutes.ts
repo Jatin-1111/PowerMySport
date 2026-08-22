@@ -57,7 +57,10 @@ router.post(
   validateRequest(venueImageUploadSchema),
   getVenueImageUploadUrls,
 );
-router.get("/:venueId", getVenue);
+// Public venue detail — same 60s Redis cache already used for search/discover,
+// applied here too since this is the highest-traffic read (every venue page
+// view) and previously had no caching at all.
+router.get("/:venueId", cacheResponse(60), getVenue);
 router.put(
   "/:venueId",
   authMiddleware,

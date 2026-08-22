@@ -27,6 +27,13 @@ export const connectDB = async (): Promise<void> => {
       maxIdleTimeMS: 30000, // Close sockets after 30 seconds of inactivity
       serverSelectionTimeoutMS: 30000, // Default to 30s to avoid premature timeouts
       socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+      // Mongoose builds/verifies every schema index on every connection by
+      // default. In production the indexes already exist (created by the one
+      // deploy that first introduced them, or a migration), so re-checking
+      // them on every boot/instance-start only adds startup latency and load
+      // against the primary for no benefit. Non-production keeps autoIndex on
+      // so new indexes declared on a model are created automatically in dev.
+      autoIndex: process.env.NODE_ENV !== "production",
     };
 
     if (!isListenersAttached) {

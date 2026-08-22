@@ -1,6 +1,7 @@
 import cookieParser from "cookie-parser";
 import cors, { CorsOptions } from "cors";
 import "./config/env";
+import compression from "compression";
 import express, { Express } from "express";
 import { hostname as osHostname } from "os";
 import mongoose from "mongoose";
@@ -149,6 +150,12 @@ app.use(requestContextMiddleware);
 app.use(cors(corsOptions));
 app.use(observabilityMiddleware);
 app.use(securityHeadersMiddleware);
+// Gzip/Brotli-negotiated compression for every JSON response below. Placed
+// before the raw-body PhonePe route: compression only touches what the
+// response *sends*, so it has no effect on how incoming webhook bodies are
+// parsed/verified, but it shrinks every response this API returns (search
+// results, booking payloads, etc.) before it hits the wire.
+app.use(compression());
 app.use(apiRateLimitMiddleware);
 app.use(
   "/api/payments/phonepe",

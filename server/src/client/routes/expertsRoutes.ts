@@ -6,6 +6,7 @@ import {
   adminMiddleware,
 } from "../../middleware/auth";
 import * as expert from "../controllers/expertsController";
+import { cacheResponse } from "../../middleware/cacheMiddleware";
 
 const router = Router();
 
@@ -164,7 +165,8 @@ router.post(
 
 // ── Public discovery + booking ───────────────────────────────────────────────
 router.get("/", optionalAuthMiddleware, expert.getExperts);
-router.get("/:expertId", expert.getExpert);
+// Public expert detail — 60s Redis cache, same pattern as venues/coaches.
+router.get("/:expertId", cacheResponse(60), expert.getExpert);
 router.get("/:expertId/reviews", expert.getReviews);
 router.get("/:expertId/availability", expert.getAvailability);
 router.post(

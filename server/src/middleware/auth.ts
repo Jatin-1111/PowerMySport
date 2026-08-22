@@ -45,6 +45,53 @@ const touchAuthActivity = (userId: string): void => {
 };
 
 /**
+ * Short-lived cache for the account-active/suspension verdict so a busy user
+ * (dashboard polling, rapid navigation) doesn't cost a Mongo round trip on
+ * every single request. Deliberately short: a newly-suspended account can
+ * keep passing auth for up to this TTL before the cache entry expires and
+ * the next request re-checks Mongo. That staleness window was accepted as a
+ * trade-off for cutting the DB hit from the common case — do not lengthen
+ * this without re-confirming that trade-off still holds.
+ */
+const ACCOUNT_STATUS_CACHE_TTL_SECONDS = 15;
+const accountStatusCacheKey = (userId: string): string =>
+  `auth:status:${userId}`;
+
+interface CachedAccountStatus {
+  isActive: boolean;
+  suspensionReason?: string;
+}
+
+const getCachedAccountStatus = async (
+  userId: string,
+): Promise<CachedAccountStatus | null> => {
+  try {
+    const raw = await redis.get(accountStatusCacheKey(userId));
+    return raw ? (JSON.parse(raw) as CachedAccountStatus) : null;
+  } catch (error) {
+    // Fail open: treat as a cache miss and fall through to Mongo below.
+    log.error("Redis error reading cached account status:", error);
+    return null;
+  }
+};
+
+const cacheAccountStatus = (
+  userId: string,
+  status: CachedAccountStatus,
+): void => {
+  redis
+    .set(
+      accountStatusCacheKey(userId),
+      JSON.stringify(status),
+      "EX",
+      ACCOUNT_STATUS_CACHE_TTL_SECONDS,
+    )
+    .catch((error) => {
+      log.error("Failed to cache account status:", error);
+    });
+};
+
+/**
  * Roles whose account record must still exist and be un-suspended for the
  * token to count. A JWT only proves the signature was ours when it was minted —
  * it says nothing about whether the account survived.
@@ -91,22 +138,37 @@ export const authMiddleware = async (
     }
 
     if (USER_ROLES_NEEDING_STATUS_CHECK.includes(decoded.role)) {
-      const userRecord = await User.findById(decoded.id)
-        .select("isActive suspensionReason")
-        .lean();
+      let status = decoded.id
+        ? await getCachedAccountStatus(decoded.id)
+        : null;
 
-      if (!userRecord) {
-        res.status(401).json({
-          success: false,
-          message: "User not found",
-        });
-        return;
+      if (!status) {
+        const userRecord = await User.findById(decoded.id)
+          .select("isActive suspensionReason")
+          .lean();
+
+        if (!userRecord) {
+          res.status(401).json({
+            success: false,
+            message: "User not found",
+          });
+          return;
+        }
+
+        status = {
+          isActive: userRecord.isActive !== false,
+          suspensionReason: userRecord.suspensionReason,
+        };
+
+        if (decoded.id) {
+          cacheAccountStatus(decoded.id, status);
+        }
       }
 
-      if (userRecord.isActive === false) {
+      if (!status.isActive) {
         res.status(403).json({
           success: false,
-          message: userRecord.suspensionReason || "Account is suspended",
+          message: status.suspensionReason || "Account is suspended",
         });
         return;
       }
@@ -165,11 +227,31 @@ export const optionalAuthMiddleware = async (
       }
 
       if (USER_ROLES_NEEDING_STATUS_CHECK.includes(decoded.role)) {
-        const userRecord = await User.findById(decoded.id)
-          .select("isActive")
-          .lean();
+        let status = decoded.id
+          ? await getCachedAccountStatus(decoded.id)
+          : null;
 
-        if (!userRecord || userRecord.isActive === false) {
+        if (!status) {
+          const userRecord = await User.findById(decoded.id)
+            .select("isActive suspensionReason")
+            .lean();
+
+          if (!userRecord) {
+            next();
+            return;
+          }
+
+          status = {
+            isActive: userRecord.isActive !== false,
+            suspensionReason: userRecord.suspensionReason,
+          };
+
+          if (decoded.id) {
+            cacheAccountStatus(decoded.id, status);
+          }
+        }
+
+        if (!status.isActive) {
           next();
           return;
         }
