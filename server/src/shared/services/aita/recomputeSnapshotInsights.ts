@@ -4,6 +4,7 @@ import {
   assignStateRanks,
   computeBandProfiles,
   computeBenchmarks,
+  computeSampledBandProfiles,
   computeStateAggregates,
   type InsightRow,
 } from "./rankingInsights";
@@ -52,7 +53,7 @@ export async function recomputeSnapshotInsights(
   if (!snapshot) return null;
 
   const stored = await RankingEntry.find({ snapshot: snapshot._id })
-    .select("regNo rank totalPoints state points prevRank stateRank")
+    .select("regNo rank totalPoints state points pointsSampled prevRank stateRank")
     .lean();
 
   const base = {
@@ -105,14 +106,32 @@ export async function recomputeSnapshotInsights(
     totalPoints: Number(row.totalPoints ?? 0),
     state: row.state ? String(row.state) : undefined,
     points: Array.isArray(row.points) ? row.points : [],
+    pointsSampled: row.pointsSampled === true,
   }));
 
   const stateRanks = assignStateRanks(rows);
   const benchmarks = computeBenchmarks(rows);
   const stateCounts = computeStateAggregates(rows);
-  // Subcategory is load-bearing here, not decoration: it is what tells the band
-  // profiles whether an age group sits above this one whose points roll down.
-  const bandProfiles = computeBandProfiles(rows, String(snapshot.subcategory));
+  // ── Which band-profile path applies ───────────────────────────────────────
+  // Two eras of data live in this collection and they are measured differently.
+  //
+  // Snapshots archived before the August 2026 cutover have every point column on
+  // every row, because the source PDFs printed them; their composition covers
+  // the whole band and the points carried down from the bracket above have to be
+  // recovered as a residual. Snapshots ingested since have a total per row and a
+  // real breakdown for a sampled subset, where the roll-down is printed outright.
+  //
+  // Deciding by "are any rows flagged sampled?" rather than by date, because the
+  // flag is the actual property the arithmetic depends on — and because a
+  // snapshot whose sampling stage failed should fall through to the old path and
+  // produce nothing, rather than half a chart.
+  const hasSample = rows.some((row) => row.pointsSampled);
+  const bandProfiles = hasSample
+    ? computeSampledBandProfiles(rows)
+    // Subcategory is load-bearing on this path, not decoration: it is what tells
+    // the band profiles whether an age group sits above this one whose points
+    // roll down and must be recovered.
+    : computeBandProfiles(rows, String(snapshot.subcategory));
 
   // ── Row updates ───────────────────────────────────────────────────────────
   // Only rows whose values actually move are written. That is what makes a

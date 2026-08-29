@@ -63,7 +63,9 @@ const TENNIS: RankingSport = {
   federation: {
     name: "All India Tennis Association",
     acronym: "AITA",
-    officialUrl: "https://aitatennis.com/playerranking/",
+    // AITA's ranking index on the hitcourt.com platform they moved to in
+    // August 2026. The old aitatennis.com paths all 404 now.
+    officialUrl: "https://www.aita.hitcourt.com/ranking",
   },
   combos: TENNIS_COMBOS,
   groups: [

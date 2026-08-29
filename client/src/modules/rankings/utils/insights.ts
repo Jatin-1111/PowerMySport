@@ -251,7 +251,37 @@ export function plainPointLabel(raw: string): string {
     .replace(/\s+X\s*\d+\s*$/i, "")
     .trim();
 
-  if (/no[- ]show/i.test(undated)) return "Penalty for pulling out";
+  // ── Labels the new platform prints, which the older rules below miss ───────
+  // The August 2026 source uses its own shorthand, measured across three list
+  // types: `Best 8 Sngls`, `Best 8 Dbls`, `25% Best 8 Dbls`, `Asian (25%)`,
+  // `14&Under`, `Under Mens`, `Mens`, `Itf X 2`, `ATP Points`,
+  // `Itf Wtt Men X 1`, `Penalty Pts`. These sit first because several would
+  // otherwise fall through to the generic tidy-up and reach a reader as
+  // federation shorthand.
+  if (/^penalty/i.test(undated) || /no[- ]show/i.test(undated)) {
+    return "Penalty for pulling out";
+  }
+  // "14&Under" on an Under-12 list is the whole Under-14 total carried down —
+  // their markup calls it the "Previous/Upper category point". The number is the
+  // bracket the points came *from*, so it is named that way round.
+  const carriedBracket = /^(\d{1,2})\s*&\s*under$/i.exec(undated);
+  if (carriedBracket) {
+    return `${ROLLED_DOWN_PREFIX}Under-${carriedBracket[1]}`;
+  }
+  // Bare "Mens"/"Womens" is the open-age list rolling into Under-18 — the one
+  // roll-down that is not an age bracket. "Under Mens" is handled further down.
+  if (/^(mens|men's)$/i.test(undated)) return "Played in the men's list";
+  if (/^(womens|women's)$/i.test(undated)) return "Played in the women's list";
+  // "Asian (25%)" carries no bracket number, unlike the older
+  // "03-Aug-25 25 % PTS. Asian U-14" form matched below.
+  if (/^asian\b/i.test(undated)) return "Asian tournaments (international)";
+  // The multiplier is stripped as noise everywhere else, but here it is the
+  // fact: ITF Junior points count double towards Under-18.
+  if (/^itf$/i.test(undated) && /\bX\s*2\b/i.test(raw)) {
+    return "ITF Junior (counts double)";
+  }
+  // "Sngls" is not caught by the /SING/ test used for the printed "SING." form.
+  if (/\bSNGLS?\b/i.test(undated)) return "Singles";
   // Once the raw doubles column is dropped from the stack this is the only
   // doubles slice on screen, so it can take the plain name. That only a quarter
   // counts is a footnote on the panel, not a qualifier on every legend entry.
@@ -354,7 +384,20 @@ export function explainTotal(
   }>,
   total: number,
   subcategory: string,
+  options: { deriveRollDown?: boolean } = {},
 ): ExplainedTotal | null {
+  // ── Whether the roll-down still has to be recovered ───────────────────────
+  // The old PDFs never printed the points carried down from the bracket above, so
+  // it had to be found as the residual once the scoring columns and the penalty
+  // were accounted for. The platform AITA moved to in August 2026 names it as its
+  // own row — `18&Under` on an Under-16 list — so on those snapshots the residual
+  // is already zero and deriving one would add a second slice for something
+  // already on the chart.
+  //
+  // Callers holding a sampled band pass `deriveRollDown: false`. The default
+  // stays true for archived snapshots and for the single-player band the player
+  // page builds from one raw row.
+  const deriveRollDown = options.deriveRollDown ?? true;
   const deductions = composition
     .filter((slice) => slice.isDeduction && slice.average !== 0)
     .map((slice) => ({ label: slice.label, value: Math.abs(slice.average) }));
@@ -377,6 +420,10 @@ export function explainTotal(
 
   const countedSum = counted.reduce((sum, slice) => sum + slice.average, 0);
   const deducted = deductions.reduce((sum, slice) => sum + slice.value, 0);
+  // The penalty is always added back. Both source eras publish components that
+  // are *gross* of it against a total that is net — verified on the new platform
+  // by a Boys U-16 row whose list total of 30 sits against a breakdown of 40 and
+  // a penalty of 10.
   const residual = total - countedSum + deducted;
 
   // Band averages arrive rounded to one decimal, so a few tenths of drift across
@@ -388,7 +435,7 @@ export function explainTotal(
     .filter((slice) => slice.average > 0)
     .map((slice) => ({ label: slice.label, value: slice.average }));
 
-  const above = nextBracketUp(subcategory);
+  const above = deriveRollDown ? nextBracketUp(subcategory) : null;
   if (residual > tolerance && above) {
     slices.push({ label: `${ROLLED_DOWN_PREFIX}${above}`, value: residual });
   }

@@ -1,9 +1,6 @@
 import cron, { ScheduledTask } from "node-cron";
 import { bootFact } from "./boot";
-import {
-  AitaRankingIngestService,
-  STALENESS_ALERT_DAYS,
-} from "../shared/services/aita/AitaRankingIngestService";
+import { AitaRankingIngestService } from "../shared/services/aita/AitaRankingIngestService";
 import { log as __rootLog } from "./logger";
 const log = __rootLog.child("aitaRanking");
 
@@ -20,21 +17,58 @@ const log = __rootLog.child("aitaRanking");
  * So a Monday-only cron would sit idle exactly when the file is not there yet
  * and then wait a full week to notice it arrived on Wednesday. Instead:
  *
- *   • Hourly, a two-request tripwire against one combo (no PDF is fetched).
- *   • When it trips, a full sweep of all twelve live combos.
+ *   • Hourly, a one-request tripwire — a ~3 KB JSON week list, no list fetched.
+ *   • When it trips, a full sweep of all twelve lists.
  *   • Once something publishes, back off until 00:00 next Monday.
  *
  * Best case that is a handful of requests a week; worst case ~168 tiny ones.
- * Either way the list is live within an hour of upload.
+ * Either way the list is live within an hour of upload. The August 2026 platform
+ * cutover made the tripwire cheaper and broader at once: the week list is global
+ * rather than per combination, so one call now speaks for all twelve lists
+ * instead of Boys U-18 standing in for the rest.
  *
  * A separate weekly sweep runs on Thursday regardless. It exists for the two
- * things the tripwire cannot see: combos that publish without the sentinel
- * moving (their snapshot counts differ by a couple of weeks across the
- * history), and silently corrected re-uploads under an as-on date we already
- * hold, which only show up as changed HTTP validators on the PDF itself.
+ * things the tripwire cannot see: lists that publish without the newest week
+ * changing, and silently corrected re-uploads under a week we already hold.
+ * That second one got more expensive at the cutover — the old flow could HEAD a
+ * static PDF and compare validators, but these pages are generated per request,
+ * so detecting a correction now means fetching and hashing. The Thursday sweep
+ * is where that cost is paid.
+ *
+ * ── The detection gap this scheduler used to have ─────────────────────────────
+ * When AITA moved platforms, every route the client called began returning 404,
+ * and the pipeline reported "up to date" every hour for three weeks. Staleness
+ * was the only alarm, and it was the wrong measurement twice over: its threshold
+ * was 21 days, and what it measured was the age of the newest list rather than
+ * whether we were behind the source. Since AITA's own upload lag runs to 19 days,
+ * it would have fired on a perfectly healthy pipeline before it fired on a broken
+ * one.
+ *
+ * Three things replaced it, in order of how fast they speak:
+ *
+ *   • **~3 hours** — the source layer throws instead of returning emptiness, and
+ *     `SOURCE_FAILURE_ALERT_THRESHOLD` consecutive failed tripwires raise an
+ *     error. This is the one that matters most: the parser can always be
+ *     rewritten, but only if someone knows to rewrite it.
+ *   • **~1 day** — the daily health job compares what we hold against the
+ *     source's own newest week, so "AITA has a list we do not" is the alarm
+ *     rather than "our newest list is old". It warns on the first sighting and
+ *     escalates to an error on the second.
+ *   • **35 days** — a date ceiling, consulted only when the source cannot be
+ *     read at all.
  */
 
 const TIMEZONE = "Asia/Kolkata";
+
+/**
+ * Consecutive failed tripwires before this is treated as the source being
+ * broken rather than a bad hour.
+ *
+ * Three, because the tripwire runs hourly and AITA's box does occasionally
+ * time out — one failure is noise, three in a row is a fact. Set against the
+ * alternative it replaces: a 21-day staleness threshold.
+ */
+const SOURCE_FAILURE_ALERT_THRESHOLD = 3;
 
 let pollJob: ScheduledTask | null = null;
 let sweepJob: ScheduledTask | null = null;
@@ -44,6 +78,23 @@ let healthJob: ScheduledTask | null = null;
 let suppressPollUntil: Date | null = null;
 /** A sweep runs minutes, not hours, but overlapping runs would double-fetch. */
 let running = false;
+/** Reset by any tripwire that reaches the source, however boring its answer. */
+let consecutiveSourceFailures = 0;
+/** So a persistent outage logs one error per escalation, not one per hour. */
+let alertedAtFailureCount = 0;
+/**
+ * Daily health runs that found us behind the source, consecutively.
+ *
+ * This is the grace the ingest service cannot provide. It can only compare two
+ * as-on dates, and since AITA publishes weekly that gap is always at least a week
+ * the moment a new list appears — so a duration threshold there would either
+ * never fire or never protect. Counting *checks* instead measures the thing that
+ * matters: has the hourly poll had a full day to close the gap and failed?
+ *
+ * One run behind is a warning (the week may have appeared minutes ago). Two is an
+ * error: twenty-four hourly polls went by.
+ */
+let consecutiveBehindChecks = 0;
 
 const service = new AitaRankingIngestService();
 
@@ -63,7 +114,18 @@ export function initializeAitaRankingScheduler(): {
     async () => {
       if (suppressPollUntil && Date.now() < suppressPollUntil.getTime()) return;
       await runGuarded("poll", async () => {
-        const { hasNewWork, sourceLatest, storedLatest } = await service.pollSentinel();
+        let probe: Awaited<ReturnType<typeof service.pollSentinel>>;
+        try {
+          probe = await service.pollSentinel();
+        } catch (error) {
+          noteSourceFailure(error);
+          // Rethrown so runGuarded logs it with the rest of the context; the
+          // counter above is what turns a run of these into an alert.
+          throw error;
+        }
+        noteSourceReachable();
+
+        const { hasNewWork, sourceLatest, storedLatest } = probe;
         if (!hasNewWork) return;
 
         log.info(
@@ -107,17 +169,50 @@ export function initializeAitaRankingScheduler(): {
     "0 9 * * *",
     async () => {
       try {
-        const health = await service.getHealth();
-        if (health.stale) {
-          log.error(
-            `[aita-rankings] STALE — nothing published for ${health.daysSincePublish ?? "?"} days ` +
-              `(latest ${health.latestAsOnDate ?? "none"}, threshold ${STALENESS_ALERT_DAYS}). ` +
-              `The source layout or URLs may have changed.`,
-          );
+        // The one caller that asks for the source comparison. It costs a single
+        // ~3 KB JSON call once a day, and it is the difference between an alarm
+        // that means "we are behind" and one that means "AITA has been slow" —
+        // the old version fired on the latter and would have cried wolf on a
+        // perfectly current pipeline.
+        const health = await service.getHealth({ checkSource: true });
+
+        if (health.behindSource === true) {
+          consecutiveBehindChecks += 1;
+          const message =
+            `[aita-rankings] ${health.staleReason}. ` +
+            `Check https://www.aita.hitcourt.com/ranking before assuming a code fault.`;
+          // First sighting may simply be a week that landed minutes ago; the
+          // hourly poll gets it within the hour. A second sighting means a full
+          // day of polls went by without closing the gap.
+          if (consecutiveBehindChecks >= 2) log.error(message);
+          else log.warn(`${message} (first daily check — will escalate if it persists)`);
+        } else {
+          if (consecutiveBehindChecks > 0) {
+            log.info(
+              `[aita-rankings] caught up with the source at ${health.latestAsOnDate}`,
+            );
+          }
+          consecutiveBehindChecks = 0;
+          // Only meaningful when the source could not be read at all — when we
+          // know we match it, the age of the newest list is AITA's lag, not ours.
+          if (health.stale) {
+            log.error(
+              `[aita-rankings] STALE — ${health.staleReason ?? "reason unrecorded"}.`,
+            );
+          }
         }
         if (health.quarantinedCount > 0) {
           log.warn(
             `[aita-rankings] ${health.quarantinedCount} snapshot(s) awaiting review`,
+          );
+        }
+        // Staleness answers "are we behind?"; this answers "can we still reach
+        // them?". Reported together because the pair distinguishes a quiet week
+        // upstream from a source we have lost.
+        if (consecutiveSourceFailures > 0) {
+          log.warn(
+            `[aita-rankings] ${consecutiveSourceFailures} consecutive tripwire ` +
+              `failure(s) since the last successful check`,
           );
         }
       } catch (error) {
@@ -136,6 +231,12 @@ export function stopAitaRankingScheduler(): void {
   sweepJob?.stop();
   healthJob?.stop();
   pollJob = sweepJob = healthJob = null;
+  // Otherwise a restart inherits a stale failure run and either alerts on the
+  // first hiccup or, worse, suppresses the alert it should have raised.
+  consecutiveSourceFailures = 0;
+  alertedAtFailureCount = 0;
+  consecutiveBehindChecks = 0;
+  suppressPollUntil = null;
 }
 
 async function runGuarded(label: string, fn: () => Promise<void>): Promise<void> {
@@ -151,6 +252,51 @@ async function runGuarded(label: string, fn: () => Promise<void>): Promise<void>
   } finally {
     running = false;
   }
+}
+
+/**
+ * Records that the tripwire could not reach the source, and escalates once the
+ * run of failures is long enough to be a fact rather than a bad hour.
+ *
+ * The message names the likely cause on purpose. When this fires, the person
+ * reading it needs to know to go and look at the site, not to restart the
+ * process — the last time this happened the site had moved to a new platform.
+ */
+function noteSourceFailure(error: unknown): void {
+  consecutiveSourceFailures++;
+  if (consecutiveSourceFailures < SOURCE_FAILURE_ALERT_THRESHOLD) return;
+
+  // Escalate at the threshold, then again at each doubling, so a multi-day
+  // outage stays visible without writing an error every hour for days.
+  const shouldAlert =
+    alertedAtFailureCount === 0 ||
+    consecutiveSourceFailures >= alertedAtFailureCount * 2;
+  if (!shouldAlert) return;
+
+  alertedAtFailureCount = consecutiveSourceFailures;
+  log.error(
+    `[aita-rankings] SOURCE UNREACHABLE — ${consecutiveSourceFailures} consecutive ` +
+      `failed tripwires. AITA's routes may have moved or started requiring a ` +
+      `session; check https://www.aita.hitcourt.com/ranking before assuming an ` +
+      `outage. Last error: ${error instanceof Error ? error.message : String(error)}`,
+  );
+}
+
+/** Clears the failure run. A boring "nothing new" still counts as reachable. */
+function noteSourceReachable(): void {
+  if (consecutiveSourceFailures >= SOURCE_FAILURE_ALERT_THRESHOLD) {
+    log.info(
+      `[aita-rankings] source reachable again after ` +
+        `${consecutiveSourceFailures} failed tripwires`,
+    );
+  }
+  consecutiveSourceFailures = 0;
+  alertedAtFailureCount = 0;
+}
+
+/** Exposed so the health endpoint can report it alongside staleness. */
+export function getSourceFailureStreak(): number {
+  return consecutiveSourceFailures;
 }
 
 /** 00:00 IST on the next Monday, expressed as a real instant. */

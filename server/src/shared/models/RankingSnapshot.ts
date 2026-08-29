@@ -155,6 +155,13 @@ const bandProfileSchema = new Schema(
       ],
       default: [],
     },
+    // Present only on snapshots whose composition came from a sample of the
+    // band rather than all of it. Absent means the whole band was measured,
+    // which is true of every snapshot archived before the August 2026 cutover.
+    sampleSize: { type: Number },
+    // What the composition slices sum to. Differs from `averageTotal`, which is
+    // exact over the whole band — see the note on `BandProfile`.
+    compositionTotal: { type: Number },
   },
   { _id: false },
 );

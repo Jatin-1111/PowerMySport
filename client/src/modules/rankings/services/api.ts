@@ -67,7 +67,22 @@ export interface RankingBandProfile {
   from: number;
   to: number | null;
   playerCount: number;
+  /** Exact: every row in the band carries a total. */
   averageTotal: number;
+  /**
+   * How many players in the band the composition was measured from.
+   *
+   * Absent on snapshots from before August 2026, where the source printed every
+   * component on every row and the composition covered the whole band. When it is
+   * present and smaller than `playerCount`, the chart says so.
+   */
+  sampleSize?: number;
+  /**
+   * What `composition` sums to — the mean total of the sampled players, not of
+   * the whole band. The two differ once sampling is involved, and the chart is
+   * stated against this one so its bars account for themselves.
+   */
+  compositionTotal?: number;
   composition: Array<{
     label: string;
     average: number;

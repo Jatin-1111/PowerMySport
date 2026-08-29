@@ -1,8 +1,9 @@
 import { INDIAN_STATES_AND_UTS, IndianStateOrUT } from "../../utils/states";
 
 /**
- * AITA prints a player's state as a bracketed two-letter code — `(MH)`, `(TS)`,
- * `(KA)`. Everything downstream of this file speaks the canonical names in
+ * AITA identifies a player's state by a two-letter code — `MH`, `TG`, `KA`. The
+ * old PDFs printed it bracketed as `(MH)`; the new platform carries it in the
+ * row's state-filter link. Everything downstream of this file speaks the canonical names in
  * `shared/utils/states.ts`, because those are the only 36 strings the rest of
  * the API accepts: `GET /pathways` answers 400 for anything else, and a page
  * that 404s when its fetch fails turns that into a 404 for the whole page. So a
@@ -71,6 +72,70 @@ const STATE_BY_CODE: Record<string, IndianStateOrUT> = {
 export function resolveStateCode(code: string): IndianStateOrUT | null {
   const key = code.trim().toUpperCase();
   return STATE_BY_CODE[key] ?? null;
+}
+
+/**
+ * AITA's four zones, by state code. 1 = North, 2 = South, 3 = East, 4 = West.
+ *
+ * Read off `/ranking-state` on the new platform (2026-08-29), which publishes a
+ * `region_id` alongside each state — the first time this has been machine-
+ * readable. It is not decoration: Talent Series entry is restricted to players
+ * registered in the host zone, and changing zone needs written AITA approval
+ * plus a six-month lock. The pathway product has been describing that boundary
+ * from a 2020 PDF.
+ *
+ * Only the 36 codes AITA itself publishes are listed. The historical aliases
+ * above deliberately have no zone: a row filed under "Orissa" tells us which
+ * state it means but not which zone AITA would place it in today.
+ */
+export const AITA_ZONES = { NORTH: 1, SOUTH: 2, EAST: 3, WEST: 4 } as const;
+
+const ZONE_BY_CODE: Record<string, number> = {
+  // North
+  CH: 1, DL: 1, HR: 1, HP: 1, JK: 1, LA: 1, PB: 1, UP: 1, UK: 1,
+  // South
+  AN: 2, AP: 2, KA: 2, KL: 2, LD: 2, PY: 2, TN: 2, TG: 2,
+  // East
+  AR: 3, AS: 3, BR: 3, JH: 3, MN: 3, ML: 3, MZ: 3, NL: 3, OD: 3, SK: 3, TR: 3, WB: 3,
+  // West
+  CG: 4, DH: 4, GA: 4, GJ: 4, MP: 4, MH: 4, RJ: 4,
+};
+
+/** AITA zone id for a state code, or null when the code is an alias or unknown. */
+export function resolveZoneId(code: string): number | null {
+  return ZONE_BY_CODE[code.trim().toUpperCase()] ?? null;
+}
+
+/**
+ * Compares AITA's own published state table against the map above.
+ *
+ * Called at ingest so drift surfaces as a warning on the snapshot rather than as
+ * a 400 from `GET /pathways` weeks later. Two directions matter and they are not
+ * symmetrical: a code AITA publishes that we cannot resolve will strand players,
+ * while a name mismatch means our canonical string and theirs have diverged —
+ * which is the exact shape of the bug that turned a valid state pick into a
+ * whole-page 404.
+ */
+export function reconcileStates(
+  published: ReadonlyArray<{ code: string; name: string }>,
+): string[] {
+  const problems: string[] = [];
+  for (const { code, name } of published) {
+    const resolved = resolveStateCode(code);
+    if (!resolved) {
+      problems.push(`AITA publishes state code "${code}" (${name}) which we cannot map`);
+      continue;
+    }
+    if (resolved !== name) {
+      problems.push(
+        `State "${code}": AITA calls it "${name}", we call it "${resolved}"`,
+      );
+    }
+    if (resolveZoneId(code) === null) {
+      problems.push(`State "${code}" (${name}) has no zone assigned`);
+    }
+  }
+  return problems;
 }
 
 /**

@@ -76,6 +76,44 @@ export interface RankingEntryDocument extends Document {
    */
   stateRank?: number;
 
+  /**
+   * AITA's own base64 player id on the new platform, e.g. `UklBTkFONDQwMDkw`.
+   *
+   * The join key for their profile and point-breakdown endpoints, and the thing
+   * `regNo` is decoded out of. Absent on rows archived before the cutover.
+   */
+  playerKey?: string;
+  /**
+   * AITA zone: 1 = North, 2 = South, 3 = East, 4 = West.
+   *
+   * Not decoration — Talent Series entry is restricted to players registered in
+   * the host zone, so this is the eligibility boundary the pathway pages have
+   * been describing from a 2020 document.
+   */
+  zoneId?: number;
+  /**
+   * Tournaments counted toward this ranking. Read zero on every row across all
+   * twelve lists at cutover, so treat a zero as "not published yet" rather than
+   * as a claim that the player did not compete.
+   */
+  tournamentsPlayed?: number;
+  /**
+   * World Tennis Number — an internationally comparable rating, unlike AITA
+   * points. Rendered on every row but empty on all 11,030 of them at cutover.
+   */
+  wtnSingles?: number;
+  wtnDoubles?: number;
+  /**
+   * True when `points` holds this player's real component breakdown rather than
+   * the total alone.
+   *
+   * The new platform prints only a total on the list page, so the breakdown is
+   * fetched for a bounded sample of each band — see
+   * `services/aita/sampleBandComposition.ts`. Rows archived before the cutover
+   * have full columns and no flag, which `computeBandProfiles` still handles.
+   */
+  pointsSampled?: boolean;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -123,6 +161,18 @@ const rankingEntrySchema = new Schema<RankingEntryDocument>(
 
     prevRank: { type: Number },
     stateRank: { type: Number },
+
+    // ── Added with the August 2026 platform cutover ─────────────────────────
+    // All optional, because 468k archived rows predate them. Mongoose runs
+    // strict mode by default, so a field absent from here is dropped on write
+    // without an error — which is why these arrived with the ingest change
+    // rather than after it.
+    playerKey: { type: String, trim: true },
+    zoneId: { type: Number },
+    tournamentsPlayed: { type: Number },
+    wtnSingles: { type: Number },
+    wtnDoubles: { type: Number },
+    pointsSampled: { type: Boolean },
   },
   { timestamps: true },
 );

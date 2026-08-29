@@ -1,30 +1,55 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
-import * as cheerio from "cheerio";
-import { AitaCategory, DiscoveredSnapshot } from "./types";
+import {
+  AitaList,
+  AitaState,
+  AitaWeek,
+  DiscoveredSnapshot,
+} from "./types";
 
 /**
- * HTTP client for AITA's ranking pages.
+ * HTTP client for AITA's ranking pages on the hitcourt.com platform.
  *
- * ── The one thing that will bite anyone who edits this ────────────────────────
- * `ranking2.php` is session-stateful. It returns an EMPTY date list unless
- * `ranking.php?q=<Category>` was called first on the same PHP session, because
- * the category is held server-side rather than passed. So every lookup runs
- * through `withSession`, which keeps a cookie jar for the life of one category
- * walk. Categories may be walked concurrently *only* in separate sessions —
- * sharing one means the second category silently overwrites the first and you
- * get the wrong list back with a 200.
+ * ── What replaced what (cutover found 2026-08-29) ─────────────────────────────
+ * AITA moved off WordPress. The old three-step walk —
+ * `ranking.php` -> `ranking2.php` -> `rankingresult` -> a PDF href — is gone;
+ * every one of those routes now 404s, and it 404s *quietly*: the old client read
+ * an empty option list out of the error body and concluded the combination
+ * simply published nothing. Two requests replace all four:
  *
- * ── The second thing ─────────────────────────────────────────────────────────
- * PDF filenames are never constructed. They look derivable (`2026-07-27_BU-14.pdf`)
- * right up until they are not (`2021-06-07_45+SINGLES.pdf`, `2026-07-06_WHEELCHAIR MS.pdf`
- * — note the space). The href is always read off the result page.
+ *   1. GET /ranking-weekof-by-year?year=2026   -> JSON week list
+ *   2. GET /ranking-view?wid=&category=&record= -> the whole list as HTML
  *
- * Also worth knowing: the date `<option>` shows `DD-MM-YYYY` but its `value` is
- * `YYYY-MM-DD`, and posting the display format returns an empty result table
- * with a 200 rather than an error.
+ * Three things about the new source are worth knowing before editing this file.
+ *
+ * ── 1. The JSON endpoints need one header, and nothing else ───────────────────
+ * `X-Requested-With: XMLHttpRequest` is the entire admission requirement. There
+ * is no session to establish, no cookie to carry and no CSRF token to echo —
+ * so the CookieJar and the strict 1->2->3 ordering that dominated the old client
+ * are deleted rather than ported. Without the header the endpoints answer **200**
+ * with the body `No direct script access allowed`, which is why `requestJson`
+ * checks for that string explicitly: a 200 that is not JSON must be an error
+ * here, not zero results.
+ *
+ * ── 2. `record` is not enforced server-side ───────────────────────────────────
+ * The page's own dropdown offers 25/50/75/100, but the server ignores the cap.
+ * Measured on the largest list (Boys U-14, 1,663 rows): `record=3000` returned
+ * every row in one 3.9 MB response in 6.3 s. So a list is still one request,
+ * as it was when it was a PDF — a faithful port of the pagination would have
+ * cost 447 requests a sweep for nothing. `fetchList` asserts it did not come
+ * back exactly full, because that is what truncation would look like.
+ *
+ * ── 3. Do not use the PDF export as the data source ───────────────────────────
+ * `/ranking-pdf` still exists and still returns a real PDF, but it is a freshly
+ * generated document with *fewer* columns than the HTML: names are truncated
+ * ("Riaan NANDANKAR" for "Riaan Atul NANDANKAR"), state is replaced by country,
+ * and there is no point breakdown. It is kept here only as an archival artefact.
  */
 
-const BASE_URL = "https://aitatennis.com";
+/**
+ * `aitatennis.com` still resolves, but serves only the new marketing homepage —
+ * every data route on it answers 404 with a JSON body. The data lives here.
+ */
+const BASE_URL = "https://www.aita.hitcourt.com";
 
 /**
  * Identifies us and gives AITA somewhere to complain to. This is a courtesy
@@ -34,16 +59,37 @@ const BASE_URL = "https://aitatennis.com";
 const USER_AGENT =
   "PowerMySportBot/1.0 (+https://powermysport.com; teams@powermysport.com)";
 
-/** Their box is a small WordPress install. One request every 1.5s, serialised. */
+/** One request every 1.5s, serialised. Their robots.txt allows us; be polite anyway. */
 const MIN_REQUEST_INTERVAL_MS = 1500;
-const REQUEST_TIMEOUT_MS = 30_000;
+/** A full list is several megabytes of HTML, so this is deliberately generous. */
+const REQUEST_TIMEOUT_MS = 120_000;
 const MAX_RETRIES = 3;
 
-export interface FetchedPdf {
-  buffer: Buffer;
+/**
+ * Asked for on every list fetch. Comfortably above the largest list (1,663 rows
+ * on Boys U-14) so one request is always enough, and low enough that a runaway
+ * response is bounded.
+ */
+const LIST_PAGE_SIZE = 5000;
+
+/** The body the JSON endpoints return when the AJAX header is missing. */
+const DIRECT_ACCESS_REFUSAL = "No direct script access allowed";
+
+/** IST is a fixed +05:30 with no DST, so no timezone library is needed. */
+const IST_OFFSET_MS = 5.5 * 3600 * 1000;
+
+export interface FetchedList {
+  html: string;
   byteSize: number;
-  etag?: string;
-  lastModified?: string;
+  sourceUrl: string;
+}
+
+/** Shape of the `{status, message, token, data}` envelope every endpoint uses. */
+interface AitaEnvelope<T> {
+  status?: boolean;
+  message?: string;
+  token?: string;
+  data?: T;
 }
 
 export class AitaRankingSource {
@@ -57,10 +103,13 @@ export class AitaRankingSource {
       baseURL: BASE_URL,
       timeout: REQUEST_TIMEOUT_MS,
       headers: { "User-Agent": USER_AGENT, Accept: "*/*" },
-      // 404s and 500s are handled as data, not thrown, so a single dead combo
+      // 404s and 500s are handled as data, not thrown, so a single dead list
       // does not abort a sweep.
       validateStatus: () => true,
       maxRedirects: 5,
+      // A 4 MB list would otherwise trip axios' default body ceiling.
+      maxContentLength: 64 * 1024 * 1024,
+      maxBodyLength: 64 * 1024 * 1024,
     });
   }
 
@@ -73,7 +122,6 @@ export class AitaRankingSource {
   /** Serialised + rate-limited + retried GET. Every request goes through here. */
   private request<T = string>(
     url: string,
-    cookies: CookieJar,
     responseType: "text" | "arraybuffer" = "text",
     extraHeaders: Record<string, string> = {},
   ): Promise<AxiosResponse<T>> {
@@ -84,9 +132,8 @@ export class AitaRankingSource {
         try {
           const res = await this.http.get<T>(url, {
             responseType,
-            headers: { ...cookies.header(), ...extraHeaders },
+            headers: extraHeaders,
           });
-          cookies.absorb(res.headers["set-cookie"]);
           // Retry only on transient server-side trouble.
           if (res.status >= 500 && attempt < MAX_RETRIES) {
             await new Promise((r) => setTimeout(r, 2000 * attempt));
@@ -112,156 +159,238 @@ export class AitaRankingSource {
   }
 
   /**
-   * Runs `fn` against a fresh PHP session pinned to `category`. Everything that
-   * touches `ranking2.php` must be inside one of these.
+   * GET one of the AJAX endpoints and unwrap its envelope.
+   *
+   * The failure this exists to catch is the polite one: without the AJAX header
+   * the platform replies 200 with a plain-text refusal, and an earlier draft of
+   * this client would have read that as "no weeks published" — the exact silent
+   * failure mode that hid the cutover for three weeks. So anything that is not
+   * a JSON envelope with `status: true` throws.
    */
-  private async withSession<T>(
-    category: AitaCategory,
-    fn: (cookies: CookieJar) => Promise<T>,
-  ): Promise<T> {
-    const cookies = new CookieJar();
-    // This call is what puts the category into the session. Its body (the
-    // subcategory options) is useful too, but the side effect is the point.
-    await this.request(
-      `/management/ajax/ranking.php?q=${encodeURIComponent(category)}`,
-      cookies,
-    );
-    return fn(cookies);
-  }
-
-  /** Subcategories AITA currently offers for a category, e.g. ["U-12", …]. */
-  async listSubcategories(category: AitaCategory): Promise<string[]> {
-    const cookies = new CookieJar();
-    const res = await this.request<string>(
-      `/management/ajax/ranking.php?q=${encodeURIComponent(category)}`,
-      cookies,
-    );
-    return parseOptionValues(res.data);
-  }
-
-  /**
-   * Every as-on date published for a combo, newest first (YYYY-MM-DD).
-   * Empty is a legitimate answer for the stale Seniors lists — but it is also
-   * what a broken session looks like, which is why the session is established
-   * here rather than left to the caller.
-   */
-  async listDates(category: AitaCategory, subcategory: string): Promise<string[]> {
-    return this.withSession(category, async (cookies) => {
-      const res = await this.request<string>(
-        `/management/ajax/ranking2.php?q=${encodeURIComponent(subcategory)}`,
-        cookies,
-      );
-      return parseOptionValues(res.data).filter((v) => /^\d{4}-\d{2}-\d{2}$/.test(v));
+  private async requestJson<T>(path: string): Promise<T> {
+    const res = await this.request<string>(path, "text", {
+      "X-Requested-With": "XMLHttpRequest",
     });
-  }
 
-  /** The newest as-on date for a combo, or null if it publishes nothing. */
-  async latestDate(category: AitaCategory, subcategory: string): Promise<string | null> {
-    const dates = await this.listDates(category, subcategory);
-    return dates[0] ?? null;
-  }
-
-  /**
-   * Resolves the PDF for one (category, subcategory, date). Returns null when
-   * the result page renders its table with an empty body, which is how AITA
-   * signals "no document for that combination".
-   */
-  async resolveSnapshot(
-    category: AitaCategory,
-    subcategory: string,
-    asOnDate: string,
-  ): Promise<DiscoveredSnapshot | null> {
-    const sourceUrl =
-      `${BASE_URL}/rankingresult/?cat=${encodeURIComponent(category)}` +
-      `&subcat=${encodeURIComponent(subcategory)}&date1=${encodeURIComponent(asOnDate)}`;
-
-    const cookies = new CookieJar();
-    const res = await this.request<string>(sourceUrl, cookies);
-    if (res.status !== 200 || typeof res.data !== "string") return null;
-
-    const $ = cheerio.load(res.data);
-    const href = $("a[href*='upload/ranking/']").first().attr("href");
-    if (!href) return null;
-
-    // Hrefs are relative (`../management/upload/ranking/…`) and some filenames
-    // contain spaces or `+`, so let URL do the resolving and escaping.
-    const pdfUrl = new URL(href, sourceUrl).toString();
-    return { category, subcategory, asOnDate, pdfUrl, sourceUrl };
-  }
-
-  /**
-   * Cheap check for a silently corrected re-upload. AITA reissues a fixed PDF
-   * under the same as-on date, which the date dropdown cannot show — so the
-   * only signal is the file's own validators changing.
-   */
-  async headPdf(
-    pdfUrl: string,
-  ): Promise<{ etag?: string; lastModified?: string; byteSize?: number }> {
-    const cookies = new CookieJar();
-    await this.throttle();
-    const res = await this.http.head(pdfUrl, { headers: cookies.header() });
-    const out: { etag?: string; lastModified?: string; byteSize?: number } = {};
-    const etag = res.headers["etag"];
-    const lastModified = res.headers["last-modified"];
-    const length = res.headers["content-length"];
-    if (typeof etag === "string") out.etag = etag;
-    if (typeof lastModified === "string") out.lastModified = lastModified;
-    if (typeof length === "string") out.byteSize = Number(length);
-    return out;
-  }
-
-  /** Downloads a ranking PDF. */
-  async fetchPdf(pdfUrl: string): Promise<FetchedPdf> {
-    const cookies = new CookieJar();
-    const res = await this.request<ArrayBuffer>(pdfUrl, cookies, "arraybuffer");
     if (res.status !== 200) {
-      throw new Error(`PDF fetch failed (${res.status}): ${pdfUrl}`);
+      throw new Error(`GET ${path} returned ${res.status}`);
+    }
+    const body = typeof res.data === "string" ? res.data : JSON.stringify(res.data);
+    if (body.includes(DIRECT_ACCESS_REFUSAL)) {
+      throw new Error(
+        `AITA refused ${path} with "${DIRECT_ACCESS_REFUSAL}" — the AJAX header ` +
+          `is missing or the platform has started requiring a session token.`,
+      );
+    }
+
+    let envelope: AitaEnvelope<T>;
+    try {
+      envelope = typeof res.data === "string" ? JSON.parse(res.data) : (res.data as AitaEnvelope<T>);
+    } catch {
+      throw new Error(
+        `GET ${path} returned non-JSON (first 200 chars: ${body.slice(0, 200)})`,
+      );
+    }
+    if (envelope.status !== true || envelope.data === undefined) {
+      throw new Error(
+        `GET ${path} answered status=${envelope.status} (${envelope.message ?? "no message"})`,
+      );
+    }
+    return envelope.data;
+  }
+
+  /**
+   * Every publication week AITA lists for a year, newest first.
+   *
+   * Weeks have real gaps — 2026 lists 28 of them, with nothing for 26 Jan,
+   * 20 Apr or 29 Jun — so this is a list to be read, not a series to be
+   * generated.
+   */
+  async listWeeks(year: number): Promise<AitaWeek[]> {
+    const raw = await this.requestJson<Array<{ key: number | string; value: string }>>(
+      `/ranking-weekof-by-year?year=${encodeURIComponent(String(year))}`,
+    );
+    return raw
+      .map((row) => {
+        const wid = Number(row.key);
+        if (!Number.isFinite(wid) || wid <= 0) return null;
+        return { wid, asOnDate: widToIsoDate(wid), label: String(row.value ?? "") };
+      })
+      .filter((w): w is AitaWeek => w !== null)
+      .sort((a, b) => b.wid - a.wid);
+  }
+
+  /**
+   * The newest week AITA has published, across all lists.
+   *
+   * One 3 KB call now covers what the old sentinel needed two session-bound
+   * requests for, and covers every list rather than standing in for them.
+   *
+   * Falls back to the previous year when the current one is still empty —
+   * otherwise the pipeline would go blind every January until AITA files the
+   * first week of the new year.
+   */
+  async latestWeek(now: Date = new Date()): Promise<AitaWeek | null> {
+    const currentYear = istYear(now);
+    for (const year of [currentYear, currentYear - 1]) {
+      const weeks = await this.listWeeks(year);
+      if (weeks[0]) return weeks[0];
+    }
+    return null;
+  }
+
+  /**
+   * Resolves one (list, week) into the coordinates a fetch needs.
+   *
+   * Kept as a distinct step even though it now costs no request: the ingest
+   * service's flow reads better for it, and the week list is the thing that has
+   * to be consulted before a list URL means anything.
+   */
+  async resolveSnapshot(list: AitaList, week: AitaWeek): Promise<DiscoveredSnapshot> {
+    return {
+      category: list.category,
+      subcategory: list.subcategory,
+      asOnDate: week.asOnDate,
+      wid: week.wid,
+      sourceUrl: listUrl(list, week.wid),
+    };
+  }
+
+  /**
+   * Fetches a whole ranking list as HTML — one request, every row.
+   *
+   * Deliberately does *not* send the AJAX header: this is a normal page, and
+   * there is no reason to hint otherwise at a server we do not control.
+   */
+  async fetchList(list: AitaList, wid: number): Promise<FetchedList> {
+    const sourceUrl = listUrl(list, wid);
+    const res = await this.request<string>(
+      `/ranking-view?wid=${wid}&category=${encodeURIComponent(list.code)}` +
+        `&page=1&record=${LIST_PAGE_SIZE}`,
+    );
+    if (res.status !== 200 || typeof res.data !== "string") {
+      throw new Error(`Ranking list fetch failed (${res.status}): ${sourceUrl}`);
+    }
+    const html = res.data;
+    // The platform is three weeks old; a route rename would otherwise arrive as
+    // a confusing "0 rows parsed" from a perfectly successful 200.
+    if (!html.includes("rankingCard")) {
+      throw new Error(
+        `Ranking list at ${sourceUrl} contains no ranking rows — the page layout ` +
+          `or route has changed.`,
+      );
+    }
+    return { html, byteSize: Buffer.byteLength(html, "utf8"), sourceUrl };
+  }
+
+  /** How many rows one request can hold, so the parser can spot truncation. */
+  get listPageSize(): number {
+    return LIST_PAGE_SIZE;
+  }
+
+  /**
+   * AITA's own state table: canonical names, two-letter codes, and the zone.
+   *
+   * Worth preferring over our hand-maintained map for the reason recorded in
+   * `stateCodes.ts` — a state name we get wrong does not degrade, it 400s an API
+   * call and 404s a whole page. Taking the names from the source that also
+   * publishes the codes removes the drift entirely.
+   */
+  async listStates(): Promise<AitaState[]> {
+    const raw = await this.requestJson<
+      Array<{ name?: string; short_code?: string; region_id?: string | number }>
+    >("/ranking-state");
+    return raw
+      .map((row) => {
+        const code = String(row.short_code ?? "").trim().toUpperCase();
+        const name = String(row.name ?? "").trim();
+        if (!code || !name) return null;
+        return { code, name, zoneId: Number(row.region_id) || 0 };
+      })
+      .filter((s): s is AitaState => s !== null);
+  }
+
+  /**
+   * One player's point breakdown.
+   *
+   * Returns the HTML fragment; `parsePointBreakdown` turns it into slices.
+   *
+   * Costs one request per player, which is why the ingest does not call this for
+   * every row — twelve lists is roughly 11,000 players a week. See the note on
+   * `mergePointBreakdowns` in the ingest service for what that means for the
+   * points-composition feature.
+   */
+  async fetchPointBreakdown(
+    list: AitaList,
+    wid: number,
+    playerKey: string,
+    rank: number,
+  ): Promise<string> {
+    const data = await this.requestJson<string>(
+      `/ranking-player-point-view?rank=${encodeURIComponent(String(rank))}` +
+        `&player_id=${encodeURIComponent(playerKey)}` +
+        `&category=${list.categoryId}&weekof=${wid}`,
+    );
+    if (typeof data !== "string") {
+      throw new Error(`Point breakdown for ${playerKey} was not an HTML fragment`);
+    }
+    return data;
+  }
+
+  /**
+   * The platform's own PDF of a list, for the archive only.
+   *
+   * Note it takes the *numeric* category id, not the code — the one place the
+   * two vocabularies meet in a single URL.
+   */
+  async fetchListPdf(list: AitaList, wid: number): Promise<Buffer> {
+    const url =
+      `/ranking-pdf?wid=${wid}&category=${list.categoryId}` +
+      `&player=&page=1&record=${LIST_PAGE_SIZE}`;
+    const res = await this.request<ArrayBuffer>(url, "arraybuffer");
+    if (res.status !== 200) {
+      throw new Error(`PDF export failed (${res.status}): ${BASE_URL}${url}`);
     }
     const buffer = Buffer.from(res.data);
     if (buffer.subarray(0, 5).toString("latin1") !== "%PDF-") {
-      // A WordPress error page returns 200 with HTML. Catch it here rather than
-      // letting the parser produce a confusing "0 rows" result.
-      throw new Error(`Response is not a PDF: ${pdfUrl}`);
+      throw new Error(`PDF export returned non-PDF content: ${BASE_URL}${url}`);
     }
-    const out: FetchedPdf = { buffer, byteSize: buffer.byteLength };
-    const etag = res.headers["etag"];
-    const lastModified = res.headers["last-modified"];
-    if (typeof etag === "string") out.etag = etag;
-    if (typeof lastModified === "string") out.lastModified = lastModified;
-    return out;
+    return buffer;
   }
 }
 
-/** Minimal cookie jar — AITA only ever sets PHPSESSID, so this need not be clever. */
-class CookieJar {
-  private jar = new Map<string, string>();
-
-  absorb(setCookie: string[] | undefined): void {
-    for (const raw of setCookie ?? []) {
-      const pair = raw.split(";")[0];
-      const eq = pair?.indexOf("=") ?? -1;
-      if (!pair || eq <= 0) continue;
-      this.jar.set(pair.slice(0, eq), pair.slice(eq + 1));
-    }
-  }
-
-  header(): Record<string, string> {
-    if (this.jar.size === 0) return {};
-    return {
-      Cookie: [...this.jar.entries()].map(([k, v]) => `${k}=${v}`).join("; "),
-    };
-  }
+/** Public URL of a ranking list, as a person would open it. */
+export function listUrl(list: AitaList, wid: number): string {
+  return (
+    `${BASE_URL}/ranking-view?wid=${wid}&category=${list.code}` +
+    `&page=1&record=25`
+  );
 }
 
-/** Pulls non-empty `<option value="…">` values out of an AJAX fragment. */
-function parseOptionValues(html: string): string[] {
-  if (typeof html !== "string") return [];
-  const $ = cheerio.load(html);
-  return $("option")
-    .map((_, el) => $(el).attr("value") ?? "")
-    .get()
-    .map((v) => v.trim())
-    .filter((v) => v.length > 0);
+/** Public URL of a player's profile on AITA's site. */
+export function playerProfileUrl(playerKey: string): string {
+  return `${BASE_URL}/player-profile-${playerKey}`;
+}
+
+/**
+ * `1786300200` -> `2026-08-10`.
+ *
+ * The week id is midnight IST, which is 18:30 UTC the day *before* — so reading
+ * it as a UTC date is off by one. Shifting into IST before slicing is the whole
+ * trick.
+ */
+export function widToIsoDate(wid: number): string {
+  return new Date(wid * 1000 + IST_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+/** `2026-08-10` -> `1786300200`. Inverse of `widToIsoDate`. */
+export function isoDateToWid(asOnDate: string): number {
+  return Math.round((Date.parse(`${asOnDate}T00:00:00Z`) - IST_OFFSET_MS) / 1000);
+}
+
+/** The year it is in India, which is the year AITA files weeks under. */
+function istYear(now: Date): number {
+  return new Date(now.getTime() + IST_OFFSET_MS).getUTCFullYear();
 }
 
 export const aitaRankingSource = new AitaRankingSource();

@@ -42,10 +42,36 @@ export function PointsComposition({
   title?: string;
   caption?: string;
 }) {
-  const explained = bands.map((band) => ({
-    band,
-    parts: explainTotal(band.composition ?? [], band.averageTotal, subcategory),
-  }));
+  // ── Which total the bars are accountable to ───────────────────────────────
+  // `averageTotal` is exact over the whole band, because every row carries a
+  // total. From August 2026 the *composition* is measured from a sample of the
+  // band — the source stopped printing components per row — so the slices sum to
+  // `compositionTotal` instead, and reconciling them against the whole-band
+  // average would invent a residual out of the difference between two populations.
+  //
+  // Everything on this chart is therefore stated against the players it was
+  // measured from: the bar, the number beside it, and the table total all use the
+  // same figure, and the sample size is shown next to it. Older snapshots have no
+  // `compositionTotal` and fall back to `averageTotal`, which for them is the
+  // same population.
+  const explained = bands.map((band) => {
+    const total = band.compositionTotal ?? band.averageTotal;
+    return {
+      band,
+      total,
+      // A band that carries a sample size came from the new source, whose
+      // breakdown names the roll-down and nets the penalty already — there is no
+      // residual left to recover, and deriving one would duplicate a real slice.
+      parts: explainTotal(band.composition ?? [], total, subcategory, {
+        deriveRollDown: band.sampleSize === undefined,
+      }),
+      /** Set only when fewer players were measured than the band holds. */
+      sampled:
+        typeof band.sampleSize === "number" && band.sampleSize < band.playerCount
+          ? band.sampleSize
+          : null,
+    };
+  });
 
   // All or nothing. A panel where two bars reconcile and one silently does not
   // invites exactly the comparison it cannot support.
@@ -94,7 +120,7 @@ export function PointsComposition({
       </ul>
 
       <div className="mt-5 space-y-4">
-        {explained.map(({ band, parts }) => {
+        {explained.map(({ band, parts, total, sampled }) => {
           const slices = parts!.slices;
           const stacked = slices.reduce((sum, slice) => sum + slice.value, 0);
 
@@ -113,7 +139,15 @@ export function PointsComposition({
                 </span>
                 <span className="shrink-0 tabular-nums text-muted-foreground">
                   {band.playerCount > 1 ? "avg " : ""}
-                  {formatPoints(band.averageTotal)} pts
+                  {formatPoints(total)} pts
+                  {/* The bar can only speak for the players behind it. Saying so
+                      here, next to the number, rather than in a footnote nobody
+                      reaches. */}
+                  {sampled !== null && (
+                    <span className="ml-1.5 text-xs">
+                      (from {sampled} of {band.playerCount.toLocaleString("en-IN")})
+                    </span>
+                  )}
                 </span>
               </div>
 
@@ -211,9 +245,9 @@ export function PointsComposition({
                 <th scope="row" className="py-2 pr-3 font-semibold">
                   Total
                 </th>
-                {explained.map(({ band }) => (
+                {explained.map(({ band, total }) => (
                   <td key={band.label} className="py-2 pl-3 text-right font-semibold tabular-nums">
-                    {formatPoints(band.averageTotal)}
+                    {formatPoints(total)}
                   </td>
                 ))}
               </tr>

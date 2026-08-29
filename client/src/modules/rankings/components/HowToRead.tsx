@@ -98,6 +98,7 @@ export function EntryRules({
 }) {
   if (!isJuniorBracket(subcategory)) return null;
   const cap = annualEntryCap(subcategory);
+  const isUnder18 = subcategory.trim().toUpperCase() === "U-18";
 
   return (
     <section className="rounded-xl border bg-card p-5 sm:p-6">
@@ -124,13 +125,27 @@ export function EntryRules({
         ))}
       </ol>
 
-      <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-        Here is the part that surprises most parents: a better rank{" "}
-        <em>closes</em> the lower levels. Once a player is near the top of their
-        age group, AITA no longer lets them enter the easier events — those draws
-        are kept for players still working their way up.
-      </p>
+      {/* U-18 runs no Talent Series at all, so the entry level a top-75 player
+          would be shut out of does not exist there. Saying otherwise would
+          describe the loss of something that was never available. */}
+      {isUnder18 ? (
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+          Under 18 runs no Talent Series events, and Championship Series has no
+          ranking bar — so every level here is open to enter at any rank.
+        </p>
+      ) : (
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+          Here is the part that surprises most parents: a better rank{" "}
+          <em>closes</em> the entry level. Once a player is inside the top 75 of
+          their age group, AITA no longer lets them enter Talent Series — those
+          draws are kept for players still working their way up. Every other
+          level stays open.
+        </p>
+      )}
 
+      {/* The bands are all about the Talent Series cut-off, so they say nothing
+          true at U-18. */}
+      {!isUnder18 && (
       <ul className="mt-4 space-y-2">
         {ENTRY_BANDS.map((band) => (
           <li
@@ -144,6 +159,7 @@ export function EntryRules({
           </li>
         ))}
       </ul>
+      )}
 
       {cap && (
         <p className="mt-4 text-sm leading-relaxed">

@@ -10,20 +10,41 @@
  * without it the numbers stay abstract.
  *
  * ── Provenance, and why it is stamped on screen ──────────────────────────────
- * Every fact below comes from AITA's junior tournament structure document
- * (2020, still the governing text at the time of writing). We cannot re-derive
- * any of it from the ranking PDFs, so it cannot be checked automatically the way
- * the rest of the page can. That asymmetry is the reason `RULES_SOURCE` is
- * exported and rendered next to anything sourced from here, rather than the copy
- * silently claiming the same authority as a computed figure.
+ * Every fact below comes from AITA's junior tournament structure document. We
+ * cannot re-derive any of it from the ranking lists, so it cannot be checked
+ * automatically the way the rest of the page can. That asymmetry is the reason
+ * `RULES_SOURCE` is exported and rendered next to anything sourced from here,
+ * rather than the copy silently claiming the same authority as a computed figure.
  *
- * If AITA revises the structure, this file is the single place to change — do
- * not scatter cut-offs into components.
+ * ── The 2026 revision, and what it corrected ─────────────────────────────────
+ * This file was written against the 2020 structure document. AITA published a
+ * replacement effective 01 January 2026, found when the ranking mirror was
+ * repointed at their new platform, and **two of the rules stated here were
+ * wrong**:
+ *
+ *   · The Talent Series bar is the top **75**, not the top 150.
+ *   · Championship Series has **no ranking bar at all** — "There will be no
+ *     restriction in Championship Series. All ranked players can play
+ *     irrespective of their rank." We were telling parents the top 75 were shut
+ *     out of it.
+ *
+ * Both are quoted from the 2026 text. Unchanged and re-verified against it: the
+ * annual caps (18/25/30, unlimited at U-18), that playing up spends one shared
+ * allowance, the calendar-year window, and the best-8-plus-25%-doubles formula.
+ *
+ * New in 2026 and now modelled: there are no Talent Series events at U-18 at
+ * all, so the bar is moot in that bracket.
+ *
+ * The lesson worth keeping: an outside rule set with no automatic check needs a
+ * date on it and a periodic re-read. If AITA revises again, this file is the
+ * single place to change — do not scatter cut-offs into components.
  */
 
 export const RULES_SOURCE = {
-  label: "AITA Junior Tournament Structure, 2020",
-  href: "https://aitatennis.com/",
+  label: "AITA Junior Tournament Structure, effective 1 January 2026",
+  href:
+    "https://www.aita.hitcourt.com/documents/" +
+    "Rules_Collated_AITA_Junior_Circuit_Tournaments_2026.pdf",
 } as const;
 
 /** Junior age brackets are `U-12`…`U-18`; open-age lists have none of these rules. */
@@ -47,32 +68,29 @@ export const annualEntryCap = (subcategory: string): number | null =>
   ANNUAL_ENTRY_CAP[subcategory.trim().toUpperCase()] ?? null;
 
 /**
- * The reverse gates: doing well *closes* the lower rungs.
+ * The reverse gate: doing well *closes* the entry level.
  *
  * This is the least intuitive rule in Indian junior tennis and the one that
  * surprises parents most — a rank good enough to be worth celebrating is also
- * the rank that bars the child from the events they have been winning. Ordered
- * strictest first, because `entryStatus` returns the first that applies.
+ * the rank that bars the child from the events they have been winning.
+ *
+ * There is exactly one such gate, which is the correction the 2026 document
+ * forced. Championship Series has no rank bar: "There will be no restriction in
+ * Championship Series. All ranked players can play irrespective of their rank."
  */
-const REVERSE_GATES = [
-  {
-    /** Inside the top 75: barred from Talent *and* Championship Series. */
-    maxRank: 75,
-    closed: ["Talent Series", "Championship Series"],
-    summary: "Talent Series and Championship Series are closed in this age group",
-    detail:
-      "AITA bars the top 75 of an age group from Championship Series, and the top 150 " +
-      "from Talent Series. The route from here is Super Series and above.",
-  },
-  {
-    maxRank: 150,
-    closed: ["Talent Series"],
-    summary: "Talent Series is closed in this age group",
-    detail:
-      "AITA bars the top 150 of an age group from Talent Series. Championship Series " +
-      "is still open, and stays open until the top 75.",
-  },
-] as const;
+const TALENT_SERIES_BAR_RANK = 75;
+
+/**
+ * Brackets where Talent Series exists at all.
+ *
+ * 2026: "There will be no Talent Series tournaments for the Under 18 age group."
+ * So at U-18 there is no entry level to be shut out of, and a U-18 in the top 75
+ * must not be told Talent Series has closed to them — it was never open.
+ */
+const TALENT_SERIES_BRACKETS = new Set(["U-12", "U-14", "U-16"]);
+
+const hasTalentSeries = (subcategory: string): boolean =>
+  TALENT_SERIES_BRACKETS.has(subcategory.trim().toUpperCase());
 
 export interface EntryStatus {
   /** Levels this rank is barred from. Empty means no ranking-based bar. */
@@ -101,31 +119,52 @@ export function entryStatus(rank: number, subcategory: string): EntryStatus | nu
   if (!isJuniorBracket(subcategory)) return null;
   if (!Number.isFinite(rank) || rank < 1) return null;
 
-  const gate = REVERSE_GATES.find((g) => rank <= g.maxRank);
-  if (gate) {
-    // Inside the strictest band there is no further gate to reach.
-    const stricter = REVERSE_GATES[0];
+  // U-18 has no Talent Series to be barred from, so there is no gate to report
+  // and nothing to warn about at any rank.
+  if (!hasTalentSeries(subcategory)) {
     return {
-      closed: gate.closed,
-      summary: gate.summary,
-      detail: gate.detail,
-      nextGate:
-        gate === stricter
-          ? null
-          : { rank: stricter.maxRank, level: stricter.closed[1] ?? "Championship Series" },
+      closed: [],
+      summary: "No ranking-based entry bars in this age group",
+      detail:
+        "Under 18 has no Talent Series events, and Championship Series has no " +
+        "ranking bar — so every level of the circuit is open to enter at any rank.",
+      nextGate: null,
     };
   }
 
-  const first = REVERSE_GATES[REVERSE_GATES.length - 1]!;
+  if (rank <= TALENT_SERIES_BAR_RANK) {
+    return {
+      closed: ["Talent Series"],
+      summary: "Talent Series is closed in this age group",
+      detail:
+        `AITA bars the top ${TALENT_SERIES_BAR_RANK} of an age group from Talent ` +
+        "Series. Every other level stays open to enter — Championship Series has " +
+        "no ranking bar at all.",
+      nextGate: null,
+    };
+  }
+
   return {
     closed: [],
     summary: "No ranking-based entry bars at this rank",
     detail:
       "Every level of the AITA junior circuit is open to enter. That changes inside " +
-      `the top ${first.maxRank}, where Talent Series closes for this age group.`,
-    nextGate: { rank: first.maxRank, level: "Talent Series" },
+      `the top ${TALENT_SERIES_BAR_RANK}, where Talent Series closes for this age group.`,
+    nextGate: { rank: TALENT_SERIES_BAR_RANK, level: "Talent Series" },
   };
 }
+
+/**
+ * Talent Series is zone-restricted, which is a gate a parent hits in practice
+ * and which no rank explains.
+ *
+ * 2026: "TS tournaments taking place in a particular zone will be open to
+ * players registered from that zone only. No player can play a tournament in a
+ * zone other than in which he is registered in."
+ */
+export const TALENT_SERIES_ZONE_RULE =
+  "Talent Series events are open only to players registered in that zone — a " +
+  "player cannot enter one outside their own zone.";
 
 /**
  * The eligibility bands as a standalone table, for the list page.
@@ -153,9 +192,14 @@ export const JUNIOR_LADDER = [
 ] as const;
 
 export const ENTRY_BANDS = [
-  { range: "Rank 1 – 75", effect: "Talent Series and Championship Series both closed" },
-  { range: "Rank 76 – 150", effect: "Talent Series closed, Championship Series open" },
-  { range: "Rank 151 and below", effect: "No ranking-based bars — every level open to enter" },
+  {
+    range: "Rank 1 – 75",
+    effect: "Talent Series closed — every other level open to enter",
+  },
+  {
+    range: "Rank 76 and below",
+    effect: "No ranking-based bars — every level open to enter",
+  },
 ] as const;
 
 /**

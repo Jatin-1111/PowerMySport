@@ -20,19 +20,31 @@
  *   Historical backfill for one combo:
  *     npx ts-node src/scripts/ingestAitaRankings.ts --backfill --category=Boys --subcategory=U-14 --limit=20
  *
- *   Parse a PDF off disk without touching the network or the database — the
- *   fastest way to see what a quarantined file actually contains:
- *     npx ts-node src/scripts/ingestAitaRankings.ts --file=./some-ranking.pdf
+ *   Parse a saved ranking page off disk, no network or database — the fastest
+ *   way to see what a quarantined list actually contains. Feed it either a
+ *   `ranking-view` page saved from a browser or an archived `.html` from S3:
+ *     npx ts-node src/scripts/ingestAitaRankings.ts --file=./some-ranking.html
  *
- *   Freshness:
+ *   Fill in the points composition for the newest published list of each combo.
+ *   Needed after a deploy, and the repair for a snapshot published before the
+ *   sampling stage existed — an ordinary sweep short-circuits on the content hash
+ *   and never reaches it. Skips lists already sampled unless --force.
+ *   Budget ~13 minutes for all twelve:
+ *     npx ts-node src/scripts/ingestAitaRankings.ts --sample-composition
+ *
+ *   Freshness, from the database alone (what the public endpoint answers):
  *     npx ts-node src/scripts/ingestAitaRankings.ts --health
+ *
+ *   Freshness, compared against what AITA currently offers — the honest check,
+ *   and the one the daily scheduler job runs:
+ *     npx ts-node src/scripts/ingestAitaRankings.ts --health --check-source
  */
 
 import "dotenv/config";
 import { readFileSync } from "node:fs";
 import mongoose from "mongoose";
 import { AitaRankingIngestService } from "../shared/services/aita/AitaRankingIngestService";
-import { parseRankingPdf } from "../shared/services/aita/rankingPdfParser";
+import { parseRankingList } from "../shared/services/aita/rankingListParser";
 import { AITA_CATEGORIES, AitaCategory, LIVE_COMBOS } from "../shared/services/aita/types";
 
 const args = new Map<string, string>();
@@ -105,10 +117,10 @@ async function main(): Promise<void> {
   // Local-file parse needs neither network nor database.
   const file = args.get("file");
   if (file) {
-    const parsed = await parseRankingPdf(readFileSync(file));
-    console.log(`pages       ${parsed.pageCount}`);
+    const parsed = parseRankingList(readFileSync(file, "utf8"));
     console.log(`rows        ${parsed.rows.length}`);
-    console.log(`as on       ${parsed.asOnLabel ?? "(not printed)"}`);
+    console.log(`served week ${parsed.sourceWeekof ?? "(not echoed)"}`);
+    console.log(`served list ${parsed.sourceCategory ?? "(not echoed)"}`);
     console.log(`columns     ${parsed.columns.join(" | ")}`);
     console.log(`diagnostics ${JSON.stringify(parsed.diagnostics, null, 2)}`);
     console.log(`first row   ${JSON.stringify(parsed.rows[0])}`);
@@ -117,6 +129,37 @@ async function main(): Promise<void> {
   }
 
   const service = new AitaRankingIngestService();
+
+  if (flags.has("sample-composition")) {
+    await withDatabase(async () => {
+      const results = await service.sampleLatestComposition({
+        force: flags.has("force"),
+        ...(args.has("per-band")
+          ? { perBand: Number.parseInt(args.get("per-band")!, 10) }
+          : {}),
+      });
+      for (const r of results) {
+        const icon =
+          r.status === "sampled" ? "✅" : r.status === "already-sampled" ? "➖" : "❌";
+        const extra =
+          r.status === "sampled"
+            ? ` ${r.fetched} players` +
+              (r.unreconciled ? `, ${r.unreconciled} excluded as unreconciled` : "")
+            : r.status === "already-sampled"
+              ? ` ${r.fetched} already sampled`
+              : r.reason
+                ? ` — ${r.reason}`
+                : "";
+        console.log(
+          `${icon} ${r.category}/${r.subcategory} ${r.asOnDate} ${r.status}${extra}`,
+        );
+      }
+      const sampled = results.filter((r) => r.status === "sampled").length;
+      console.log(`
+${sampled} of ${results.length} lists sampled`);
+    });
+    return;
+  }
 
   if (flags.has("poll")) {
     await withDatabase(async () => {
@@ -132,7 +175,12 @@ async function main(): Promise<void> {
 
   if (flags.has("health")) {
     await withDatabase(async () => {
-      console.log(JSON.stringify(await service.getHealth(), null, 2));
+      // `--check-source` costs one small request and is what turns "our newest
+      // list is 19 days old" into "we hold everything AITA offers". Off by
+      // default so `--health` stays a pure database read, matching the public
+      // endpoint.
+      const checkSource = flags.has("check-source");
+      console.log(JSON.stringify(await service.getHealth({ checkSource }), null, 2));
     });
     return;
   }

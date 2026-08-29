@@ -312,3 +312,109 @@ describe("composition legend", () => {
     expect(legend).toEqual(["Singles"]);
   });
 });
+
+/**
+ * The labels the hitcourt platform prints, measured off three live list types on
+ * 2026-08-29. Several of these would otherwise fall through to the generic
+ * tidy-up and reach a parent as federation shorthand.
+ */
+describe("plainPointLabel on the post-cutover source", () => {
+  it("names the singles and doubles columns", () => {
+    // "Sngls" is not caught by the /SING/ test the older printed form needs.
+    expect(plainPointLabel("Best 8 Sngls")).toBe("Singles");
+    expect(plainPointLabel("25% Best 8 Dbls")).toBe("Doubles");
+    expect(plainPointLabel("Best 8 Dbls")).toBe("Doubles played (not counted)");
+  });
+
+  it("says what the roll-down actually is", () => {
+    // "14&Under" on an Under-12 list is the whole Under-14 total carried down.
+    // Left as printed it reads as an age bracket the reader is already in.
+    expect(plainPointLabel("14&Under")).toContain("Under-14");
+    expect(plainPointLabel("18&Under")).toContain("Under-18");
+    // Under-18 draws from the open-age lists rather than another junior bracket.
+    expect(plainPointLabel("Mens")).toBe("Played in the men's list");
+    expect(plainPointLabel("Under Mens")).toBe("Played in the open-age list");
+  });
+
+  it("keeps the ITF multiplier, which is a fact rather than notation", () => {
+    // The trailing "X n" is stripped as noise everywhere else. Here the doubling
+    // is the rule: ITF Junior points count twice towards Under-18.
+    expect(plainPointLabel("Itf X 2")).toBe("ITF Junior (counts double)");
+  });
+
+  it("expands the remaining shorthand", () => {
+    expect(plainPointLabel("Asian (25%)")).toBe("Asian tournaments (international)");
+    expect(plainPointLabel("Penalty Pts")).toBe("Penalty for pulling out");
+    expect(plainPointLabel("ATP Points")).toContain("pro tour");
+    expect(plainPointLabel("Itf Wtt Men X 1")).toContain("World Tennis Tour");
+  });
+
+  it("never leaves a label as raw federation shorthand", () => {
+    // The real slice sets from Boys U-12, Boys U-18 and Men's Singles.
+    const live = [
+      "Best 8 Sngls", "Best 8 Dbls", "25% Best 8 Dbls", "Asian (25%)",
+      "14&Under", "Penalty Pts", "Itf X 2", "Under Mens", "Mens",
+      "ATP Points", "Itf Wtt Men X 1",
+    ];
+    for (const label of live) {
+      const plain = plainPointLabel(label);
+      expect(plain.length).toBeGreaterThan(0);
+      // Every one of these should be *changed* into something readable. A label
+      // that comes back identical is one that fell through every rule.
+      expect(plain, `"${label}" was passed through unchanged`).not.toBe(label);
+    }
+  });
+});
+
+describe("explainTotal on a sampled band", () => {
+  /**
+   * The asymmetry that makes this necessary: the list page publishes a total net
+   * of the penalty while the breakdown publishes the components gross of it, so
+   * the deduction is added back on both source eras. What differs is the
+   * roll-down — the new source names it, so there is no residual to recover and
+   * deriving one would duplicate a slice already on the chart.
+   */
+  const sampled: RankingBandProfile["composition"] = [
+    { label: "Best 8 Sngls", average: 225.1, isDeduction: false, isInformational: false },
+    { label: "Best 8 Dbls", average: 280, isDeduction: false, isInformational: true },
+    { label: "25% Best 8 Dbls", average: 70, isDeduction: false, isInformational: false },
+    { label: "Asian (25%)", average: 305.5, isDeduction: false, isInformational: false },
+    { label: "18&Under", average: 294, isDeduction: false, isInformational: false },
+    { label: "Penalty Pts", average: 0.5, isDeduction: true, isInformational: false },
+  ];
+
+  it("adds no derived roll-down when the source already names one", () => {
+    const parts = explainTotal(sampled, 894.1, "U-16", { deriveRollDown: false });
+    expect(parts).not.toBeNull();
+    const labels = parts!.slices.map((s) => s.label);
+    // The printed "18&Under" is there; no invented "Playing up in U-18" beside it.
+    expect(labels).toContain("18&Under");
+    expect(labels.filter((l) => l.startsWith("Playing up in"))).toHaveLength(0);
+    // And the raw doubles column stays out of the stack.
+    expect(labels).not.toContain("Best 8 Dbls");
+  });
+
+  it("still keeps the penalty out of the stack and notes it separately", () => {
+    const parts = explainTotal(sampled, 894.1, "U-16", { deriveRollDown: false });
+    expect(parts!.deductions.map((d) => d.label)).toEqual(["Penalty Pts"]);
+    expect(parts!.slices.map((s) => s.label)).not.toContain("Penalty Pts");
+  });
+
+  it("reconciles against the sampled total, not the whole-band average", () => {
+    const stacked = explainTotal(sampled, 894.1, "U-16", { deriveRollDown: false })!
+      .slices.reduce((sum, s) => sum + s.value, 0);
+    // 225.1 + 70 + 305.5 + 294 = 894.6, against a net total of 894.1 plus the
+    // 0.5 penalty. Within the tenth-of-a-point rounding the server stores.
+    expect(Math.abs(stacked - 894.6)).toBeLessThan(0.05);
+  });
+
+  it("keeps deriving the roll-down for archived snapshots", () => {
+    // The old PDFs never printed it, so on those the residual is the only way to
+    // account for the largest component on the chart. Default must stay on.
+    const archived: RankingBandProfile["composition"] = [
+      { label: "BEST Eight SING. PTS.", average: 200, isDeduction: false },
+    ];
+    const parts = explainTotal(archived, 1000, "U-16");
+    expect(parts!.slices.map((s) => s.label)).toContain("Playing up in U-18");
+  });
+});

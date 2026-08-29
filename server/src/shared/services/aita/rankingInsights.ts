@@ -24,8 +24,16 @@ export interface InsightRow {
   totalPoints: number;
   /** Canonical state name. Absent when the printed code was not mappable. */
   state?: string | undefined;
-  /** Label -> value straight off the PDF header. The LAST entry is the total. */
+  /** Label -> value straight off the source. The LAST entry is the total. */
   points: Array<{ label: string; value: number }>;
+  /**
+   * True when this row's `points` came from the per-player breakdown endpoint
+   * rather than being the total alone.
+   *
+   * Only a sample of each band carries one — see `sampleBandComposition.ts` for
+   * why, and `computeSampledBandProfiles` for what it does with them.
+   */
+  pointsSampled?: boolean | undefined;
 }
 
 /** Points needed to sit inside the top `rank`. */
@@ -70,6 +78,25 @@ export interface BandProfile {
   playerCount: number;
   averageTotal: number;
   composition: CompositionSlice[];
+  /**
+   * How many players in this band the composition was measured from.
+   *
+   * Absent on snapshots computed before sampling existed, where the breakdown
+   * was printed for every row and the composition covered the whole band. When
+   * present it is smaller than `playerCount`, and the UI must say so — a chart
+   * drawn from 15 of 1,500 players is honest only if it admits it.
+   */
+  sampleSize?: number;
+  /**
+   * Mean total of the sampled players specifically.
+   *
+   * The composition slices sum to this, not to `averageTotal`. Keeping both is
+   * the point: `averageTotal` is exact because every row carries a total, while
+   * the bars can only speak for the players they were measured from. A chart
+   * that stacked sampled parts up to an unsampled whole would leave a gap it
+   * could not explain, which reads as a bug.
+   */
+  compositionTotal?: number;
 }
 
 /**
@@ -97,6 +124,16 @@ const DEDUCTION_PATTERN = /\bcut\b|no\s*show|penalt/i;
  * display; keep the two in step if this ever changes.
  */
 export const ROLLED_DOWN_PREFIX = "Playing up in ";
+
+/**
+ * Fewest sampled players a band may be drawn from.
+ *
+ * Three is not a statistical claim — it is a floor below which the average stops
+ * describing a band at all. One player is not an average, and two cannot show a
+ * spread. Bands thinner than this get no composition, which withholds the panel;
+ * the alternative is a bar chart of one person labelled as ninety.
+ */
+export const MIN_SAMPLE_PER_BAND = 3;
 
 /**
  * The bracket whose whole total rolls into this one.
@@ -284,19 +321,113 @@ export function computeBandProfiles(
   }
 
   // A column that is zero in every band is a column this category does not use.
-  // Keeping it would render empty legend entries on every list.
   //
-  // Built from the labels actually on the profiles, not from `components`: the
-  // roll-down slice is derived rather than printed, so an allowlist drawn from
-  // the sheet's own columns would silently discard the very thing that makes the
-  // bars add up.
+  // `dropUnusedColumns` works from the labels actually on the profiles, not from
+  // `components`: the roll-down slice is derived rather than printed here, so an
+  // allowlist drawn from the sheet's own columns would silently discard the very
+  // thing that makes the bars add up.
+  return dropUnusedColumns(profiles);
+}
+
+/**
+ * Band profiles built from a sample of each band, for lists whose source prints
+ * only a total.
+ *
+ * ── Why this exists alongside `computeBandProfiles` ──────────────────────────
+ * The old ranking PDFs printed every point column for every player, so the
+ * composition was free. The platform AITA moved to in August 2026 prints only
+ * the total on the list and puts the breakdown behind one request *per player* —
+ * roughly 11,000 requests to cover a weekly sweep, which is not a thing to do to
+ * someone else's server. So a bounded sample of each band is fetched instead.
+ *
+ * `computeBandProfiles` is kept, not replaced: every snapshot archived before the
+ * cutover has full per-row columns, and re-deriving those from a sample would
+ * throw away data we already hold.
+ *
+ * ── What is exact and what is sampled ────────────────────────────────────────
+ * `playerCount` and `averageTotal` come from **every** row in the band, because
+ * every row carries a rank and a total. Only `composition` is sampled, and it is
+ * reported with the `sampleSize` and `compositionTotal` it was measured against
+ * so nothing has to be inferred downstream.
+ *
+ * ── The roll-down is not derived here ────────────────────────────────────────
+ * `computeBandProfiles` recovers the points carried down from the bracket above
+ * as a residual, because the old sheets never printed it. The new breakdown
+ * *names* it — `14&Under` on a U-12 list, `Under Mens` and `Mens` on U-18 — so
+ * this function uses the printed value and derives nothing. Measured across
+ * ranks 1 to 1,078 on three list types: every sampled player's scoring columns
+ * sum to their printed total exactly, so there is no residual left to recover.
+ */
+export function computeSampledBandProfiles(rows: InsightRow[]): BandProfile[] {
+  const sampled = rows.filter((row) => row.pointsSampled && row.points.length >= 2);
+  // No sample means no composition. Returning empty is what makes the client
+  // withhold the panel, which is the right answer to "we have not measured this"
+  // — better than a chart of one column.
+  if (sampled.length === 0) return [];
+
+  const components = componentColumns(sampled);
+  if (components.length === 0) return [];
+
+  const profiles: BandProfile[] = [];
+  for (const band of POINT_BANDS) {
+    const inBand = (row: InsightRow) =>
+      row.rank >= band.from && (band.to === null || row.rank <= band.to);
+
+    const members = rows.filter(inBand);
+    if (members.length === 0) continue;
+
+    const bandSample = sampled.filter(inBand);
+    // ── A band needs enough players behind it to be worth drawing ─────────────
+    // Rows whose own numbers do not reconcile are excluded from the sample, so a
+    // band can end up thinner than it was asked for. One Women's Doubles band came
+    // back represented by a *single* player whose total was eight times the band
+    // average — a chart that is wrong in a way `sampleSize` alone does not warn a
+    // reader about, because the number is right there and still reads as a chart.
+    //
+    // Below the floor the band gets no composition. `PointsComposition` withholds
+    // the whole panel when any band cannot be accounted for, so one thin band
+    // hides the panel for that list. That is the intended trade: this panel exists
+    // to say where points come from, and it should say nothing rather than
+    // something it cannot support.
+    const composition: CompositionSlice[] =
+      bandSample.length < MIN_SAMPLE_PER_BAND
+        ? []
+        : components.map(({ index, label, isDeduction, isInformational }) => ({
+            label,
+            isDeduction,
+            isInformational,
+            average: round1(mean(bandSample.map((m) => m.points[index]?.value ?? 0))),
+          }));
+
+    profiles.push({
+      label: band.label,
+      from: band.from,
+      to: band.to,
+      playerCount: members.length,
+      averageTotal: round1(mean(members.map((m) => m.totalPoints))),
+      composition,
+      sampleSize: bandSample.length,
+      compositionTotal: round1(mean(bandSample.map((m) => m.totalPoints))),
+    });
+  }
+
+  return dropUnusedColumns(profiles);
+}
+
+/**
+ * Removes columns that are zero in every band.
+ *
+ * A column this category never uses would otherwise render an empty legend entry
+ * on every list. Shared by both band-profile functions so they cannot drift on
+ * which columns they consider real.
+ */
+function dropUnusedColumns(profiles: BandProfile[]): BandProfile[] {
   const labels = [...new Set(profiles.flatMap((p) => p.composition.map((s) => s.label)))];
   const used = new Set(
     labels.filter((label) =>
       profiles.some((p) => (p.composition.find((s) => s.label === label)?.average ?? 0) !== 0),
     ),
   );
-
   return profiles.map((profile) => ({
     ...profile,
     composition: profile.composition.filter((slice) => used.has(slice.label)),

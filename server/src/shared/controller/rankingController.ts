@@ -214,7 +214,9 @@ export const getRankingMeta = async (req: Request, res: Response): Promise<void>
         source: {
           federation: "All India Tennis Association",
           acronym: "AITA",
-          url: "https://aitatennis.com/playerranking/",
+          // The new platform's ranking index. The old /playerranking/ path died
+          // with the August 2026 move to hitcourt.com.
+          url: "https://www.aita.hitcourt.com/ranking",
         },
       },
     });
