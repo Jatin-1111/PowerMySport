@@ -139,6 +139,31 @@ describe("buildStepGateFlow", () => {
     expect(resolveStep(flow, "5", undefined).number).toBe(5);
   });
 
+  it("a REQUIRED step that is skipped does not block the steps after it", () => {
+    // The wizard's best-result question is required, but skipped entirely for
+    // ranking/rating sports. Every earlier `skip` in the codebase sat on an
+    // OPTIONAL step, so this path — required + skipped — was never exercised:
+    // if the skipped step's guard were still evaluated it would fail forever
+    // and dead-end the wizard.
+    const flow = buildStepGateFlow("q", 5, satisfied(new Set([0])), {
+      isStepSkipped: (i) => i === 2, // the unmet required step
+    });
+    const resolved = resolveStep(flow, "5", undefined);
+    // The final step is reached and NOT held back by the gate...
+    expect(resolved.step).toBe("5");
+    expect(resolved.clamped).toBe(false);
+    // ...and progress counts only the steps that actually appear, so the
+    // skipped one doesn't leave a gap in "4 of 4".
+    expect(resolved.number).toBe(4);
+    expect(resolved.total).toBe(4);
+  });
+
+  it("without the skip, that same unmet required step DOES block — proving the test above isn't passing for free", () => {
+    const flow = buildStepGateFlow("q", 5, satisfied(new Set([0])));
+    expect(resolveStep(flow, "5", undefined).clamped).toBe(true);
+    expect(resolveStep(flow, "5", undefined).step).toBe("3");
+  });
+
   it("names steps by 1-based position so the URL reads naturally", () => {
     const flow = buildStepGateFlow("q", 3, () => true);
     expect(flow.steps).toEqual(["1", "2", "3"]);

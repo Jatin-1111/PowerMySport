@@ -40,3 +40,43 @@ describe("scorer tolerates partial answers (WizardShell derive-scores refactor)"
     }
   });
 });
+
+/**
+ * `career` was added as a distinct ambition value rather than by relabelling
+ * `professional`, so its scoring treatment is a decision that has to be pinned
+ * rather than inherited. It sits at the top of the ladder: same elite gates and
+ * same late-start penalty as national/professional ambition.
+ */
+describe("`career` ambition scores as an elite tier", () => {
+  const withAmbition = (ambition: WizardAnswers["ambition"]): WizardAnswers => ({
+    ...EMPTY_ANSWERS,
+    ambition,
+    age: 9,
+    state: "Maharashtra",
+  });
+
+  it("does not throw or produce NaN", () => {
+    expect(() => scoreSports(withAmbition("career"))).not.toThrow();
+    for (const r of scoreSports(withAmbition("career"))) {
+      expect(Number.isFinite(r.score)).toBe(true);
+    }
+  });
+
+  it("scores identically to the legacy `professional` value it replaced", () => {
+    const career = scoreSports(withAmbition("career"));
+    const professional = scoreSports(withAmbition("professional"));
+    expect(career.map((r) => [r.sport.name, r.score])).toEqual(
+      professional.map((r) => [r.sport.name, r.score]),
+    );
+  });
+
+  it("is treated as elite, not as casual — a late start is penalised the way it is for `national`, not the way it is for `fun`", () => {
+    // Age 17 is past the starting window for several sports; the elite tiers
+    // take a much steeper penalty there than "fun" does.
+    const late = (a: WizardAnswers["ambition"]) => ({ ...withAmbition(a), age: 17 });
+    const total = (a: WizardAnswers["ambition"]) =>
+      scoreSports(late(a)).reduce((sum, r) => sum + r.score, 0);
+
+    expect(total("career")).toBeLessThan(total("fun"));
+  });
+});

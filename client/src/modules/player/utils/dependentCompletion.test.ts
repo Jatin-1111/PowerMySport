@@ -24,6 +24,22 @@ describe("calculateDependentCompletion", () => {
     expect(missing.map((m) => m.field)).not.toContain("assessment");
   });
 
+  it("credits the assessment bucket from the standing tier ALONE — ranking/rating sports never collect a best-result tier, so requiring it would cap them below 100% with no field left to fill", () => {
+    const { missing, percent } = calculateDependentCompletion({
+      sportsFocus: ["Tennis"],
+      currentStandingTier: 3,
+    });
+    expect(missing.map((m) => m.field)).not.toContain("assessment");
+    // ...and adding the best-result tier changes nothing.
+    expect(
+      calculateDependentCompletion({
+        sportsFocus: ["Tennis"],
+        currentStandingTier: 3,
+        bestResultTier: 2,
+      }).percent,
+    ).toBe(percent);
+  });
+
   it("credits the assessment bucket via standing/best-result tiers without wizardCompletedAt (sport-known path)", () => {
     const { missing } = calculateDependentCompletion({
       currentStandingTier: 3,

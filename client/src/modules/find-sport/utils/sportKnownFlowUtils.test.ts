@@ -15,6 +15,8 @@ import {
   getCurrentStandingLadder,
   getBestResultLadder,
   getAmbitionOptions,
+  getGoverningBodyName,
+  sportAsksBestResult,
   deriveExperienceLevel,
 } from "../data/sportArchetypes";
 
@@ -231,15 +233,15 @@ describe("buildProfileChips", () => {
     expect(buildProfileChips(form({ state: "Tamil Nadu" }))).toContain("Tamil Nadu");
   });
 
-  it("currentStandingTier resolves to the right ladder per sport archetype", () => {
-    // Tennis = ranking archetype
+  it("currentStandingTier resolves to the right ladder per sport", () => {
+    // Tennis has an authored AITA ladder, so the chip reads in AITA's terms
     expect(
       buildProfileChips(form({ sport: "Tennis", currentStandingTier: 1 })),
-    ).toContain("No ranking yet");
-    // Chess = rating archetype
+    ).toContain("No AITA ranking yet");
+    // Chess has an authored AICF ladder, which has no "state rating" rung
     expect(
       buildProfileChips(form({ sport: "Chess", currentStandingTier: 2 })),
-    ).toContain("State-rated");
+    ).toContain("Playing rated tournaments");
   });
 
   it("null currentStandingTier omits the standing chip", () => {
@@ -308,12 +310,12 @@ describe("buildGoalChips", () => {
     expect(buildGoalChips(form({ sport: "Cricket", ambition: "fun" }))).toContain("Fitness & enjoyment only");
     expect(buildGoalChips(form({ sport: "Cricket", ambition: "competitive" }))).toContain("Improving for school team");
     expect(buildGoalChips(form({ sport: "Cricket", ambition: "national" }))).toContain("Trying for district/state trials");
-    expect(buildGoalChips(form({ sport: "Cricket", ambition: "professional" }))).toContain("Aiming for academy/national camp selection");
+    expect(buildGoalChips(form({ sport: "Cricket", ambition: "career" }))).toContain("Building a career in sport");
   });
 
   it("ranking sports (Tennis) get ranking-tournament wording instead of district/state trials", () => {
     expect(buildGoalChips(form({ sport: "Tennis", ambition: "national" }))).toContain("Earning an All-India (national) ranking");
-    expect(buildGoalChips(form({ sport: "Tennis", ambition: "professional" }))).toContain("Aiming for the international junior circuit");
+    expect(buildGoalChips(form({ sport: "Tennis", ambition: "career" }))).toContain("Building a career in sport");
   });
 
   it("empty sport omits the ambition chip (consistent with other chip builders)", () => {
@@ -381,17 +383,92 @@ describe("getCurrentStandingLadder / getBestResultLadder — archetype resolutio
     });
   });
 
-  it("ranking sports (Tennis, Badminton) get the ranking-tournament ladder", () => {
-    expect(getCurrentStandingLadder("Tennis")[2].context).toBe("Has an All-India (national) ranking");
-    expect(getCurrentStandingLadder("Badminton")[2].context).toBe("Has an All-India (national) ranking");
+  it("an authored per-sport ladder overrides its archetype's generic one", () => {
+    // Cricket is unauthored and must still get its archetype ladder verbatim,
+    // while Tennis (authored) must not.
+    expect(getCurrentStandingLadder("Cricket")[1].label).toBe("District level");
+    expect(getCurrentStandingLadder("Tennis")[1].label).not.toBe("District level");
+  });
+
+  it("every sport on the `ranking` archetype now has an authored ladder, and no two are alike", () => {
+    const RANKING_SPORTS = ["Tennis", "Badminton", "Table Tennis", "Squash"];
+    RANKING_SPORTS.forEach((sport) => expect(getGoverningBodyName(sport)).not.toBeNull());
+
+    // Same archetype, four genuinely different circuits — the whole point of
+    // this layer. Serialise so a ladder can't be quietly duplicated.
+    const shapes = RANKING_SPORTS.map((s) => JSON.stringify(getCurrentStandingLadder(s)));
+    expect(new Set(shapes).size).toBe(RANKING_SPORTS.length);
+  });
+
+  it("Squash's ladder is graded by star rating — that's how SRFI actually grades its junior circuit", () => {
+    const blob = getCurrentStandingLadder("Squash")
+      .map((t) => `${t.label} ${t.context ?? ""}`)
+      .join(" ")
+      .toLowerCase();
+    expect(blob).toContain("star");
+    expect(blob).toContain("slam");
+  });
+
+  it("Badminton and Table Tennis KEEP a state rung — unlike tennis, state play is real in both (BAI issues the mandatory BAI ID through the state association; TTFI allots national entry off the published state ranking)", () => {
+    ["Badminton", "Table Tennis"].forEach((sport) => {
+      const hasStateRung = getCurrentStandingLadder(sport).some((t) =>
+        `${t.label} ${t.context ?? ""}`.toLowerCase().includes("state"),
+      );
+      expect(hasStateRung).toBe(true);
+    });
+  });
+
+  it("Table Tennis resolves from both the name and the slug", () => {
+    expect(getCurrentStandingLadder("table-tennis")).toEqual(getCurrentStandingLadder("Table Tennis"));
+    expect(getGoverningBodyName("table-tennis")).toBe("TTFI");
+  });
+
+  it("Tennis's ladder has no state rung — AITA's junior circuit is individual entry by ranking with no state selection step", () => {
+    [...getCurrentStandingLadder("Tennis"), ...getBestResultLadder("Tennis")].forEach((tier) => {
+      expect(`${tier.label} ${tier.context ?? ""}`.toLowerCase()).not.toContain("state");
+    });
+  });
+
+  it("Tennis's ladder is the real AITA circuit, in order", () => {
+    expect(getCurrentStandingLadder("Tennis").map((t) => t.label)).toEqual([
+      "No AITA ranking yet",
+      "Talent / Championship Series",
+      "Super Series / National Series",
+      "Junior Nationals",
+      "ITF junior circuit",
+    ]);
+  });
+
+  it("names the governing body for authored sports, and stays silent for sports on the generic fallback", () => {
+    expect(getGoverningBodyName("Tennis")).toBe("AITA");
+    expect(getGoverningBodyName("tennis")).toBe("AITA");
+    expect(getGoverningBodyName("Badminton")).toBe("BAI");
+    expect(getGoverningBodyName("Table Tennis")).toBe("TTFI");
+    expect(getGoverningBodyName("Chess")).toBe("AICF");
+    expect(getGoverningBodyName("Squash")).toBe("SRFI");
+    expect(getGoverningBodyName("Cricket")).toBeNull();
+    expect(getGoverningBodyName("Athletics")).toBeNull();
+  });
+
+  it("an authored ladder keeps 5 rungs valued 1-5 — tier numbers are persisted on the Player doc, so a renumber would re-point existing rows", () => {
+    ["Tennis", "Badminton", "Table Tennis", "Chess", "Squash"].forEach((sport) => {
+      expect(getCurrentStandingLadder(sport).map((t) => t.value)).toEqual([1, 2, 3, 4, 5]);
+      expect(getBestResultLadder(sport).map((t) => t.value)).toEqual([1, 2, 3, 4, 5]);
+    });
   });
 
   it("Chess's rating ladder correctly distinguishes AICF (national) from FIDE (international) — not the same body", () => {
     const ladder = getCurrentStandingLadder("Chess");
-    expect(ladder[1].label).toBe("State-rated");
-    expect(ladder[2].context).toContain("AICF");
+    expect(ladder[2].label).toBe("AICF rated");
     expect(ladder[2].context).not.toContain("FIDE");
     expect(ladder[3].context).toContain("FIDE");
+  });
+
+  it("Chess has no 'state rating' rung — Indian ratings are national (AICF) or international (FIDE), nothing in between", () => {
+    getCurrentStandingLadder("Chess").forEach((tier) => {
+      expect(tier.label.toLowerCase()).not.toContain("state-rated");
+      expect(tier.label.toLowerCase()).not.toContain("state rated");
+    });
   });
 
   it("Athletics/Swimming (time-based standard) swap in 'time'", () => {
@@ -453,6 +530,53 @@ describe("getCurrentStandingLadder / getBestResultLadder — archetype resolutio
   });
 });
 
+describe("getAmbitionOptions — the career tier", () => {
+  it("offers `career` as the top goal for every archetype, and no longer offers `professional`", () => {
+    ["Cricket", "Tennis", "Chess", "Athletics"].forEach((sport) => {
+      const values = getAmbitionOptions(sport).map((o) => o.value);
+      expect(values[3]).toBe("career");
+      expect(values).not.toContain("professional");
+    });
+  });
+
+  it("federation sports KEEP their state rung — there the selection pyramid is real", () => {
+    const labels = getAmbitionOptions("Cricket").map((o) => o.label.toLowerCase());
+    expect(labels.some((l) => l.includes("state"))).toBe(true);
+  });
+
+  it("`professional` is still renderable — it stays in the type for rows written before the swap", () => {
+    // buildGoalChips looks the value up in the option list; a legacy row simply
+    // finds no label rather than throwing.
+    expect(() => buildGoalChips(form({ sport: "Tennis", ambition: "professional" }))).not.toThrow();
+  });
+});
+
+describe("sportAsksBestResult — the redundant question", () => {
+  it("ranking and rating sports don't ask it — having the ranking IS the result", () => {
+    ["Tennis", "Badminton", "Table Tennis", "Squash", "Chess"].forEach((sport) => {
+      expect(sportAsksBestResult(sport)).toBe(false);
+    });
+  });
+
+  it("federation and standard sports still ask it — past selection and current level genuinely diverge there", () => {
+    ["Cricket", "Football", "Wrestling", "Athletics", "Swimming", "Shooting"].forEach((sport) => {
+      expect(sportAsksBestResult(sport)).toBe(true);
+    });
+  });
+
+  it("unknown sports fall back to the federation archetype, so they keep the question", () => {
+    expect(sportAsksBestResult("Underwater Hockey")).toBe(true);
+  });
+
+  it("the best-result ladder stays resolvable even for sports that no longer ask — stored tiers still have to render their label", () => {
+    ["Tennis", "Chess"].forEach((sport) => {
+      const ladder = getBestResultLadder(sport);
+      expect(ladder).toHaveLength(5);
+      expect(buildAchievementChips(form({ sport, bestResultTier: 3 }))).toHaveLength(1);
+    });
+  });
+});
+
 describe("getAmbitionOptions — sport-anchored goal wording", () => {
   it("keeps the same 4 underlying values regardless of archetype (scorer.ts depends on this)", () => {
     ["Cricket", "Tennis", "Chess", "Athletics"].forEach((sport) => {
@@ -460,7 +584,7 @@ describe("getAmbitionOptions — sport-anchored goal wording", () => {
         "fun",
         "competitive",
         "national",
-        "professional",
+        "career",
       ]);
     });
   });
@@ -468,16 +592,16 @@ describe("getAmbitionOptions — sport-anchored goal wording", () => {
   it("federation sports use district/state trial language", () => {
     const options = getAmbitionOptions("Cricket");
     expect(options.find((o) => o.value === "national")?.label).toBe("Trying for district/state trials");
-    expect(options.find((o) => o.value === "professional")?.label).toBe(
-      "Aiming for academy/national camp selection",
-    );
+    expect(options.find((o) => o.value === "career")?.label).toBe("Building a career in sport");
   });
 
-  it("ranking sports (Tennis) never mention district/state trials", () => {
+  it("ranking sports (Tennis) never mention district/state trials — or any state rung at all", () => {
     const options = getAmbitionOptions("Tennis");
     options.forEach((o) => {
       expect(o.label.toLowerCase()).not.toContain("district");
       expect(o.label.toLowerCase()).not.toContain("trial");
+      // The goal list must match the standing ladder: AITA has no state rung.
+      expect(`${o.label} ${o.context}`.toLowerCase()).not.toContain("state");
     });
     expect(options.find((o) => o.value === "national")?.label).toBe(
       "Earning an All-India (national) ranking",
@@ -487,14 +611,18 @@ describe("getAmbitionOptions — sport-anchored goal wording", () => {
   it("rating sports (Chess) reference AICF (national) vs FIDE (international) correctly", () => {
     const options = getAmbitionOptions("Chess");
     expect(options.find((o) => o.value === "national")?.label).toBe("Aiming for a national (AICF) rating");
-    expect(options.find((o) => o.value === "professional")?.label).toContain("FIDE");
+    expect(options.find((o) => o.value === "career")?.label).toBe("Building a career in chess");
+  });
+
+  it("rating sports (Chess) have no state-rating goal — there is no such thing as a state rating", () => {
+    getAmbitionOptions("Chess").forEach((o) => {
+      expect(`${o.label} ${o.context}`.toLowerCase()).not.toContain("state");
+    });
   });
 
   it("standard sports (Athletics) reference qualifying standards", () => {
     const options = getAmbitionOptions("Athletics");
-    expect(options.find((o) => o.value === "professional")?.label).toBe(
-      "Aiming for the international/Olympic qualifying standard",
-    );
+    expect(options.find((o) => o.value === "career")?.label).toBe("Building a career in sport");
   });
 });
 

@@ -842,7 +842,7 @@ export interface AddDependentPayload {
   waterComfort?: "comfortable" | "neutral" | "uncomfortable";
   // Wizard practical
   budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
-  ambition?: "fun" | "competitive" | "national" | "professional";
+  ambition?: "fun" | "competitive" | "national" | "career" | "professional";
   weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
   experienceLevel?: "beginner" | "intermediate" | "competitive";
   trainingType?: "self" | "club" | "academy" | "private";

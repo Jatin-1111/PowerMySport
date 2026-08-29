@@ -130,7 +130,8 @@ const AMBITION_LABEL: Record<NonNullable<WizardAnswers["ambition"]>, string> = {
   fun: "Health & fun",
   competitive: "Competitive",
   national: "National",
-  professional: "Pro career",
+  career: "Career in sport",
+  professional: "Pro career", // legacy — no longer offered, still stored on older rows
 };
 
 // Pronoun helpers — resolve to he/she when gender is known, singular "they"

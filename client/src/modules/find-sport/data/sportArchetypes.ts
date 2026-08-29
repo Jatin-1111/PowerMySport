@@ -12,18 +12,12 @@
 
 import {
   getSportArchetypeInfo,
+  normalizeSportKey,
   type Archetype,
 } from "@/modules/sports/config/sportArchetypes";
+import { getSportLadderByKey, type LadderTier } from "./sportLadders";
 
-export type { Archetype };
-
-export interface LadderTier {
-  value: 1 | 2 | 3 | 4 | 5;
-  label: string;
-  /** Secondary line shown under the label — used to spell out nuance (e.g.
-   * tier 1 is about competitive record, not raw skill or time played). */
-  context?: string;
-}
+export type { Archetype, LadderTier };
 
 // ─── Ladders ────────────────────────────────────────────────────────────────
 //
@@ -135,53 +129,112 @@ function resolveLadder(ladder: LadderTier[], unit: "time" | "score" | undefined)
   }));
 }
 
+// A hand-authored ladder for the sport wins over its archetype's generic one —
+// see sportLadders.ts for why, and for the rules on adding a sport there.
+
 export function getCurrentStandingLadder(sport: string): LadderTier[] {
+  const override = getSportLadderByKey(normalizeSportKey(sport));
+  if (override) return override.currentStanding;
   const { archetype, unit } = getSportArchetypeInfo(sport);
   return resolveLadder(CURRENT_STANDING_LADDERS[archetype], unit);
 }
 
 export function getBestResultLadder(sport: string): LadderTier[] {
+  const override = getSportLadderByKey(normalizeSportKey(sport));
+  if (override) return override.bestResult;
   const { archetype, unit } = getSportArchetypeInfo(sport);
   return resolveLadder(BEST_RESULT_LADDERS[archetype], unit);
 }
 
+/**
+ * Whether the "best result so far" question is worth asking for this sport.
+ *
+ * In a ranking or rating sport it is not: HAVING the ranking IS the result, so
+ * the question re-asks the current-standing ladder in the past tense and the
+ * parent answers the same rung twice. (Tennis is the clearest case — every
+ * AITA player has a ranking, so "current level" already carries the record.)
+ * Those sports fall through to the free-text `achievementsNote` instead, which
+ * is where a real result — a tournament win, a career-high rank — actually
+ * lives.
+ *
+ * Federation and standard sports keep the question, because there the two
+ * genuinely diverge: a child selected for the state side last season may not
+ * be in it now, and a personal-best time set last year still stands as a
+ * result today.
+ *
+ * NOTE: this gates only whether the question is ASKED. `getBestResultLadder`
+ * stays defined for every archetype, because tiers already stored on existing
+ * Player rows still have to render their label wherever the profile is shown.
+ */
+export function sportAsksBestResult(sport: string): boolean {
+  const { archetype } = getSportArchetypeInfo(sport);
+  return archetype !== "ranking" && archetype !== "rating";
+}
+
+/**
+ * Short name of the body whose ladder the parent is being asked about ("AITA")
+ * — surfaced in the question copy so they're answering about a real circuit
+ * rather than an abstract "ranking". Null for sports still on the generic
+ * archetype fallback, where there is no single body to name.
+ */
+export function getGoverningBodyName(sport: string): string | null {
+  return getSportLadderByKey(normalizeSportKey(sport))?.bodyName ?? null;
+}
+
 // ─── Goals ──────────────────────────────────────────────────────────────────
 //
-// The 4 ambition values (fun/competitive/national/professional) are shared
-// across all sports — scorer.ts weights/gates on these exact strings — but
-// what each tier actually MEANS depends on the sport's archetype. "Trying for
-// district/state trials" is meaningless for tennis; there's no such thing.
+// The 4 ambition values (fun/competitive/national/career) are shared across all
+// sports — scorer.ts weights/gates on these exact strings — but what each tier
+// actually MEANS depends on the sport's archetype. "Trying for district/state
+// trials" is meaningless for tennis; there's no such thing.
+//
+// Two deliberate changes from the original list:
+//
+// 1. The state rung is gone from the RANKING and RATING archetypes, matching
+//    their standing ladders. There is no state-level ranking tournament in
+//    tennis and no state rating in chess, so a goal phrased around one asked
+//    the parent to aim at something that doesn't exist. Federation sports keep
+//    their state rung — there the selection pyramid is real.
+//
+// 2. The top option is now "career" rather than "professional". Chasing the
+//    international junior circuit is a goal a handful of Indian families hold;
+//    building a livelihood through sport — the sports-quota job, the college
+//    place, turning pro — is the one most of them actually have, and it wasn't
+//    on the list at all. "professional" stays in the TYPE for rows already
+//    written with it, but is no longer offered.
 
 export interface AmbitionOption {
-  value: "fun" | "competitive" | "national" | "professional";
+  value: "fun" | "competitive" | "national" | "career" | "professional";
   label: string;
   context: string;
 }
+
+const CAREER_CONTEXT = "A sports-quota job, a college place, or turning pro";
 
 const AMBITION_OPTIONS: Record<Archetype, AmbitionOption[]> = {
   federation: [
     { value: "fun", label: "Fitness & enjoyment only", context: "Staying active and enjoying the sport" },
     { value: "competitive", label: "Improving for school team", context: "Building up to make or strengthen their school/local team" },
     { value: "national", label: "Trying for district/state trials", context: "Training seriously toward trials this season" },
-    { value: "professional", label: "Aiming for academy/national camp selection", context: "Pursuing a serious competitive pathway" },
+    { value: "career", label: "Building a career in sport", context: CAREER_CONTEXT },
   ],
   ranking: [
     { value: "fun", label: "Fitness & enjoyment only", context: "Staying active and enjoying the sport" },
-    { value: "competitive", label: "Playing state-level ranking tournaments", context: "Building up through state-level ranking events" },
+    { value: "competitive", label: "Playing ranking tournaments", context: "Entering the junior circuit and building a ranking" },
     { value: "national", label: "Earning an All-India (national) ranking", context: "Training seriously to break into the national ranking" },
-    { value: "professional", label: "Aiming for the international junior circuit", context: "Pursuing a serious competitive pathway (ITF / BWF level)" },
+    { value: "career", label: "Building a career in sport", context: CAREER_CONTEXT },
   ],
   rating: [
     { value: "fun", label: "Just for enjoyment", context: "Playing casually and enjoying the game" },
-    { value: "competitive", label: "Building up their state rating", context: "Playing regularly to grow their state rating" },
+    { value: "competitive", label: "Playing rated tournaments", context: "Playing regularly to earn and grow a rating" },
     { value: "national", label: "Aiming for a national (AICF) rating", context: "Training seriously to earn a national rating" },
-    { value: "professional", label: "Aiming for an international (FIDE) rating or title", context: "Pursuing international-level chess seriously" },
+    { value: "career", label: "Building a career in chess", context: CAREER_CONTEXT },
   ],
   standard: [
     { value: "fun", label: "Fitness & enjoyment only", context: "Staying active and enjoying the sport" },
     { value: "competitive", label: "Improving their personal best", context: "Building up through school and club-level meets" },
     { value: "national", label: "Training toward the national qualifying standard", context: "Training seriously to hit the national standard" },
-    { value: "professional", label: "Aiming for the international/Olympic qualifying standard", context: "Pursuing a serious competitive pathway toward elite qualifying" },
+    { value: "career", label: "Building a career in sport", context: CAREER_CONTEXT },
   ],
 };
 

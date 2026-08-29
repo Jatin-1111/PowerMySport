@@ -74,9 +74,14 @@ export const DEPENDENT_COMPLETION_FIELDS: Array<{
     label: "Current standing",
     weight: 20,
     // Satisfied by either path: the Discover wizard's sport-match assessment,
-    // or the "I know my sport" flow's standing/best-result tiers — both mean
-    // "we know where this child currently stands."
-    isFilled: (p) => !!p.wizardCompletedAt || (!!p.currentStandingTier && !!p.bestResultTier),
+    // or the "I know my sport" flow's current-standing tier — both mean "we
+    // know where this child currently stands."
+    //
+    // Deliberately does NOT also require bestResultTier. Ranking and rating
+    // sports no longer ask that question at all (see sportAsksBestResult), so
+    // requiring it would cap a tennis or chess parent's profile completion
+    // below 100% with no field left in the product to fill.
+    isFilled: (p) => !!p.wizardCompletedAt || !!p.currentStandingTier,
   },
 ];
 

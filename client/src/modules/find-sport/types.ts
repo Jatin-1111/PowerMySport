@@ -34,7 +34,7 @@ export type WizardAnswers = {
   medicalConditions: string[];
   // Section E — Practical
   budget: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus" | null;
-  ambition: "fun" | "competitive" | "national" | "professional" | null;
+  ambition: "fun" | "competitive" | "national" | "career" | "professional" | null;
   weeklyHours: "1-3" | "4-7" | "8-12" | "13-plus" | null;
 };
 

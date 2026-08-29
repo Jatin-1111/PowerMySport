@@ -167,7 +167,7 @@ function getProfileChips(answers: WizardAnswers): { label: string; value: string
   if (answers.environment)
     chips.push({ label: "Environment", value: { outdoor: "Outdoors", indoor: "Indoors", "no-preference": "Either" }[answers.environment]! });
   if (answers.ambition)
-    chips.push({ label: "Goal", value: { fun: "Health & fun", competitive: "Competitive", national: "National", professional: "Pro career" }[answers.ambition]! });
+    chips.push({ label: "Goal", value: { fun: "Health & fun", competitive: "Competitive", national: "National", career: "Career in sport", professional: "Pro career" }[answers.ambition]! });
   if (answers.budget)
     chips.push({ label: "Budget", value: { "under-3k": "< ₹3k/mo", "3k-7k": "₹3–7k/mo", "7k-15k": "₹7–15k/mo", "15k-plus": "₹15k+/mo" }[answers.budget]! });
   if (answers.weeklyHours)
@@ -702,9 +702,9 @@ function QuestionScreen({
           <FourContextCards
             options={[
               { value: "fun", label: "Health, confidence, and fun", context: "No pressure on results — sport as a positive life habit" },
-              { value: "competitive", label: "District and state-level competition", context: "Serious about sport, but not chasing a professional career" },
+              { value: "competitive", label: "District and state-level competition", context: "Serious about sport, but not chasing it as a livelihood" },
               { value: "national", label: "National representation", context: "We are committed to the long journey this requires" },
-              { value: "professional", label: "Professional athletic career", context: "This is a real goal we are actively working toward" },
+              { value: "career", label: "Building a career in sport", context: "A sports-quota job, a college place, or turning pro" },
             ]}
             value={answers.ambition}
             onChange={(v) => { onAnswer("ambition", v as WizardAnswers["ambition"]); setTimeout(onNext, 200); }}

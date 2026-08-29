@@ -3,38 +3,23 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
-  ArrowRight,
   CheckCircle2,
   ChevronRight,
-  ListChecks,
-  Map,
-  MessageCircle,
-  RotateCcw,
   Sparkles,
-  Target,
-  Trophy,
-  User,
 } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import api from "@/lib/api/axios";
 import { buildStepGateFlow } from "@/flow/defineFlow";
 import { useFlow } from "@/flow/useFlow";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { roadmapHref } from "../../pathway/data/sports";
-import { getAmbitionOptions, getBestResultLadder, getCurrentStandingLadder, deriveExperienceLevel } from "../data/sportArchetypes";
+import { getAmbitionOptions, getBestResultLadder, getCurrentStandingLadder, getGoverningBodyName, sportAsksBestResult, deriveExperienceLevel } from "../data/sportArchetypes";
 import { BinaryCards } from "./inputs/BinaryCards";
 import { FourContextCards } from "./inputs/FourContextCards";
 import { SportSearchInput } from "./inputs/SportSearchInput";
 import { StateSelector } from "./inputs/StateSelector";
-import {
-  EMPTY_FORM,
-  buildAchievementChips,
-  buildGoalChips,
-  buildKeyFindings,
-  buildProfileChips,
-  isAnswered,
-} from "../utils/sportKnownFlowUtils";
+import { EMPTY_FORM, isAnswered } from "../utils/sportKnownFlowUtils";
 import type { KnownSportForm } from "../utils/sportKnownFlowUtils";
 
 // ─── Wizard step definitions ─────────────────────────────────────────────────
@@ -46,7 +31,7 @@ interface QuestionStep {
   id: QuestionId;
   required: boolean;
   heading: (form: KnownSportForm) => string;
-  sub: string;
+  sub: string | ((form: KnownSportForm) => string);
   /** When true for the current form, this step is skipped entirely during navigation. */
   skip?: (form: KnownSportForm) => boolean;
 }
@@ -59,7 +44,14 @@ interface TransitionStep {
 
 type WizardStep = QuestionStep | TransitionStep;
 
+/** How long the final save may delay the handoff to the roadmap before we go anyway. */
+const SAVE_HANDOFF_TIMEOUT_MS = 2500;
+
 const trainsWithSomeoneElse = (f: KnownSportForm) => f.trainingType === "self";
+
+// Ranking/rating sports don't get the best-result tier question at all — see
+// sportAsksBestResult. They go straight to the free-text achievements note.
+const bestResultIsRedundant = (f: KnownSportForm) => !sportAsksBestResult(f.sport || "");
 
 const STEPS: WizardStep[] = [
   // ─── Identity ───────────────────────────────────────────────────────────
@@ -109,7 +101,12 @@ const STEPS: WizardStep[] = [
     id: "currentStandingTier",
     required: true,
     heading: (f) => `What's ${f.childName || "your child"}'s current level in ${f.sport || "the sport"}?`,
-    sub: "This sets the starting point for the roadmap — pick the closest match.",
+    sub: (f) => {
+      const body = getGoverningBodyName(f.sport);
+      return body
+        ? `These are the real rungs of the ${body} junior pathway — pick the closest match.`
+        : "This sets the starting point for the roadmap — pick the closest match.";
+    },
   },
   {
     kind: "question",
@@ -153,22 +150,34 @@ const STEPS: WizardStep[] = [
   {
     kind: "transition",
     text: "Let's capture what they've achieved so far.",
-    sub: "A couple of quick questions about their track record.",
+    sub: "Their track record — wins, selections, anything worth noting.",
   },
   // ─── Best result / track record ─────────────────────────────────────────
   {
     kind: "question",
     id: "bestResultTier",
     required: true,
+    skip: bestResultIsRedundant,
     heading: (f) => `What's the best result ${f.childName || "your child"} has achieved so far?`,
-    sub: "Pick the highest tier that applies — even if that was a while ago.",
+    sub: (f) => {
+      const body = getGoverningBodyName(f.sport);
+      return body
+        ? `Pick the highest ${body} result that applies — even if that was a while ago.`
+        : "Pick the highest tier that applies — even if that was a while ago.";
+    },
   },
   {
     kind: "question",
     id: "achievementsNote",
     required: false,
-    heading: () => "Anything else you'd like to share?",
-    sub: "Optional — tournament names, medals, selections, whatever you're proud of.",
+    heading: (f) =>
+      bestResultIsRedundant(f)
+        ? `What's ${f.childName || "your child"}'s best result so far?`
+        : "Anything else you'd like to share?",
+    sub: (f) =>
+      bestResultIsRedundant(f)
+        ? "Optional — a tournament win, a career-high ranking, a selection. In your own words."
+        : "Optional — tournament names, medals, selections, whatever you're proud of.",
   },
   // ─── Physical basics ─────────────────────────────────────────────────────
   {
@@ -415,7 +424,13 @@ function QuestionInput({
           autoFocus // eslint-disable-line jsx-a11y/no-autofocus
           value={form.achievementsNote}
           onChange={(e) => set("achievementsNote", e.target.value)}
-          placeholder="e.g. Won the U-14 state championship in 2025"
+          // A state-championship example is wrong for the sports that no longer
+          // ask the tier question — tennis has no state event to have won.
+          placeholder={
+            bestResultIsRedundant(form)
+              ? "e.g. Won the U-14 title at a national ranking event in 2025"
+              : "e.g. Won the U-14 state championship in 2025"
+          }
           className={`${textInputClass} resize-none`}
         />
       );
@@ -519,211 +534,12 @@ function QuestionInput({
   }
 }
 
-// ─── Chip ─────────────────────────────────────────────────────────────────────
-
-const CHIP_VARIANTS = {
-  slate: "bg-slate-100 text-slate-600",
-  amber: "bg-amber-50 text-amber-700",
-  indigo: "bg-indigo-50 text-indigo-600",
-} as const;
-
-function Chip({ label, variant = "slate" }: { label: string; variant?: keyof typeof CHIP_VARIANTS }) {
-  return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${CHIP_VARIANTS[variant]}`}>
-      {label}
-    </span>
-  );
-}
-
-// ─── Profile group card ───────────────────────────────────────────────────────
-
-function ProfileGroupCard({
-  icon: Icon,
-  iconBg,
-  iconColor,
-  title,
-  chips,
-  variant,
-  delay = 0,
-}: {
-  icon: typeof User;
-  iconBg: string;
-  iconColor: string;
-  title: string;
-  chips: string[];
-  variant: keyof typeof CHIP_VARIANTS;
-  delay?: number;
-}) {
-  if (chips.length === 0) return null;
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.35 }}
-      whileHover={{ y: -3 }}
-      className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
-    >
-      <div className="flex items-center gap-2 mb-3">
-        <div className={`w-7 h-7 rounded-lg ${iconBg} flex items-center justify-center flex-shrink-0`}>
-          <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
-        </div>
-        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{title}</p>
-      </div>
-      <div className="flex flex-wrap gap-1.5">
-        {chips.map((c) => (
-          <Chip key={c} label={c} variant={variant} />
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Results ──────────────────────────────────────────────────────────────────
-
-function ResultsView({ form, onReset }: { form: KnownSportForm; onReset: () => void }) {
-  const sportEmoji = "🏅";
-  const profileChips = buildProfileChips(form);
-  const achievementChips = buildAchievementChips(form);
-  const goalChips = buildGoalChips(form);
-  const keyFindings = buildKeyFindings(form);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="relative min-h-screen px-4 py-16 sm:py-20"
-    >
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/40 via-white to-slate-50" />
-        <div className="absolute -left-32 top-10 h-96 w-96 rounded-full bg-emerald-300/10 blur-3xl" />
-        <div className="absolute right-0 top-40 h-72 w-72 rounded-full bg-orange-200/15 blur-3xl" />
-      </div>
-
-      <div className="mx-auto w-full max-w-3xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest text-emerald-600 mb-5">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            Profile ready
-          </div>
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-orange-50 to-amber-50 text-4xl ring-4 ring-white shadow-[0_8px_24px_-8px_rgba(233,115,22,0.35)]">
-            {sportEmoji}
-          </div>
-          <h2 className="font-title text-2xl sm:text-3xl font-bold text-slate-900">
-            {form.childName ? `${form.childName}'s ` : "Your child's "}
-            <span className="text-power-orange">{form.sport}</span> profile
-          </h2>
-          <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">
-            Based on your answers — here&apos;s what we&apos;ve built.
-          </p>
-        </div>
-
-        {/* Key findings */}
-        {keyFindings.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-            className="rounded-2xl border border-slate-200/70 border-l-4 border-l-emerald-400 bg-white p-5 sm:p-6 shadow-sm mb-5"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                <ListChecks className="w-4 h-4 text-emerald-600" />
-              </div>
-              <div>
-                <h3 className="font-title text-base font-bold text-slate-900 leading-tight">
-                  Key Findings
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  What shaped {form.childName || "your child"}&apos;s profile
-                </p>
-              </div>
-            </div>
-            <ul className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-2.5">
-              {keyFindings.map((finding, i) => (
-                <li key={i} className="flex gap-2.5 items-start">
-                  <div className="w-4 h-4 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                  </div>
-                  <p className="text-sm text-slate-600 leading-relaxed">{finding}</p>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        )}
-
-        {/* Profile summary — grouped by category */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <ProfileGroupCard
-            icon={User}
-            iconBg="bg-slate-100"
-            iconColor="text-slate-500"
-            title="Child profile"
-            chips={profileChips}
-            variant="slate"
-            delay={0.08}
-          />
-          <ProfileGroupCard
-            icon={Trophy}
-            iconBg="bg-amber-50"
-            iconColor="text-amber-600"
-            title="Track record"
-            chips={achievementChips}
-            variant="amber"
-            delay={0.15}
-          />
-          <ProfileGroupCard
-            icon={Target}
-            iconBg="bg-indigo-50"
-            iconColor="text-indigo-500"
-            title="Goals & availability"
-            chips={goalChips}
-            variant="indigo"
-            delay={0.22}
-          />
-        </div>
-
-        {/* Next steps */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Link
-            href={roadmapHref(form.sport)}
-            className="group/cta flex w-full items-center justify-center gap-2 rounded-2xl bg-power-orange px-5 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98]"
-          >
-            <Map className="h-4 w-4" />
-            View {form.sport} Roadmap
-            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/cta:translate-x-0.5" />
-          </Link>
-          <Link
-            href={`/guidance?sport=${encodeURIComponent(form.sport)}`}
-            className="group/cta flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 active:scale-[0.98]"
-          >
-            <MessageCircle className="h-4 w-4" />
-            Get Expert Help
-            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/cta:translate-x-0.5" />
-          </Link>
-        </div>
-
-        <div className="flex justify-center">
-          <button
-            type="button"
-            onClick={onReset}
-            className="mt-5 inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-          >
-            <RotateCcw className="h-3 w-3" />
-            Start over
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export function SportKnownFlow({ onBack }: { onBack: () => void }) {
   const { token } = useAuthStore();
-  const [done, setDone] = useState(false);
+  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<KnownSportForm>(EMPTY_FORM);
   // Active step lives in the URL (?step=): Back walks the questionnaire, each
   // step is linkable, and a mid-flow deep link is gated to the first unanswered
@@ -735,7 +551,6 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
     direction: dir,
     next: goToNext,
     back: goToPrev,
-    goToStep,
   } = useFlow(flow, form);
   const [dependents, setDependents] = useState<any[]>([]);
   const [matchedDep, setMatchedDep] = useState<any | null>(null);
@@ -812,72 +627,87 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
 
   const goNext = () => {
     if (isLast) {
-      // Persist locally so /roadmap can personalise (name, standing tier,
-      // budget, ambition) — the only durable record for guests, and for
-      // logged-in users it covers the window before the dependent refetch.
-      try {
-        localStorage.setItem(
-          "pms_sport_profile",
-          JSON.stringify({ form, savedAt: new Date().toISOString() }),
-        );
-      } catch {}
-      if (token) {
-        const wizardFields = {
-          ...(form.sport ? { sportsFocus: [form.sport] } : {}),
-          ...(form.gender ? { gender: form.gender } : {}),
-          ...(form.state ? { location: form.state } : {}),
-          ...(form.trainingType ? { trainingType: form.trainingType } : {}),
-          ...(form.heightCm ? { heightCm: form.heightCm } : {}),
-          ...(form.weightKg ? { weightKg: form.weightKg } : {}),
-          ...(form.ambition ? { ambition: form.ambition } : {}),
-          ...(form.weeklyHours ? { weeklyHoursCategory: form.weeklyHours } : {}),
-          ...(form.budgetRange ? { budgetRange: form.budgetRange } : {}),
-          ...(form.dateOfBirth ? { dob: form.dateOfBirth } : {}),
-          ...(form.yearsPlaying !== null ? { yearsPlaying: form.yearsPlaying } : {}),
-          ...(form.currentStandingTier !== null
-            ? {
-                currentStandingTier: form.currentStandingTier,
-                experienceLevel: deriveExperienceLevel(form.currentStandingTier),
-              }
-            : {}),
-          ...(form.bestResultTier !== null ? { bestResultTier: form.bestResultTier } : {}),
-          ...(form.achievementsNote.trim() ? { achievementsNote: form.achievementsNote.trim() } : {}),
-          ...(form.academyName.trim() ? { academyName: form.academyName.trim() } : {}),
-          ...(form.sessionsPerWeek !== null ? { sessionsPerWeek: form.sessionsPerWeek } : {}),
-          ...(form.trainingMonths !== null ? { trainingMonths: form.trainingMonths } : {}),
-          ...(form.injuryNotes.trim() ? { medicalConditions: [form.injuryNotes.trim()] } : {}),
-        };
-
-        if (matchedDep?._id) {
-          // Update the existing matched dependent
-          api.put(`/auth/dependents/${matchedDep._id}`, wizardFields).catch(() => {});
-        } else if (form.childName.trim()) {
-          // Create a new dependent with all wizard fields in one call
-          api.post("/auth/dependents", {
-            name: form.childName.trim(),
-            ...wizardFields,
-          }).catch(() => {});
-        }
-      }
-      setDone(true);
+      void finishAndGoToRoadmap();
       return;
     }
     goToNext();
+  };
+
+  // The wizard ends by handing the parent straight to the roadmap — there is no
+  // summary screen. That screen only ever read their own answers back to them,
+  // so it cost a click and taught them nothing.
+  //
+  // The save has to be AWAITED now, which it didn't have to be before: the old
+  // flow fired the request and rendered the summary, so the request finished
+  // while the parent read it. Navigating immediately would cancel an in-flight
+  // XHR and silently lose the profile. It's raced against a short timeout so a
+  // slow or dead API delays the handoff by at most a beat — the roadmap still
+  // personalises from localStorage, which is written first and synchronously.
+  const finishAndGoToRoadmap = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    // Persist locally so /roadmap can personalise (name, standing tier,
+    // budget, ambition) — the only durable record for guests, and for
+    // logged-in users it covers the window before the dependent refetch.
+    try {
+      localStorage.setItem(
+        "pms_sport_profile",
+        JSON.stringify({ form, savedAt: new Date().toISOString() }),
+      );
+    } catch {}
+    if (token) {
+      const wizardFields = {
+        ...(form.sport ? { sportsFocus: [form.sport] } : {}),
+        ...(form.gender ? { gender: form.gender } : {}),
+        ...(form.state ? { location: form.state } : {}),
+        ...(form.trainingType ? { trainingType: form.trainingType } : {}),
+        ...(form.heightCm ? { heightCm: form.heightCm } : {}),
+        ...(form.weightKg ? { weightKg: form.weightKg } : {}),
+        ...(form.ambition ? { ambition: form.ambition } : {}),
+        ...(form.weeklyHours ? { weeklyHoursCategory: form.weeklyHours } : {}),
+        ...(form.budgetRange ? { budgetRange: form.budgetRange } : {}),
+        ...(form.dateOfBirth ? { dob: form.dateOfBirth } : {}),
+        ...(form.yearsPlaying !== null ? { yearsPlaying: form.yearsPlaying } : {}),
+        ...(form.currentStandingTier !== null
+          ? {
+              currentStandingTier: form.currentStandingTier,
+              experienceLevel: deriveExperienceLevel(form.currentStandingTier),
+            }
+          : {}),
+        ...(form.bestResultTier !== null ? { bestResultTier: form.bestResultTier } : {}),
+        ...(form.achievementsNote.trim() ? { achievementsNote: form.achievementsNote.trim() } : {}),
+        ...(form.academyName.trim() ? { academyName: form.academyName.trim() } : {}),
+        ...(form.sessionsPerWeek !== null ? { sessionsPerWeek: form.sessionsPerWeek } : {}),
+        ...(form.trainingMonths !== null ? { trainingMonths: form.trainingMonths } : {}),
+        ...(form.injuryNotes.trim() ? { medicalConditions: [form.injuryNotes.trim()] } : {}),
+      };
+
+      const save = matchedDep?._id
+        ? // Update the existing matched dependent
+          api.put(`/auth/dependents/${matchedDep._id}`, wizardFields)
+        : form.childName.trim()
+          ? // Create a new dependent with all wizard fields in one call
+            api.post("/auth/dependents", {
+              name: form.childName.trim(),
+              ...wizardFields,
+            })
+          : null;
+
+      if (save) {
+        await Promise.race([
+          save.catch(() => {}),
+          new Promise((resolve) => setTimeout(resolve, SAVE_HANDOFF_TIMEOUT_MS)),
+        ]);
+      }
+    }
+
+    router.push(roadmapHref(form.sport));
   };
 
   const goPrev = () => {
     if (idx > 0) goToPrev();
     else onBack();
   };
-
-  const reset = () => {
-    setForm(EMPTY_FORM);
-    goToStep(1);
-    setDone(false);
-    setMatchedDep(null);
-  };
-
-  if (done) return <ResultsView form={form} onReset={reset} />;
 
   return (
     <div className="relative min-h-screen">
@@ -970,7 +800,9 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
                   <h2 className="font-title text-xl font-bold text-slate-900 mb-1.5">
                     {current.heading(form)}
                   </h2>
-                  <p className="text-sm text-slate-500">{current.sub}</p>
+                  <p className="text-sm text-slate-500">
+                    {typeof current.sub === "function" ? current.sub(form) : current.sub}
+                  </p>
                 </div>
 
                 <QuestionInput id={current.id} form={form} set={set} />
@@ -990,10 +822,14 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
                   <button
                     type="button"
                     onClick={goNext}
-                    disabled={!canAdvance}
+                    disabled={!canAdvance || submitting}
                     className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-6 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
                   >
-                    {idx === STEPS.length - 1 ? "See profile" : "Continue"}
+                    {idx === STEPS.length - 1
+                      ? submitting
+                        ? "Building roadmap…"
+                        : `See ${form.sport || "the"} roadmap`
+                      : "Continue"}
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>

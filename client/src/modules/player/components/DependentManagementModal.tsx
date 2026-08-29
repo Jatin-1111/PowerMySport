@@ -422,7 +422,7 @@ export default function DependentManagementModal({
                       { value: "fun",          label: "Just for fun",       context: "Recreational, no pressure" },
                       { value: "competitive",  label: "Competitive",        context: "District / state-level tournaments" },
                       { value: "national",     label: "National-level goal", context: "Serious training commitment" },
-                      { value: "professional", label: "Professional",        context: "Elite, career-track training" },
+                      { value: "career",       label: "Career in sport",    context: "A sports-quota job, a college place, or turning pro" },
                     ]}
                     value={formData.ambition ?? null}
                     onChange={(v) => handleChange("ambition", v)}

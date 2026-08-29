@@ -97,6 +97,18 @@ export function isAnswered(id: keyof KnownSportForm, form: KnownSportForm): bool
 
 // ─── Profile chip builders ────────────────────────────────────────────────────
 
+// ─── Profile readout builders ────────────────────────────────────────────────
+//
+// NOT CURRENTLY RENDERED ANYWHERE. These powered the wizard's end-of-flow
+// summary screen, which was deleted: it only read the parent's own answers back
+// to them, so it cost a click and taught them nothing. The wizard now hands off
+// straight to the roadmap.
+//
+// They are kept — pure, tested, and free at runtime since no component imports
+// them — because the profile readout is wanted on the EXPERT-facing surface,
+// where the reader is someone other than the parent who typed it. If that
+// doesn't land, delete this block and its tests rather than leaving it to rot.
+
 export function buildProfileChips(form: KnownSportForm): string[] {
   const age = getAgeFromDob(form.dateOfBirth);
   const standingLadder = form.sport ? getCurrentStandingLadder(form.sport) : [];

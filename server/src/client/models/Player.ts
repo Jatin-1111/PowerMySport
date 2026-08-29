@@ -38,7 +38,7 @@ export interface PlayerDocument extends Document {
   waterComfort?: "comfortable" | "neutral" | "uncomfortable";
   // Wizard practical (finer-grained than budgetTier)
   budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
-  ambition?: "fun" | "competitive" | "national" | "professional";
+  ambition?: "fun" | "competitive" | "national" | "career" | "professional";
   eyesight?: "sharp" | "corrected" | "limited";
   agility?: "high" | "moderate" | "low";
   weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
@@ -164,7 +164,9 @@ const playerSchema = new Schema<PlayerDocument>(
     waterComfort: { type: String, enum: ["comfortable", "neutral", "uncomfortable"] },
     // Wizard practical
     budgetRange: { type: String, enum: ["under-3k", "3k-7k", "7k-15k", "15k-plus"] },
-    ambition: { type: String, enum: ["fun", "competitive", "national", "professional"] },
+    // "professional" is retained for rows written before "career" replaced it
+    // as the top visible option — the wizard no longer offers it.
+    ambition: { type: String, enum: ["fun", "competitive", "national", "career", "professional"] },
     eyesight: { type: String, enum: ["sharp", "corrected", "limited"] },
     agility: { type: String, enum: ["high", "moderate", "low"] },
     weeklyHoursCategory: { type: String, enum: ["1-3", "4-7", "8-12", "13-plus"] },

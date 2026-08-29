@@ -190,6 +190,22 @@ function timeMatch(childHours: WizardAnswers["weeklyHours"], sport: SportProfile
 // critical (gymnastics): window closes fast — 2× the penalty multiplier.
 // flexible (chess, shooting, cricket): late starts are viable — 0.4× multiplier.
 
+
+// ─── Ambition tiers ──────────────────────────────────────────────────────────
+//
+// "career" (building a livelihood through sport — the sports quota job, the
+// college scholarship, the pro route) sits at the TOP of the ladder alongside
+// national ambition, not off to one side. A parent choosing it is the most
+// committed segment, so it takes the same treatment as the elite tiers: the
+// steeper late-start penalty, the age-window cutoff, and the height gates.
+//
+// "professional" is legacy — it was the top option before "career" replaced it
+// and is no longer offered, but rows written earlier still carry it, so every
+// check below keeps honouring it.
+const ELITE_AMBITIONS = new Set(["national", "career", "professional"]);
+const isEliteAmbition = (a: string | null | undefined): boolean =>
+  !!a && ELITE_AMBITIONS.has(a);
+
 function ageMatch(age: number | null, sport: SportProfile, ambition: WizardAnswers["ambition"]): number {
   if (!age) return 0.7;
   const [idealMin, idealMax] = sport.ageWindowIdeal;
@@ -200,14 +216,14 @@ function ageMatch(age: number | null, sport: SportProfile, ambition: WizardAnswe
     const sensitivityMult =
       sport.ageStartSensitivity === "critical" ? 2.2 :
       sport.ageStartSensitivity === "flexible" ? 0.4 : 1.0;
-    const basePerYear = ambition === "professional" || ambition === "national" ? 0.12 : 0.06;
+    const basePerYear = isEliteAmbition(ambition) ? 0.12 : 0.06;
     const penaltyPerYear = basePerYear * sensitivityMult;
     const minScore =
       sport.ageStartSensitivity === "critical" ? 0.05 :
       sport.ageStartSensitivity === "flexible" ? 0.45 : 0.2;
     return Math.max(minScore, 1 - overshoot * penaltyPerYear);
   }
-  if (ambition === "professional" || ambition === "national") return 0.05;
+  if (isEliteAmbition(ambition)) return 0.05;
   return 0.4;
 }
 
@@ -483,14 +499,14 @@ function passesHardGates(answers: WizardAnswers, sport: SportProfile): boolean {
   if (
     answers.age &&
     answers.age > sport.ageWindowCutoff &&
-    (answers.ambition === "professional" || answers.ambition === "national")
+    isEliteAmbition(answers.ambition)
   ) return false;
 
   // ── Biological gates ──────────────────────────────────────────────────────
   // Basketball: height lower bound — national/professional + age 13+
   if (
     sport.name === "Basketball" &&
-    (answers.ambition === "national" || answers.ambition === "professional") &&
+    isEliteAmbition(answers.ambition) &&
     answers.age && answers.age >= 13 && answers.height
   ) {
     const minH = answers.gender === "girl" ? 160 : 168;
@@ -500,7 +516,7 @@ function passesHardGates(answers: WizardAnswers, sport: SportProfile): boolean {
   // Volleyball: height lower bound — national/professional + age 13+
   if (
     sport.name === "Volleyball" &&
-    (answers.ambition === "national" || answers.ambition === "professional") &&
+    isEliteAmbition(answers.ambition) &&
     answers.age && answers.age >= 13 && answers.height
   ) {
     const minH = answers.gender === "girl" ? 162 : 172;
