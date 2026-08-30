@@ -18,7 +18,6 @@ import {
 import { Coach } from "../models/Coach";
 import {
   getPhonePeOrderStatus,
-  initiatePhonePePayment,
   isPhonePeGatewayError,
 } from "../../shared/services/PhonePeService";
 import { CoachSubscriptionPackage } from "../models/CoachSubscriptionPackage";
@@ -26,33 +25,11 @@ import { User } from "../models/User";
 import { CoachSubscriptionPaymentTransaction } from "../models/CoachSubscriptionPayment";
 import { CoachSubscription } from "../models/CoachSubscription";
 import { reconcileCoachSubscriptionPaymentByIdentifiers } from "../services/CoachSubscriptionPaymentService";
-import {
-  computeSubscriptionFees,
-  SUBSCRIPTION_TAX_RATE as SHARED_SUBSCRIPTION_TAX_RATE,
-} from "../services/PricingRates";
+import { initiateSubscriptionCheckout } from "../services/CoachSubscriptionCheckoutService";
+import { computeSubscriptionFees } from "../services/PricingRates";
 
-const SUBSCRIPTION_PLATFORM_FEE_RATE = Number(
-  process.env.SUBSCRIPTION_PLATFORM_FEE_RATE ??
-    process.env.SERVICE_FEE_RATE ??
-    0,
-);
-// Rates come from the shared pricing module so charge and quote cannot drift.
-const SUBSCRIPTION_TAX_RATE = SHARED_SUBSCRIPTION_TAX_RATE;
-
-const buildSubscriptionMerchantOrderId = (params: {
-  coachId: string;
-  packageId: string;
-  userId: string;
-}): string => {
-  const ts = Date.now().toString(36);
-  const coachPart = params.coachId.slice(-6);
-  const packagePart = params.packageId.slice(-6);
-  const userPart = params.userId.slice(-6);
-  const rand = Math.random().toString(36).slice(2, 8);
-
-  // Keep well below PhonePe's 63 char max while preserving traceability.
-  return `sub_${ts}_${coachPart}_${packagePart}_${userPart}_${rand}`;
-};
+// Fee rates and the merchant-order-id format now live in
+// CoachSubscriptionCheckoutService, which owns every subscription payment.
 
 /**
  * Create a new subscription package (Coach endpoint)
@@ -731,8 +708,6 @@ export const initiateCoachSubscriptionPaymentHandler = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  let transaction: any = null;
-
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -790,120 +765,30 @@ export const initiateCoachSubscriptionPaymentHandler = async (
       return;
     }
 
-    const baseAmountInPaise = Math.round(Number(packageDoc.price) || 0);
-    const safePlatformFeeRate = Number.isFinite(SUBSCRIPTION_PLATFORM_FEE_RATE)
-      ? Math.max(0, SUBSCRIPTION_PLATFORM_FEE_RATE)
-      : 0;
-    const safeTaxRate = Number.isFinite(SUBSCRIPTION_TAX_RATE)
-      ? Math.max(0, SUBSCRIPTION_TAX_RATE)
-      : 0;
-
-    const platformFeeInPaise = Math.round(
-      baseAmountInPaise * safePlatformFeeRate,
-    );
-    const taxAmountInPaise =
-      platformFeeInPaise > 0 ? Math.round(platformFeeInPaise * safeTaxRate) : 0;
-    const amountInPaise =
-      baseAmountInPaise + platformFeeInPaise + taxAmountInPaise;
-
-    if (amountInPaise < 100) {
-      res.status(400).json({
-        success: false,
-        message: "Subscription amount must be at least 1 INR",
-      });
-      return;
-    }
-
-    const merchantOrderId = buildSubscriptionMerchantOrderId({
+    const result = await initiateSubscriptionCheckout({
+      userId: req.user.id,
       coachId,
       packageId,
-      userId: req.user.id,
-    });
-    const redirectBase =
-      process.env.FRONTEND_URL ||
-      process.env.PHONEPE_REDIRECT_URL_BASE ||
-      "http://localhost:3000";
-    const redirectUrl = new URL("/payment", redirectBase);
-    redirectUrl.searchParams.set("status", "pending");
-    redirectUrl.searchParams.set("type", "subscription");
-    redirectUrl.searchParams.set("coachId", coachId);
-    redirectUrl.searchParams.set("packageId", packageId);
-    redirectUrl.searchParams.set("merchantOrderId", merchantOrderId);
-
-    const payer = await User.findById(req.user.id).select("phone");
-
-    const paymentPayload: {
-      merchantOrderId: string;
-      amount: number;
-      redirectUrl: string;
-      userPhone?: string;
-      metaInfo?: Record<string, string>;
-    } = {
-      merchantOrderId,
-      amount: amountInPaise,
-      redirectUrl: redirectUrl.toString(),
-      metaInfo: {
-        udf1: coachId,
-        udf2: packageId,
-        udf3: req.user.id,
-        udf4: dependentId || "",
-      },
-    };
-
-    if (payer?.phone) {
-      paymentPayload.userPhone = payer.phone;
-    }
-
-    transaction = await CoachSubscriptionPaymentTransaction.create({
-      coachId: packageDoc.coachId,
-      userId: req.user.id,
       ...(dependentId ? { dependentId } : {}),
-      packageId: packageDoc._id,
-      merchantOrderId,
-      baseAmount: baseAmountInPaise,
-      platformFeeAmount: platformFeeInPaise,
-      taxAmount: taxAmountInPaise,
-      amount: amountInPaise,
-      status: "PENDING",
-      state: "PENDING",
-      redirectUrl: redirectUrl.toString(),
     });
-
-    const initResult = await initiatePhonePePayment(paymentPayload);
-
-    if (initResult.orderId) {
-      transaction.phonepeOrderId = initResult.orderId;
-    }
-    transaction.redirectUrl = initResult.redirectUrl;
-    transaction.state = initResult.state || "PENDING";
-    await transaction.save();
 
     res.status(200).json({
       success: true,
       message: "Subscription payment initiated",
       data: {
-        redirectUrl: initResult.redirectUrl,
-        merchantOrderId,
-        state: initResult.state,
+        redirectUrl: result.redirectUrl,
+        merchantOrderId: result.merchantOrderId,
+        state: result.state,
         amountBreakdown: {
-          baseAmount: baseAmountInPaise,
-          platformFee: platformFeeInPaise,
-          taxAmount: taxAmountInPaise,
-          total: amountInPaise,
+          baseAmount: result.amountBreakdown.baseAmount,
+          platformFee: result.amountBreakdown.platformFee,
+          taxAmount: result.amountBreakdown.taxAmount,
+          total: result.amountBreakdown.total,
         },
       },
     });
   } catch (error) {
-    if (
-      typeof transaction !== "undefined" &&
-      transaction &&
-      transaction.status === "PENDING"
-    ) {
-      transaction.status = "FAILED";
-      transaction.state = "FAILED";
-      await transaction.save().catch(() => undefined);
-    }
-
+    // The checkout service marks its own transaction FAILED before rethrowing.
     const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 400;
     res.status(statusCode).json({
       success: false,

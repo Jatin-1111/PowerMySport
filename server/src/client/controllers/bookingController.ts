@@ -41,6 +41,7 @@ import {
   processBookingRefund,
 } from "../services/BookingService";
 import { computeBookingFees } from "../services/PricingRates";
+import { deliveryAddressLine } from "../services/BookingDelivery";
 import {
   getPhonePeOrderStatus,
   initiatePhonePePayment,
@@ -384,6 +385,13 @@ export const downloadBookingInvoicePdf = async (
 
     const durationMinutes = diffMinutes(booking.startTime, booking.endTime);
 
+    // The address the session was actually delivered at, snapshotted onto the
+    // booking when it was made. Reading it here — rather than the provider's
+    // live profile — is what stops an invoice's place of supply from changing
+    // after issue, and is the only source that is correct for a freelance coach
+    // (who has no own venue to read an address from).
+    const deliveredAddress = deliveryAddressLine(booking.delivery);
+
     let providerName = "Provider";
     let providerAddressLines: string[] = [];
     let providerGst: string | undefined;
@@ -399,9 +407,10 @@ export const downloadBookingInvoicePdf = async (
 
     if (kind === "VENUE") {
       providerName = venue?.name || "Venue";
-      providerAddressLines = venue?.address ? [venue.address] : [];
+      const venueAddress = deliveredAddress || venue?.address;
+      providerAddressLines = venueAddress ? [venueAddress] : [];
       providerGst = venue?.gstNumber;
-      placeOfSupply = guessPlaceOfSupply(venue?.address);
+      placeOfSupply = guessPlaceOfSupply(venueAddress);
       itemDescription = `Court rental — ${venue?.name || "Venue"}`;
       itemNote = `${durationMinutes} minutes · SAC 999652`;
       subtitle = "Tax Invoice · Venue booking";
@@ -411,7 +420,10 @@ export const downloadBookingInvoicePdf = async (
       const coachUser = coach?.userId as any;
       const coachName = coachUser?.name || "Coach";
       providerName = `${coachName} · ${booking.sport}`;
-      const coachAddress = coach?.ownVenueDetails?.address;
+      // Was `coach.ownVenueDetails.address` unconditionally, which is undefined
+      // for a freelance coach and reflects the coach's *current* profile rather
+      // than the address the session was sold against.
+      const coachAddress = deliveredAddress || coach?.ownVenueDetails?.address;
       providerAddressLines = coachAddress ? [coachAddress] : [];
       providerGst = coach?.gstNumber;
       placeOfSupply = guessPlaceOfSupply(coachAddress);
@@ -422,12 +434,14 @@ export const downloadBookingInvoicePdf = async (
       detailValue = coachName;
     } else {
       providerName = academy?.name || "Academy";
-      providerAddressLines = [
-        academy?.address,
-        [academy?.city, academy?.state, academy?.pincode]
-          .filter(Boolean)
-          .join(", "),
-      ].filter((line): line is string => Boolean(line));
+      providerAddressLines = deliveredAddress
+        ? [deliveredAddress]
+        : [
+            academy?.address,
+            [academy?.city, academy?.state, academy?.pincode]
+              .filter(Boolean)
+              .join(", "),
+          ].filter((line): line is string => Boolean(line));
       providerGst = academy?.gstNumber;
       placeOfSupply = academy?.state
         ? formatStateWithGstCode(academy.state)

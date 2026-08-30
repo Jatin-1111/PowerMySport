@@ -70,6 +70,18 @@ export interface ExpertSessionDocument extends Document {
   momReminderSentAt?: Date;
   payoutStatus: ExpertPayoutStatus;
   payoutPaidAt?: Date;
+  /**
+   * The platform's commission on this session, fixed when it completes.
+   *
+   * `payoutNetAmount` is what the expert is actually paid — `amount` remains
+   * what the client was charged. Commission is deducted from the partner, never
+   * added to the customer, so the two must not be conflated.
+   */
+  payoutGrossAmount?: number;
+  payoutCommissionAmount?: number;
+  payoutCommissionGstAmount?: number;
+  payoutCommissionRate?: number;
+  payoutNetAmount?: number;
   // Review
   reviewed: boolean;
   rating?: number;
@@ -166,6 +178,11 @@ const expertSessionSchema = new Schema<ExpertSessionDocument>(
       index: true,
     },
     payoutPaidAt: { type: Date },
+    payoutGrossAmount: { type: Number, min: 0 },
+    payoutCommissionAmount: { type: Number, min: 0 },
+    payoutCommissionGstAmount: { type: Number, min: 0 },
+    payoutCommissionRate: { type: Number, min: 0 },
+    payoutNetAmount: { type: Number, min: 0 },
     reviewed: { type: Boolean, default: false },
     rating: { type: Number, min: 1, max: 5 },
     review: { type: String, trim: true, maxlength: 2000 },

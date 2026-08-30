@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Building2,
   UserCircle2,
+  CalendarClock,
   GraduationCap,
   Landmark,
   Smartphone,
@@ -20,18 +21,21 @@ import {
 
 const VENDOR_LABEL: Record<PayoutSummary["vendorRole"], string> = {
   Coach: "Coach",
+  CoachSession: "Coach · classes",
   VenueLister: "Venue Owner",
   Expert: "Expert",
 };
 
 const VENDOR_ICON: Record<PayoutSummary["vendorRole"], typeof UserCircle2> = {
   Coach: UserCircle2,
+  CoachSession: CalendarClock,
   VenueLister: Building2,
   Expert: GraduationCap,
 };
 
 const VENDOR_ICON_CLASSES: Record<PayoutSummary["vendorRole"], string> = {
   Coach: "bg-blue-100 text-blue-600",
+  CoachSession: "bg-emerald-100 text-emerald-600",
   VenueLister: "bg-purple-100 text-purple-600",
   Expert: "bg-amber-100 text-amber-600",
 };

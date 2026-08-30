@@ -56,6 +56,11 @@ function PaymentPageContent() {
   const packageId = searchParams.get("packageId") || "";
   const type = searchParams.get("type") || "venue";
   const isSubscriptionPayment = type === "subscription";
+  // A programme enrolment IS a subscription payment — same transaction, same
+  // verification endpoint — so it deliberately does not fork this page. The
+  // only difference is where the payer belongs afterwards: their classes.
+  const offeringId = searchParams.get("offeringId") || "";
+  const isProgrammeEnrolment = isSubscriptionPayment && Boolean(offeringId);
   const isMockPayment =
     searchParams.get("mode") === "mock" ||
     searchParams.get("mock") === "true" ||
@@ -367,16 +372,26 @@ function PaymentPageContent() {
                 <Button
                   variant="primary"
                   className="w-full"
-                  onClick={() => router.push("/dashboard")}
+                  onClick={() =>
+                    router.push(
+                      isProgrammeEnrolment ? "/my-classes" : "/dashboard",
+                    )
+                  }
                 >
-                  Go to dashboard
+                  {isProgrammeEnrolment ? "Go to my classes" : "Go to dashboard"}
                 </Button>
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => router.push(`/coaches/${coachId}`)}
+                  onClick={() =>
+                    router.push(
+                      isProgrammeEnrolment
+                        ? `/programmes/${offeringId}`
+                        : `/coaches/${coachId}`,
+                    )
+                  }
                 >
-                  Back to coach
+                  {isProgrammeEnrolment ? "Back to programme" : "Back to coach"}
                 </Button>
               </div>
             </Card>

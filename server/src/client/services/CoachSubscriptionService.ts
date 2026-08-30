@@ -114,8 +114,16 @@ export const subscribeToCoachPackage = async (params: {
         ? existingActive.currentPeriodEnd
         : now;
 
-    existingActive.currentPeriodStart =
-      existingActive.currentPeriodStart || now;
+    // The new period STARTS where the old one ended. This used to leave
+    // `currentPeriodStart` pinned to the original signup while
+    // `currentPeriodEnd` advanced, so after one renewal the "current period"
+    // spanned every month since the beginning — which the field name already
+    // said it should not.
+    //
+    // It matters beyond tidiness: recurring-programme credits are granted for
+    // exactly this window, so a stale start would buy one month's fee a
+    // multi-month run of classes.
+    existingActive.currentPeriodStart = renewalStart;
     existingActive.currentPeriodEnd = addBillingPeriod(
       renewalStart,
       packageDoc.frequency,
@@ -123,6 +131,10 @@ export const subscribeToCoachPackage = async (params: {
     existingActive.nextBillingDate = existingActive.currentPeriodEnd;
     existingActive.autoRenew = true;
     existingActive.status = "ACTIVE";
+    // A grace window that was open is now closed, and the next period gets its
+    // own nudge.
+    existingActive.gracePeriodEndsAt = null;
+    existingActive.renewalReminderSentAt = null;
 
     await existingActive.save();
 
@@ -388,12 +400,68 @@ export const markPastDueSubscription = async (subscriptionId: string) => {
   return subscription;
 };
 
-export const cleanupExpiredCoachSubscriptions = async (): Promise<number> => {
-  const now = new Date();
+/**
+ * Move auto-renewing subscriptions whose period has ended into PAST_DUE, with a
+ * grace window, instead of killing them outright.
+ *
+ * `autoRenew` was previously written as `true` and then ignored: the expiry
+ * sweep killed every subscription the moment its period ended, so a renewal was
+ * impossible by construction. There is no payment mandate in this integration
+ * (PhonePeService has no autopay/subscription API), so "auto-renew" can only
+ * mean "we hold your place and ask you to pay", not "we take the money" — and
+ * the grace window is what makes that honest rather than a hard cut-off at
+ * midnight.
+ *
+ * A subscription that is NOT auto-renewing still expires directly, which is
+ * what the user asked for when they turned it off.
+ */
+export const lapseRenewableSubscriptionsToPastDue = async (params: {
+  now?: Date;
+  graceDays?: number;
+} = {}): Promise<number> => {
+  const now = params.now ?? new Date();
+  const graceDays = params.graceDays ?? DEFAULT_GRACE_DAYS;
+
+  const due = await CoachSubscription.find({
+    status: "ACTIVE",
+    autoRenew: true,
+    currentPeriodEnd: { $lte: now },
+  });
+
+  for (const subscription of due) {
+    subscription.status = "PAST_DUE";
+    subscription.gracePeriodEndsAt = addGracePeriod(now, graceDays);
+    await subscription.save();
+
+    await syncCoachSubscriptionSummary({
+      coachId: subscription.coachId,
+      subscriptionId: subscription._id as mongoose.Types.ObjectId,
+      subscriptionStatus: "PAST_DUE",
+      subscriptionExpiresAt: subscription.currentPeriodEnd,
+    });
+  }
+
+  if (due.length > 0) {
+    log.info(
+      `lapseRenewableSubscriptionsToPastDue: ${due.length} subscription(s) now awaiting renewal`,
+    );
+  }
+
+  return due.length;
+};
+
+export const cleanupExpiredCoachSubscriptions = async (params: {
+  now?: Date;
+} = {}): Promise<number> => {
+  // Injectable so the expiry/grace boundaries can actually be tested; the job
+  // calls it with no argument and gets the real clock.
+  const now = params.now ?? new Date();
   const expired = await CoachSubscription.find({
     status: { $in: ["ACTIVE", "PAST_DUE"] },
     $or: [
-      { status: "ACTIVE", currentPeriodEnd: { $lte: now } },
+      // Auto-renewing subscriptions are handed to the grace window above
+      // first; only ones the user actually turned off die at period end.
+      { status: "ACTIVE", autoRenew: { $ne: true }, currentPeriodEnd: { $lte: now } },
       { status: "PAST_DUE", gracePeriodEndsAt: { $lte: now } },
     ],
   });

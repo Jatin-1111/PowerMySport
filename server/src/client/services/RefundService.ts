@@ -8,6 +8,7 @@
 
 import { Booking } from "../models/Booking";
 import { BookingPaymentTransaction } from "../models/BookingPayment";
+import { CoachSubscriptionPaymentTransaction } from "../models/CoachSubscriptionPayment";
 import { User } from "../models/User";
 import { WalletService } from "./WalletService";
 import {
@@ -23,8 +24,32 @@ const log = __rootLog.child("refund");
 
 export type RefundMethod = "ORIGINAL_CARD" | "BANK_TRANSFER" | "STORE_CREDIT";
 
+/**
+ * Which collection the payment being refunded lives in.
+ *
+ * The refund logic below is generic — it only reads `merchantOrderId`/`amount`
+ * and writes the `refund*` fields, both of which the two transaction models
+ * share by design. Only the LOOKUP differs, so this switches the lookup rather
+ * than duplicating a pipeline that moves money.
+ *
+ * It is an explicit parameter rather than probing both collections by id: an
+ * ambiguous resolution in a refund path is not a thing to leave to chance.
+ */
+export type RefundSource = "BOOKING" | "COACH_SUBSCRIPTION";
+
+const findRefundableTransaction = async (
+  id: string,
+  source: RefundSource,
+): Promise<any | null> =>
+  source === "COACH_SUBSCRIPTION"
+    ? CoachSubscriptionPaymentTransaction.findById(id)
+    : BookingPaymentTransaction.findById(id);
+
 export interface InitiateRefundPayload {
+  /** Historical name; holds the id of whichever transaction `source` names. */
   bookingPaymentTransactionId: string;
+  /** Defaults to BOOKING so every existing caller keeps working unchanged. */
+  source?: RefundSource;
   amount: number;
   reason?: string;
   refundMethod?: RefundMethod; // Defaults to ORIGINAL_CARD
@@ -58,11 +83,13 @@ export async function initiateRefund(
     amount,
     reason,
     refundMethod = "ORIGINAL_CARD",
+    source = "BOOKING",
   } = payload;
 
   // Get the payment transaction
-  const transaction = await BookingPaymentTransaction.findById(
+  const transaction = await findRefundableTransaction(
     bookingPaymentTransactionId,
+    source,
   );
   if (!transaction) {
     throw new Error("Payment transaction not found");

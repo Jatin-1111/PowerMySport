@@ -325,7 +325,9 @@ export interface BookingEvent {
 
 export interface PayoutSummary {
   vendorId: string;
-  vendorRole: "VenueLister" | "Coach" | "Expert";
+  // "CoachSession" is a recurring-coaching payout, earned per delivered class
+  // and settled per occurrence — its ids are occurrence ids, not booking ids.
+  vendorRole: "VenueLister" | "Coach" | "Expert" | "CoachSession";
   totalPendingAmount: number;
   bookingIds: string[];
   vendorName: string;
@@ -1065,7 +1067,9 @@ export const adminApi = {
 
   markPayoutsAsPaid: async (data: {
     vendorId: string;
-    vendorRole: "VenueLister" | "Coach" | "Expert";
+    // "CoachSession" is a recurring-coaching payout, earned per delivered class
+  // and settled per occurrence — its ids are occurrence ids, not booking ids.
+  vendorRole: "VenueLister" | "Coach" | "Expert" | "CoachSession";
     bookingIds: string[];
   }): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post("/admin/payouts/mark-paid", data);

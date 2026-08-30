@@ -26,6 +26,7 @@ import statsRoutes from "./admin/routes/statsRoutes";
 import bookingRoutes from "./client/routes/bookingRoutes";
 import expertsRoutes from "./client/routes/expertsRoutes";
 import coachRoutes from "./client/routes/coachRoutes";
+import coachOfferingRoutes from "./client/routes/coachOfferingRoutes";
 import friendRoutes from "./client/routes/friendRoutes";
 import guidanceRoutes from "./client/routes/guidanceRoutes";
 import screeningRoutes from "./client/routes/screeningRoutes";
@@ -200,6 +201,9 @@ app.use("/api/venues", venueRoutes);
 app.use("/api/venues/onboarding", venueOnboardingRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/coaches", coachRoutes);
+// Recurring coaching programmes. Separate mount because coachRoutes ends in a
+// `/:coachId` catch-all that would swallow any literal path added after it.
+app.use("/api/coach-programmes", coachOfferingRoutes);
 app.use("/api/friends", friendRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/reminders", reminderRoutes);

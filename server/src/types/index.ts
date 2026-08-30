@@ -376,7 +376,12 @@ export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
 export interface IPayment {
   userId: string;
   userType: PaymentUserType;
+  /** Payee entries carry the NET payable; see BookingPayment.amount. */
   amount: number;
+  grossAmount?: number;
+  commissionAmount?: number;
+  commissionGstAmount?: number;
+  commissionRate?: number;
   status: PaymentStatus;
   paidAt?: Date;
 }

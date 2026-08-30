@@ -331,7 +331,12 @@ export const bookingSchema = z
     coachId: z.string().min(1, "Coach ID is required").optional(),
     academyId: z.string().min(1, "Academy ID is required").optional(),
     dependentId: z.string().min(1, "Dependent ID is required").optional(),
-    playerLocation: geoLocationSchema.optional(),
+    // `address` is optional and additive: the booking's delivery record keeps
+    // whatever the client sends, and coordinates alone are not something a
+    // coach can navigate to. The client does not send it yet.
+    playerLocation: geoLocationSchema
+      .extend({ address: z.string().trim().min(1).max(500).optional() })
+      .optional(),
     sport: z.string().min(1, "Sport is required"),
     promoCode: z.string().trim().min(1).max(40).optional(),
     date: z.string().datetime(),
@@ -1458,3 +1463,95 @@ export const academyOnboardingStep7Schema = z
     path: ["bankAccountNumberConfirm"],
   })
   .strip();
+
+// ───────────────── recurring coaching programmes ─────────────────
+
+const offeringSlotSchema = z.object({
+  dayOfWeek: z.number().int().min(0).max(6),
+  startTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "startTime must be HH:mm"),
+  durationMinutes: z.number().int().min(15).max(480),
+});
+
+export const createCoachOfferingSchema = z
+  .object({
+    sport: z.string().min(1, "Sport is required"),
+    title: z.string().trim().min(1).max(120),
+    description: z.string().trim().max(2000).optional(),
+    deliveryKind: z.enum([
+      "PLATFORM_VENUE",
+      "PROVIDER_VENUE",
+      "STUDENT_LOCATION",
+      "ONLINE",
+    ]),
+    venueId: z.string().min(1).optional(),
+    onlinePlatform: z.string().trim().min(1).max(60).optional(),
+    defaultMeetingLink: z.string().trim().url().max(500).optional(),
+    capacity: z.number().int().min(1).max(100).optional(),
+    schedule: z.array(offeringSlotSchema).min(1, "Add at least one weekly slot"),
+    timezone: z.string().min(1).optional(),
+    packageId: z.string().min(1, "A billing package is required"),
+    startDate: z.string().datetime(),
+    endDate: z.string().datetime().optional(),
+  })
+  // Mirrors the model's invariants so a bad programme is rejected at the edge
+  // with a useful message rather than as a Mongoose validation error.
+  .refine((d) => d.deliveryKind !== "PLATFORM_VENUE" || Boolean(d.venueId), {
+    message: "A venue-based programme needs a venueId",
+    path: ["venueId"],
+  })
+  .refine((d) => d.deliveryKind !== "ONLINE" || Boolean(d.onlinePlatform), {
+    message: "An online programme must say which platform it runs on",
+    path: ["onlinePlatform"],
+  })
+  .refine(
+    (d) =>
+      d.deliveryKind !== "STUDENT_LOCATION" || (d.capacity ?? 1) === 1,
+    {
+      message:
+        "A batch cannot be delivered at a student's location — use a venue or online",
+      path: ["capacity"],
+    },
+  );
+
+export const coachMeetingLinkSchema = z.object({
+  meetingLink: z.string().trim().url("Enter a valid meeting link").max(500),
+});
+
+export const coachAttendanceSchema = z.object({
+  enrollmentId: z.string().min(1, "Enrollment ID is required"),
+  mark: z.enum(["PENDING", "PRESENT", "ABSENT"]),
+});
+
+export const coachMakeupSchema = z.object({
+  scheduledAt: z.string().datetime(),
+  durationMinutes: z.number().int().min(15).max(480).optional(),
+});
+
+export const coachEnrollSchema = z.object({
+  studentName: z.string().trim().min(1).max(120),
+  playerId: z.string().min(1).optional(),
+  // NOTE: the fee and billing period are deliberately NOT accepted here. They
+  // are derived server-side from the programme's package — taking them from the
+  // request would let a caller mint free class credits with feePaise: 0.
+  deliveryAddress: z
+    .object({
+      addressSnapshot: z.string().trim().min(1).max(500).optional(),
+      coordinates: z.tuple([z.number(), z.number()]).optional(),
+    })
+    .optional(),
+});
+
+export const coachSessionCompleteSchema = z.object({
+  coachNotes: z.string().trim().max(4000).optional(),
+});
+
+export const coachSessionCancelSchema = z.object({
+  reason: z.string().trim().max(1000).optional(),
+});
+
+export const coachWaitlistSchema = z.object({
+  studentName: z.string().trim().min(1).max(120),
+  playerId: z.string().min(1).optional(),
+});

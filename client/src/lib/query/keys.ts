@@ -34,6 +34,19 @@ export const queryKeys = {
     status: (targetId: string) => ["friends", "status", targetId] as const,
   },
 
+  coachPrograms: {
+    all: ["coach-programmes"] as const,
+    browse: (sport: string, online: boolean) =>
+      ["coach-programmes", "browse", { sport, online }] as const,
+    mine: ["coach-programmes", "mine"] as const,
+    mySessions: ["coach-programmes", "sessions", "mine"] as const,
+    makeupsOwed: ["coach-programmes", "sessions", "makeups-owed"] as const,
+    earnings: ["coach-programmes", "sessions", "earnings"] as const,
+    myEnrollments: ["coach-programmes", "my", "enrollments"] as const,
+    myUpcoming: ["coach-programmes", "my", "sessions"] as const,
+    myPackages: ["coach-programmes", "packages", "mine"] as const,
+  },
+
   bookings: {
     all: ["bookings"] as const,
     quote: (subtotal: number, discount: number) =>

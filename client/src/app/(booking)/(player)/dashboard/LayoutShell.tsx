@@ -14,6 +14,7 @@ import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
 import {
     Bell,
     Calendar,
+    CalendarRange,
     CreditCard,
     Home,
     LayoutDashboard,
@@ -88,6 +89,14 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
       href: "/dashboard/my-bookings",
       label: "My Bookings",
       icon: Calendar,
+      section: "Activity",
+    },
+    {
+      // Recurring coaching lives outside /dashboard because a class is not a
+      // booking — it belongs to a programme with its own schedule and ledger.
+      href: "/my-classes",
+      label: "My Classes",
+      icon: CalendarRange,
       section: "Activity",
     },
     {

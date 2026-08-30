@@ -2,6 +2,7 @@ import crypto from "crypto";
 import mongoose from "mongoose";
 import { User } from "../models/User";
 import { Expert, ExpertDocument } from "../models/ExpertProfile";
+import { commissionOn } from "./CommissionService";
 import { IPayoutMethod } from "../models/Coach";
 import { Player, PlayerDocument } from "../models/Player";
 import {
@@ -1177,6 +1178,18 @@ export const completeExpertSession = async (params: {
   session.completedAt = now;
   session.momNotes = momNotes;
   session.momAddedAt = now;
+
+  // Fix the platform's commission at completion, so a later rate change cannot
+  // retroactively alter what this session pays — the Partner Terms promise
+  // exactly that ("bookings already confirmed at the old rate are settled at
+  // the old rate"). `amount` is rupees; the engine works in whole paise.
+  const commission = commissionOn(Math.round((session.amount || 0) * 100));
+  session.payoutGrossAmount = commission.partnerFeePaise / 100;
+  session.payoutCommissionRate = commission.rate;
+  session.payoutCommissionAmount = commission.commissionPaise / 100;
+  session.payoutCommissionGstAmount = commission.gstOnCommissionPaise / 100;
+  session.payoutNetAmount = commission.netPayablePaise / 100;
+
   await session.save();
 
   await recordExpertSessionEvent(session, {
@@ -1766,7 +1779,7 @@ export const markSessionPayoutDone = async (sessionId: string) => {
       expertUserId,
       "PAYOUT_PROCESSED",
       "Payout released",
-      `Your payout of ₹${session.amount} for a completed session has been released.`,
+      `Your payout of ₹${session.payoutNetAmount ?? session.amount} for a completed session has been released.`,
       { sessionId: session._id.toString() },
       true,
     );
@@ -2273,7 +2286,7 @@ export const releaseExpertSessionPayouts = async (): Promise<number> => {
           expertUserId,
           "PAYOUT_PROCESSED",
           "Payout released",
-          `Your payout of ₹${s.amount} for a completed session has been released.`,
+          `Your payout of ₹${s.payoutNetAmount ?? s.amount} for a completed session has been released.`,
           { sessionId: s._id.toString() },
           true,
         );

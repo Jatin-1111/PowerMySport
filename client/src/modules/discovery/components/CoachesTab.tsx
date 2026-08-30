@@ -19,6 +19,7 @@ import { cn } from "@/utils/cn";
 import {
     ArrowRight,
     Award,
+    Globe,
     Bookmark,
     ImageIcon,
     MapPin,
@@ -26,6 +27,7 @@ import {
     Star,
     Users,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 
@@ -684,6 +686,33 @@ function CoachesTabContent() {
       )}
       {/* ── Content ─────────────────────────────────────────────── */}
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/*
+          Coaches are found here by DISTANCE — the discovery query is a geospatial
+          search over coaches with a base location. A coach who only teaches
+          online has neither, so they can never appear in this list no matter
+          which filters are set. This points at the lane where they do.
+        */}
+        <Link
+          href="/programmes?online=true"
+          className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-power-orange"
+        >
+          <span className="flex items-center gap-3">
+            <Globe className="h-5 w-5 shrink-0 text-power-orange" aria-hidden="true" />
+            <span>
+              <span className="block text-sm font-bold text-slate-900">
+                Looking for online coaching?
+              </span>
+              <span className="block text-sm text-slate-500">
+                Chess and other online classes run as weekly programmes, not
+                one-off sessions.
+              </span>
+            </span>
+          </span>
+          <span className="shrink-0 text-sm font-semibold text-power-orange">
+            Browse →
+          </span>
+        </Link>
+
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-100 border-t-turf-green" />

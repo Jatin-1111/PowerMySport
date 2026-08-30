@@ -18,6 +18,11 @@ export interface CoachSubscriptionDocument extends Document {
   gracePeriodEndsAt?: Date | null;
   cancelledAt?: Date | null;
   cancellationReason?: string;
+  /**
+   * One-shot dedup for the "your classes renew soon" nudge. Cleared on every
+   * successful renewal so the next period can nudge again.
+   */
+  renewalReminderSentAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -83,6 +88,7 @@ const coachSubscriptionSchema = new Schema<CoachSubscriptionDocument>(
       default: "",
       trim: true,
     },
+    renewalReminderSentAt: { type: Date, default: null },
   },
   {
     timestamps: true,
@@ -113,6 +119,8 @@ coachSubscriptionSchema.virtual("id").get(function (
 
 coachSubscriptionSchema.index({ coachId: 1, status: 1 });
 coachSubscriptionSchema.index({ userId: 1, status: 1 });
+// Drives the renewal-due sweep.
+coachSubscriptionSchema.index({ status: 1, currentPeriodEnd: 1 });
 
 // --- Real-time Auto Updates ---
 const notifyUsersOfSubscriptionUpdate = (doc: any) => {

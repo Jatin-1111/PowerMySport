@@ -6,6 +6,8 @@ import { User } from "../../client/models/User";
 import { Expert } from "../../client/models/ExpertProfile";
 import { ExpertSession } from "../../client/models/ExpertBooking";
 import { markSessionPayoutDone } from "../../client/services/ExpertsService";
+import { CoachSessionOccurrence } from "../../client/models/CoachSessionOccurrence";
+import { markPayoutPaid } from "../../client/services/CoachSessionLifecycleService";
 import { sendPayoutProcessedEmail } from "../../utils/email";
 import { decryptValue } from "../../shared/utils/encryption";
 import mongoose from "mongoose";
@@ -82,7 +84,7 @@ export const listPendingPayouts = async (
       paymentStatus: "COMPLETED",
       payoutStatus: "PENDING",
     })
-      .select("expertId amount")
+      .select("expertId amount payoutNetAmount")
       .lean();
 
     if (expertSessions.length > 0) {
@@ -111,8 +113,65 @@ export const listPendingPayouts = async (
           });
         }
         const current = payoutMap.get(key)!;
-        current.totalPendingAmount += session.amount || 0;
+        // The NET, after the platform's commission and its GST. Sessions
+        // completed before commission existed have no net recorded, so they
+        // fall back to the gross they were promised at the time.
+        current.totalPendingAmount +=
+          session.payoutNetAmount ?? session.amount ?? 0;
         current.bookingIds.push(session._id.toString());
+      }
+    }
+
+    // Recurring-coaching payouts are earned per delivered session and live on
+    // the occurrence, not in a booking's payments array.
+    //
+    // They get their OWN vendorRole rather than joining the `_Coach` bucket:
+    // that bucket's ids are booking ids, and mark-paid resolves them as such.
+    // Mixing occurrence ids in would make it try to pay a booking that does not
+    // exist — silently, since it filters by id.
+    //
+    // Only RELEASED is listed. PENDING means the 24h hold since delivery has
+    // not elapsed, and paying it early would pay for a session a student may
+    // still dispute.
+    const sessionPayouts = await CoachSessionOccurrence.find({
+      status: "COMPLETED",
+      "payout.status": "RELEASED",
+    })
+      .select("coachId payout.amountPaise")
+      .lean();
+
+    if (sessionPayouts.length > 0) {
+      const coachIds = [
+        ...new Set(sessionPayouts.map((s) => s.coachId.toString())),
+      ];
+      const coaches = await Coach.find({ _id: { $in: coachIds } })
+        .select("userId")
+        .lean();
+      const coachUserIdByCoachId = new Map(
+        coaches.map((c) => [c._id.toString(), c.userId.toString()]),
+      );
+
+      for (const occurrence of sessionPayouts) {
+        const coachUserId = coachUserIdByCoachId.get(
+          occurrence.coachId.toString(),
+        );
+        if (!coachUserId) continue;
+
+        const key = `${coachUserId}_CoachSession`;
+        if (!payoutMap.has(key)) {
+          payoutMap.set(key, {
+            vendorId: coachUserId,
+            vendorRole: "CoachSession",
+            totalPendingAmount: 0,
+            bookingIds: [],
+          });
+        }
+        const current = payoutMap.get(key)!;
+        // Everything else in this map is rupees; session payouts are stored in
+        // paise, so convert rather than adding two different units together.
+        current.totalPendingAmount +=
+          (occurrence.payout?.amountPaise ?? 0) / 100;
+        current.bookingIds.push(occurrence._id.toString());
       }
     }
 
@@ -127,6 +186,13 @@ export const listPendingPayouts = async (
 
         let payoutMethod: IPayoutMethod | null = null;
         if (payout.vendorRole === "Coach") {
+          const coach = await Coach.findOne({ userId: payout.vendorId })
+            .select("payoutMethods")
+            .lean();
+          payoutMethod = getPrimaryPayoutMethod(
+            coach?.payoutMethods as IPayoutMethod[] | undefined,
+          );
+        } else if (payout.vendorRole === "CoachSession") {
           const coach = await Coach.findOne({ userId: payout.vendorId })
             .select("payoutMethods")
             .lean();
@@ -221,6 +287,31 @@ export const markPayoutsAsPaid = async (
       res.status(200).json({
         success: true,
         message: `Successfully marked ${updatedCount} expert session payout(s) as PAID.`,
+      });
+      return;
+    }
+
+    // Coaching-session payouts live on the occurrence and are released one at
+    // a time through the guarded service function, which refuses anything not
+    // in RELEASED — so a stale id from an old page load cannot pay twice.
+    if (vendorRole === "CoachSession") {
+      let updatedCount = 0;
+      for (const occurrenceId of bookingIds) {
+        try {
+          await markPayoutPaid({
+            occurrenceId: new mongoose.Types.ObjectId(String(occurrenceId)),
+          });
+          updatedCount++;
+        } catch (err) {
+          log.warn(
+            `Skipping coach session payout for ${occurrenceId}:`,
+            err instanceof Error ? err.message : err,
+          );
+        }
+      }
+      res.status(200).json({
+        success: true,
+        message: `Successfully marked ${updatedCount} coaching session payout(s) as PAID.`,
       });
       return;
     }

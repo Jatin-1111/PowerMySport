@@ -20,6 +20,7 @@ import {
     BarChart2,
     Calendar,
     CalendarDays,
+  CalendarRange,
     CreditCard,
     Home,
     Settings,
@@ -174,6 +175,13 @@ export default function CoachLayout({
       href: "/coach/payouts",
       label: "Payouts",
       icon: BadgeIndianRupee,
+    },
+    {
+      // Recurring classes, distinct from /coach/schedule (one-off availability):
+      // a programme carries its own weekly pattern, roster and credit ledger.
+      href: "/coach/programmes",
+      label: "Programmes",
+      icon: CalendarRange,
     },
     {
       href: "/coach/schedule",

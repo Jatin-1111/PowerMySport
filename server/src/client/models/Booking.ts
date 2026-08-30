@@ -16,7 +16,24 @@ export type ParticipantStatus = "INVITED" | "ACCEPTED" | "DECLINED";
 export interface BookingPayment {
   userId: mongoose.Types.ObjectId;
   userType: "VenueLister" | "Coach" | "Academy" | "Expert" | "Player";
+  /**
+   * For a PAYEE (venue/coach/academy) this is the NET payable — what actually
+   * reaches them once the platform's commission and the GST on it are taken
+   * off. It is the number the payout pipeline pays, so anything else here would
+   * overpay the partner.
+   *
+   * For the PLAYER entry it is what they were charged. Commission never touches
+   * that side: it is deducted from the partner, not added to the customer.
+   *
+   * In rupees, like every other money field on Booking. (The coaching-programme
+   * ledger is in paise — the two are converted at the boundary, never mixed.)
+   */
   amount: number;
+  /** Payee only: the Partner Fee before deductions. */
+  grossAmount?: number;
+  commissionAmount?: number;
+  commissionGstAmount?: number;
+  commissionRate?: number;
   status: "PENDING" | "PAID" | "FAILED";
   paidAt?: Date;
 }
@@ -68,6 +85,46 @@ export interface BookingExpertDetails {
   reviewReminderSentAt?: Date;
   meetingLinkNudgeSentAt?: Date;
   startReminderSentAt?: Date;
+}
+
+/**
+ * Where and how a booked session is actually delivered.
+ *
+ * Before this existed, a booking recorded no location of any kind: every
+ * consumer re-derived it from the provider's *current* profile with its own
+ * rule. That produced two live defects — `playerLocation` was validated at
+ * booking time and then discarded (so a freelance coach booking never recorded
+ * where the coach had to go), and the GST invoice read
+ * `coach.ownVenueDetails.address` for every coach booking, which is `undefined`
+ * for a freelance coach and silently changes on an already-issued invoice when
+ * the coach edits their profile.
+ *
+ * So this is a SNAPSHOT, not a reference. `venueId` is kept for linking, but
+ * the address and name are copied at creation and never refreshed — an invoice
+ * must say where the session was when it was sold.
+ *
+ * ONLINE is declared here from the outset so the shape does not need widening
+ * when online coaching lands; nothing produces it yet.
+ */
+export type BookingDeliveryKind =
+  | "PLATFORM_VENUE"
+  | "PROVIDER_VENUE"
+  | "STUDENT_LOCATION"
+  | "ONLINE";
+
+export interface BookingDelivery {
+  kind: BookingDeliveryKind;
+  /** PLATFORM_VENUE only — the listed venue the session was booked at. */
+  venueId?: mongoose.Types.ObjectId;
+  /** Display name as it stood at booking time (venue name, academy name). */
+  nameSnapshot?: string;
+  /** Address as it stood at booking time. The invoice's place-of-supply source. */
+  addressSnapshot?: string;
+  /** [longitude, latitude] as it stood at booking time. */
+  coordinates?: [number, number];
+  /** ONLINE only. */
+  platform?: string;
+  meetingLink?: string;
 }
 
 export interface BookingParticipant {
@@ -165,6 +222,12 @@ export interface BookingDocument extends Document {
   splitMethod?: SplitMethod;
   /** Present only when providerType is EXPERT. */
   expert?: BookingExpertDetails;
+  /**
+   * Where this session is delivered, snapshotted at creation. Optional only
+   * because bookings created before migration 29 may not have one — every new
+   * booking is given one by `resolveBookingDelivery`.
+   */
+  delivery?: BookingDelivery;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -347,6 +410,10 @@ const bookingSchema = new Schema<BookingDocument>(
           required: true,
           min: 0,
         },
+        grossAmount: { type: Number, min: 0 },
+        commissionAmount: { type: Number, min: 0 },
+        commissionGstAmount: { type: Number, min: 0 },
+        commissionRate: { type: Number, min: 0 },
         status: {
           type: String,
           enum: ["PENDING", "PAID", "FAILED"],
@@ -426,6 +493,63 @@ const bookingSchema = new Schema<BookingDocument>(
         { _id: false },
       ),
       required: false,
+    },
+    delivery: {
+      type: new Schema<BookingDelivery>(
+        {
+          kind: {
+            type: String,
+            enum: [
+              "PLATFORM_VENUE",
+              "PROVIDER_VENUE",
+              "STUDENT_LOCATION",
+              "ONLINE",
+            ],
+            required: true,
+          },
+          venueId: { type: Schema.Types.ObjectId, ref: "Venue" },
+          nameSnapshot: { type: String, trim: true },
+          addressSnapshot: { type: String, trim: true },
+          coordinates: {
+            type: [Number],
+            // Without this Mongoose materialises an omitted array path as [],
+            // so a delivery that legitimately has no coordinates (an address-only
+            // provider venue) would carry a meaningless empty array.
+            default: undefined,
+            validate: {
+              validator(v: unknown) {
+                if (v === undefined || v === null) return true;
+                if (Array.isArray(v) && v.length === 0) return true;
+                return (
+                  Array.isArray(v) &&
+                  v.length === 2 &&
+                  v.every((c) => typeof c === "number" && !Number.isNaN(c))
+                );
+              },
+              message: "Coordinates must be [longitude, latitude]",
+            },
+          },
+          platform: { type: String, trim: true },
+          meetingLink: { type: String, trim: true },
+        },
+        { _id: false },
+      ),
+      required: false,
+      validate: {
+        // Per-kind invariants live here rather than in the resolver alone, so
+        // no future write path can persist a delivery that says less than its
+        // kind promises.
+        validator(v: BookingDelivery | undefined | null) {
+          if (!v) return true;
+          if (v.kind === "PLATFORM_VENUE") return Boolean(v.venueId);
+          if (v.kind === "STUDENT_LOCATION") {
+            return Array.isArray(v.coordinates) && v.coordinates.length === 2;
+          }
+          return true;
+        },
+        message:
+          "delivery is missing the fields its kind requires (PLATFORM_VENUE needs venueId; STUDENT_LOCATION needs coordinates)",
+      },
     },
   },
   {

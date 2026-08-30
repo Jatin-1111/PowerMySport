@@ -8,6 +8,14 @@ export interface CoachSubscriptionPaymentDocument extends Document {
   userId: mongoose.Types.ObjectId;
   dependentId?: mongoose.Types.ObjectId;
   packageId: mongoose.Types.ObjectId;
+  /**
+   * Set when this payment is buying a place in a recurring programme rather
+   * than a bare package subscription. Activation then also turns the pending
+   * enrollment into a live one and grants its session credits — see
+   * CoachSubscriptionPaymentService.applySubscriptionActivation.
+   */
+  offeringId?: mongoose.Types.ObjectId | null;
+  enrollmentId?: mongoose.Types.ObjectId | null;
   merchantOrderId: string;
   phonepeOrderId?: string;
   linkedSubscriptionId?: mongoose.Types.ObjectId | null;
@@ -20,6 +28,17 @@ export interface CoachSubscriptionPaymentDocument extends Document {
   redirectUrl?: string;
   callbackPayload?: Record<string, any>;
   lastStatusPayload?: Record<string, any>;
+  /**
+   * Refund tracking, deliberately named exactly as on BookingPaymentTransaction.
+   * RefundService's logic is generic — it only touches `merchantOrderId` and
+   * these fields — so matching the shape lets one refund pipeline serve both
+   * kinds of payment instead of a second copy growing beside it.
+   */
+  refundMerchantId?: string;
+  refundId?: string;
+  refundState?: string;
+  refundAmount?: number;
+  refundResponse?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,6 +66,18 @@ const coachSubscriptionPaymentSchema =
         type: Schema.Types.ObjectId,
         ref: "CoachSubscriptionPackage",
         required: true,
+        index: true,
+      },
+      offeringId: {
+        type: Schema.Types.ObjectId,
+        ref: "CoachOffering",
+        default: null,
+        index: true,
+      },
+      enrollmentId: {
+        type: Schema.Types.ObjectId,
+        ref: "CoachEnrollment",
+        default: null,
         index: true,
       },
       merchantOrderId: {
@@ -99,6 +130,11 @@ const coachSubscriptionPaymentSchema =
       callbackPayload: {
         type: Schema.Types.Mixed,
       },
+      refundMerchantId: { type: String, index: true },
+      refundId: { type: String },
+      refundState: { type: String },
+      refundAmount: { type: Number, min: 0 },
+      refundResponse: { type: Schema.Types.Mixed },
       lastStatusPayload: {
         type: Schema.Types.Mixed,
       },

@@ -17,6 +17,7 @@
     "migrate:group-members": "ts-node src/migrations/26_extract_community_group_members.ts",
     "migrate:blog-search": "ts-node src/migrations/27_widen_blog_text_index.ts",
     "migrate:blog-content": "ts-node src/migrations/28_convert_legacy_blog_content.ts",
+    "migrate:booking-delivery": "ts-node src/migrations/29_backfill_booking_delivery.ts",
     "migrate:split-pending": "ts-node src/migrations/23_split_pending_confirmation_status.ts",
     "migrate:admin-permissions": "ts-node src/scripts/migrateAdminPermissions.ts",
     "community:players-public": "ts-node src/scripts/makePlayerProfilesPublic.ts",

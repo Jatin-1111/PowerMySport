@@ -1,15 +1,16 @@
 import { randomBytes } from "crypto";
 import mongoose, { ClientSession } from "mongoose";
-import { Booking, BookingDocument } from "../models/Booking";
+import { Booking, BookingDelivery, BookingDocument } from "../models/Booking";
+import { resolveBookingDelivery } from "./BookingDelivery";
 import { BookingSlotLock } from "../models/BookingSlotLock";
 import { ExpertSession } from "../models/ExpertBooking";
 import { Expert } from "../models/ExpertProfile";
-import { Coach } from "../models/Coach";
+import { Coach, CoachDocument } from "../models/Coach";
 import { CoachSubscription } from "../models/CoachSubscription";
 import { User } from "../models/User";
 import { Player } from "../models/Player";
 import { Venue, VenueDocument } from "../models/Venue";
-import Academy from "../../admin/models/Academy";
+import Academy, { AcademyDocument } from "../../admin/models/Academy";
 import { SERVICE_FEE_RATE, TAX_RATE } from "./PricingRates";
 import {
   sendBookingLifecycleEmail,
@@ -70,6 +71,8 @@ export interface InitiateBookingPayload {
   playerLocation?: {
     type: "Point";
     coordinates: [number, number];
+    /** Optional street address; persisted onto the booking's delivery record. */
+    address?: string;
   };
   sport: string;
   date: Date;
@@ -122,6 +125,7 @@ interface BookingCreatePayload {
   participantAge?: number;
   organizerId: string;
   payments?: any[];
+  delivery?: BookingDelivery;
 }
 
 const generateRandomCheckInCode = (): string => {
@@ -546,6 +550,7 @@ const createBookingAtomically = async (
             : {}),
           organizerId: new mongoose.Types.ObjectId(payload.organizerId),
           payments: payload.payments || [],
+          ...(payload.delivery ? { delivery: payload.delivery } : {}),
         });
 
         await booking.save({ session });
@@ -966,6 +971,9 @@ export const initiateBooking = async (
     }
 
     let coachPrice = 0;
+    // Hoisted so the delivery resolver can see the provider that was validated
+    // here, instead of re-fetching it (or re-deriving the location) later.
+    let coachDoc: CoachDocument | null = null;
 
     // If coach is requested, validate and calculate coach price
     if (payload.coachId) {
@@ -976,6 +984,7 @@ export const initiateBooking = async (
       if (!coach) {
         throw new Error("Coach not found");
       }
+      coachDoc = coach;
       log.info(
         "[initiateBooking] STEP 4 OK: coach =",
         coach._id.toString(),
@@ -1088,6 +1097,7 @@ export const initiateBooking = async (
 
     let academyPrice = 0;
     let academyOwnerIdStr: string | undefined;
+    let academyDoc: AcademyDocument | null = null;
 
     if (payload.academyId) {
       if (!mongoose.Types.ObjectId.isValid(payload.academyId)) {
@@ -1097,6 +1107,7 @@ export const initiateBooking = async (
       if (!academy) {
         throw new Error("Academy not found");
       }
+      academyDoc = academy;
       if (!academy.isApproved) {
         throw new Error("Academy is not approved for bookings");
       }
@@ -1257,8 +1268,18 @@ export const initiateBooking = async (
       );
     }
 
+    // Resolved once, from the providers already validated above, and snapshotted
+    // onto the booking. Nothing downstream re-derives the session's location.
+    const delivery = resolveBookingDelivery({
+      venue,
+      coach: coachDoc,
+      academy: academyDoc,
+      playerLocation: payload.playerLocation,
+    });
+
     const bookingPayload: BookingCreatePayload = {
       userId: payload.userId,
+      ...(delivery ? { delivery } : {}),
       ...(payload.venueId ? { venueId: payload.venueId } : {}),
       ...(payload.coachId ? { coachId: payload.coachId } : {}),
       ...(payload.academyId ? { academyId: payload.academyId } : {}),
@@ -1338,6 +1359,9 @@ export const initiateBooking = async (
               bookingPayload.organizerId,
             ),
             payments: bookingPayload.payments || [],
+            ...(bookingPayload.delivery
+              ? { delivery: bookingPayload.delivery }
+              : {}),
           });
 
     // Record promo code usage after successful booking

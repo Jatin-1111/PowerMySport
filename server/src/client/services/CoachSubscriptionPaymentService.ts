@@ -99,6 +99,30 @@ const applySubscriptionActivation = async (
   });
 
   transaction.linkedSubscriptionId = subscription._id;
+
+  // A payment that bought a place in a recurring programme also turns the held
+  // seat into a live enrolment and grants its credits. Doing it HERE rather
+  // than at the enrol endpoint is the whole point: credits are minted by money
+  // arriving, not by someone submitting a form.
+  //
+  // Imported lazily to keep the payment module free of a static dependency on
+  // the programme services, which already depend on the ledger.
+  if (transaction.enrollmentId) {
+    const { activateEnrollmentAfterPayment } = await import(
+      "./CoachOfferingService"
+    );
+
+    // `baseAmount` is what the coach was paid for the period — the platform fee
+    // and tax on top are ours, and must not end up in the student's credits or
+    // in the coach's payout.
+    await activateEnrollmentAfterPayment({
+      enrollmentId: transaction.enrollmentId,
+      subscriptionId: subscription._id as typeof subscription._id,
+      periodStart: subscription.currentPeriodStart,
+      periodEnd: subscription.currentPeriodEnd,
+      feePaise: transaction.baseAmount,
+    });
+  }
 };
 
 export const reconcileCoachSubscriptionPaymentByIdentifiers = async (params: {

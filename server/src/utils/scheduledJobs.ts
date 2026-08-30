@@ -9,7 +9,10 @@ import {
 } from "../client/services/BookingService";
 import { cleanupExpiredCodes } from "../shared/services/EmailVerificationService";
 import { bootFact } from "./boot";
-import { cleanupExpiredCoachSubscriptions } from "../client/services/CoachSubscriptionService";
+import {
+  cleanupExpiredCoachSubscriptions,
+  lapseRenewableSubscriptionsToPastDue,
+} from "../client/services/CoachSubscriptionService";
 import { processWaitlistNotifications } from "../shop/services/shopScheduledJobs";
 import { log as __rootLog } from "./logger";
 const log = __rootLog.child("scheduledJobs");
@@ -264,6 +267,13 @@ export const runScheduledCleanup = async (): Promise<void> => {
 
     await cleanupExpiredCodes();
 
+    // Auto-renewing subscriptions whose period just ended go to PAST_DUE with
+    // a grace window FIRST, so the cleanup below only expires the ones that are
+    // genuinely finished (grace elapsed, or auto-renew turned off).
+    const awaitingRenewal = await lapseRenewableSubscriptionsToPastDue();
+    if (awaitingRenewal)
+      done.push(`${awaitingRenewal} subscription(s) awaiting renewal`);
+
     const expiredSubscriptions = await cleanupExpiredCoachSubscriptions();
     if (expiredSubscriptions)
       done.push(`${expiredSubscriptions} subscription(s) expired`);
@@ -304,6 +314,87 @@ export const runScheduledCleanup = async (): Promise<void> => {
         );
     } catch (expertErr) {
       log.error("Expert session maintenance failed:", expertErr);
+    }
+
+    // ── Recurring coaching programmes ────────────────────────────────────────
+    // Isolated in its own try/catch like the expert block: a failure here must
+    // not stop account-deletion finalisation from running.
+    try {
+      const { generateForAllActiveOfferings } = await import(
+        "../client/services/CoachOccurrenceService"
+      );
+      const { expireUnpaidEnrollmentHolds } = await import(
+        "../client/services/CoachOfferingService"
+      );
+      const {
+        sendRenewalReminders,
+        releaseEnrollmentsForExpiredSubscriptions,
+      } = await import("../client/services/CoachRenewalService");
+      const { retryPendingEnrollmentRefunds } = await import(
+        "../client/services/CoachEnrollmentRefundService"
+      );
+      const { expireCreditsPastPeriod } = await import(
+        "../client/services/CoachCreditLedgerService"
+      );
+      const { releaseDuePayouts } = await import(
+        "../client/services/CoachSessionLifecycleService"
+      );
+      const { sendCoachMeetingLinkNudges, sendCoachSessionStartReminders } =
+        await import("../client/services/CoachSessionReminderService");
+
+      // Roll the generation window forward so a coach's calendar never runs dry.
+      const generated = await generateForAllActiveOfferings();
+      if (generated.created > 0)
+        log.info(
+          `Generated ${generated.created} coaching session(s) across ${generated.offerings} programme(s)`,
+        );
+
+      // Renewal, in order: nudge before the period ends, then release the
+      // seats of anyone whose grace window has since run out. Nudging first
+      // means a payer always gets asked before losing their place.
+      const renewalNudges = await sendRenewalReminders();
+      if (renewalNudges > 0)
+        log.info(`Sent ${renewalNudges} programme renewal reminder(s)`);
+
+      const releasedSeatsFromExpiry =
+        await releaseEnrollmentsForExpiredSubscriptions();
+      if (releasedSeatsFromExpiry > 0)
+        log.info(
+          `Released ${releasedSeatsFromExpiry} seat(s) from ended subscriptions`,
+        );
+
+      // Release seats held by checkouts nobody completed, so an abandoned
+      // payment cannot shrink a batch permanently.
+      const releasedSeats = await expireUnpaidEnrollmentHolds();
+      if (releasedSeats > 0)
+        log.info(`Released ${releasedSeats} unpaid enrolment hold(s)`);
+
+      // A refund that could not be issued (gateway down when someone left)
+      // leaves its credits frozen; without this retry the student's money would
+      // stay unclaimed forever.
+      const retriedRefunds = await retryPendingEnrollmentRefunds();
+      if (retriedRefunds.attempted > 0)
+        log.info(
+          `Retried ${retriedRefunds.attempted} programme refund(s), ${retriedRefunds.refunded} succeeded`,
+        );
+
+      // Credits lapse at period end — see the policy note in the ledger service.
+      const lapsed = await expireCreditsPastPeriod();
+      if (lapsed > 0) log.info(`Lapsed ${lapsed} unused session credit(s)`);
+
+      const releasedCoachPayouts = await releaseDuePayouts();
+      if (releasedCoachPayouts > 0)
+        log.info(`Released ${releasedCoachPayouts} coach session payout(s)`);
+
+      const coachLinkNudges = await sendCoachMeetingLinkNudges();
+      if (coachLinkNudges > 0)
+        log.info(`Sent ${coachLinkNudges} class-link nudge(s)`);
+
+      const coachStartReminders = await sendCoachSessionStartReminders();
+      if (coachStartReminders > 0)
+        log.info(`Sent ${coachStartReminders} class-starting-soon reminder(s)`);
+    } catch (coachErr) {
+      log.error("Coaching programme maintenance failed:", coachErr);
     }
 
     // ── Pending account deletions ────────────────────────────────────────────
