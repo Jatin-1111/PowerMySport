@@ -7,7 +7,6 @@ import { cn } from "@/utils/cn";
 import { consoleHomeFor, settingsHomeFor } from "@/flow/policy";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-    BrainCircuit,
     CalendarCheck,
     ChevronDown,
     LayoutDashboard,
@@ -33,12 +32,9 @@ export interface NavProps {
 
 const isShopLive = process.env.NEXT_PUBLIC_SHOP_IS_LIVE !== "false";
 const isBookingLive = process.env.NEXT_PUBLIC_BOOKING_IS_LIVE !== "false";
-const isExpertsLive = process.env.NEXT_PUBLIC_EXPERTS_IS_LIVE === "true";
 
-/** Mirrors the tabs /booking actually renders. */
-const BOOK_TABS = isExpertsLive
-  ? "Venues · Coaches · Academies · Experts"
-  : "Venues · Coaches · Academies";
+/** Nav subtitle under "Book" — Venues/Coaches/Academies hidden for now, Experts only. */
+const BOOK_TABS = "Experts";
 
 // Experts deliberately absent: it is a tab inside Book, so listing it here as a
 // sibling of Book pointed out of Book and straight back into it. It is named in
@@ -69,12 +65,7 @@ const exploreItems = [
     description: "Explore the journey ahead for your child's sport",
     icon: Map,
   },
-  {
-    href: "/guidance",
-    label: "Powermysport AI",
-    description: "AI-powered plan for any sports challenge",
-    icon: BrainCircuit,
-  },
+  // Powermysport AI hidden for now.
   {
     href: "/rankings",
     label: "Rankings",
