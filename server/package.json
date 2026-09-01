@@ -8,6 +8,7 @@
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && node ./node_modules/typescript/bin/tsc",
     "start": "node dist/server.js",
+    "deploy": "node scripts/deploy.js",
     "migrate": "ts-node src/migrations/index.ts",
     "migrate:venue-images": "ts-node src/migrations/10_migrate_venue_images.ts",
     "migrate:wallet-paise": "ts-node src/migrations/20_fix_wallet_transaction_paise.ts",

@@ -16,6 +16,15 @@ npm-debug.log*
 # break the deployment. Use docker-compose locally as normal.
 docker-compose.yml
 
+# ── Prebuilt-image deploy: EB now pulls from ECR via Dockerrun.aws.json ─
+# Source is no longer built on the instance, so it doesn't need to ship.
+# Build + push the image locally (or in CI) before running `eb deploy`.
+src/
+package.json
+package-lock.json
+tsconfig.json
+Dockerfile
+
 # ── Dev / OS junk ─────────────────────────────────────────────────────
 .DS_Store
 debug_output.txt
