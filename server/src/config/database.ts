@@ -20,9 +20,14 @@ export const connectDB = async (): Promise<void> => {
     const mongoUri =
       process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
 
-    // Mongoose connection options for pooling and reliability
+    // Mongoose connection options for pooling and reliability.
+    // A pool of 10 becomes a real bottleneck under concurrent load well
+    // before any individual query's latency does — requests queue for a
+    // connection regardless of how well-indexed the queries behind them are.
+    // The env vars still win if set (e.g. via the EB console); this only
+    // raises the fallback for anywhere that hasn't set one explicitly.
     const options = {
-      maxPoolSize: parseInt(process.env.MONGO_MAX_POOL_SIZE || "10", 10), // Maintain up to 10 socket connections
+      maxPoolSize: parseInt(process.env.MONGO_MAX_POOL_SIZE || "50", 10), // Maintain up to 50 socket connections
       minPoolSize: parseInt(process.env.MONGO_MIN_POOL_SIZE || "2", 10), // Keep at least 2 socket connections
       maxIdleTimeMS: 30000, // Close sockets after 30 seconds of inactivity
       serverSelectionTimeoutMS: 30000, // Default to 30s to avoid premature timeouts

@@ -34,7 +34,15 @@ export const communityProfileService = {
     }
 
     const safeLimit = Math.min(20, Math.max(1, limit));
-    const profile = await ensureProfile(userId);
+    // Read-only: this only needs the caller's role (to gate community access)
+    // and their existing blockedUsers list, if any — never a reason to
+    // create a profile. `ensureProfile`'s upsert-write would otherwise fire
+    // on every debounced keystroke of an as-you-type search.
+    await ensureCommunityUser(userId);
+    const myProfile = await CommunityProfile.findOne({ userId })
+      .select("blockedUsers")
+      .lean();
+    const myBlockedUsers = myProfile?.blockedUsers || [];
 
     const userMatchCriteria: any = {
       _id: { $ne: userId },
@@ -87,7 +95,7 @@ export const communityProfileService = {
         .lean(),
     ]);
 
-    const blockedByMe = new Set(profile.blockedUsers.map((id) => String(id)));
+    const blockedByMe = new Set(myBlockedUsers.map((id) => String(id)));
     const profileMap = new Map(profiles.map((p) => [String(p.userId), p]));
 
     const items = await Promise.all(

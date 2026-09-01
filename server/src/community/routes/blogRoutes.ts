@@ -16,6 +16,7 @@ import {
   updateBlogProfile,
 } from "../controllers/blogController";
 import { authMiddleware, optionalAuthMiddleware } from "../../middleware/auth";
+import { cacheControl } from "../../middleware/cacheControl";
 import {
   blogCommentSchema,
   blogCreateSchema,
@@ -37,7 +38,13 @@ router.patch(
   updateBlogProfile,
 );
 // Public — writer profile pages are shareable like the posts themselves.
-router.get("/authors/:identifier", optionalAuthMiddleware, getBlogAuthorProfile);
+// private: isMe varies per viewer.
+router.get(
+  "/authors/:identifier",
+  optionalAuthMiddleware,
+  cacheControl(20),
+  getBlogAuthorProfile,
+);
 
 // ─── Likes ────────────────────────────────────────────────────────────────────
 router.post(
@@ -73,8 +80,14 @@ router.post(
 
 // ─── Comments ─────────────────────────────────────────────────────────────────
 // Reading comments is public (same as the post itself, for shared links);
-// posting/deleting still requires auth.
-router.get("/posts/:blogId/comments", optionalAuthMiddleware, listBlogComments);
+// posting/deleting still requires auth. private: likedByMe/isMine vary per
+// viewer.
+router.get(
+  "/posts/:blogId/comments",
+  optionalAuthMiddleware,
+  cacheControl(15),
+  listBlogComments,
+);
 router.post(
   "/posts/:blogId/comments",
   authMiddleware,
@@ -84,10 +97,12 @@ router.post(
 router.delete("/comments/:commentId", authMiddleware, deleteBlogComment);
 
 // ─── Blogs ────────────────────────────────────────────────────────────────────
-// Public — feeds the blog landing page and the sitemap generator.
-router.get("/posts", optionalAuthMiddleware, listBlogs);
+// Public — feeds the blog landing page and the sitemap generator. private:
+// likedByMe varies per viewer.
+router.get("/posts", optionalAuthMiddleware, cacheControl(20), listBlogs);
 // Public — this is the shareable link a reader can open without logging in.
-router.get("/posts/:blogId", optionalAuthMiddleware, getBlog);
+// private: likedByMe/isMine vary per viewer.
+router.get("/posts/:blogId", optionalAuthMiddleware, cacheControl(20), getBlog);
 router.post("/posts", authMiddleware, validateRequest(blogCreateSchema), createBlog);
 router.patch(
   "/posts/:blogId",

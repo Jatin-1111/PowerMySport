@@ -54,6 +54,7 @@ import {
   voteCommunityTarget,
 } from "../controllers/communityController";
 import { authMiddleware, optionalAuthMiddleware } from "../../middleware/auth";
+import { cacheControl } from "../../middleware/cacheControl";
 import {
   communityBlockSchema,
   communityAddGroupMemberSchema,
@@ -147,7 +148,8 @@ router.post("/messages/:messageId/pin", authMiddleware, pinGroupMessage);
 router.delete("/messages/:messageId", authMiddleware, deleteMessage);
 
 // Public — powers the Discover page's community/group directory for guests.
-router.get("/groups", optionalAuthMiddleware, listGroups);
+// private: isMember/isAdmin vary per viewer.
+router.get("/groups", optionalAuthMiddleware, cacheControl(20), listGroups);
 router.post(
   "/groups/upload-url",
   authMiddleware,
@@ -213,13 +215,20 @@ router.post(
   importCommunityFollows,
 );
 // Public — questions and published stories are readable without an account,
-// so search over them is too.
-router.get("/search", optionalAuthMiddleware, searchCommunity);
+// so search over them is too. public: search results carry no per-viewer
+// field, so this is safe to share across viewers/CDNs.
+router.get("/search", optionalAuthMiddleware, cacheControl(45, "public"), searchCommunity);
 
 // Public — Q&A list/detail feed the community landing page, shared post
-// links, and the sitemap generator.
-router.get("/posts", optionalAuthMiddleware, listCommunityPosts);
-router.get("/posts/:postId", optionalAuthMiddleware, getCommunityPostDetails);
+// links, and the sitemap generator. private: myVote/likedByMe/canAccept vary
+// per viewer.
+router.get("/posts", optionalAuthMiddleware, cacheControl(20), listCommunityPosts);
+router.get(
+  "/posts/:postId",
+  optionalAuthMiddleware,
+  cacheControl(15),
+  getCommunityPostDetails,
+);
 router.post(
   "/posts",
   authMiddleware,
