@@ -34,6 +34,7 @@ import {
   coverUnpaidShares,
   confirmBookingByProvider,
   getUserBookingInvitations,
+  countUserBookingInvitations,
   updatePaymentStatus,
   validatePromoCodeForUser,
   rejectBookingByProvider,
@@ -227,9 +228,11 @@ export const getBookingById = async (
 
     let isVenueOwner = false;
     if (booking.venueId && req.user.role === "VenueLister") {
-      const venue = await Venue.findById(booking.venueId).select("ownerId");
+      // venueId is already fully populated above (line ~201) — no need to
+      // re-fetch it just to read ownerId off the same document.
+      const venueOwnerId = (booking.venueId as any)?.ownerId;
       isVenueOwner = Boolean(
-        venue && venue.ownerId?.toString() === req.user.id,
+        venueOwnerId && venueOwnerId.toString() === req.user.id,
       );
     }
 
@@ -338,9 +341,11 @@ export const downloadBookingInvoicePdf = async (
 
     let isVenueOwner = false;
     if (booking.venueId && req.user.role === "VenueLister") {
-      const venue = await Venue.findById(booking.venueId).select("ownerId");
+      // venueId is already fully populated above — no need to re-fetch it
+      // just to read ownerId off the same document.
+      const venueOwnerId = (booking.venueId as any)?.ownerId;
       isVenueOwner = Boolean(
-        venue && venue.ownerId?.toString() === req.user.id,
+        venueOwnerId && venueOwnerId.toString() === req.user.id,
       );
     }
 
@@ -692,9 +697,8 @@ export const getVenueAvailability = async (
         : "";
     const alternateSlots =
       preferredStart && preferredEnd
-        ? await getAlternateVenueSlots(
-            venueId,
-            targetDate,
+        ? getAlternateVenueSlots(
+            bookedTimeSlots,
             preferredStart,
             preferredEnd,
             4,
@@ -1754,11 +1758,11 @@ export const getPendingInvitationsCount = async (
       return;
     }
 
-    const invitations = await getUserBookingInvitations(req.user.id, "PENDING");
+    const count = await countUserBookingInvitations(req.user.id, "PENDING");
 
     res.status(200).json({
       success: true,
-      data: { count: invitations.length },
+      data: { count },
     });
   } catch (error) {
     res.status(400).json({

@@ -470,7 +470,8 @@ export const rosterForOffering = async (
     status: { $in: ["ACTIVE", "PENDING", "PAUSED"] },
   })
     .sort({ joinedAt: 1 })
-    .exec();
+    .lean()
+    .exec() as unknown as Promise<CoachEnrollmentDocument[]>;
 
 /**
  * Repair `enrolledCount` from the enrollments that actually exist.

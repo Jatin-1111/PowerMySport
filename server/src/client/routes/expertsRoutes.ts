@@ -164,7 +164,8 @@ router.post(
 );
 
 // ── Public discovery + booking ───────────────────────────────────────────────
-router.get("/", optionalAuthMiddleware, expert.getExperts);
+// public/guest-safe, same pattern as the detail route just below.
+router.get("/", optionalAuthMiddleware, cacheResponse(60), expert.getExperts);
 // Public expert detail — 60s Redis cache, same pattern as venues/coaches.
 router.get("/:expertId", cacheResponse(60), expert.getExpert);
 router.get("/:expertId/reviews", expert.getReviews);

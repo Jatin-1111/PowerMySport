@@ -18,10 +18,10 @@ const COACH_LISTING_USER_SELECT = "_id name photoUrl photoS3Key";
 
 const resolveCoachVenueImageUrl = async (key: string): Promise<string> => {
   try {
-    return await s3Service.generateDownloadUrl(key, "images", 604800);
+    return await s3Service.generateCachedDownloadUrl(key, "images", 604800);
   } catch (imageError) {
     try {
-      return await s3Service.generateDownloadUrl(key, "verification", 604800);
+      return await s3Service.generateCachedDownloadUrl(key, "verification", 604800);
     } catch (verificationError) {
       log.error(`Failed to refresh coach venue image URL for ${key}:`, {
         imageError,
@@ -168,7 +168,7 @@ const refreshCoachMediaUrls = async <T extends Record<string, any>>(
   const user = mutableCoach.userId;
   if (user && typeof user === "object" && user.photoS3Key) {
     try {
-      user.photoUrl = await s3Service.generateDownloadUrl(
+      user.photoUrl = await s3Service.generateCachedDownloadUrl(
         user.photoS3Key,
         "images",
         604800,
@@ -359,7 +359,8 @@ export const getAllCoaches = async (
       .populate({
         path: "userId",
         select: COACH_LISTING_USER_SELECT,
-      });
+      })
+      .lean();
 
     return Promise.all(
       coaches.map((coach) =>

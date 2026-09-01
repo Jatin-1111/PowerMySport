@@ -22,7 +22,7 @@ const resolveUserPhotoUrl = async (user: {
   }
 
   try {
-    return await s3Service.generateDownloadUrl(user.photoS3Key, "images", 3600);
+    return await s3Service.generateCachedDownloadUrl(user.photoS3Key, "images", 3600);
   } catch (error) {
     log.error("Failed to regenerate notification photo URL:", error);
     return user.photoUrl;
@@ -478,11 +478,11 @@ export const getPendingRequestsCount = async (
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
-    const requests = await friendService.getPendingRequests(userId, "RECEIVED");
+    const count = await friendService.countPendingRequests(userId, "RECEIVED");
 
     res.json({
       success: true,
-      data: { count: requests.length },
+      data: { count },
     });
   } catch (error) {
     next(error);

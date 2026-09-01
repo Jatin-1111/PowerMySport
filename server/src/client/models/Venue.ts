@@ -503,6 +503,24 @@ venueSchema.index({ ownerEmail: 1, approvalStatus: 1 });
 venueSchema.index({ approvalStatus: 1, createdAt: -1 });
 venueSchema.index({ sports: 1, approvalStatus: 1 });
 
+// Backs getAllVenues'/findVenuesNearby's public list/search sort — filter on
+// {approvalStatus, sports?} then sort {rating:-1, reviewCount:-1, _id:1}.
+// Without these, that sort has no supporting index and falls back to an
+// in-memory sort on every discovery-page request. Two variants because
+// `sports` is an optional filter: an unconstrained middle field in a
+// compound index blocks Mongo from using the index's tail for the sort, so
+// "browse all sports" (the more common default) needs its own index rather
+// than relying on a prefix of the sports-filtered one. Production has
+// autoIndex off, so both also need migration 34.
+venueSchema.index({ approvalStatus: 1, rating: -1, reviewCount: -1, _id: 1 });
+venueSchema.index({
+  approvalStatus: 1,
+  sports: 1,
+  rating: -1,
+  reviewCount: -1,
+  _id: 1,
+});
+
 /**
  * Instance method to regenerate presigned URLs for documents
  * Valid for 24 hours
@@ -517,7 +535,7 @@ venueSchema.methods.refreshDocumentUrls = async function () {
         if (!doc.s3Key) return;
 
         try {
-          doc.url = await s3Service.generateDownloadUrl(
+          doc.url = await s3Service.generateCachedDownloadUrl(
             doc.s3Key,
             "verification",
             86400,
@@ -562,7 +580,7 @@ venueSchema.methods.refreshImageUrls = async function () {
     const freshImages = await Promise.all(
       keys.map(async (key: string) => {
         try {
-          return await s3Service.generateDownloadUrl(key, "images", 604800); // 7 days
+          return await s3Service.generateCachedDownloadUrl(key, "images", 604800); // 7 days
         } catch (error) {
           log.error(`Failed to refresh URL for image ${key}:`, error);
           return "";
@@ -670,7 +688,7 @@ venueSchema.methods.refreshImageUrls = async function () {
 
   if (coverKey) {
     try {
-      this.coverPhotoUrl = await s3Service.generateDownloadUrl(
+      this.coverPhotoUrl = await s3Service.generateCachedDownloadUrl(
         coverKey,
         "images",
         604800, // 7 days

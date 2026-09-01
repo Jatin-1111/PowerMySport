@@ -130,18 +130,32 @@ export const consumeCreditForOccurrence = async (params: {
   occurrenceId: mongoose.Types.ObjectId;
   at?: Date;
   session?: mongoose.ClientSession;
+  /**
+   * Pass this when the caller already knows whether this seat was
+   * previously funded for this occurrence — e.g. completeOccurrence
+   * batches the "already consumed" check for its whole roster in one query
+   * up front instead of paying for it per seat. `undefined` (the default)
+   * falls back to checking here, same as before. The funding step below —
+   * the actual atomic credit consumption — is untouched either way: it
+   * stays one call per seat, in oldest-credit-first order, because that
+   * ordering guarantee is what this function exists to protect.
+   */
+  alreadyConsumed?: CoachSessionCreditDocument | null;
 }): Promise<CoachSessionCreditDocument | null> => {
   const { enrollmentId, occurrenceId, session } = params;
   const at = params.at ?? new Date();
 
   // If this seat was already funded for this occurrence, return that credit
   // rather than spending another. Makes completion safely retryable.
-  const alreadyConsumed = await CoachSessionCredit.findOne({
-    enrollmentId,
-    consumedByOccurrenceId: occurrenceId,
-  })
-    .session(session ?? null)
-    .exec();
+  const alreadyConsumed =
+    params.alreadyConsumed !== undefined
+      ? params.alreadyConsumed
+      : await CoachSessionCredit.findOne({
+          enrollmentId,
+          consumedByOccurrenceId: occurrenceId,
+        })
+          .session(session ?? null)
+          .exec();
 
   if (alreadyConsumed) return alreadyConsumed;
 

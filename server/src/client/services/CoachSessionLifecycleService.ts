@@ -131,11 +131,30 @@ export const completeOccurrence = async (params: {
   let seatsUnfunded = 0;
   let amountPaise = 0;
 
+  // The "was this seat already funded?" check only needs to know about
+  // *this* occurrence, so one query for the whole roster replaces what was
+  // previously a `findOne` per seat (up to 100). The actual credit
+  // consumption below stays one call per seat — that atomic
+  // findOneAndUpdate, in oldest-credit-first order, is what prevents two
+  // seats from racing for the same credit, and batching it isn't safe.
+  const alreadyConsumedCredits = await CoachSessionCredit.find({
+    consumedByOccurrenceId: occurrence._id,
+  }).exec();
+  const alreadyConsumedByEnrollmentId = new Map(
+    alreadyConsumedCredits.map((credit) => [
+      credit.enrollmentId.toString(),
+      credit,
+    ]),
+  );
+
   for (const seat of occurrence.roster) {
     const credit = await consumeCreditForOccurrence({
       enrollmentId: seat.enrollmentId,
       occurrenceId: occurrence._id as mongoose.Types.ObjectId,
       at,
+      alreadyConsumed:
+        alreadyConsumedByEnrollmentId.get(seat.enrollmentId.toString()) ??
+        null,
     });
 
     if (credit) {

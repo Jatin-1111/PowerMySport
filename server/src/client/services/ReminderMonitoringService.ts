@@ -112,15 +112,15 @@ export class ReminderMonitoringService {
       ? Math.floor((now.getTime() - this.lastProcessingTime.getTime()) / 60000)
       : null;
 
-    // Get pending and overdue counts
-    const pendingCount = await ScheduledNotification.countDocuments({
-      status: "PENDING",
-    });
-
-    const overdueCount = await ScheduledNotification.countDocuments({
-      status: "PENDING",
-      scheduledFor: { $lte: now },
-    });
+    // Independent reads — none depends on another's result.
+    const [pendingCount, overdueCount, stats] = await Promise.all([
+      ScheduledNotification.countDocuments({ status: "PENDING" }),
+      ScheduledNotification.countDocuments({
+        status: "PENDING",
+        scheduledFor: { $lte: now },
+      }),
+      this.getMonitoringStats(),
+    ]);
 
     // Determine health issues
     if (minutesSinceLastRun !== null && minutesSinceLastRun > 10) {
@@ -136,7 +136,6 @@ export class ReminderMonitoringService {
     }
 
     // Check failure rate
-    const stats = await this.getMonitoringStats();
     if (stats.failureRate > 10) {
       issues.push(`High failure rate: ${stats.failureRate}% (threshold: 10%)`);
     }
@@ -176,7 +175,8 @@ export class ReminderMonitoringService {
       .sort({ failedAt: -1 })
       .limit(limit)
       .select("userId bookingId interval failedAt failureReason retryCount")
-      .populate("userId", "name email");
+      .populate("userId", "name email")
+      .lean();
 
     return failedReminders.map((reminder) => {
       const user = reminder.userId as unknown as

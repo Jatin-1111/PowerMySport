@@ -635,14 +635,12 @@ export const validatePromoCodeForUser = async (
   });
 };
 
-export const getAlternateVenueSlots = async (
-  venueId: string,
-  date: Date,
+export const getAlternateVenueSlots = (
+  bookedSlots: { startTime: string; endTime: string }[],
   preferredStartTime: string,
   preferredEndTime: string,
   limit: number = 4,
-): Promise<string[]> => {
-  const available = await getVenueBookingsForDate(venueId, date);
+): string[] => {
   const requestedDurationMinutes = Math.max(
     30,
     ((): number => {
@@ -656,10 +654,7 @@ export const getAlternateVenueSlots = async (
     })(),
   );
 
-  const booked = available.map((entry) => ({
-    startTime: entry.startTime,
-    endTime: entry.endTime,
-  }));
+  const booked = bookedSlots;
   const allSlots = generateDynamicSlots(6, 23, 60);
 
   const canFit = (start: string): boolean => {
@@ -1599,7 +1594,7 @@ export const getVenueBookings = async (
 export const getVenueBookingsForDate = async (
   venueId: string,
   date: Date,
-): Promise<BookingDocument[]> => {
+): Promise<Array<{ startTime: string; endTime: string }>> => {
   // UTC accessors — see toDayRange above / combineDateAndTimeIST for why:
   // `date` is UTC-midnight-anchored and Date#setHours reads/writes in the
   // server process's local timezone.
@@ -1623,7 +1618,7 @@ export const getVenueBookingsForDate = async (
         "IN_PROGRESS",
       ],
     },
-  }).select("startTime endTime");
+  }).select("startTime endTime").lean();
 };
 
 /**
@@ -1634,13 +1629,13 @@ export const getVenueListerBookings = async (
   page: number = 1,
   limit: number = 20,
 ): Promise<{
-  bookings: BookingDocument[];
+  bookings: any[];
   total: number;
   page: number;
   totalPages: number;
 }> => {
-  // Find all venues owned by this user
-  const venues = await Venue.find({ ownerId });
+  // Find all venues owned by this user — only the ids are needed downstream.
+  const venues = await Venue.find({ ownerId }).select("_id").lean();
   const venueIds = venues.map((v) => v._id);
 
   const query = {
@@ -1659,21 +1654,25 @@ export const getVenueListerBookings = async (
   };
   const skip = (page - 1) * limit;
 
-  // Find all bookings for these venues
-  const total = await Booking.countDocuments(query);
-  const bookings = await Booking.find(query)
-    .populate([
-      { path: "userId" },
-      { path: "venueId" },
-      {
-        path: "coachId",
-        populate: { path: "userId", select: "name email phone" },
-      },
-      { path: "academyId" },
-    ])
-    .sort({ date: -1 })
-    .skip(skip)
-    .limit(limit);
+  // Independent reads — no reason to wait on the count before starting the
+  // page fetch.
+  const [total, bookings] = await Promise.all([
+    Booking.countDocuments(query),
+    Booking.find(query)
+      .populate([
+        { path: "userId" },
+        { path: "venueId" },
+        {
+          path: "coachId",
+          populate: { path: "userId", select: "name email phone" },
+        },
+        { path: "academyId" },
+      ])
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+  ]);
 
   return { bookings, total, page, totalPages: Math.ceil(total / limit) };
 };
@@ -1686,12 +1685,12 @@ export const getCoachBookings = async (
   page: number = 1,
   limit: number = 20,
 ): Promise<{
-  bookings: BookingDocument[];
+  bookings: any[];
   total: number;
   page: number;
   totalPages: number;
 }> => {
-  const coach = await Coach.findOne({ userId }).select("_id");
+  const coach = await Coach.findOne({ userId }).select("_id").lean();
   if (!coach) {
     throw new Error("Coach profile not found");
   }
@@ -1712,20 +1711,23 @@ export const getCoachBookings = async (
   };
   const skip = (page - 1) * limit;
 
-  const total = await Booking.countDocuments(query);
-  const bookings = await Booking.find(query)
-    .populate([
-      { path: "userId" },
-      { path: "venueId" },
-      {
-        path: "coachId",
-        populate: { path: "userId", select: "name email phone" },
-      },
-      { path: "academyId" },
-    ])
-    .sort({ date: -1 })
-    .skip(skip)
-    .limit(limit);
+  const [total, bookings] = await Promise.all([
+    Booking.countDocuments(query),
+    Booking.find(query)
+      .populate([
+        { path: "userId" },
+        { path: "venueId" },
+        {
+          path: "coachId",
+          populate: { path: "userId", select: "name email phone" },
+        },
+        { path: "academyId" },
+      ])
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+  ]);
 
   return { bookings, total, page, totalPages: Math.ceil(total / limit) };
 };
@@ -4004,9 +4006,25 @@ export const getUserBookingInvitations = async (
     .populate("venueId", "name location address")
     .populate("coachId", "name sport")
     .populate("bookingId")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 
   return invitations;
+};
+
+/** Cheap sibling of `getUserBookingInvitations` for badge-count call sites —
+ *  avoids fetching and 4-way-populating every invitation just to read
+ *  `.length`. */
+export const countUserBookingInvitations = async (
+  userId: string,
+  status?: "PENDING" | "ACCEPTED" | "DECLINED",
+): Promise<number> => {
+  const query: any = { inviteeId: userId };
+  if (status) {
+    query.status = status;
+  }
+
+  return BookingInvitation.countDocuments(query);
 };
 
 // Legacy function for backward compatibility

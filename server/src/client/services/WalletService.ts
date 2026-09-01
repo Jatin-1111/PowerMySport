@@ -15,11 +15,13 @@ export class WalletService {
    * Retrieves the wallet for a user. Creates one if it doesn't exist.
    */
   static async getWallet(userId: string) {
-    let wallet = await Wallet.findOne({ userId });
-    if (!wallet) {
-      wallet = await Wallet.create({ userId, balance: 0, transactions: [] });
+    // Read-only — never saved after this, so .lean() on the common (already
+    // exists) path skips Mongoose document hydration for no behavior change.
+    const wallet = await Wallet.findOne({ userId }).lean();
+    if (wallet) {
+      return wallet;
     }
-    return wallet;
+    return Wallet.create({ userId, balance: 0, transactions: [] });
   }
 
   /**
@@ -104,7 +106,7 @@ export class WalletService {
    * Initiates a top-up via PhonePe gateway.
    */
   static async initiateTopUp(userId: string, amount: number) {
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select("phone").lean();
     if (!user) throw new Error("User not found");
 
     const merchantOrderId = `WTOPUP-${Date.now()}-${Math.random().toString(36).substring(7)}`;

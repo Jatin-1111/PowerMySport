@@ -67,7 +67,9 @@ export const validatePromoCode = async (
   const hasCoach = options?.hasCoach ?? false;
   const context = options?.context ?? "BOOKING";
 
-  const promoCode = await PromoCode.findOne({ code: code.toUpperCase() });
+  const promoCode = await PromoCode.findOne({
+    code: code.toUpperCase(),
+  }).lean();
 
   if (!promoCode) {
     return { isValid: false, discountAmount: 0, message: "Invalid promo code" };
@@ -236,7 +238,7 @@ export const applyPromoCode = async (
  * Get all promo codes (admin only)
  */
 export const getAllPromoCodes = async (): Promise<PromoCodeDocument[]> => {
-  return PromoCode.find().sort({ createdAt: -1 });
+  return PromoCode.find().sort({ createdAt: -1 }).lean();
 };
 
 /**
@@ -253,7 +255,9 @@ export const getActivePromoCodes = async (): Promise<PromoCodeDocument[]> => {
       { maxUsageTotal: { $exists: false } },
       { $expr: { $lt: ["$currentUsageCount", "$maxUsageTotal"] } },
     ],
-  }).sort({ createdAt: -1 });
+  })
+    .sort({ createdAt: -1 })
+    .lean();
 };
 
 /**

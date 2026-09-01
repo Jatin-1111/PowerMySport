@@ -488,4 +488,27 @@ coachSchema.index({ isVerified: 1 });
 coachSchema.index({ verificationStatus: 1 });
 coachSchema.index({ subscriptionStatus: 1 });
 
+// Backs getAllCoaches' public discovery sort — filter on
+// {isVerified, verificationStatus, sports?} then sort
+// {rating:-1, reviewCount:-1, _id:1}. Two variants for the same reason as
+// Venue's equivalent pair: `sports` is an optional filter, and an
+// unconstrained middle field in a compound index blocks the index from
+// serving the sort, so "browse all sports" needs its own index. Production
+// has autoIndex off, so both also need migration 34.
+coachSchema.index({
+  isVerified: 1,
+  verificationStatus: 1,
+  rating: -1,
+  reviewCount: -1,
+  _id: 1,
+});
+coachSchema.index({
+  isVerified: 1,
+  verificationStatus: 1,
+  sports: 1,
+  rating: -1,
+  reviewCount: -1,
+  _id: 1,
+});
+
 export const Coach = mongoose.model<CoachDocument>("Coach", coachSchema);

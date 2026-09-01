@@ -141,6 +141,54 @@ export const buildRosterForOffering = async (
   }));
 };
 
+interface RosterCandidate {
+  _id: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
+  playerId?: mongoose.Types.ObjectId | null;
+  studentName: string;
+  joinedAt: Date;
+  leftAt?: Date | null;
+}
+
+/**
+ * The ACTIVE/PENDING enrollment candidates for an offering, unfiltered by
+ * any specific instant. Membership at a given instant only depends on
+ * `joinedAt`/`leftAt`, both already on each candidate, so fetching this once
+ * and windowing it in memory (`rosterAtFromCandidates`) replaces what would
+ * otherwise be one `buildRosterForOffering` query per occurrence — the
+ * generation window can hold dozens of occurrences per offering, all asking
+ * the same underlying question.
+ */
+const fetchRosterCandidates = async (
+  offeringId: mongoose.Types.ObjectId,
+): Promise<RosterCandidate[]> =>
+  CoachEnrollment.find({
+    offeringId,
+    status: { $in: ["ACTIVE", "PENDING"] },
+  })
+    .select("_id userId playerId studentName joinedAt leftAt")
+    .lean();
+
+/** Same membership window as buildRosterForOffering's query, applied
+ *  in-memory against an already-fetched candidate set. */
+const rosterAtFromCandidates = (
+  candidates: RosterCandidate[],
+  at: Date,
+): CoachOccurrenceRosterEntry[] =>
+  candidates
+    .filter(
+      (candidate) =>
+        candidate.joinedAt <= at &&
+        (candidate.leftAt == null || candidate.leftAt > at),
+    )
+    .map((candidate) => ({
+      enrollmentId: candidate._id,
+      userId: candidate.userId,
+      playerId: candidate.playerId ?? null,
+      studentName: candidate.studentName,
+      attendance: "PENDING" as const,
+    }));
+
 /**
  * The instants an offering's pattern lands on between two dates.
  *
@@ -227,18 +275,23 @@ export const generateOccurrences = async (params: {
   let created = 0;
   let skipped = 0;
 
-  for (const instant of instants) {
-    const delivery = await resolveOfferingDelivery(offering, {
-      enrollmentDeliveryAddress:
-        offering.deliveryKind === "STUDENT_LOCATION"
-          ? await singleEnrollmentAddress(offering._id as mongoose.Types.ObjectId)
-          : null,
-    });
+  // Both of these are identical for every instant of this offering — where
+  // it happens and who's enrolled don't vary per-session, only who's
+  // *present* at a given instant does (handled by rosterAtFromCandidates
+  // below). Resolving them once instead of per-instant turns what was
+  // O(instants) venue/coach/enrollment lookups into O(1).
+  const delivery = await resolveOfferingDelivery(offering, {
+    enrollmentDeliveryAddress:
+      offering.deliveryKind === "STUDENT_LOCATION"
+        ? await singleEnrollmentAddress(offering._id as mongoose.Types.ObjectId)
+        : null,
+  });
+  const rosterCandidates = await fetchRosterCandidates(
+    offering._id as mongoose.Types.ObjectId,
+  );
 
-    const roster = await buildRosterForOffering(
-      offering._id as mongoose.Types.ObjectId,
-      instant.scheduledAt,
-    );
+  for (const instant of instants) {
+    const roster = rosterAtFromCandidates(rosterCandidates, instant.scheduledAt);
 
     try {
       await CoachSessionOccurrence.create({
@@ -307,29 +360,43 @@ export const syncRostersForFutureOccurrences = async (params: {
     offeringId: params.offeringId,
     status: "SCHEDULED",
     scheduledAt: { $gt: now },
-  }).exec();
+  })
+    .select("_id scheduledAt roster")
+    .lean();
 
-  let updated = 0;
-  for (const occurrence of upcoming) {
-    const roster = await buildRosterForOffering(
-      params.offeringId,
-      occurrence.scheduledAt,
-    );
-
-    // Preserve any attendance already marked on a seat that is still present.
-    const previous = new Map(
-      occurrence.roster.map((entry) => [entry.enrollmentId.toString(), entry]),
-    );
-    occurrence.roster = roster.map((entry) => {
-      const prior = previous.get(entry.enrollmentId.toString());
-      return prior ? { ...entry, attendance: prior.attendance } : entry;
-    }) as typeof occurrence.roster;
-
-    await occurrence.save();
-    updated += 1;
+  if (!upcoming.length) {
+    return 0;
   }
 
-  return updated;
+  // Same candidate set serves every occurrence being re-synced — one query
+  // instead of one buildRosterForOffering call per occurrence.
+  const rosterCandidates = await fetchRosterCandidates(params.offeringId);
+
+  const ops = upcoming.map((occurrence: any) => {
+    const roster = rosterAtFromCandidates(rosterCandidates, occurrence.scheduledAt);
+
+    // Preserve any attendance already marked on a seat that is still present.
+    const previous = new Map<string, any>(
+      (occurrence.roster || []).map((entry: any) => [
+        entry.enrollmentId.toString(),
+        entry,
+      ]),
+    );
+    const mergedRoster = roster.map((entry) => {
+      const prior = previous.get(entry.enrollmentId.toString());
+      return prior ? { ...entry, attendance: prior.attendance } : entry;
+    });
+
+    return {
+      updateOne: {
+        filter: { _id: occurrence._id },
+        update: { $set: { roster: mergedRoster } },
+      },
+    };
+  });
+
+  await CoachSessionOccurrence.bulkWrite(ops);
+  return ops.length;
 };
 
 /**

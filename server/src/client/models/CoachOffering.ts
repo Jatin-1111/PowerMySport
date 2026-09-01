@@ -239,6 +239,23 @@ coachOfferingSchema.index({ deliveryKind: 1, status: 1 });
 // Drives the occurrence-generation sweep.
 coachOfferingSchema.index({ status: 1, generatedThrough: 1 });
 
+// Backs browseOfferingsHandler's public discovery sort — filter on
+// {status:"ACTIVE", sport?, deliveryKind?} then sort {createdAt:-1}. `sport`
+// and `deliveryKind` are both optional and can be combined, so one index per
+// realistic combination — an unconstrained middle field blocks the index
+// from serving the sort, so a single {status,sport,deliveryKind,createdAt}
+// index wouldn't cover the "only one of the two filters" cases. Production
+// has autoIndex off, so these also need migration 34.
+coachOfferingSchema.index({ status: 1, createdAt: -1 });
+coachOfferingSchema.index({ status: 1, sport: 1, createdAt: -1 });
+coachOfferingSchema.index({ status: 1, deliveryKind: 1, createdAt: -1 });
+coachOfferingSchema.index({
+  status: 1,
+  sport: 1,
+  deliveryKind: 1,
+  createdAt: -1,
+});
+
 export const CoachOffering = mongoose.model<CoachOfferingDocument>(
   "CoachOffering",
   coachOfferingSchema,

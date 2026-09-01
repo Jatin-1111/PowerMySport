@@ -249,7 +249,8 @@ export const getUserCoachSubscriptions = async (params: {
   return CoachSubscription.find(query)
     .populate("packageId")
     .populate("coachId", "bio sports rating reviewCount")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 };
 
 export const cancelCoachSubscriptionByUser = async (params: {
@@ -513,7 +514,8 @@ export const getCoachActiveSubscriptions = async (coachId: string) => {
   })
     .populate("userId", "name email")
     .populate("packageId")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 };
 
 /**

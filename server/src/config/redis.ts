@@ -27,7 +27,7 @@ const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
  * existing fallbacks fire at effectively zero cost instead of a multi-second
  * timeout, with no changes needed at any of those call sites.
  */
-const REDIS_ENABLED = process.env.REDIS_ENABLED !== "false";
+export const REDIS_ENABLED = process.env.REDIS_ENABLED !== "false";
 
 const disabledClientOptions = {
   lazyConnect: true,

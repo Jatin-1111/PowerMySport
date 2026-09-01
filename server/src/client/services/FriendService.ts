@@ -25,7 +25,7 @@ export class FriendService {
     }
 
     try {
-      return await this.s3Service.generateDownloadUrl(
+      return await this.s3Service.generateCachedDownloadUrl(
         user.photoS3Key,
         "images",
         3600,
@@ -327,7 +327,8 @@ export class FriendService {
     const requests = await FriendConnection.find(query)
       .populate("requesterId", "name email photoUrl photoS3Key")
       .populate("recipientId", "name email photoUrl photoS3Key")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     const validRequests = requests.filter(
       (req: any) => req.requesterId && req.recipientId,
@@ -352,6 +353,21 @@ export class FriendService {
         createdAt: req.createdAt,
       })),
     );
+  }
+
+  /** Cheap sibling of `getPendingRequests` for badge-count call sites —
+   *  avoids the full find+2x-populate+per-row-photo-sign pipeline just to
+   *  read `.length`. */
+  async countPendingRequests(
+    userId: string,
+    type: "SENT" | "RECEIVED" = "RECEIVED",
+  ): Promise<number> {
+    const query =
+      type === "RECEIVED"
+        ? { recipientId: userId, status: "PENDING" }
+        : { requesterId: userId, status: "PENDING" };
+
+    return FriendConnection.countDocuments(query);
   }
 
   /**
@@ -435,10 +451,40 @@ export class FriendService {
       .limit(20)
       .select("_id name email photoUrl photoS3Key");
 
-    // Get friend status for each user
+    // One batched connection lookup for every matched user instead of a
+    // getFriendStatus() round trip per row.
+    const userIds = users.map((user) => user._id.toString());
+    const connections = await FriendConnection.find({
+      $or: [
+        { requesterId: userId, recipientId: { $in: userIds } },
+        { requesterId: { $in: userIds }, recipientId: userId },
+      ],
+    }).lean();
+
+    const statusByUserId = new Map<
+      string,
+      "FRIENDS" | "PENDING_SENT" | "PENDING_RECEIVED" | "BLOCKED" | "NONE"
+    >();
+    for (const connection of connections) {
+      const requesterId = connection.requesterId.toString();
+      const recipientId = connection.recipientId.toString();
+      const otherId = requesterId === userId ? recipientId : requesterId;
+
+      let status: "FRIENDS" | "PENDING_SENT" | "PENDING_RECEIVED" | "BLOCKED" | "NONE" =
+        "NONE";
+      if (connection.status === "ACCEPTED") {
+        status = "FRIENDS";
+      } else if (connection.status === "BLOCKED") {
+        status = "BLOCKED";
+      } else if (connection.status === "PENDING") {
+        status = requesterId === userId ? "PENDING_SENT" : "PENDING_RECEIVED";
+      }
+      statusByUserId.set(otherId, status);
+    }
+
     const usersWithStatus = await Promise.all(
       users.map(async (user) => {
-        const status = await this.getFriendStatus(userId, user._id.toString());
+        const status = statusByUserId.get(user._id.toString()) || "NONE";
         const photoUrl = await this.resolvePhotoUrl(user);
 
         return {

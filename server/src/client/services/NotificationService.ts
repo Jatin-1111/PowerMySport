@@ -161,10 +161,10 @@ export class NotificationService {
       emailData = {},
     } = options;
 
-    // Get user preferences
-    const user = await User.findById(data.userId).select(
-      "email name notificationPreferences pushSubscriptions",
-    );
+    // Get user preferences — read-only, never saved.
+    const user = await User.findById(data.userId)
+      .select("email name notificationPreferences pushSubscriptions")
+      .lean();
     if (!user) {
       log.error(`User ${data.userId} not found for notification`);
       return null;
@@ -183,44 +183,55 @@ export class NotificationService {
       }
     }
 
-    // Send via socket (real-time)
+    // Socket delivery needs `notification` to exist (created above, so this
+    // stays sequential with that step) — but email and push depend on
+    // neither `notification` nor each other, so all three fire concurrently
+    // instead of one after another.
+    const deliveries: Promise<unknown>[] = [];
+
     if (shouldSendSocket) {
       const socketEnabled = preferences?.inApp?.[preferenceKey] !== false;
       if (socketEnabled && notification) {
-        await this.sendSocket(data.userId, data.type, {
-          notificationId: notification._id.toString(),
-          title: data.title,
-          message: data.message,
-          data: data.data,
-          createdAt: notification.createdAt,
-        });
+        deliveries.push(
+          this.sendSocket(data.userId, data.type, {
+            notificationId: notification._id.toString(),
+            title: data.title,
+            message: data.message,
+            data: data.data,
+            createdAt: notification.createdAt,
+          }),
+        );
       }
     }
 
-    // Send via email
     if (shouldSendEmail) {
       const emailEnabled = preferences?.email?.[preferenceKey] !== false;
       if (emailEnabled) {
-        await this.sendEmailNotification(
-          user.email,
-          user.name,
-          data.title,
-          data.message,
-          emailTemplate,
-          emailData,
-        ).catch((err) => {
-          log.error("Failed to send email notification:", err);
-        });
+        deliveries.push(
+          this.sendEmailNotification(
+            user.email,
+            user.name,
+            data.title,
+            data.message,
+            emailTemplate,
+            emailData,
+          ).catch((err) => {
+            log.error("Failed to send email notification:", err);
+          }),
+        );
       }
     }
 
-    // Send via push (future implementation)
     if (shouldSendPush) {
       const pushEnabled = preferences?.push?.[preferenceKey] !== false;
       if (pushEnabled) {
-        await this.sendPush(data.userId, data.title, data.message, data.data);
+        deliveries.push(
+          this.sendPush(data.userId, data.title, data.message, data.data),
+        );
       }
     }
+
+    await Promise.all(deliveries);
 
     return notification;
   }

@@ -192,7 +192,8 @@ export class ScheduledNotificationService {
           "userId",
           "email name notificationPreferences pushSubscriptions",
         )
-        .populate("bookingId", "status date startTime sport");
+        .populate("bookingId", "status date startTime sport")
+        .lean();
 
       const stats = {
         processed: pendingReminders.length,
@@ -353,7 +354,8 @@ export class ScheduledNotificationService {
     })
       .sort({ scheduledFor: 1 })
       .limit(limit)
-      .populate("bookingId", "date startTime sport");
+      .populate("bookingId", "date startTime sport")
+      .lean();
   }
 
   /**

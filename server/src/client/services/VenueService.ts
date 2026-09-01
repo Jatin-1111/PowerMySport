@@ -187,10 +187,11 @@ export const getVenuesByOwner = async (
   totalPages: number;
 }> => {
   // Convert string to ObjectId for proper comparison
+  // Venue.ownerId is a Schema.Types.ObjectId — every document stores it as
+  // an ObjectId, so matching the raw string form too was always a no-op
+  // that just defeated a simple indexed equality match.
   const ownerObjectId = new mongoose.Types.ObjectId(ownerId);
-  const query = {
-    $or: [{ ownerId: ownerObjectId }, { ownerId }],
-  };
+  const query = { ownerId: ownerObjectId };
 
   const skip = (page - 1) * limit;
   const total = await Venue.countDocuments(query);
@@ -237,17 +238,20 @@ export const findVenuesNearby = async (
       {
         $facet: {
           metadata: [{ $count: "total" }],
+          // No $lookup to `users` here — its output (`ownerInfo`) was never
+          // consumed: Venue.hydrate() below only keeps fields defined on the
+          // Venue schema, so the join ran on every geo-search request for a
+          // discarded result.
+          //
+          // payoutMethods/documents excluded — same reasoning as
+          // getAllVenues' sibling public list above: nothing in a geo-search
+          // response needs bank details or verification files, and
+          // payoutMethods specifically pays a decrypt-getter cost per field
+          // on every serialization once hydrated below.
           data: [
             { $skip: skip },
             { $limit: limit },
-            {
-              $lookup: {
-                from: "users",
-                localField: "ownerId",
-                foreignField: "_id",
-                as: "ownerInfo",
-              },
-            },
+            { $project: { payoutMethods: 0, documents: 0 } },
           ],
         },
       },
@@ -313,11 +317,21 @@ export const getAllVenues = async (
 
   const skip = (page - 1) * limit;
   const total = await Venue.countDocuments(query);
+  // No .populate("ownerId") — both call sites are public search/discovery
+  // (approvalStatus: "APPROVED"), matching findVenuesNearby's sibling geo
+  // path, which never populated owner info either. Nothing in either
+  // response consumes owner fields.
+  //
+  // payoutMethods/documents excluded — a public search response has no
+  // business shipping bank details or verification files, and payoutMethods
+  // specifically runs a decrypt getter per field on every serialization
+  // (see Venue.ts's toJSON/toObject getters:true), which was pure wasted
+  // CPU on data nothing renders.
   const venues = await Venue.find(query)
+    .select("-payoutMethods -documents")
     .sort({ rating: -1, reviewCount: -1, _id: 1 })
     .skip(skip)
-    .limit(limit)
-    .populate("ownerId");
+    .limit(limit);
 
   // Refresh URLs for all venues
   await Promise.all(venues.map((v) => v.refreshAllUrls()));

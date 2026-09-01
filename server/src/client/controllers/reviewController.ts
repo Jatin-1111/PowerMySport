@@ -179,11 +179,13 @@ export const createReview = async (
     });
 
     if (targetType === "VENUE") {
-      await recomputeVenueRating(targetId);
-
-      // Send notification to venue owner
-      const venue = await Venue.findById(targetId).select("ownerId name");
-      const reviewer = await User.findById(req.user.id).select("name");
+      // Independent of each other — the rating recompute doesn't need the
+      // venue/reviewer lookups, and vice versa.
+      const [, venue, reviewer] = await Promise.all([
+        recomputeVenueRating(targetId),
+        Venue.findById(targetId).select("ownerId name"),
+        User.findById(req.user.id).select("name"),
+      ]);
 
       if (venue?.ownerId && reviewer) {
         NotificationService.send({
@@ -205,11 +207,11 @@ export const createReview = async (
         );
       }
     } else {
-      await recomputeCoachRating(targetId);
-
-      // Send notification to coach
-      const coach = await Coach.findById(targetId).select("userId");
-      const reviewer = await User.findById(req.user.id).select("name");
+      const [, coach, reviewer] = await Promise.all([
+        recomputeCoachRating(targetId),
+        Coach.findById(targetId).select("userId"),
+        User.findById(req.user.id).select("name"),
+      ]);
 
       if (coach?.userId && reviewer) {
         NotificationService.send({

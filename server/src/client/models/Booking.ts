@@ -625,6 +625,20 @@ bookingSchema.index({ userId: 1, status: 1, date: -1 });
 // Compound index for admin: all bookings by status sorted by creation date
 bookingSchema.index({ status: 1, createdAt: -1 });
 
+// Backs getUserBookings' "my bookings" sort — filter {userId}, sort
+// {createdAt:-1}. Without this, that scan-and-sort (up to
+// USER_BOOKING_SCAN_CAP docs) has no supporting index. Production has
+// autoIndex off, so this also needs migration 34.
+bookingSchema.index({ userId: 1, createdAt: -1 });
+
+// Backs getVenueListerBookings'/getCoachBookings' dashboard sort — filter
+// {venueId|coachId, status:{$in:[...]}}, sort {date:-1}. Mirrors the
+// existing {providerType,status,date} pattern above, scoped per-owner
+// instead of platform-wide. Production has autoIndex off, so these also
+// need migration 34.
+bookingSchema.index({ venueId: 1, status: 1, date: -1 });
+bookingSchema.index({ coachId: 1, status: 1, date: -1 });
+
 // Index for venue bookings only
 bookingSchema.index(
   { userId: 1, venueId: 1, date: 1, startTime: 1 },

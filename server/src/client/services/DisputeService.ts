@@ -29,14 +29,15 @@ export const analyzeDispute = async (
   disputeType: "NO_SHOW" | "POOR_QUALITY" | "PAYMENT_ISSUE" | "OTHER",
   disputeDetails?: string,
 ): Promise<DisputeAnalysis> => {
-  const booking = await Booking.findById(bookingId);
+  // Independent of each other — both only need `bookingId`.
+  const [booking, review] = await Promise.all([
+    Booking.findById(bookingId),
+    Review.findOne({ bookingId }),
+  ]);
 
   if (!booking) {
     throw new Error("Booking not found");
   }
-
-  // Check if there's a review for this booking
-  const review = await Review.findOne({ bookingId });
 
   // Analyze based on dispute type
   switch (disputeType) {

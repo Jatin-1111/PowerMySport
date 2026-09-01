@@ -204,6 +204,15 @@ expertSessionSchema.index({ expertId: 1, scheduledAt: 1, status: 1 });
 expertSessionSchema.index({ status: 1, payoutStatus: 1, completedAt: 1 });
 // Supports the connection-reminder jobs' scan for SCHEDULED sessions starting soon.
 expertSessionSchema.index({ status: 1, scheduledAt: 1 });
+// Backs getExpertReviews' public profile-page sort — filter
+// {expertId, reviewed:true, reviewHidden:{$ne:true}}, sort {reviewedAt:-1}.
+// Production has autoIndex off, so this also needs migration 34.
+expertSessionSchema.index({
+  expertId: 1,
+  reviewed: 1,
+  reviewHidden: 1,
+  reviewedAt: -1,
+});
 
 export const ExpertSession =
   mongoose.models.ExpertSession ||
