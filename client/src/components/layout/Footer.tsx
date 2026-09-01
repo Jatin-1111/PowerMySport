@@ -30,7 +30,7 @@ const navColumns = [
       { label: "Sports Pathways", href: "/roadmap" },
       // Powermysport AI hidden for now.
       { label: "Find an Expert", href: "/booking?tab=experts" },
-      ...(isBookingLive ? [{ label: "Book a Session", href: "/booking" }] : []),
+      // ...(isBookingLive ? [{ label: "Book a Session", href: "/booking" }] : []),
     ],
   },
   {
