@@ -5,16 +5,20 @@ import {
   ArrowLeft,
   CheckCircle2,
   ChevronRight,
+  Map,
+  MessageCircle,
   Sparkles,
+  Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import api from "@/lib/api/axios";
 import { buildStepGateFlow } from "@/flow/defineFlow";
 import { useFlow } from "@/flow/useFlow";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { getCommunityAppUrl } from "@/lib/community/url";
 import { roadmapHref } from "../../pathway/data/sports";
-import { getAmbitionOptions, getBestResultLadder, getCurrentStandingLadder, getGoverningBodyName, sportAsksBestResult, deriveExperienceLevel } from "../data/sportArchetypes";
+import { getAmbitionOptions, getCurrentStandingLadder, getGoverningBodyName, deriveExperienceLevel } from "../data/sportArchetypes";
 import { BinaryCards } from "./inputs/BinaryCards";
 import { FourContextCards } from "./inputs/FourContextCards";
 import { SportSearchInput } from "./inputs/SportSearchInput";
@@ -42,25 +46,50 @@ interface TransitionStep {
   sub: string;
 }
 
-type WizardStep = QuestionStep | TransitionStep;
+interface ResultsStep {
+  kind: "results";
+}
 
-/** How long the final save may delay the handoff to the roadmap before we go anyway. */
+type WizardStep = QuestionStep | TransitionStep | ResultsStep;
+
+/** How long the final save may delay the handoff to the next step before we go anyway. */
 const SAVE_HANDOFF_TIMEOUT_MS = 2500;
 
-const trainsWithSomeoneElse = (f: KnownSportForm) => f.trainingType === "self";
-
-// Ranking/rating sports don't get the best-result tier question at all — see
-// sportAsksBestResult. They go straight to the free-text achievements note.
-const bestResultIsRedundant = (f: KnownSportForm) => !sportAsksBestResult(f.sport || "");
+// The 7 things a parent who already knows the sport typically needs help
+// with. Purely a routing signal — it doesn't change which questions follow,
+// it travels forward as context for whichever CTA (expert, in particular)
+// the parent ends up choosing on the results screen.
+const ISSUE_OPTIONS = [
+  { value: "coach-academy", label: "Finding the right coach / academy", context: "" },
+  { value: "progress", label: "Understanding my child's progress", context: "" },
+  { value: "competition", label: "Starting or progressing in competition", context: "" },
+  { value: "seriousness", label: "Deciding how seriously to pursue the sport", context: "" },
+  { value: "wellbeing", label: "Managing training, fitness & wellbeing", context: "" },
+  { value: "opportunities", label: "Exploring international / college opportunities", context: "" },
+  { value: "other", label: "Something else — ask a question", context: "" },
+];
 
 const STEPS: WizardStep[] = [
+  // ─── Where do you need help ──────────────────────────────────────────────
+  {
+    kind: "question",
+    id: "issue",
+    required: true,
+    heading: () => "Where do you need help?",
+    sub: "We'll use this to point you to the right next step.",
+  },
+  {
+    kind: "transition",
+    text: "Good. Now let's build a quick profile.",
+    sub: "A handful of questions — that's all it takes.",
+  },
   // ─── Identity ───────────────────────────────────────────────────────────
   {
     kind: "question",
     id: "sport",
     required: true,
     heading: () => "Which sport does your child play?",
-    sub: "We'll build the entire roadmap and guidance around this sport.",
+    sub: "We'll personalise everything downstream around this sport.",
   },
   {
     kind: "question",
@@ -88,12 +117,7 @@ const STEPS: WizardStep[] = [
     id: "state",
     required: true,
     heading: () => "Where are you based?",
-    sub: "Helps us show relevant academies, federations, and tournaments near you.",
-  },
-  {
-    kind: "transition",
-    text: "Good. Now let's understand where they stand.",
-    sub: "A few questions about their current level, experience, and training.",
+    sub: "Helps us show relevant academies, federations, and experts near you.",
   },
   // ─── Current standing ───────────────────────────────────────────────────
   {
@@ -115,90 +139,6 @@ const STEPS: WizardStep[] = [
     heading: (f) => `How many years has ${f.childName || "your child"} been playing ${f.sport || "this sport"}?`,
     sub: "Optional — helps us gauge their trajectory so far.",
   },
-  // ─── Training setup ─────────────────────────────────────────────────────
-  {
-    kind: "question",
-    id: "trainingType",
-    required: true,
-    heading: (f) => `How is ${f.childName || "your child"} currently training?`,
-    sub: "Helps us place them accurately on the roadmap and show the right next step.",
-  },
-  {
-    kind: "question",
-    id: "academyName",
-    required: false,
-    heading: (f) => `Which academy or coach does ${f.childName || "your child"} train with?`,
-    sub: "Optional — just the name, so we know this is a real, ongoing program.",
-    skip: trainsWithSomeoneElse,
-  },
-  {
-    kind: "question",
-    id: "sessionsPerWeek",
-    required: false,
-    heading: () => "How many sessions do they train per week?",
-    sub: "Optional — helps us gauge training rhythm and intensity.",
-    skip: trainsWithSomeoneElse,
-  },
-  {
-    kind: "question",
-    id: "trainingMonths",
-    required: false,
-    heading: (f) => `How long has ${f.childName || "your child"} been with this academy/coach?`,
-    sub: "Optional — in months. Helps us tell a new arrangement from an established one.",
-    skip: trainsWithSomeoneElse,
-  },
-  {
-    kind: "transition",
-    text: "Let's capture what they've achieved so far.",
-    sub: "Their track record — wins, selections, anything worth noting.",
-  },
-  // ─── Best result / track record ─────────────────────────────────────────
-  {
-    kind: "question",
-    id: "bestResultTier",
-    required: true,
-    skip: bestResultIsRedundant,
-    heading: (f) => `What's the best result ${f.childName || "your child"} has achieved so far?`,
-    sub: (f) => {
-      const body = getGoverningBodyName(f.sport);
-      return body
-        ? `Pick the highest ${body} result that applies — even if that was a while ago.`
-        : "Pick the highest tier that applies — even if that was a while ago.";
-    },
-  },
-  {
-    kind: "question",
-    id: "achievementsNote",
-    required: false,
-    heading: (f) =>
-      bestResultIsRedundant(f)
-        ? `What's ${f.childName || "your child"}'s best result so far?`
-        : "Anything else you'd like to share?",
-    sub: (f) =>
-      bestResultIsRedundant(f)
-        ? "Optional — a tournament win, a career-high ranking, a selection. In your own words."
-        : "Optional — tournament names, medals, selections, whatever you're proud of.",
-  },
-  // ─── Physical basics ─────────────────────────────────────────────────────
-  {
-    kind: "question",
-    id: "heightCm",
-    required: false,
-    heading: (f) => `What are ${f.childName || "your child"}'s physical stats?`,
-    sub: "Optional — used to refine sport matches based on body type.",
-  },
-  {
-    kind: "question",
-    id: "injuryNotes",
-    required: false,
-    heading: () => "Any injuries or physical limitations we should know about?",
-    sub: "Optional — helps us build a training plan that's actually safe for them.",
-  },
-  {
-    kind: "transition",
-    text: "Almost done. Let's set the right goals.",
-    sub: "A few more questions — then the profile is ready.",
-  },
   // ─── Goals ──────────────────────────────────────────────────────────────
   {
     kind: "question",
@@ -207,21 +147,7 @@ const STEPS: WizardStep[] = [
     heading: () => "What's the goal right now?",
     sub: "Sets the tone for milestones, pace, and the investment needed.",
   },
-  // ─── Logistics ──────────────────────────────────────────────────────────
-  {
-    kind: "question",
-    id: "weeklyHours",
-    required: true,
-    heading: () => "How much time can they commit each week?",
-    sub: "We'll build a realistic training plan around this availability.",
-  },
-  {
-    kind: "question",
-    id: "budgetRange",
-    required: false,
-    heading: () => "What's your monthly budget for sport?",
-    sub: "Optional — helps us filter coaching and facility recommendations.",
-  },
+  { kind: "results" },
 ];
 
 // ─── Skip-aware step navigation ──────────────────────────────────────────────
@@ -352,146 +278,6 @@ function QuestionInput({
         />
       );
 
-    case "trainingType":
-      return (
-        <FourContextCards
-          options={[
-            { value: "self", label: "Self-practice", context: "Playing at home or local grounds, no formal coaching" },
-            { value: "club", label: "School / Club", context: "Group coaching at school or local club, 1–2x per week" },
-            { value: "academy", label: "Academy", context: "Enrolled in a structured programme with regular sessions" },
-            { value: "private", label: "Private coaching", context: "One-on-one sessions with a dedicated coach" },
-          ]}
-          value={form.trainingType}
-          onChange={(v) => set("trainingType", v)}
-        />
-      );
-
-    case "academyName":
-      return (
-        <input
-          type="text"
-          autoFocus // eslint-disable-line jsx-a11y/no-autofocus
-          value={form.academyName}
-          onChange={(e) => set("academyName", e.target.value)}
-          placeholder="e.g. Sunrise Sports Academy"
-          className={textInputClass}
-        />
-      );
-
-    case "sessionsPerWeek":
-      return (
-        <input
-          type="number"
-          min="1"
-          max="14"
-          autoFocus // eslint-disable-line jsx-a11y/no-autofocus
-          placeholder="e.g., 4"
-          value={form.sessionsPerWeek ?? ""}
-          onChange={(e) => set("sessionsPerWeek", e.target.value === "" ? null : parseFloat(e.target.value))}
-          className={textInputClass}
-        />
-      );
-
-    case "trainingMonths":
-      return (
-        <input
-          type="number"
-          min="0"
-          max="240"
-          autoFocus // eslint-disable-line jsx-a11y/no-autofocus
-          placeholder="e.g., 18"
-          value={form.trainingMonths ?? ""}
-          onChange={(e) => set("trainingMonths", e.target.value === "" ? null : parseFloat(e.target.value))}
-          className={textInputClass}
-        />
-      );
-
-    case "bestResultTier": {
-      const ladder = getBestResultLadder(form.sport || "");
-      return (
-        <FourContextCards
-          options={ladder.map((t) => ({ value: String(t.value), label: t.label, context: "" }))}
-          value={form.bestResultTier !== null ? String(form.bestResultTier) : null}
-          onChange={(v) => set("bestResultTier", Number(v))}
-        />
-      );
-    }
-
-    case "achievementsNote":
-      return (
-        <textarea
-          rows={3}
-          autoFocus // eslint-disable-line jsx-a11y/no-autofocus
-          value={form.achievementsNote}
-          onChange={(e) => set("achievementsNote", e.target.value)}
-          // A state-championship example is wrong for the sports that no longer
-          // ask the tier question — tennis has no state event to have won.
-          placeholder={
-            bestResultIsRedundant(form)
-              ? "e.g. Won the U-14 title at a national ranking event in 2025"
-              : "e.g. Won the U-14 state championship in 2025"
-          }
-          className={`${textInputClass} resize-none`}
-        />
-      );
-
-    case "heightCm":
-      return (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-500">Height (cm)</label>
-              <input
-                type="number"
-                min="50"
-                max="220"
-                placeholder="e.g., 135"
-                value={form.heightCm ?? ""}
-                onChange={(e) =>
-                  set("heightCm", e.target.value === "" ? null : parseFloat(e.target.value))
-                }
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-500">Weight (kg)</label>
-              <input
-                type="number"
-                min="10"
-                max="150"
-                placeholder="e.g., 32"
-                value={form.weightKg ?? ""}
-                onChange={(e) =>
-                  set("weightKg", e.target.value === "" ? null : parseFloat(e.target.value))
-                }
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
-              />
-            </div>
-          </div>
-          {form.heightCm && form.weightKg && (
-            <p className="text-center text-xs text-slate-400">
-              {Math.floor(form.heightCm / 30.48)}′ {Math.round((form.heightCm / 2.54) % 12)}″ ·{" "}
-              {(() => {
-                const bmi = form.weightKg / ((form.heightCm / 100) ** 2);
-                return bmi < 17 ? "Lean build" : bmi > 22 ? "Stocky build" : "Average build";
-              })()}
-            </p>
-          )}
-        </div>
-      );
-
-    case "injuryNotes":
-      return (
-        <textarea
-          rows={3}
-          autoFocus // eslint-disable-line jsx-a11y/no-autofocus
-          value={form.injuryNotes}
-          onChange={(e) => set("injuryNotes", e.target.value)}
-          placeholder="e.g. Recovering from a mild ankle sprain, nothing ongoing"
-          className={`${textInputClass} resize-none`}
-        />
-      );
-
     case "ambition":
       return (
         <FourContextCards
@@ -501,31 +287,12 @@ function QuestionInput({
         />
       );
 
-    case "weeklyHours":
+    case "issue":
       return (
         <FourContextCards
-          options={[
-            { value: "1-3", label: "1–3 hrs/week", context: "Casual — once or twice a week" },
-            { value: "4-7", label: "4–7 hrs/week", context: "Regular — most days, short sessions" },
-            { value: "8-12", label: "8–12 hrs/week", context: "Dedicated — structured training schedule" },
-            { value: "13-plus", label: "13+ hrs/week", context: "Full-time athlete commitment" },
-          ]}
-          value={form.weeklyHours}
-          onChange={(v) => set("weeklyHours", v)}
-        />
-      );
-
-    case "budgetRange":
-      return (
-        <FourContextCards
-          options={[
-            { value: "under-3k", label: "Under ₹3,000", context: "Minimal equipment, public grounds" },
-            { value: "3k-7k", label: "₹3,000–7,000", context: "Academy fees, basic coaching" },
-            { value: "7k-15k", label: "₹7,000–15,000", context: "Regular coaching + equipment" },
-            { value: "15k-plus", label: "₹15,000+", context: "Premium coaching, tournaments, travel" },
-          ]}
-          value={form.budgetRange}
-          onChange={(v) => set("budgetRange", v)}
+          options={ISSUE_OPTIONS}
+          value={form.issue}
+          onChange={(v) => set("issue", v)}
         />
       );
 
@@ -538,8 +305,6 @@ function QuestionInput({
 
 export function SportKnownFlow({ onBack }: { onBack: () => void }) {
   const { token } = useAuthStore();
-  const router = useRouter();
-  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<KnownSportForm>(EMPTY_FORM);
   // Active step lives in the URL (?step=): Back walks the questionnaire, each
   // step is linkable, and a mid-flow deep link is gated to the first unanswered
@@ -547,7 +312,6 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
   const flow = useMemo(() => KNOWN_SPORT_FLOW, []);
   const {
     index: idx,
-    isLast,
     direction: dir,
     next: goToNext,
     back: goToPrev,
@@ -593,23 +357,9 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
       dateOfBirth: prev.dateOfBirth || (matchedDep.dob ? new Date(matchedDep.dob).toISOString().slice(0, 10) : ""),
       gender: prev.gender ?? matchedDep.gender ?? null,
       state: prev.state ?? matchedDep.location ?? null,
-      trainingType: prev.trainingType ?? matchedDep.trainingType ?? null,
-      heightCm: prev.heightCm ?? matchedDep.heightCm ?? null,
-      weightKg: prev.weightKg ?? matchedDep.weightKg ?? null,
       ambition: prev.ambition ?? matchedDep.ambition ?? null,
-      weeklyHours: prev.weeklyHours ?? matchedDep.weeklyHoursCategory ?? null,
-      budgetRange: prev.budgetRange ?? matchedDep.budgetRange ?? null,
       yearsPlaying: prev.yearsPlaying ?? matchedDep.yearsPlaying ?? null,
       currentStandingTier: prev.currentStandingTier ?? matchedDep.currentStandingTier ?? null,
-      bestResultTier: prev.bestResultTier ?? matchedDep.bestResultTier ?? null,
-      achievementsNote: prev.achievementsNote || matchedDep.achievementsNote || "",
-      academyName: prev.academyName || matchedDep.academyName || "",
-      sessionsPerWeek: prev.sessionsPerWeek ?? matchedDep.sessionsPerWeek ?? null,
-      trainingMonths: prev.trainingMonths ?? matchedDep.trainingMonths ?? null,
-      injuryNotes:
-        prev.injuryNotes ||
-        (Array.isArray(matchedDep.medicalConditions) ? matchedDep.medicalConditions[0] : "") ||
-        "",
     }));
   }, [matchedDep]);
 
@@ -622,86 +372,68 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
 
   const canAdvance =
     current.kind === "transition" ||
+    current.kind === "results" ||
     !current.required ||
     isAnswered(current.id, form);
 
   const goNext = () => {
-    if (isLast) {
-      void finishAndGoToRoadmap();
-      return;
-    }
     goToNext();
   };
 
-  // The wizard ends by handing the parent straight to the roadmap — there is no
-  // summary screen. That screen only ever read their own answers back to them,
-  // so it cost a click and taught them nothing.
-  //
-  // The save has to be AWAITED now, which it didn't have to be before: the old
-  // flow fired the request and rendered the summary, so the request finished
-  // while the parent read it. Navigating immediately would cancel an in-flight
-  // XHR and silently lose the profile. It's raced against a short timeout so a
-  // slow or dead API delays the handoff by at most a beat — the roadmap still
-  // personalises from localStorage, which is written first and synchronously.
-  const finishAndGoToRoadmap = async () => {
-    if (submitting) return;
-    setSubmitting(true);
-    // Persist locally so /roadmap can personalise (name, standing tier,
-    // budget, ambition) — the only durable record for guests, and for
-    // logged-in users it covers the window before the dependent refetch.
+  // The wizard ends on a results screen offering three ways forward (explore
+  // the roadmap, ask the community, or book an expert) rather than picking one
+  // for the parent. Saving still has to happen before any of those CTAs can
+  // carry a real dependent brief, so it runs once, up front, on arrival —
+  // raced against a short timeout so a slow or dead API delays the results
+  // screen by at most a beat rather than blocking it outright.
+  const saveProfile = async (): Promise<string | null> => {
+    // Persist locally so /roadmap (and a guest's later login) can personalise
+    // — the only durable record for guests, and for logged-in users it covers
+    // the window before the dependent refetch.
     try {
       localStorage.setItem(
         "pms_sport_profile",
         JSON.stringify({ form, savedAt: new Date().toISOString() }),
       );
     } catch {}
-    if (token) {
-      const wizardFields = {
-        ...(form.sport ? { sportsFocus: [form.sport] } : {}),
-        ...(form.gender ? { gender: form.gender } : {}),
-        ...(form.state ? { location: form.state } : {}),
-        ...(form.trainingType ? { trainingType: form.trainingType } : {}),
-        ...(form.heightCm ? { heightCm: form.heightCm } : {}),
-        ...(form.weightKg ? { weightKg: form.weightKg } : {}),
-        ...(form.ambition ? { ambition: form.ambition } : {}),
-        ...(form.weeklyHours ? { weeklyHoursCategory: form.weeklyHours } : {}),
-        ...(form.budgetRange ? { budgetRange: form.budgetRange } : {}),
-        ...(form.dateOfBirth ? { dob: form.dateOfBirth } : {}),
-        ...(form.yearsPlaying !== null ? { yearsPlaying: form.yearsPlaying } : {}),
-        ...(form.currentStandingTier !== null
-          ? {
-              currentStandingTier: form.currentStandingTier,
-              experienceLevel: deriveExperienceLevel(form.currentStandingTier),
-            }
-          : {}),
-        ...(form.bestResultTier !== null ? { bestResultTier: form.bestResultTier } : {}),
-        ...(form.achievementsNote.trim() ? { achievementsNote: form.achievementsNote.trim() } : {}),
-        ...(form.academyName.trim() ? { academyName: form.academyName.trim() } : {}),
-        ...(form.sessionsPerWeek !== null ? { sessionsPerWeek: form.sessionsPerWeek } : {}),
-        ...(form.trainingMonths !== null ? { trainingMonths: form.trainingMonths } : {}),
-        ...(form.injuryNotes.trim() ? { medicalConditions: [form.injuryNotes.trim()] } : {}),
-      };
 
-      const save = matchedDep?._id
-        ? // Update the existing matched dependent
-          api.put(`/auth/dependents/${matchedDep._id}`, wizardFields)
-        : form.childName.trim()
-          ? // Create a new dependent with all wizard fields in one call
-            api.post("/auth/dependents", {
-              name: form.childName.trim(),
-              ...wizardFields,
-            })
-          : null;
+    if (!token) return null;
 
-      if (save) {
-        await Promise.race([
-          save.catch(() => {}),
-          new Promise((resolve) => setTimeout(resolve, SAVE_HANDOFF_TIMEOUT_MS)),
-        ]);
-      }
+    const wizardFields = {
+      ...(form.sport ? { sportsFocus: [form.sport] } : {}),
+      ...(form.gender ? { gender: form.gender } : {}),
+      ...(form.state ? { location: form.state } : {}),
+      ...(form.ambition ? { ambition: form.ambition } : {}),
+      ...(form.dateOfBirth ? { dob: form.dateOfBirth } : {}),
+      ...(form.yearsPlaying !== null ? { yearsPlaying: form.yearsPlaying } : {}),
+      ...(form.currentStandingTier !== null
+        ? {
+            currentStandingTier: form.currentStandingTier,
+            experienceLevel: deriveExperienceLevel(form.currentStandingTier),
+          }
+        : {}),
+    };
+
+    // The dependent-sharing mechanism the expert-booking CTA relies on needs a
+    // named record to attach to — fall back to a generic name rather than
+    // silently skipping the save when the (optional) name question was left blank.
+    const name = form.childName.trim() || "My child";
+
+    const save = matchedDep?._id
+      ? api.put(`/auth/dependents/${matchedDep._id}`, wizardFields)
+      : api.post("/auth/dependents", { name, ...wizardFields });
+
+    try {
+      const res = await Promise.race([
+        save,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), SAVE_HANDOFF_TIMEOUT_MS)),
+      ]);
+      const dependentId =
+        (res as { data?: { data?: { _id?: string } } } | null)?.data?.data?._id ?? matchedDep?._id ?? null;
+      return dependentId ?? null;
+    } catch {
+      return matchedDep?._id ?? null;
     }
-
-    router.push(roadmapHref(form.sport));
   };
 
   const goPrev = () => {
@@ -822,14 +554,10 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
                   <button
                     type="button"
                     onClick={goNext}
-                    disabled={!canAdvance || submitting}
+                    disabled={!canAdvance}
                     className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-6 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
                   >
-                    {idx === STEPS.length - 1
-                      ? submitting
-                        ? "Building roadmap…"
-                        : `See ${form.sport || "the"} roadmap`
-                      : "Continue"}
+                    {qNum === totalQuestions ? "Build my profile" : "Continue"}
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
@@ -837,6 +565,124 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
           </div>
         </div>
       )}
+
+      {/* Results — three ways forward, no single "right" answer picked for the parent */}
+      {current.kind === "results" && (
+        <NavigateResultsScreen form={form} saveProfile={saveProfile} onBack={goPrev} />
+      )}
+    </div>
+  );
+}
+
+// ─── Results screen ─────────────────────────────────────────────────────────
+//
+// Saves the profile once on arrival (so "Connect with Expert" always has a
+// real dependent to attach), then offers three equally-weighted next steps.
+// The chosen issue travels along only as brief context for the expert CTA —
+// it never gates which of the three options are shown.
+
+function NavigateResultsScreen({
+  form,
+  saveProfile,
+  onBack,
+}: {
+  form: KnownSportForm;
+  saveProfile: () => Promise<string | null>;
+  onBack: () => void;
+}) {
+  const router = useRouter();
+  const [saving, setSaving] = useState(true);
+  const [dependentId, setDependentId] = useState<string | null>(null);
+  const savedOnce = useRef(false);
+
+  useEffect(() => {
+    if (savedOnce.current) return;
+    savedOnce.current = true;
+    saveProfile()
+      .then(setDependentId)
+      .finally(() => setSaving(false));
+  }, [saveProfile]);
+
+  const issueLabel = ISSUE_OPTIONS.find((o) => o.value === form.issue)?.label ?? null;
+
+  const goToExpert = () => {
+    try {
+      if (dependentId) {
+        localStorage.setItem(
+          "pms_expert_brief",
+          JSON.stringify({ dependentId, issueLabel, sport: form.sport, savedAt: new Date().toISOString() }),
+        );
+      }
+    } catch {}
+    router.push(`/booking?tab=experts${form.sport ? `&sport=${encodeURIComponent(form.sport)}` : ""}`);
+  };
+
+  const cards = [
+    {
+      icon: Map,
+      title: "Explore Pathways",
+      description: `See the full ${form.sport || "sport"} journey — stages, milestones, and what comes next.`,
+      onClick: () => router.push(roadmapHref(form.sport)),
+    },
+    {
+      icon: Users,
+      title: "Ask in the Parent Community",
+      description: "Post your question and hear from parents who've been through this.",
+      onClick: () => router.push(getCommunityAppUrl({ path: "questions" })),
+    },
+    {
+      icon: MessageCircle,
+      title: "Connect with an Expert",
+      description: issueLabel
+        ? `Talk it through 1:1 — starting from "${issueLabel}".`
+        : "Talk it through 1:1 with a real sports expert.",
+      onClick: goToExpert,
+    },
+  ];
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4 py-16">
+      <div className="w-full max-w-2xl">
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
+        <div className="text-center mb-8">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-power-orange/10">
+            <CheckCircle2 className="h-7 w-7 text-power-orange" />
+          </div>
+          <h1 className="font-title text-2xl font-bold text-slate-900 mb-2">
+            {form.childName ? `${form.childName}'s profile is ready` : "Profile ready"}
+          </h1>
+          <p className="text-sm text-slate-500">
+            {saving ? "Saving…" : "Pick where you'd like to go next."}
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {cards.map((card) => (
+            <button
+              key={card.title}
+              type="button"
+              onClick={card.onClick}
+              className="w-full text-left flex items-start gap-4 rounded-2xl border-2 border-slate-200 bg-white p-5 transition-all duration-150 hover:border-power-orange hover:shadow-sm active:scale-[0.99]"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-power-orange/10 text-power-orange">
+                <card.icon className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-[15px] text-slate-900">{card.title}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{card.description}</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-slate-300 mt-2.5 shrink-0" />
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

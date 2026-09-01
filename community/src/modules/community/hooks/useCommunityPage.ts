@@ -135,9 +135,7 @@ export function useCommunityPage(options?: {
   const [newGroupDescription, setNewGroupDescription] = useState("");
   const [newGroupSport, setNewGroupSport] = useState("");
   const [newGroupCity, setNewGroupCity] = useState("");
-  const [newGroupAudience, setNewGroupAudience] = useState<
-    "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY"
-  >("ALL");
+  const [newGroupAudience, setNewGroupAudience] = useState<"ALL">("ALL");
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 

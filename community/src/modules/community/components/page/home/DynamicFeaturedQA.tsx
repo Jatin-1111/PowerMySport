@@ -54,20 +54,20 @@ export default function DynamicFeaturedQA() {
             </span>
             <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
               <Crown className="h-3.5 w-3.5 text-amber-500" />
-              Answered by top-rated coach
+              Answered by a top-rated parent
             </span>
           </div>
           <h3 className="mt-4 text-xl font-semibold tracking-tight text-slate-900">
             What sport helps a shy 9-year-old build confidence fast?
           </h3>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            Coach Daniel recommends a low-pressure group setting with frequent
-            small wins, simple drills, and a coach who rewards effort before
+            Priya recommends a low-pressure group setting with frequent small
+            wins, simple drills, and a coach who rewards effort before
             competition.
           </p>
           <div className="mt-4 rounded-2xl border border-slate-200 bg-white/80 p-4">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">
-              Coach takeaway
+              Parent takeaway
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-700">
               Start with one session per week, pick a coach with strong parent

@@ -3,10 +3,7 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { communityService } from "@/modules/community/services/community";
-import {
-  CommunityGroupAudience,
-  CommunityGroupVisibility,
-} from "@/modules/community/types";
+import { CommunityGroupVisibility } from "@/modules/community/types";
 import SportsSelect from "@/modules/sports/components/SportsSelect";
 import {
   X,
@@ -58,7 +55,6 @@ export default function CreateCommunityModal({
   const [description, setDescription] = useState("");
   const [sport, setSport] = useState("");
   const [city, setCity] = useState("");
-  const [audience, setAudience] = useState<CommunityGroupAudience>("ALL");
   const [visibility, setVisibility] =
     useState<CommunityGroupVisibility>("PUBLIC");
 
@@ -118,7 +114,6 @@ export default function CreateCommunityModal({
         description,
         sport,
         city: city || undefined,
-        audience,
         visibility,
         profilePicture: finalProfilePicture || undefined,
         profilePictureKey: finalProfilePictureKey || undefined,
@@ -292,36 +287,6 @@ export default function CreateCommunityModal({
                       rows={3}
                       className="w-full resize-none rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm shadow-sm transition focus:border-purple-500/50 focus:outline-none focus:ring-4 focus:ring-purple-500/10"
                     />
-                  </div>
-
-                  {/* Audience */}
-                  <div>
-                    <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                      <Shield size={16} className="text-slate-500" />
-                      Who can join?
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {(
-                        [
-                          "ALL",
-                          "PLAYERS_ONLY",
-                          "COACHES_ONLY",
-                        ] as CommunityGroupAudience[]
-                      ).map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setAudience(opt)}
-                          className={`rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-wide transition-all ${
-                            audience === opt
-                              ? "bg-slate-900 text-white shadow-md"
-                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                          }`}
-                        >
-                          {opt.replace("_", " ")}
-                        </button>
-                      ))}
-                    </div>
                   </div>
 
                   {/* Visibility */}

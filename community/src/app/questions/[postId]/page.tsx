@@ -28,7 +28,7 @@ export async function generateMetadata({
     return buildMetadata({
       title: "Community Question",
       description:
-        "Ask sports questions and get answers from players, coaches, and parents on PowerMySport.",
+        "Ask sports questions and get answers from parents on PowerMySport.",
       path: `/questions/${postId}`,
     });
   }

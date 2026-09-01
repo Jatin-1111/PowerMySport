@@ -7,9 +7,9 @@ import {
 } from "@/modules/community/components/seo/JsonLd";
 
 export const metadata = buildMetadata({
-  title: "Discover Groups, Topics & Players",
+  title: "Discover Groups, Topics & Parents",
   description:
-    "Discover sports groups, trending topics, and players to connect with on the PowerMySport community.",
+    "Discover sports groups, trending topics, and parents to connect with on the PowerMySport community.",
   path: "/discover",
 });
 

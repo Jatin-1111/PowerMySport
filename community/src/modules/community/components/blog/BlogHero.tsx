@@ -40,7 +40,7 @@ export default function BlogHero({ totalBlogs }: BlogHeroProps) {
           className="mx-auto mt-4 max-w-2xl text-sm text-slate-600 sm:text-base"
         >
           Training breakthroughs, match-day lessons, gear reviews, and mindset —
-          real stories from players and coaches across every sport.
+          real stories from parents across every sport.
         </motion.p>
 
         <motion.div

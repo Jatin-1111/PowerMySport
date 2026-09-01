@@ -155,7 +155,7 @@ function ContributorsPageContent() {
       <div className="community-content-wrap space-y-5">
         <CommunityPageHeader
           title="Contributor Leaderboard"
-          subtitle="Recognizing players and coaches who share high-value community knowledge."
+          subtitle="Recognizing parents who share high-value community knowledge."
           badge="Leaderboard"
         />
 
@@ -167,7 +167,7 @@ function ContributorsPageContent() {
             className="rounded-2xl border border-amber-200/80 bg-[linear-gradient(125deg,#fff9ed_0%,#fffdf7_100%)] p-4 sm:p-5"
           >
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-amber-700">
-              My Reputation
+              My Contribution
             </p>
             <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
               {[
@@ -306,8 +306,8 @@ function ContributorsPageContent() {
             </h2>
           </div>
           <p className="mt-1 text-sm text-slate-600">
-            Coaches and players with sustained answer quality gain more
-            visibility across community spaces.
+            Parents with sustained answer quality gain more visibility across
+            community spaces.
           </p>
         </section>
       </div>

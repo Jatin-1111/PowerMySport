@@ -43,11 +43,8 @@ test("cross-role interaction helper returns expected values", () => {
   assert.equal(isCrossRoleInteraction("Player", "Player"), false);
 });
 
-test("group audience helper enforces audience membership rules", () => {
+test("group audience helper always allows joining — community is Parent-only, ALL is the only audience left", () => {
   assert.equal(canJoinGroupAudience("ALL", "Player"), true);
   assert.equal(canJoinGroupAudience("ALL", "Coach"), true);
-  assert.equal(canJoinGroupAudience("PLAYERS_ONLY", "Player"), true);
-  assert.equal(canJoinGroupAudience("PLAYERS_ONLY", "Coach"), false);
-  assert.equal(canJoinGroupAudience("COACHES_ONLY", "Coach"), true);
-  assert.equal(canJoinGroupAudience("COACHES_ONLY", "Player"), false);
+  assert.equal(canJoinGroupAudience("ALL", "Parent"), true);
 });

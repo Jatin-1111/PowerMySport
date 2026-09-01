@@ -204,7 +204,7 @@ export const communityGroupService = {
       city?: string;
       profilePicture?: string;
       profilePictureKey?: string;
-      audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+      audience?: CommunityGroupAudience;
       visibility?: CommunityGroupVisibility;
     },
   ) {

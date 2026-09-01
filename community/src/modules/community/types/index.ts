@@ -1,7 +1,7 @@
 export type MessagePrivacy = "EVERYONE" | "REQUEST_ONLY" | "NONE";
 export type ConversationType = "DM" | "GROUP";
 export type CommunityUserRole = "Player" | "Coach" | "Parent";
-export type CommunityGroupAudience = "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+export type CommunityGroupAudience = "ALL";
 
 export interface CommunityProfile {
   _id: string;

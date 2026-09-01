@@ -145,7 +145,10 @@ describe("who counts as verified", () => {
 describe("credentials on Q&A payloads", () => {
   it("carries the badge onto an answer", async () => {
     const asker = await createUser("Asker");
-    const coach = await createUser("Coach", "Coach");
+    // Community is Parent-only now; a verified coach who wants to post in
+    // community must hold a Parent account — the "Verified Coach" credential
+    // itself is independent of User.role, sourced from Coach.isVerified.
+    const coach = await createUser("Coach", "Parent");
     await makeCoach(coach, true);
 
     const post = await CommunityService.createPost(asker, {
@@ -162,7 +165,10 @@ describe("credentials on Q&A payloads", () => {
 
   it("withholds the badge on an anonymous answer", async () => {
     const asker = await createUser("Asker");
-    const coach = await createUser("Coach", "Coach");
+    // Community is Parent-only now; a verified coach who wants to post in
+    // community must hold a Parent account — the "Verified Coach" credential
+    // itself is independent of User.role, sourced from Coach.isVerified.
+    const coach = await createUser("Coach", "Parent");
     await makeCoach(coach, true);
 
     const post = await CommunityService.createPost(asker, {
@@ -185,7 +191,10 @@ describe("credentials on Q&A payloads", () => {
 
   it("still shows the author their own badge on their anonymous answer", async () => {
     const asker = await createUser("Asker");
-    const coach = await createUser("Coach", "Coach");
+    // Community is Parent-only now; a verified coach who wants to post in
+    // community must hold a Parent account — the "Verified Coach" credential
+    // itself is independent of User.role, sourced from Coach.isVerified.
+    const coach = await createUser("Coach", "Parent");
     await makeCoach(coach, true);
 
     const post = await CommunityService.createPost(asker, {
@@ -204,7 +213,10 @@ describe("credentials on Q&A payloads", () => {
   });
 
   it("carries the badge onto the feed", async () => {
-    const coach = await createUser("Coach", "Coach");
+    // Community is Parent-only now; a verified coach who wants to post in
+    // community must hold a Parent account — the "Verified Coach" credential
+    // itself is independent of User.role, sourced from Coach.isVerified.
+    const coach = await createUser("Coach", "Parent");
     await makeCoach(coach, true);
     await CommunityService.createPost(coach, {
       title: "Sharing what I look for in a junior player",

@@ -24,7 +24,7 @@ import { buildMetadata } from "@/lib/seo";
 
 
 export const metadata = buildMetadata({
-  title: "Youth Sports Community for Parents, Players & Coaches",
+  title: "Youth Sports Community for Parents",
   description:
     "A parent-first youth sports community. Find vetted coaches and trusted venues, ask questions, read expert blogs, and get AI guidance to choose the right next step for your child.",
   path: "/",
@@ -41,8 +41,7 @@ type ValueProp = {
 const valueProps: ValueProp[] = [
   {
     title: "Discover",
-    description:
-      "Parents, Players, Coaches in your neighbourhood. Connect & learn.",
+    description: "Parents in your neighbourhood. Connect & learn.",
     href: "/discover",
     cta: "Open Discover",
     icon: Compass,

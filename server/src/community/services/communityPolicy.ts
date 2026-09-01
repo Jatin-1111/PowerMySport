@@ -1,5 +1,5 @@
 export type CommunityRole = "Player" | "Coach" | "Parent";
-export type CommunityGroupAudience = "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+export type CommunityGroupAudience = "ALL";
 
 export type CommunityInteractionPolicy = {
   allowCrossRoleDm: boolean;
@@ -51,19 +51,11 @@ export const isCrossRoleInteraction = (
   b: CommunityRole,
 ): boolean => a !== b;
 
+// Community is Parent-only now, and CommunityGroupAudience has only one
+// possible value ("ALL") — so this always passes. Kept as a function (rather
+// than inlined at call sites) since communityGroupService.ts still calls it
+// as part of the join/invite flow.
 export const canJoinGroupAudience = (
-  audience: CommunityGroupAudience,
-  role: CommunityRole,
-): boolean => {
-  if (audience === "ALL") {
-    return true;
-  }
-
-  if (audience === "PLAYERS_ONLY") {
-    // Parent counts as a Player here too, preserving existing behavior from
-    // when both shared role:"Player".
-    return role === "Player" || role === "Parent";
-  }
-
-  return role === "Coach";
-};
+  _audience: CommunityGroupAudience,
+  _role: CommunityRole,
+): boolean => true;

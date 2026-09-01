@@ -29,7 +29,7 @@ export const SITE_NAME = "PowerMySport Community";
 /**
  * Describes what this app actually does. The previous copy promised "discover
  * vetted coaches and venues" — that lives in the main `client` app, not here,
- * and the community's own `/discover` page is groups, topics and players. A
+ * and the community's own `/discover` page is groups, topics and parents. A
  * description that sells a feature the landing page does not have is the fastest
  * way to earn a pogo-stick back to the SERP.
  */

@@ -495,7 +495,7 @@ export const createGroup = async (
       description?: string;
       sport?: string;
       city?: string;
-      audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+      audience?: "ALL";
       visibility?: GroupVisibilityInput;
       profilePicture?: string;
       profilePictureKey?: string;
@@ -506,7 +506,7 @@ export const createGroup = async (
       description?: string;
       sport?: string;
       city?: string;
-      audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+      audience?: "ALL";
       visibility?: GroupVisibilityInput;
       profilePicture?: string;
       profilePictureKey?: string;
@@ -520,11 +520,7 @@ export const createGroup = async (
     if (typeof city === "string") {
       payload.city = city;
     }
-    if (
-      audience === "ALL" ||
-      audience === "PLAYERS_ONLY" ||
-      audience === "COACHES_ONLY"
-    ) {
+    if (audience === "ALL") {
       payload.audience = audience;
     }
     if (
@@ -573,7 +569,7 @@ export const updateGroup = async (
       description?: string;
       sport?: string;
       city?: string;
-      audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+      audience?: "ALL";
       visibility?: GroupVisibilityInput;
       profilePicture?: string;
       profilePictureKey?: string;
@@ -584,7 +580,7 @@ export const updateGroup = async (
       description?: string;
       sport?: string;
       city?: string;
-      audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+      audience?: "ALL";
       visibility?: GroupVisibilityInput;
       profilePicture?: string;
       profilePictureKey?: string;

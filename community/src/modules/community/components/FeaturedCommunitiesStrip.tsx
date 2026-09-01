@@ -39,7 +39,7 @@ export function FeaturedCommunitiesStrip({
             Explore communities
           </p>
           <h3 className="font-title mt-1 text-sm font-semibold text-slate-900 sm:text-base">
-            Popular groups near players like you
+            Popular groups near parents like you
           </h3>
         </div>
         <motion.button

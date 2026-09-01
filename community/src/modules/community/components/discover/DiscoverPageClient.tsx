@@ -26,7 +26,6 @@ import {
   MessageSquare,
   Eye,
   Filter,
-  Shield,
   X,
   LogIn,
 } from "lucide-react";
@@ -45,9 +44,9 @@ export default function DiscoverPageClient() {
   const [communities, setCommunities] = useState<CommunityGroupSummary[]>([]);
   const [players, setPlayers] = useState<CommunityUserSearchResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<
-    "COMMUNITIES" | "PARENTS" | "PLAYERS" | "COACHES"
-  >(initialTab);
+  const [activeTab, setActiveTab] = useState<"COMMUNITIES" | "PARENTS">(
+    initialTab,
+  );
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [groupToEdit, setGroupToEdit] = useState<CommunityGroupSummary | null>(null);
@@ -121,14 +120,9 @@ export default function DiscoverPageClient() {
             setPlayers([]);
           }
         } else {
-          let filters = {};
-          if (activeTab === "PARENTS") filters = { role: "Parent" };
-          if (activeTab === "PLAYERS") filters = { role: "Player" };
-          if (activeTab === "COACHES") filters = { role: "Coach" };
-
           const playersData = await communityService.searchPlayers(
             debouncedQuery,
-            filters,
+            { role: "Parent" },
           );
           if (isMounted) {
             setPlayers(playersData);
@@ -252,13 +246,8 @@ export default function DiscoverPageClient() {
     .sort((a, b) => communityGroupRank(a) - communityGroupRank(b));
 
   const filteredPlayers = players.filter((p) => {
-    if (activeTab === "PARENTS") {
-      if (p.role !== "Parent") return false;
-    } else if (activeTab === "PLAYERS") {
-      if (p.role !== "Player") return false;
-    } else if (activeTab === "COACHES") {
-      if (p.role !== "Coach") return false;
-    } else return false;
+    if (activeTab !== "PARENTS") return false;
+    if (p.role !== "Parent") return false;
 
     if (selectedSport !== "All" && !(p.sports || []).includes(selectedSport))
       return false;
@@ -271,7 +260,7 @@ export default function DiscoverPageClient() {
       <div className="community-content-wrap">
         <CommunityPageHeader
           title="Discover"
-          subtitle="Find local sports communities, coaches, and connect with other sports parents."
+          subtitle="Find local sports communities and connect with other sports parents."
           badge="Explore"
           size="lg"
         />
@@ -415,24 +404,10 @@ export default function DiscoverPageClient() {
             className="mx-auto flex w-full max-w-3xl rounded-2xl p-1 shadow-inner backdrop-blur-md"
             style={{ background: 'rgba(241, 245, 249, 0.8)', boxShadow: '0 0 0 1px rgba(226, 232, 240, 0.5) inset' }}
           >
-            {["COMMUNITIES", "PARENTS", "PLAYERS", "COACHES"].map((tab) => {
+            {["COMMUNITIES", "PARENTS"].map((tab) => {
               const isActive = activeTab === tab;
-              const Icon =
-                tab === "COMMUNITIES"
-                  ? Users
-                  : tab === "PARENTS"
-                    ? User
-                    : tab === "PLAYERS"
-                      ? Users
-                      : Trophy;
-              const label =
-                tab === "COMMUNITIES"
-                  ? "Communities"
-                  : tab === "PARENTS"
-                    ? "Parents"
-                    : tab === "PLAYERS"
-                      ? "Players"
-                      : "Coaches";
+              const Icon = tab === "COMMUNITIES" ? Users : User;
+              const label = tab === "COMMUNITIES" ? "Communities" : "Parents";
 
               return (
                 <button
@@ -549,15 +524,6 @@ export default function DiscoverPageClient() {
                                     Joined
                                   </span>
                                 )}
-                                {group.audience && group.audience !== "ALL" && (
-                                  <span
-                                    className="discover-badge"
-                                    style={{ color: '#d97706', borderColor: 'rgba(245,158,11,0.3)', background: 'rgba(255,251,235,0.92)' }}
-                                  >
-                                    <Shield size={10} style={{ marginRight: 2, color: '#f59e0b' }} />
-                                    {group.audience === "PLAYERS_ONLY" ? "Players Only" : "Coaches Only"}
-                                  </span>
-                                )}
                               </div>
 
                               {group.profilePicture ? (
@@ -651,18 +617,10 @@ export default function DiscoverPageClient() {
                   <div className="mb-4 flex items-center justify-between">
                     <div>
                       <h2 className="community-section-title">
-                        {activeTab === "PARENTS"
-                          ? "Sports Parents"
-                          : activeTab === "PLAYERS"
-                            ? "Athletes"
-                            : "Coaches"}
+                        Sports Parents
                       </h2>
                       <p className="community-section-copy">
-                        {activeTab === "PARENTS"
-                          ? "Connect with other parents"
-                          : activeTab === "PLAYERS"
-                            ? "Find other athletes to play with"
-                            : "Discover local sports coaches"}
+                        Connect with other parents
                       </p>
                     </div>
                     <span className="inline-flex items-center justify-center rounded-full bg-white/80 shadow-sm border border-white px-2.5 py-0.5 text-xs font-semibold text-slate-600">
@@ -716,13 +674,6 @@ export default function DiscoverPageClient() {
                               {player.displayName}
                             </h3>
                             
-                            <span
-                              className="discover-badge"
-                              style={{ marginTop: 4, color: '#475569', borderColor: '#e2e8f0', background: '#f8fafc' }}
-                            >
-                              {player.role === "Parent" ? "Parent" : player.role === "Coach" ? "Coach" : "Player"}
-                            </span>
-
                             <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 min-h-[24px]">
                               {player.sports?.slice(0, 2).map((s) => (
                                 <span

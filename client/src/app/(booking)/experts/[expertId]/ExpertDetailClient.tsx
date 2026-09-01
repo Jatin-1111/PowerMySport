@@ -124,7 +124,25 @@ export function ExpertDetailClient() {
         if (!res.data.success || !Array.isArray(res.data.data)) return;
         const deps = res.data.data.filter((p) => p.type === "DEPENDENT");
         setDependents(deps);
-        if (deps.length === 1) setSelectedDependentId(deps[0]._id);
+
+        // One-time handoff from the "Yes, I know the sport" flow: it already
+        // saved the child's profile and points here with which dependent and
+        // issue it was about, so the brief carries forward instead of the
+        // parent having to re-explain it in "What to discuss?".
+        let brief: { dependentId?: string; issueLabel?: string | null } | null = null;
+        try {
+          const raw = localStorage.getItem("pms_expert_brief");
+          if (raw) brief = JSON.parse(raw);
+        } catch {}
+        if (brief?.dependentId && deps.some((d) => d._id === brief!.dependentId)) {
+          setSelectedDependentId(brief.dependentId);
+          setNote((prev) => prev || (brief!.issueLabel ? `Here to help with: ${brief!.issueLabel}` : prev));
+        } else if (deps.length === 1) {
+          setSelectedDependentId(deps[0]._id);
+        }
+        try {
+          localStorage.removeItem("pms_expert_brief");
+        } catch {}
       })
       .catch(() => {});
   }, [user]);

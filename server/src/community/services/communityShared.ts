@@ -169,7 +169,7 @@ export const escapeRegex = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export const MESSAGE_EDIT_DELETE_WINDOW_MS = 30 * 60 * 1000;
-export const COMMUNITY_ALLOWED_ROLES = ["Player", "Coach", "Parent"] as const;
+export const COMMUNITY_ALLOWED_ROLES = ["Parent"] as const;
 export const COMMUNITY_DEFAULT_GROUP_AUDIENCE = "ALL" as const;
 export const COMMUNITY_POINTS = {
   CREATE_POST: 5,
@@ -343,7 +343,7 @@ export const ensureCommunityUser = async (userId: string) => {
     )
   ) {
     throw new Error(
-      "Community is available only for player, coach, and parent accounts",
+      "Community is available only for parent accounts",
     );
   }
 

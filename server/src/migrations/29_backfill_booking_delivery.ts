@@ -19,7 +19,7 @@ import Academy from "../admin/models/Academy";
  * Bookings with a FREELANCE/HYBRID coach and no venue were delivered at the
  * student's address — and that address was never persisted. `playerLocation`
  * was validated at booking time and then discarded. It is genuinely gone.
- *
+ *  
  * This migration does NOT invent a location for those (the coach's base
  * location is where the coach starts from, not where the session happened).
  * It counts them and reports them, and they keep `delivery` unset. Writing a

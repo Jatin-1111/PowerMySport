@@ -7,7 +7,6 @@ import {
   Users,
   MapPin,
   Target,
-  Shield,
   LogIn,
   MessageSquare,
 } from "lucide-react";
@@ -95,14 +94,6 @@ export default function CommunityDetailsModal({
                       {community.name}
                     </h2>
                     <div className="mt-1 flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                        <Shield size={12} />
-                        {community.audience === "PLAYERS_ONLY"
-                          ? "Players Only"
-                          : community.audience === "COACHES_ONLY"
-                            ? "Coaches Only"
-                            : "Public"}
-                      </span>
                       {community.isMember && (
                         <span className="inline-flex shrink-0 items-center rounded-md bg-slate-900 px-2 py-0.5 text-xs font-semibold text-white uppercase tracking-wide">
                           Member

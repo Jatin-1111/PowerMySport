@@ -10,7 +10,7 @@ import {
 export const metadata = buildMetadata({
   title: "Sports Q&A — Ask & Answer Community Questions",
   description:
-    "Ask sports questions and get answers from players, coaches, and parents. Browse advice on coaching, training, equipment, injuries, nutrition, and tournaments.",
+    "Ask sports questions and get answers from parents. Browse advice on coaching, training, equipment, injuries, nutrition, and tournaments.",
   path: "/questions",
 });
 

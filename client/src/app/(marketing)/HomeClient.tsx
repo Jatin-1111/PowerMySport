@@ -145,7 +145,7 @@ export default function HomeClient() {
         variant="home"
         title="Helping Parents Make Confident Sports Decisions"
         titleHighlight="Sports Decisions"
-        description="Powered by AI, personalised by experts and supported by a trusted community—everything you need to guide your child's sporting journey."
+        description="Understand the journey. Learn from parents and experts who've been there. Make better decisions for your child."
         ctaPrompt={
           user?.role === "VenueLister"
             ? undefined
@@ -154,12 +154,12 @@ export default function HomeClient() {
         primaryCTA={
           user?.role === "VenueLister"
             ? { label: "Manage Venues", href: "/venue-lister/inventory" }
-            : { label: "Yes, build their profile", href: "/sport-profile" }
+            : { label: "Yes — Help me Navigate", href: "/sport-profile" }
         }
         secondaryCTA={
           user?.role === "VenueLister"
             ? undefined
-            : { label: "Not yet, help me find one", href: "/assessment/discover" }
+            : { label: "No — Help me find a sport", href: "/assessment/discover" }
         }
       />
 

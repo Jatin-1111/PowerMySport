@@ -155,7 +155,7 @@ export function ChatAddModal({
                 <p className="mb-2 text-[15px] font-semibold text-slate-700">
                   {isGroup
                     ? "Find your community"
-                    : "Connect with players"}
+                    : "Connect with parents"}
                 </p>
                 <p className="mb-6 text-sm text-slate-500 max-w-[280px]">
                   {isGroup

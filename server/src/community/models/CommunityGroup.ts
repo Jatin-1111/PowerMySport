@@ -12,7 +12,7 @@ export type CommunityGroupMemberAddPolicy = "ADMIN_ONLY" | "ANY_MEMBER";
 /** ANY_MEMBER: an ordinary group. ADMIN_ONLY: an announcement channel —
  *  everyone reads, only admins post. */
 export type CommunityGroupPostPolicy = "ANY_MEMBER" | "ADMIN_ONLY";
-export type CommunityGroupAudience = "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+export type CommunityGroupAudience = "ALL";
 
 export interface CommunityGroupDocument extends Document {
   name: string;
@@ -98,7 +98,7 @@ const communityGroupSchema = new Schema<CommunityGroupDocument>(
     },
     audience: {
       type: String,
-      enum: ["ALL", "PLAYERS_ONLY", "COACHES_ONLY"],
+      enum: ["ALL"],
       default: "ALL",
       index: true,
     },

@@ -15,7 +15,7 @@ import {
 export const metadata = buildMetadata({
   title: "Sports Blog — Stories, Tips & Expert Advice",
   description:
-    "Read the PowerMySport community blog: coaching tips, training insights, and expert sports advice written by players, coaches, and parents.",
+    "Read the PowerMySport community blog: coaching tips, training insights, and expert sports advice written by parents.",
   path: "/blog",
 });
 

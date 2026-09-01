@@ -34,17 +34,10 @@ import {
   listAdminIds,
 } from "./communityGroupMembership";
 import {
-  ROLE_LABEL,
-  canJoinGroupAudience,
-  type CommunityGroupAudience,
-} from "./communityPolicy";
-import {
-  COMMUNITY_DEFAULT_GROUP_AUDIENCE,
   assertConversationAccess,
   ensureProfile,
   formatParticipant,
   generateInviteCode,
-  getCommunityRole,
   resolveUserPhotoUrl,
   sendCommunityNotification,
 } from "./communityShared";
@@ -302,7 +295,6 @@ export const CommunityService = {
 
   async joinGroupByCode(userId: string, inviteCode: string) {
     await ensureProfile(userId);
-    const userRole = await getCommunityRole(userId);
 
     const group = await CommunityGroup.findOne({
       inviteCode: inviteCode.trim(),
@@ -310,18 +302,6 @@ export const CommunityService = {
 
     if (!group) {
       throw new Error("Invalid invite code");
-    }
-
-    const groupAudience =
-      (group.audience as CommunityGroupAudience | undefined) ||
-      COMMUNITY_DEFAULT_GROUP_AUDIENCE;
-    if (!canJoinGroupAudience(groupAudience, userRole)) {
-      const userRoleLabel = ROLE_LABEL[userRole] || userRole;
-      const audienceLabel =
-        groupAudience === "PLAYERS_ONLY" ? "players" : "coaches";
-      throw new Error(
-        `This group is for ${audienceLabel} only. As a ${userRoleLabel}, you cannot join this group.`,
-      );
     }
 
     const groupId = String(group._id);

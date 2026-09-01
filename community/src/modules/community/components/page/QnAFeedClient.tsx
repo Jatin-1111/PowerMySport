@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import QuoteOfTheDay from "@/modules/community/components/page/QuoteOfTheDay";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -779,7 +778,7 @@ export default function QnAFeedClient() {
             className="pointer-events-none absolute -bottom-24 left-0 h-64 w-64 rounded-full bg-amber-200/30 blur-3xl"
           />
 
-          <div className="relative grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.78fr)] lg:gap-9">
+          <div className="relative">
             <div>
               <p className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-600">
                 <Sparkles
@@ -798,7 +797,7 @@ export default function QnAFeedClient() {
               </h1>
               <p className="mt-3 max-w-xl text-sm leading-6 text-slate-700">
                 Post what you are stuck on and get practical answers from
-                players, parents, and coaches who have solved it before.
+                parents who have solved it before.
               </p>
 
               <div className="mt-5 flex flex-wrap items-center gap-2.5">
@@ -832,8 +831,6 @@ export default function QnAFeedClient() {
                 </Link>
               </div>
             </div>
-
-            <QuoteOfTheDay />
           </div>
         </motion.section>
 

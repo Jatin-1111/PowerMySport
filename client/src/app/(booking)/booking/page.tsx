@@ -23,7 +23,10 @@ type Tab = "venues" | "coaches" | "academies" | "experts";
 // appears only once they are actually bookable.
 const isExpertsLive = process.env.NEXT_PUBLIC_EXPERTS_IS_LIVE === "true";
 
-const TABS: {
+// Venues/Coaches/Academies are hidden for now — Experts is the only bookable
+// category surfaced on this page. Kept here (unused) so restoring them later
+// is a one-line change to ALL_TABS below.
+const ALL_TABS: {
   id: Tab;
   label: string;
   icon: React.FC<{ size?: number; className?: string }>;
@@ -53,6 +56,8 @@ const TABS: {
       ]
     : []),
 ];
+
+const TABS = ALL_TABS.filter((t) => t.id === "experts");
 
 function TabBar({
   activeTab,
@@ -109,10 +114,10 @@ function BookingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const rawTab = searchParams.get("tab") || "venues";
-  const activeTab: Tab = TABS.some((t) => t.id === rawTab)
-    ? (rawTab as Tab)
-    : "venues";
+  // Venues/Coaches/Academies are hidden for now — Experts is the only bookable
+  // category surfaced here. TABS/TabBar stay intact underneath so this is a
+  // one-line revert when the others come back.
+  const activeTab: Tab = "experts";
 
   const handleTabChange = (tab: Tab) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -141,16 +146,12 @@ function BookingPageContent() {
                   textWrap: "balance",
                 }}
               >
-                Book courts,{" "}
-                <span className="text-power-orange">
-                  {isExpertsLive ? "coaches," : "coaches &"}
-                </span>{" "}
-                {isExpertsLive ? "academies & experts." : "academies."}
+                Book 1:1 sessions with{" "}
+                <span className="text-power-orange">verified experts.</span>
               </h1>
               <p className="mt-4 max-w-md text-[15px] leading-relaxed text-slate-500">
-                Verified venues, certified coaches, structured academies
-                {isExpertsLive ? ", and 1:1 sessions with verified experts —" : ""}{" "}
-                all bookable in minutes across India.
+                Get personalised guidance from verified sports experts —
+                bookable in minutes across India.
               </p>
             </div>
 
@@ -183,10 +184,7 @@ function BookingPageContent() {
         id={`tabpanel-${activeTab}`}
         aria-labelledby={`tab-${activeTab}`}
       >
-        {activeTab === "venues" && <VenuesTab />}
-        {activeTab === "coaches" && <CoachesTab />}
-        {activeTab === "academies" && <AcademiesTab />}
-        {activeTab === "experts" && <ExpertsTab />}
+        <ExpertsTab />
       </div>
     </div>
   );
