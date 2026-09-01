@@ -21,27 +21,39 @@ function getDailyLimitKey(userId: string): string {
 }
 
 export async function getDailyMessageCount(userId: string): Promise<number> {
-  const val = await redis.get(getDailyLimitKey(userId));
-  return val ? parseInt(val, 10) : 0;
+  try {
+    const val = await redis.get(getDailyLimitKey(userId));
+    return val ? parseInt(val, 10) : 0;
+  } catch {
+    return 0; // fail open — Redis being down shouldn't block a cap-status read
+  }
 }
 
 /** Atomically reserves one message slot for today. Returns the new count. */
 export async function incrementDailyMessageCount(
   userId: string,
 ): Promise<number> {
-  const key = getDailyLimitKey(userId);
-  const count = await redis.incr(key);
-  if (count === 1) {
-    await redis.expire(key, 60 * 60 * 48); // safety cleanup; the date in the key already rotates daily
+  try {
+    const key = getDailyLimitKey(userId);
+    const count = await redis.incr(key);
+    if (count === 1) {
+      await redis.expire(key, 60 * 60 * 48); // safety cleanup; the date in the key already rotates daily
+    }
+    return count;
+  } catch {
+    return 1; // fail open — Redis being down shouldn't block AI chat
   }
-  return count;
 }
 
 /** Releases a reserved slot — used when a reserved message ends up not counting (over cap, or the AI call failed). */
 export async function decrementDailyMessageCount(
   userId: string,
 ): Promise<void> {
-  await redis.decr(getDailyLimitKey(userId));
+  try {
+    await redis.decr(getDailyLimitKey(userId));
+  } catch {
+    // fail open
+  }
 }
 
 // ─── Shared daily + lifetime cap check ────────────────────────────────────────
