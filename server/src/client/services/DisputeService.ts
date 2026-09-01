@@ -29,10 +29,11 @@ export const analyzeDispute = async (
   disputeType: "NO_SHOW" | "POOR_QUALITY" | "PAYMENT_ISSUE" | "OTHER",
   disputeDetails?: string,
 ): Promise<DisputeAnalysis> => {
-  // Independent of each other — both only need `bookingId`.
+  // Independent of each other — both only need `bookingId`. Read-only:
+  // neither is saved anywhere in this file.
   const [booking, review] = await Promise.all([
-    Booking.findById(bookingId),
-    Review.findOne({ bookingId }),
+    Booking.findById(bookingId).lean(),
+    Review.findOne({ bookingId }).lean(),
   ]);
 
   if (!booking) {

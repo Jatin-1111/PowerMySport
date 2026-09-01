@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authMiddleware } from "../../middleware/auth";
 import { validateRequest } from "../../middleware/validation";
 import { cacheResponse } from "../../middleware/cacheMiddleware";
+import { cacheControl } from "../../middleware/cacheControl";
 import {
   coachAttendanceSchema,
   coachEnrollSchema,
@@ -54,7 +55,13 @@ const router = Router();
 // ── public ──────────────────────────────────────────────────────────────────
 // The non-geographic discovery lane. Coach `/discover` is a $geoNear and an
 // online-only coach has no base location, so they can only be found here.
-router.get("/browse", cacheResponse(60), browseOfferingsHandler);
+// public: never reads req.user or embeds a per-viewer field.
+router.get(
+  "/browse",
+  cacheControl(60, "public"),
+  cacheResponse(60),
+  browseOfferingsHandler,
+);
 
 // ── student ─────────────────────────────────────────────────────────────────
 router.get("/my/enrollments", authMiddleware, myEnrollmentsHandler);

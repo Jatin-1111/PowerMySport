@@ -133,6 +133,10 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
 );
 
 guidanceSubmissionSchema.index({ createdAt: -1 });
+// Backs getGuidanceHistory's {userId} + sort {createdAt:-1} — the index
+// above has no userId prefix, so that per-user history list couldn't use it
+// at all. Production has autoIndex off, so this also needs migration 35.
+guidanceSubmissionSchema.index({ userId: 1, createdAt: -1 });
 
 export const GuidanceSubmission = mongoose.model<GuidanceSubmissionDocument>(
   "GuidanceSubmission",

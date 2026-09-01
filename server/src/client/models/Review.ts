@@ -126,7 +126,10 @@ const reviewSchema = new Schema<ReviewDocument>(
 // Indexes
 reviewSchema.index({ targetType: 1, targetId: 1, createdAt: -1 });
 reviewSchema.index({ userId: 1 });
-reviewSchema.index({ moderationStatus: 1, reportCount: -1 });
+// Backs getFlaggedReviews' moderation queue — {moderationStatus:$in} + sort
+// {reportCount:-1, createdAt:-1}. The index above has no createdAt tiebreak.
+// Production has autoIndex off, so this also needs migration 35.
+reviewSchema.index({ moderationStatus: 1, reportCount: -1, createdAt: -1 });
 // Allow multiple reviews per booking (one for venue, one for coach)
 reviewSchema.index(
   { bookingId: 1, targetType: 1, userId: 1 },

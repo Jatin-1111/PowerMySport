@@ -58,6 +58,12 @@ const planCheckInSchema = new Schema<PlanCheckInDocument>(
 
 planCheckInSchema.index({ userId: 1, status: 1, createdAt: -1 });
 
+// Backs listPlanCheckIns' "active/due" sort — filter {userId, status:{$in:[...]}}
+// sort {checkInDueAt:1}. The index above doesn't cover checkInDueAt at all,
+// so that sort had no supporting index. Production has autoIndex off, so
+// this also needs migration 35.
+planCheckInSchema.index({ userId: 1, status: 1, checkInDueAt: 1 });
+
 export const PlanCheckIn = mongoose.model<PlanCheckInDocument>(
   "PlanCheckIn",
   planCheckInSchema,

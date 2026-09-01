@@ -36,6 +36,16 @@ const ScreeningRequestSchema = new Schema<ScreeningRequestDocument>(
   { timestamps: true }
 );
 
+// Backs getMyScreeningRequests' {parentId} + sort {createdAt:-1}.
+ScreeningRequestSchema.index({ parentId: 1, createdAt: -1 });
+// Backs getScreeningRequests' admin list — {status?} + sort {createdAt:-1}.
+// Two variants since `status` is an optional filter there: an unconstrained
+// middle field blocks a compound index from serving the sort, so "all
+// statuses" needs its own index rather than a prefix of the filtered one.
+// Production has autoIndex off, so these also need migration 35.
+ScreeningRequestSchema.index({ createdAt: -1 });
+ScreeningRequestSchema.index({ status: 1, createdAt: -1 });
+
 export const ScreeningRequest = mongoose.model<ScreeningRequestDocument>(
   "ScreeningRequest",
   ScreeningRequestSchema

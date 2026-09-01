@@ -7,6 +7,7 @@ import {
 } from "../../middleware/auth";
 import * as expert from "../controllers/expertsController";
 import { cacheResponse } from "../../middleware/cacheMiddleware";
+import { cacheControl } from "../../middleware/cacheControl";
 
 const router = Router();
 
@@ -165,9 +166,22 @@ router.post(
 
 // ── Public discovery + booking ───────────────────────────────────────────────
 // public/guest-safe, same pattern as the detail route just below.
-router.get("/", optionalAuthMiddleware, cacheResponse(60), expert.getExperts);
+// public: getExperts never reads req.user despite optionalAuthMiddleware
+// being mounted here — nothing in its response varies per viewer.
+router.get(
+  "/",
+  optionalAuthMiddleware,
+  cacheControl(60, "public"),
+  cacheResponse(60),
+  expert.getExperts,
+);
 // Public expert detail — 60s Redis cache, same pattern as venues/coaches.
-router.get("/:expertId", cacheResponse(60), expert.getExpert);
+router.get(
+  "/:expertId",
+  cacheControl(60, "public"),
+  cacheResponse(60),
+  expert.getExpert,
+);
 router.get("/:expertId/reviews", expert.getReviews);
 router.get("/:expertId/availability", expert.getAvailability);
 router.post(

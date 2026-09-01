@@ -113,6 +113,10 @@ const scheduledNotificationSchema = new Schema<ScheduledNotificationDocument>(
 scheduledNotificationSchema.index({ status: 1, scheduledFor: 1 });
 scheduledNotificationSchema.index({ bookingId: 1, interval: 1 });
 scheduledNotificationSchema.index({ userId: 1, type: 1, status: 1 });
+// Backs getUserUpcomingReminders' {userId, status:"PENDING", scheduledFor:{$gt}}
+// + sort {scheduledFor:1} — none of the indexes above cover userId+scheduledFor
+// together. Production has autoIndex off, so this also needs migration 35.
+scheduledNotificationSchema.index({ userId: 1, status: 1, scheduledFor: 1 });
 
 // TTL index to auto-delete old sent notifications after 30 days
 scheduledNotificationSchema.index(

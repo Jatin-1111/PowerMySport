@@ -234,7 +234,12 @@ export const getCoach = async (req: Request, res: Response): Promise<void> => {
   try {
     const coachId = (req.params as Record<string, unknown>).coachId as string;
 
-    const coach = await getCoachById(coachId);
+    // Public, unauthenticated endpoint — only the fields an actual coach
+    // card renders. This used to populate the entire User document
+    // (including email/phone) into every response here.
+    const coach = await getCoachById(coachId, {
+      populateUserFields: "name photoUrl",
+    });
 
     if (!coach) {
       res.status(404).json({
@@ -288,7 +293,11 @@ export const getMyCoachProfile = async (
       return;
     }
 
-    const coach = await getCoachByUserId(req.user.id);
+    // Self-view — matches the known-good field set already used elsewhere
+    // in this service for a coach's own profile.
+    const coach = await getCoachByUserId(req.user.id, {
+      populateUserFields: "name photoUrl email",
+    });
 
     if (!coach) {
       res.status(404).json({

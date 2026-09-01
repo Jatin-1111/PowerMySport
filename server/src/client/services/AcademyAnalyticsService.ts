@@ -66,10 +66,20 @@ export const getAcademyEarnings = async (
     status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
   };
 
+  // completedBookings/pendingBookings are unbounded (every booking ever, for
+  // every venue/coach the academy owns) and only ever read `payments`,
+  // `totalAmount`, `date`, `sport` below — projecting cuts the document size
+  // pulled into memory on every earnings-dashboard load. recentBookings is
+  // already capped at 10 and renders broader fields in the API response, so
+  // it's left unprojected.
   const [completedBookings, pendingBookings, recentBookings] =
     await Promise.all([
-      Booking.find(completedQuery).lean(),
-      Booking.find(pendingQuery).lean(),
+      Booking.find(completedQuery)
+        .select("payments totalAmount date sport status")
+        .lean(),
+      Booking.find(pendingQuery)
+        .select("payments totalAmount date sport status")
+        .lean(),
       Booking.find(completedQuery)
         .sort({ date: -1 })
         .limit(10)

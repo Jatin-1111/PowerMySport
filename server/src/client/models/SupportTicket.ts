@@ -126,6 +126,14 @@ const supportTicketSchema = new Schema<SupportTicketDocument>(
 supportTicketSchema.index({ createdAt: -1 });
 supportTicketSchema.index({ status: 1, priority: -1, updatedAt: -1 });
 
+// Backs getMySupportTickets' "my tickets" list — {userId, status?} + sort
+// {updatedAt:-1}. Neither index above has a userId prefix. Two variants
+// since `status` is an optional filter there — an unconstrained middle
+// field blocks a compound index from serving the sort. Production has
+// autoIndex off, so these also need migration 35.
+supportTicketSchema.index({ userId: 1, updatedAt: -1 });
+supportTicketSchema.index({ userId: 1, status: 1, updatedAt: -1 });
+
 export const SupportTicket = mongoose.model<SupportTicketDocument>(
   "SupportTicket",
   supportTicketSchema,

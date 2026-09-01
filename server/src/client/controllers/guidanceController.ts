@@ -250,8 +250,11 @@ export const getGuidanceHistory = async (
       return;
     }
 
+    // Unbounded by construction — capped defensively since this can grow
+    // over an account's lifetime and nothing else limits it.
     const history = await GuidanceSubmission.find({ userId: req.user.id })
       .sort({ createdAt: -1 })
+      .limit(100)
       .lean();
 
     res.status(200).json({
@@ -827,13 +830,14 @@ export const recommendSport = async (
 
     // Step A: Rule-based ranking
 
-    // 1. Get all verified sports (the full catalog)
-    const allSports = await Sport.find({ isVerified: true }).lean();
-
-    // 2. Every published pathway guide — one document per sport.
-    const publishedGuides = await PathwayGuide.find({ status: "published" })
-      .select("sportSlug sportIntro stages")
-      .lean();
+    // 1. Get all verified sports (the full catalog), and 2. every published
+    // pathway guide (one document per sport) — independent of each other.
+    const [allSports, publishedGuides] = await Promise.all([
+      Sport.find({ isVerified: true }).lean(),
+      PathwayGuide.find({ status: "published" })
+        .select("sportSlug sportIntro stages")
+        .lean(),
+    ]);
 
     // 3. Keyed by sport. This used to pick a state overlay over the national
     //    guide; there is one guide per sport now, so the lookup is direct.

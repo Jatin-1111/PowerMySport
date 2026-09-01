@@ -235,10 +235,21 @@ const bookingEventSchema = new Schema<BookingEventDocument>(
   },
 );
 
-// The main read pattern: one booking's full timeline, oldest first.
+// The main read pattern: one booking's full timeline, oldest first. Sorted
+// {occurredAt:1, createdAt:1} by both timeline queries below — createdAt is
+// the tiebreak for same-instant events, so it's part of the index too, not
+// just occurredAt. Production has autoIndex off, so this also needs
+// migration 35.
 bookingEventSchema.index(
-  { subjectType: 1, subjectId: 1, occurredAt: 1 },
+  { subjectType: 1, subjectId: 1, occurredAt: 1, createdAt: 1 },
   { name: "event_subject_timeline" },
+);
+// Support-tooling lookup when the caller has an id but not its subjectType
+// (getBookingEventTimelineByIdAcrossSubjects) — the index above requires
+// subjectType as its leading key, so it can't serve a subjectId-only filter.
+bookingEventSchema.index(
+  { subjectId: 1, occurredAt: 1, createdAt: 1 },
+  { name: "event_subject_id_timeline" },
 );
 
 // Operational slices: "all academy cancellations last month", "refund events

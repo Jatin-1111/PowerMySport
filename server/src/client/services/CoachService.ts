@@ -549,16 +549,31 @@ export const checkCoachAvailability = async (
 };
 
 /**
- * Get coach by ID
+ * Get coach by ID.
+ *
+ * `populateUserFields` is opt-in and off by default. An audit of every call
+ * site found 10 of 12 never read the populated `userId` document at all —
+ * they only need the Coach document itself, or already defensively handle
+ * `userId` as a raw (unpopulated) ObjectId. Populating unconditionally meant
+ * every one of those paid for a full `User` lookup and hydration for
+ * nothing; worse, the public coach-detail endpoint was serving the caller's
+ * *entire* User document (including email/phone) to unauthenticated
+ * requests. Pass the field string explicitly for the two call sites that
+ * actually render user fields.
  */
 export const getCoachById = async (
   coachId: string,
+  options?: { populateUserFields?: string },
 ): Promise<CoachDocument | null> => {
   // Validate coachId
   if (!coachId || coachId === "undefined") {
     return null;
   }
-  const coach = await Coach.findById(coachId).populate("userId");
+  const query = Coach.findById(coachId);
+  if (options?.populateUserFields) {
+    query.populate("userId", options.populateUserFields);
+  }
+  const coach = await query;
   if (!coach) {
     return null;
   }
@@ -567,12 +582,18 @@ export const getCoachById = async (
 };
 
 /**
- * Get coach by user ID
+ * Get coach by user ID. See getCoachById for why `populateUserFields` is
+ * opt-in.
  */
 export const getCoachByUserId = async (
   userId: string,
+  options?: { populateUserFields?: string },
 ): Promise<CoachDocument | null> => {
-  const coach = await Coach.findOne({ userId }).populate("userId");
+  const query = Coach.findOne({ userId });
+  if (options?.populateUserFields) {
+    query.populate("userId", options.populateUserFields);
+  }
+  const coach = await query;
   if (!coach) {
     return null;
   }

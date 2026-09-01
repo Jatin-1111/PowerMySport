@@ -51,11 +51,18 @@ import {
   getCoachAnalyticsHandler,
 } from "../controllers/coachAnalyticsController";
 import { cacheResponse } from "../../middleware/cacheMiddleware";
+import { cacheControl } from "../../middleware/cacheControl";
 
 const router = Router();
 
-// Discovery endpoint (public) - returns coaches only
-router.get("/discover", cacheResponse(60), discoverCoachesNearby);
+// Discovery endpoint (public) - returns coaches only. public: never reads
+// req.user or embeds a per-viewer field.
+router.get(
+  "/discover",
+  cacheControl(60, "public"),
+  cacheResponse(60),
+  discoverCoachesNearby,
+);
 
 // Create coach profile (requires authentication and COACH role)
 router.post("/", authMiddleware, createNewCoach);
@@ -222,7 +229,8 @@ router.get("/availability/:coachId", getCoachAvailability);
 router.get("/:coachId/subscription-packages", getCoachPublicPackagesHandler);
 
 // Get coach by ID (public) — 60s Redis cache, same pattern as /discover.
-router.get("/:coachId", cacheResponse(60), getCoach);
+// public: never reads req.user or embeds a per-viewer field.
+router.get("/:coachId", cacheControl(60, "public"), cacheResponse(60), getCoach);
 
 // Update coach profile
 router.put("/:coachId", authMiddleware, updateCoachProfile);

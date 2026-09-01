@@ -165,7 +165,13 @@ expertSchema.pre("save", function () {
   }
 });
 
-expertSchema.index({ isActive: 1, rating: -1 });
+// Backs listActiveExperts' public discovery sort — {isActive:true, sport?}
+// + sort {rating:-1, createdAt:-1}. Replaces the old 2-field index with a
+// createdAt tiebreak, since `isActive` is always an equality filter here
+// (unlike `sport`, which is optional and just residually filtered). A
+// query without `sport` can still use this index for the isActive+sort
+// portion. Production has autoIndex off, so this also needs migration 35.
+expertSchema.index({ isActive: 1, rating: -1, createdAt: -1 });
 // Text index to support server-side search across name-adjacent fields.
 expertSchema.index({
   bio: "text",

@@ -337,19 +337,19 @@ export const getFlaggedReviews = async (
   totalPages: number;
 }> => {
   const skip = (page - 1) * limit;
+  const query = { moderationStatus: { $in: ["FLAGGED", "PENDING"] } };
 
-  const total = await Review.countDocuments({
-    moderationStatus: { $in: ["FLAGGED", "PENDING"] },
-  });
-
-  const reviews = await Review.find({
-    moderationStatus: { $in: ["FLAGGED", "PENDING"] },
-  })
-    .populate("userId", "name email")
-    .populate("targetId", "name")
-    .sort({ reportCount: -1, createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
+  // Independent reads — no data dependency between the count and the page.
+  const [total, reviews] = await Promise.all([
+    Review.countDocuments(query),
+    Review.find(query)
+      .populate("userId", "name email")
+      .populate("targetId", "name")
+      .sort({ reportCount: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+  ]);
 
   return {
     reviews,
