@@ -93,7 +93,7 @@ const resolveUserPhotoUrl = async (user?: {
     return user.photoUrl || null;
   }
   try {
-    return await s3Service.generateDownloadUrl(
+    return await s3Service.generateCachedDownloadUrl(
       user.photoS3Key,
       "images",
       604800,
@@ -110,7 +110,7 @@ const resolveBlogImageUrl = async (
 ): Promise<string | null> => {
   if (!key) return null;
   try {
-    return await s3Service.generateDownloadUrl(key, "images", 604800);
+    return await s3Service.generateCachedDownloadUrl(key, "images", 604800);
   } catch (error) {
     log.error("Failed to resolve blog image URL:", error);
     return null;
@@ -470,6 +470,9 @@ export const BlogService = {
 
     const [posts, total] = await Promise.all([
       BlogPost.find(query)
+        .select(
+          "title excerpt coverImageKey topic tags status likeCount commentCount viewCount createdAt authorId",
+        )
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(safeLimit)
@@ -557,13 +560,13 @@ export const BlogService = {
       BlogPost.updateOne({ _id: id }, { $inc: { viewCount: 1 } }).catch(() => {});
     }
 
-    const { buildAuthor } = await buildAuthorMaps([post.authorId]);
-    const likedSet = await this.buildLikedSet(userId, "BLOG", [
-      String(post._id),
-    ]);
-
-    const coverImageUrl = await resolveBlogImageUrl(post.coverImageKey);
-    const content = await resolveContentImageUrls(toContentHtml(post.content));
+    const [{ buildAuthor }, likedSet, coverImageUrl, content] =
+      await Promise.all([
+        buildAuthorMaps([post.authorId]),
+        this.buildLikedSet(userId, "BLOG", [String(post._id)]),
+        resolveBlogImageUrl(post.coverImageKey),
+        resolveContentImageUrls(toContentHtml(post.content)),
+      ]);
 
     return {
       id: String(post._id),
@@ -772,6 +775,12 @@ export const BlogService = {
       }),
     ]);
 
+    // No per-parent cap here — this is a single safety ceiling across the
+    // whole page of top-level comments, so one pathologically long thread
+    // cannot make a comment page unbounded. Ordinary threads never get near
+    // it; a thread that does is truncated to its oldest replies rather than
+    // failing the request.
+    const MAX_REPLIES_PER_PAGE = 500;
     const topIds = topLevel.map((comment) => comment._id);
     const replies = topIds.length
       ? await BlogComment.find({
@@ -779,6 +788,7 @@ export const BlogService = {
           isDeleted: false,
         })
           .sort({ createdAt: 1 })
+          .limit(MAX_REPLIES_PER_PAGE)
           .lean()
       : [];
 

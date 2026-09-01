@@ -46,7 +46,12 @@ const communityAnswerSchema = new Schema<CommunityAnswerDocument>(
 );
 
 communityAnswerSchema.index({ postId: 1, createdAt: 1 });
-communityAnswerSchema.index({ postId: 1, voteScore: -1, createdAt: -1 });
+// getPostDetails sorts the non-accepted answers { voteScore: -1, createdAt: 1 }
+// (oldest first when tied) — direction must match the query exactly or be its
+// exact reverse on every field, so this mirrors that rather than the query's
+// old { createdAt: -1 }. Production has autoIndex off, so also needs
+// migration 32.
+communityAnswerSchema.index({ postId: 1, voteScore: -1, createdAt: 1 });
 
 export const CommunityAnswer = mongoose.model<CommunityAnswerDocument>(
   "CommunityAnswer",

@@ -82,6 +82,7 @@ export const communitySearchService = {
               },
               { score: { $meta: "textScore" } },
             )
+              .select("title body sport tags answerCount acceptedAnswerId createdAt")
               .sort({ score: { $meta: "textScore" } })
               .limit(perSide)
               .lean(),
@@ -97,6 +98,10 @@ export const communitySearchService = {
               },
               { score: { $meta: "textScore" } },
             )
+              // `content` is only needed as a snippet fallback when `excerpt`
+              // is empty — still projected, but everything else unused by
+              // the search response (likeCount, coverImageKey, etc.) is not.
+              .select("title excerpt content tags createdAt")
               .sort({ score: { $meta: "textScore" } })
               .limit(perSide)
               .lean(),

@@ -193,7 +193,7 @@ export const resolveUserPhotoUrl = async (user?: {
   }
 
   try {
-    return await s3Service.generateDownloadUrl(
+    return await s3Service.generateCachedDownloadUrl(
       user.photoS3Key,
       "images",
       604800,
@@ -213,7 +213,7 @@ export const resolveGroupPhotoUrl = async (group: {
   }
 
   try {
-    return await s3Service.generateDownloadUrl(
+    return await s3Service.generateCachedDownloadUrl(
       group.profilePictureKey,
       "images",
       604800,
@@ -392,8 +392,13 @@ export const ensureProfile = async (userId: string) => {
  * the JWT signature — it never checks that the user still exists or that their
  * role can use the community. A stale token (deleted account, token minted
  * against another database) or a non-community role (Admin, VenueLister,
- * Expert…) would otherwise make ensureProfile throw and blank out a page that
- * is meant to render for guests. Downgrade those viewers to guest instead.
+ * Expert…) would otherwise make ensureCommunityUser throw and blank out a page
+ * that is meant to render for guests. Downgrade those viewers to guest instead.
+ *
+ * This only needs to know whether the viewer *may* use the community — callers
+ * use the returned id for read-only lookups (blocks, liked posts), never the
+ * profile document itself — so it deliberately avoids ensureProfile's
+ * upsert-write. That write only needs to happen on an actual mutation path.
  */
 export const resolvePublicViewerId = async (
   userId: string | undefined,
@@ -403,7 +408,7 @@ export const resolvePublicViewerId = async (
   }
 
   try {
-    await ensureProfile(userId);
+    await ensureCommunityUser(userId);
     return userId;
   } catch {
     return undefined;
@@ -436,7 +441,9 @@ export const assertConversationAccess = async (
   userId: string,
   conversationId: string,
 ) => {
-  const conversation = await CommunityConversation.findById(conversationId);
+  const conversation = await CommunityConversation.findById(conversationId)
+    .select("participants")
+    .lean();
   if (!conversation) {
     throw new Error("Conversation not found");
   }

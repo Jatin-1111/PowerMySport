@@ -789,14 +789,19 @@ export const getGroupMembers = async (
 ): Promise<void> => {
   try {
     const groupId = req.params.groupId as string;
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 200));
     const data = await CommunityService.getGroupMembers(
       getUserId(req),
       groupId,
+      page,
+      limit,
     );
     res.status(200).json({
       success: true,
       message: "Group members fetched",
-      data,
+      data: data.items,
+      pagination: data.pagination,
     });
   } catch (error) {
     handleError(res, error, "Failed to fetch group members");

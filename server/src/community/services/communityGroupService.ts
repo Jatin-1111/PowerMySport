@@ -73,6 +73,9 @@ export const communityGroupService = {
       : { visibility: discoverable };
 
     const groups = await CommunityGroup.find(filter)
+      .select(
+        "name description visibility audience sport city createdBy profilePicture profilePictureKey memberCount memberAddPolicy",
+      )
       .sort({ updatedAt: -1 })
       .limit(safeLimit)
       .lean();
@@ -292,7 +295,9 @@ export const communityGroupService = {
 
     const userRole = await getCommunityRole(userId);
 
-    const group = await CommunityGroup.findById(groupId);
+    const group = await CommunityGroup.findById(groupId)
+      .select("audience visibility createdBy name")
+      .lean();
     if (!group) {
       throw new Error("Group not found");
     }
@@ -372,7 +377,9 @@ export const communityGroupService = {
   async deleteGroup(userId: string, groupId: string) {
     await ensureProfile(userId);
 
-    const group = await CommunityGroup.findById(groupId);
+    const group = await CommunityGroup.findById(groupId)
+      .select("createdBy")
+      .lean();
     if (!group) {
       throw new Error("Group not found");
     }
@@ -409,7 +416,9 @@ export const communityGroupService = {
   async leaveGroup(userId: string, groupId: string) {
     await ensureProfile(userId);
 
-    const group = await CommunityGroup.findById(groupId);
+    const group = await CommunityGroup.findById(groupId)
+      .select("name")
+      .lean();
     if (!group) {
       throw new Error("Group not found");
     }
@@ -484,7 +493,9 @@ export const communityGroupService = {
       throw new Error("Use join group to add yourself");
     }
 
-    const group = await CommunityGroup.findById(groupId);
+    const group = await CommunityGroup.findById(groupId)
+      .select("audience createdBy memberAddPolicy name")
+      .lean();
     if (!group) {
       throw new Error("Group not found");
     }

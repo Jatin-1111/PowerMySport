@@ -267,38 +267,33 @@ export const communityQnaService = {
   ) {
     userId = await resolvePublicViewerId(userId);
 
-    const post = await CommunityPost.findOne({ _id: postId, isDeleted: false });
+    const post = await CommunityPost.findOne({
+      _id: postId,
+      isDeleted: false,
+    }).lean();
     if (!post) {
       throw new Error("post not found");
     }
 
-    await CommunityPost.updateOne(
+    // Fire-and-forget view increment — don't block the read on it.
+    CommunityPost.updateOne(
       { _id: post._id },
       { $inc: { viewCount: 1 } },
-    );
+    ).catch(() => {});
 
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(100, Math.max(1, limit));
     const skip = (safePage - 1) * safeLimit;
 
-    const [answers, answerTotal, postAuthor, postAuthorProfile, myPostVote] =
+    const [acceptedAnswer, answerTotal, postAuthor, postAuthorProfile, myPostVote] =
       await Promise.all([
-        // Aggregate rather than find(): the accepted answer has to sort first
-        // on every page, not just be moved to the top of page one — otherwise
-        // it disappears below the fold on a thread with 20+ answers.
-        CommunityAnswer.aggregate([
-          { $match: { postId: post._id, isDeleted: false } },
-          {
-            $addFields: {
-              isAccepted: {
-                $eq: ["$_id", post.acceptedAnswerId || null],
-              },
-            },
-          },
-          { $sort: { isAccepted: -1, voteScore: -1, createdAt: 1 } },
-          { $skip: skip },
-          { $limit: safeLimit },
-        ]),
+        post.acceptedAnswerId
+          ? CommunityAnswer.findOne({
+              _id: post.acceptedAnswerId,
+              postId: post._id,
+              isDeleted: false,
+            }).lean()
+          : Promise.resolve(null),
         CommunityAnswer.countDocuments({ postId: post._id, isDeleted: false }),
         User.findById(post.authorId)
           .select("_id name photoUrl photoS3Key role")
@@ -316,6 +311,38 @@ export const communityQnaService = {
               .lean()
           : Promise.resolve(null),
       ]);
+
+    // The accepted answer is pinned to the very front of the thread. That
+    // used to be `$addFields: { isAccepted }` + `$sort` inside an aggregate —
+    // sorting on a field computed per-document, which no index (including
+    // the existing {postId, voteScore, createdAt} one) can back, forcing an
+    // in-memory sort of the whole thread on every request. Fetching it
+    // separately by _id (already indexed) lets the remainder use that index
+    // for its own sort instead.
+    const showAcceptedThisPage = safePage === 1 && Boolean(acceptedAnswer);
+    const restFilter: Record<string, unknown> = {
+      postId: post._id,
+      isDeleted: false,
+    };
+    if (acceptedAnswer) {
+      restFilter._id = { $ne: acceptedAnswer._id };
+    }
+    const restSkip = showAcceptedThisPage ? 0 : acceptedAnswer ? skip - 1 : skip;
+    const restLimit = showAcceptedThisPage
+      ? Math.max(0, safeLimit - 1)
+      : safeLimit;
+
+    const restAnswers = restLimit
+      ? await CommunityAnswer.find(restFilter)
+          .sort({ voteScore: -1, createdAt: 1 })
+          .skip(restSkip)
+          .limit(restLimit)
+          .lean()
+      : [];
+
+    const answers = showAcceptedThisPage
+      ? [acceptedAnswer as NonNullable<typeof acceptedAnswer>, ...restAnswers]
+      : restAnswers;
 
     const answerAuthorIds = answers.map((item) => String(item.authorId));
     const [answerUsers, answerProfiles, answerVotes] = await Promise.all([
@@ -357,12 +384,17 @@ export const communityQnaService = {
     const isPostAnon = post.isAnonymous && !isPostAuthorSelf;
 
     // Fetched for the whole page at once — a request per answer would be 20
-    // round-trips on a busy thread, and comments are small.
+    // round-trips on a busy thread, and comments are small. Capped as a
+    // safety ceiling: unlike the answers themselves, comments here have no
+    // per-answer pagination, so one heavily-commented answer on the page
+    // could otherwise make the response unbounded.
+    const MAX_ANSWER_COMMENTS_PER_PAGE = 500;
     const comments = await CommunityAnswerComment.find({
       answerId: { $in: answers.map((item) => item._id) },
       isDeleted: false,
     })
       .sort({ createdAt: 1 })
+      .limit(MAX_ANSWER_COMMENTS_PER_PAGE)
       .lean();
 
     const commentAuthorIds = comments.map((item) => String(item.authorId));

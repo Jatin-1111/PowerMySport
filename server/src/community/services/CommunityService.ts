@@ -233,7 +233,12 @@ export const CommunityService = {
     );
   },
 
-  async getGroupMembers(userId: string, groupId: string) {
+  async getGroupMembers(
+    userId: string,
+    groupId: string,
+    page = 1,
+    limit = 200,
+  ) {
     await ensureProfile(userId);
 
     const group = await CommunityGroup.findById(groupId).select("_id").lean();
@@ -245,10 +250,19 @@ export const CommunityService = {
       throw new Error("Access denied");
     }
 
-    const memberRows = await CommunityGroupMember.find({ groupId })
-      .select("userId role")
-      .sort({ createdAt: 1 })
-      .lean();
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(500, Math.max(1, limit));
+    const skip = (safePage - 1) * safeLimit;
+
+    const [memberRows, total] = await Promise.all([
+      CommunityGroupMember.find({ groupId })
+        .select("userId role")
+        .sort({ createdAt: 1 })
+        .skip(skip)
+        .limit(safeLimit)
+        .lean(),
+      CommunityGroupMember.countDocuments({ groupId }),
+    ]);
 
     const memberIds = memberRows.map((row) => String(row.userId));
 
@@ -268,7 +282,7 @@ export const CommunityService = {
       memberProfiles.map((profile) => [String(profile.userId), profile]),
     );
 
-    return Promise.all(
+    const items = await Promise.all(
       memberRows.map(async (row) => {
         const memberId = String(row.userId);
         const member = userMap.get(memberId);
@@ -291,6 +305,15 @@ export const CommunityService = {
         };
       }),
     );
+
+    return {
+      items,
+      pagination: {
+        total,
+        page: safePage,
+        totalPages: Math.ceil(total / safeLimit) || 0,
+      },
+    };
   },
 
   async joinGroupByCode(userId: string, inviteCode: string) {
@@ -298,7 +321,9 @@ export const CommunityService = {
 
     const group = await CommunityGroup.findOne({
       inviteCode: inviteCode.trim(),
-    });
+    })
+      .select("createdBy name")
+      .lean();
 
     if (!group) {
       throw new Error("Invalid invite code");

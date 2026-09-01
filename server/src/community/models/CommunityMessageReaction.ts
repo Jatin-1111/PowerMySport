@@ -52,13 +52,15 @@ const communityMessageReactionSchema =
   );
 
 // One reaction per person per message: reacting again replaces, never stacks.
+// Also serves the read path (every reaction on the messages of one page) —
+// a `{messageId:1}`-only query uses this compound index's leading field, so
+// a separate single-field index on `messageId` would be pure write overhead
+// with no read it serves that this doesn't already. Dropped in production by
+// migration 33.
 communityMessageReactionSchema.index(
   { messageId: 1, userId: 1 },
   { unique: true },
 );
-
-// The read path: every reaction on the messages of one page.
-communityMessageReactionSchema.index({ messageId: 1 });
 
 export const CommunityMessageReaction =
   mongoose.model<CommunityMessageReactionDocument>(

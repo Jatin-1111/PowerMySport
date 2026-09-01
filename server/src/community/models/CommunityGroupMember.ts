@@ -49,6 +49,10 @@ communityGroupMemberSchema.index({ groupId: 1, role: 1 });
 // "Which groups is this user in", for the conversation list and discovery.
 communityGroupMemberSchema.index({ userId: 1, createdAt: -1 });
 
+// Backs the paginated member-list sort ({ groupId } filter, createdAt order).
+// Production has autoIndex off, so this also needs migration 31.
+communityGroupMemberSchema.index({ groupId: 1, createdAt: 1 });
+
 export const CommunityGroupMember =
   mongoose.model<CommunityGroupMemberDocument>(
     "CommunityGroupMember",

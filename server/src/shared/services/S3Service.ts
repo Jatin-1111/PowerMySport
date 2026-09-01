@@ -60,7 +60,27 @@ export interface UploadUrlResponse {
   key: string;
 }
 
+/**
+ * Presigned GET URLs for the same object key are re-signed identically on
+ * every call (the signature only depends on key + expiry window, not on who's
+ * asking), so public list endpoints that re-render the same author/group
+ * photo across many rows and many requests were re-doing that signing work
+ * every single time. This cache is `static` (shared across every S3Service
+ * instance — several call sites construct their own) and keyed by
+ * `bucketType:key`, bounded to avoid unbounded growth from one-off keys, and
+ * capped well under the URL's own `expiresIn` so a cached entry is never
+ * served past the point the signature it holds would itself expire.
+ */
+const SIGNED_URL_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const SIGNED_URL_CACHE_MAX_ENTRIES = 5000;
+
+interface CachedSignedUrl {
+  url: string;
+  expiresAt: number;
+}
+
 export class S3Service {
+  private static readonly signedUrlCache = new Map<string, CachedSignedUrl>();
   private documentsBucket: string;
   private imagesBucket: string;
   private region: string;
@@ -709,6 +729,43 @@ export class S3Service {
     });
 
     return await getSignedUrl(this.s3Client, getCommand, { expiresIn });
+  }
+
+  /**
+   * Same as {@link generateDownloadUrl}, but caches the signed URL in-process
+   * for repeat lookups of the same key — meant for public list/detail
+   * endpoints that redraw the same handful of author/group photos across
+   * many rows and many requests (e.g. community feeds, blog lists). Not
+   * intended for one-off or write-path downloads, where the cache only adds
+   * memory with no reuse benefit.
+   */
+  async generateCachedDownloadUrl(
+    key: string,
+    bucketType: "verification" | "images" = "images",
+    expiresIn: number = 3600,
+  ): Promise<string> {
+    const cacheKey = `${bucketType}:${key}:${expiresIn}`;
+    const cached = S3Service.signedUrlCache.get(cacheKey);
+    const now = Date.now();
+    if (cached && cached.expiresAt > now) {
+      return cached.url;
+    }
+
+    const url = await this.generateDownloadUrl(key, bucketType, expiresIn);
+
+    if (S3Service.signedUrlCache.size >= SIGNED_URL_CACHE_MAX_ENTRIES) {
+      const oldestKey = S3Service.signedUrlCache.keys().next().value;
+      if (oldestKey !== undefined) {
+        S3Service.signedUrlCache.delete(oldestKey);
+      }
+    }
+
+    S3Service.signedUrlCache.set(cacheKey, {
+      url,
+      expiresAt: now + Math.min(SIGNED_URL_CACHE_TTL_MS, expiresIn * 1000),
+    });
+
+    return url;
   }
 
   /**

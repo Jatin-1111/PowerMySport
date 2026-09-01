@@ -276,29 +276,72 @@ export const communityChatService = {
     const mode = filters?.mode || "ALL";
     const type = filters?.type || "ALL";
     const normalizedSearch = (filters?.search || "").trim().toLowerCase();
-    const requiresInMemoryFiltering =
-      mode !== "ALL" || normalizedSearch.length > 0;
+    // A group conversation is never a "request" — this combination can only
+    // ever match nothing, so skip the query entirely rather than build a
+    // contradictory filter.
+    if (mode === "REQUESTS" && type === "GROUPS") {
+      return {
+        items: [],
+        pagination: { page: safePage, limit: safeLimit, total: 0, hasMore: false },
+      };
+    }
 
-    const conversationQuery: {
-      participants: string;
-      conversationType?: "GROUP" | { $ne: "GROUP" };
-    } = {
+    // Search matches against the OTHER participant's display name and the
+    // latest message's content — neither is queryable in Mongo without the
+    // same per-conversation joins the response needs anyway, so it still
+    // needs every one of the user's conversations fetched before filtering.
+    // UNREAD and REQUESTS, unlike search, describe fields Mongo can filter on
+    // directly (a message-unread aggregate keyed by conversation id, and the
+    // conversation's own `status`), so those two get pushed into the query
+    // instead of pulling the user's whole inbox through the join pipeline
+    // below just to throw most of it away.
+    const needsFullFetch = normalizedSearch.length > 0;
+
+    const conversationQuery: Record<string, unknown> = {
       participants: userId,
     };
     if (type === "GROUPS") {
       conversationQuery.conversationType = "GROUP";
-    } else if (type === "CONTACTS") {
+    } else if (type === "CONTACTS" || mode === "REQUESTS") {
       conversationQuery.conversationType = { $ne: "GROUP" };
+    }
+    if (mode === "REQUESTS") {
+      conversationQuery.status = "PENDING";
     }
 
     let total = 0;
     let conversations: any[] = [];
 
-    if (requiresInMemoryFiltering) {
+    if (needsFullFetch) {
       conversations = await CommunityConversation.find(conversationQuery)
         .sort({ updatedAt: -1 })
         .lean();
       total = conversations.length;
+    } else if (mode === "UNREAD") {
+      const idOnly = await CommunityConversation.find(
+        conversationQuery,
+        { _id: 1 },
+      ).lean();
+      const unreadAgg = await CommunityMessage.aggregate([
+        {
+          $match: {
+            conversationId: { $in: idOnly.map((c) => c._id) },
+            senderId: { $ne: new mongoose.Types.ObjectId(userId) },
+            readBy: { $ne: new mongoose.Types.ObjectId(userId) },
+          },
+        },
+        { $group: { _id: "$conversationId" } },
+      ]);
+      const unreadIds = unreadAgg.map((row) => row._id);
+
+      total = unreadIds.length;
+      conversations = await CommunityConversation.find({
+        _id: { $in: unreadIds },
+      })
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(safeLimit)
+        .lean();
     } else {
       total = await CommunityConversation.countDocuments(conversationQuery);
       conversations = await CommunityConversation.find(conversationQuery)
@@ -511,12 +554,10 @@ export const communityChatService = {
       );
     });
 
-    const pagedItems = requiresInMemoryFiltering
+    const pagedItems = needsFullFetch
       ? filteredItems.slice(skip, skip + safeLimit)
       : filteredItems;
-    const effectiveTotal = requiresInMemoryFiltering
-      ? filteredItems.length
-      : total;
+    const effectiveTotal = needsFullFetch ? filteredItems.length : total;
 
     return {
       items: pagedItems,
@@ -547,7 +588,9 @@ export const communityChatService = {
   },
 
   async markConversationRead(userId: string, conversationId: string) {
-    const conversation = await CommunityConversation.findById(conversationId);
+    const conversation = await CommunityConversation.findById(conversationId)
+      .select("participants")
+      .lean();
     if (!conversation) {
       throw new Error("Conversation not found");
     }
@@ -598,7 +641,9 @@ export const communityChatService = {
   },
 
   async markConversationDelivered(userId: string, conversationId: string) {
-    const conversation = await CommunityConversation.findById(conversationId);
+    const conversation = await CommunityConversation.findById(conversationId)
+      .select("participants")
+      .lean();
     if (!conversation) {
       throw new Error("Conversation not found");
     }
@@ -677,29 +722,50 @@ export const communityChatService = {
     ]);
 
     const allParticipantIds = conversation.participants.map((id) => String(id));
-    const users = await User.find({ _id: { $in: allParticipantIds } })
-      .select("_id name photoUrl photoS3Key")
-      .lean();
-    const profiles = await CommunityProfile.find({
-      userId: { $in: allParticipantIds },
-    })
-      .select("userId anonymousAlias isIdentityPublic readReceiptsEnabled")
-      .lean();
+    const conversationType = conversation.conversationType || "DM";
+    const replyTargetIds = messages.flatMap((message) =>
+      message.replyToId ? [message.replyToId] : [],
+    );
+
+    // None of these five depend on each other — only on `messages`/
+    // `conversation`, both already resolved above — so they run concurrently
+    // instead of as five sequential round trips.
+    const [users, profiles, reactionRows, replyTargets, group] =
+      await Promise.all([
+        User.find({ _id: { $in: allParticipantIds } })
+          .select("_id name photoUrl photoS3Key")
+          .lean(),
+        CommunityProfile.find({ userId: { $in: allParticipantIds } })
+          .select("userId anonymousAlias isIdentityPublic readReceiptsEnabled")
+          .lean(),
+        // One query for the whole page's reactions, grouped client-side below.
+        CommunityMessageReaction.find({
+          messageId: { $in: messages.map((message) => message._id) },
+        })
+          .select("messageId userId emoji")
+          .lean(),
+        // One query for every quoted message on the page, rather than a
+        // lookup per message. Quotes are resolved live rather than
+        // snapshotted at send time, so an edit to the original shows through
+        // and a deletion is visible.
+        replyTargetIds.length
+          ? CommunityMessage.find({ _id: { $in: replyTargetIds } })
+              .select("_id senderId type content isDeleted metadata")
+              .lean()
+          : Promise.resolve([]),
+        conversationType === "GROUP" && conversation.groupId
+          ? CommunityGroup.findById(conversation.groupId)
+              .select(
+                "_id name description visibility sport city memberCount postPolicy pinnedMessageId",
+              )
+              .lean()
+          : Promise.resolve(null),
+      ]);
 
     const userMap = new Map(users.map((user) => [String(user._id), user]));
     const profileMap = new Map(
       profiles.map((profile) => [String(profile.userId), profile]),
     );
-
-    // One query for every quoted message on the page, rather than a lookup per
-    // message. Quotes are resolved live rather than snapshotted at send time,
-    // so an edit to the original shows through and a deletion is visible.
-    // One query for the whole page's reactions, grouped client-side below.
-    const reactionRows = await CommunityMessageReaction.find({
-      messageId: { $in: messages.map((message) => message._id) },
-    })
-      .select("messageId userId emoji")
-      .lean();
 
     const reactionsByMessage = new Map<
       string,
@@ -723,14 +789,6 @@ export const communityChatService = {
       reactionsByMessage.set(key, bucket);
     }
 
-    const replyTargetIds = messages.flatMap((message) =>
-      message.replyToId ? [message.replyToId] : [],
-    );
-    const replyTargets = replyTargetIds.length
-      ? await CommunityMessage.find({ _id: { $in: replyTargetIds } })
-          .select("_id senderId type content isDeleted metadata")
-          .lean()
-      : [];
     const replyTargetMap = new Map(
       replyTargets.map((target) => [String(target._id), target]),
     );
@@ -810,14 +868,6 @@ export const communityChatService = {
         participantIds: allParticipantIds,
       };
     });
-
-    const conversationType = conversation.conversationType || "DM";
-    const group =
-      conversationType === "GROUP" && conversation.groupId
-        ? await CommunityGroup.findById(conversation.groupId)
-            .select("_id name description visibility sport city memberCount postPolicy pinnedMessageId")
-            .lean()
-        : null;
 
     return {
       conversation: {
@@ -965,16 +1015,14 @@ export const communityChatService = {
     conversation.lastMessageAt = new Date();
     await conversation.save();
 
-    const participants = await User.find({
-      _id: { $in: conversation.participants },
-    })
-      .select("_id name photoUrl photoS3Key")
-      .lean();
-    const profiles = await CommunityProfile.find({
-      userId: { $in: conversation.participants },
-    })
-      .select("userId anonymousAlias isIdentityPublic")
-      .lean();
+    const [participants, profiles] = await Promise.all([
+      User.find({ _id: { $in: conversation.participants } })
+        .select("_id name photoUrl photoS3Key")
+        .lean(),
+      CommunityProfile.find({ userId: { $in: conversation.participants } })
+        .select("userId anonymousAlias isIdentityPublic")
+        .lean(),
+    ]);
 
     const sender = participants.find(
       (participant) => String(participant._id) === userId,
