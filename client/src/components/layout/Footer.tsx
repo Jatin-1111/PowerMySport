@@ -28,7 +28,7 @@ const navColumns = [
     links: [
       { label: "Get Started", href: "/assessment" },
       { label: "Sports Pathways", href: "/roadmap" },
-      { label: "Powermysport AI", href: "/guidance" },
+      // Powermysport AI hidden for now.
       { label: "Find an Expert", href: "/booking?tab=experts" },
       ...(isBookingLive ? [{ label: "Book a Session", href: "/booking" }] : []),
     ],
@@ -111,9 +111,8 @@ export const Footer: React.FC = () => {
             </Link>
 
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
-              India&apos;s first sports guidance platform for parents -
-              AI-powered pathways, personalised guidance, and verified expert
-              sessions to plan your child&apos;s sports journey.
+              Helping parents understand, navigate and make confident
+              decisions throughout their child&apos;s sporting journey.
             </p>
 
             {/* Quick contact */}
