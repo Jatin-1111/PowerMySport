@@ -1,5 +1,6 @@
 import axiosInstance from "@/lib/api/axios";
 import { ApiResponse, AuthResponse, Dependent, User } from "@/types";
+import { denormalizeDependent } from "@/modules/player/utils/dependentNormalize";
 
 export const authApi = {
   register: async (data: {
@@ -123,10 +124,16 @@ export const authApi = {
     return response.data;
   },
 
+  /** Accepts the grouped client `Dependent` shape and flattens it to the
+   * wire format the server actually stores — the one and only place a write
+   * should do that conversion (see `dependentNormalize.ts`). */
   addDependent: async (
-    data: Omit<Dependent, "_id" | "dob"> & { dob: string | Date },
+    data: Partial<Omit<Dependent, "_id">> & { name: string; dob?: string | Date },
   ): Promise<ApiResponse<any>> => {
-    const response = await axiosInstance.post("/auth/dependents", data);
+    const response = await axiosInstance.post(
+      "/auth/dependents",
+      denormalizeDependent(data),
+    );
     return response.data;
   },
 
@@ -136,7 +143,7 @@ export const authApi = {
   ): Promise<ApiResponse<any>> => {
     const response = await axiosInstance.put(
       `/auth/dependents/${dependentId}`,
-      data,
+      denormalizeDependent(data),
     );
     return response.data;
   },

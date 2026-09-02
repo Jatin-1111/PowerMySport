@@ -5,6 +5,7 @@ import { FeaturesShowcase } from "@/modules/marketing/components/marketing/Featu
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { TrustMarquee } from "@/modules/marketing/components/marketing/TrustMarquee";
+import { roadmapHref } from "@/modules/pathway/data/sports";
 import {
   Activity,
   ArrowRight,
@@ -53,6 +54,81 @@ const cardVariants: Variants = {
 
 export default function HomeClient() {
   const { user } = useAuthStore();
+
+  // ── Personalize the hero for a logged-in parent ──
+  // Guests (and the loading/unhydrated state) fall through to the original
+  // generic hero below — only a real `user` changes any of this.
+  const isVenueLister = user?.role === "VenueLister";
+  const firstName = user?.name?.split(" ")[0];
+  const dependents = user?.dependents ?? [];
+  // Most relevant child: one who's already picked a sport (via the assessment
+  // results screen, `chosenSport`) or already told us what they play (via the
+  // profile's "Sport & setup" step, `sportsFocus`) — either counts as "knows
+  // their sport" for the hero. Else one with finished assessment results,
+  // else just the first profile on the account.
+  const primaryDependent =
+    dependents.find((d) => d.sport?.chosenSport || d.sport?.sportsFocus?.length) ??
+    dependents.find((d) => d.sport?.wizardCompletedAt) ??
+    dependents[0];
+  // `chosenSport` is the assessment's own pick; `sportsFocus[0]` is what the
+  // parent told us directly. Either is "the sport" for hero purposes.
+  const effectiveSport = primaryDependent?.sport?.chosenSport || primaryDependent?.sport?.sportsFocus?.[0];
+  const chosenMatch = primaryDependent?.sport?.sportMatches?.find(
+    (m) => m.sport === primaryDependent.sport?.chosenSport,
+  );
+  // The greeting rides on the CTA prompt line rather than a separate badge —
+  // "Jatin, ready to find Aarav's sport?" instead of "Does your child...".
+  // `sentence` is always lowercase-first so it reads naturally either way.
+  const greet = (sentence: string) =>
+    firstName ? `${firstName}, ${sentence}` : sentence.charAt(0).toUpperCase() + sentence.slice(1);
+
+  let heroCtaPrompt: string | undefined = greet("does your child already play a sport?");
+  let heroPrimaryCTA = { label: "Yes — Help me Navigate", href: "/sport-profile" };
+  let heroSecondaryCTA: { label: string; href: string } | undefined = {
+    label: "No — Help me find a sport",
+    href: "/assessment/discover",
+  };
+  let heroStats: Array<{ label: string; value: string; helper?: string }> | undefined;
+
+  if (isVenueLister) {
+    heroCtaPrompt = firstName ? `Welcome back, ${firstName}` : undefined;
+    heroPrimaryCTA = { label: "Manage Venues", href: "/venue-lister/inventory" };
+    heroSecondaryCTA = undefined;
+  } else if (user && primaryDependent && effectiveSport) {
+    // Already knows the sport — either chosen via the assessment or told to
+    // us directly — get them back to it, not a pitch.
+    heroCtaPrompt = greet("let's continue where you left off");
+    heroPrimaryCTA = {
+      label: `Continue ${primaryDependent.name}'s ${effectiveSport} Journey`,
+      href: roadmapHref(effectiveSport),
+    };
+    heroSecondaryCTA = { label: "Manage Sport Profile", href: "/sport-profile" };
+    heroStats = [
+      { label: "Sport", value: effectiveSport },
+      ...(chosenMatch ? [{ label: "Fit", value: chosenMatch.fitLabel }] : []),
+    ];
+  } else if (user && primaryDependent?.sport?.wizardCompletedAt) {
+    // Assessment done, no decision yet — surface the matches, not the funnel question.
+    heroCtaPrompt = greet(`${primaryDependent.name}'s sport matches are ready`);
+    heroPrimaryCTA = {
+      label: `View ${primaryDependent.name}'s Matches`,
+      href: "/assessment/discover",
+    };
+    heroSecondaryCTA = { label: "Explore Roadmaps", href: "/roadmap" };
+    if (primaryDependent.sport.sportMatches?.length) {
+      heroStats = [
+        { label: "Matches Found", value: String(primaryDependent.sport.sportMatches.length) },
+        { label: "Top Fit", value: primaryDependent.sport.sportMatches[0].sport },
+      ];
+    }
+  } else if (user && primaryDependent) {
+    // Profile started, assessment not finished.
+    heroCtaPrompt = greet(`ready to find ${primaryDependent.name}'s sport?`);
+    heroPrimaryCTA = { label: "Continue Assessment", href: "/assessment/discover" };
+    heroSecondaryCTA = { label: "Explore Roadmaps", href: "/roadmap" };
+  }
+  // Logged in with no dependents yet: keep the default Yes/No fork —
+  // we genuinely don't know their situation, just greet them for it.
 
   // ── The everyday confusion parents face ──
   const problems = [
@@ -146,21 +222,10 @@ export default function HomeClient() {
         title="Helping Parents Make Confident Sports Decisions"
         titleHighlight="Sports Decisions"
         description="Understand the journey. Learn from parents and experts who've been there. Make better decisions for your child."
-        ctaPrompt={
-          user?.role === "VenueLister"
-            ? undefined
-            : "Does your child already play a sport?"
-        }
-        primaryCTA={
-          user?.role === "VenueLister"
-            ? { label: "Manage Venues", href: "/venue-lister/inventory" }
-            : { label: "Yes — Help me Navigate", href: "/sport-profile" }
-        }
-        secondaryCTA={
-          user?.role === "VenueLister"
-            ? undefined
-            : { label: "No — Help me find a sport", href: "/assessment/discover" }
-        }
+        ctaPrompt={heroCtaPrompt}
+        primaryCTA={heroPrimaryCTA}
+        secondaryCTA={heroSecondaryCTA}
+        stats={heroStats}
       />
 
       {/* ── The Problem ── */}

@@ -41,6 +41,11 @@ import {
   WATER_COMFORT_LABELS,
 } from "../data/wizardLabels";
 import { getDependentAge } from "@/modules/player/utils/dependentAge";
+import {
+  denormalizeDependent,
+  normalizeDependent,
+  type DependentWire,
+} from "@/modules/player/utils/dependentNormalize";
 import { Button } from "@/modules/shared/ui/Button";
 import { Modal } from "@/modules/shared/ui/Modal";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
@@ -48,7 +53,13 @@ import type { Dependent } from "@/types";
 import { Calendar, ChevronRight, UserRound, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-type DependentFormData = Omit<Dependent, "dob"> & { dob: string | Date };
+// This form's internal state deliberately stays FLAT (matching the wire
+// format), not the grouped `Dependent` shape — the ~30 fields below read
+// far more naturally as one flat object while the user is filling them in
+// step by step. `denormalizeDependent`/`normalizeDependent` convert at the
+// two edges: loading `initialDependent` in, and building `onSubmit`'s
+// payload out. Nothing in between needs to know the grouped shape exists.
+type DependentFormData = Omit<DependentWire, "dob"> & { dob: string | Date };
 
 interface DependentManagementModalProps {
   isOpen: boolean;
@@ -117,16 +128,19 @@ export default function DependentManagementModal({
     setStepIndex(deepLinkIndex >= 0 ? deepLinkIndex : 0);
     setDir(1);
     if (initialDependent) {
+      const flat = denormalizeDependent(initialDependent);
       setFormData({
-        ...initialDependent,
+        ...EMPTY_FORM,
+        ...flat,
+        name: initialDependent.name,
         dob: initialDependent.dob
           ? new Date(initialDependent.dob).toISOString().split("T")[0]
           : "",
-        relation: normalizeDependentRelation(initialDependent.relation),
+        relation: normalizeDependentRelation(flat.relation),
         // Same reason as the relation above: a dependent saved with the old
         // "Jammu & Kashmir" spelling matches no option in the canonical list, so
         // the field would render blank and lose the state on the next save.
-        location: normalizeStoredState(initialDependent.location),
+        location: normalizeStoredState(flat.location),
       });
     } else {
       setFormData(EMPTY_FORM);
@@ -171,7 +185,9 @@ export default function DependentManagementModal({
     if (!sportIsKnown && hasWizardSignal(formData, age)) {
       const answers = dependentToWizardAnswers(formData, formData.name, age);
       const scored  = scoreSports(answers);
-      const derived = buildDependentPayload(answers, scored, formData.name);
+      // buildDependentPayload returns the grouped shape now — flatten it
+      // back to this form's own flat currency before merging.
+      const derived = denormalizeDependent(buildDependentPayload(answers, scored, formData.name));
       submitData = {
         ...formData, ...derived,
         dob: formData.dob, relation: formData.relation,
@@ -180,7 +196,7 @@ export default function DependentManagementModal({
     }
 
     try {
-      await onSubmit(submitData as Dependent);
+      await onSubmit(normalizeDependent(submitData));
       setFormData(EMPTY_FORM);
       setStepIndex(0);
       onClose();

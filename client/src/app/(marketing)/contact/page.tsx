@@ -8,14 +8,20 @@ import { Button } from "@/modules/shared/ui/Button";
 import { AnimatePresence, motion, Variants } from "framer-motion";
 import { WhatsAppIcon } from "@/modules/shared/ui/WhatsAppIcon";
 import {
+    Award,
+    Building2,
+    Check,
+    ChevronDown,
+    HelpCircle,
     Instagram,
     Linkedin,
     Mail,
     MapPin,
     Phone,
+    UserRound,
 } from "lucide-react";
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -24,6 +30,13 @@ const SUBJECT_OPTIONS = [
   "Partnership",
   "Billing and payments",
   "Technical support",
+];
+
+const USER_TYPE_OPTIONS: SelectOption[] = [
+  { value: "player", label: "Player", icon: UserRound },
+  { value: "venue_owner", label: "Venue Owner", icon: Building2 },
+  { value: "coach", label: "Coach", icon: Award },
+  { value: "other", label: "Other", icon: HelpCircle },
 ];
 
 // Unsplash image sources — sports/fitness/stadium themed
@@ -249,6 +262,231 @@ function Field({ label, id, required, ...props }: FieldProps) {
   );
 }
 
+// ─── Custom Select ─────────────────────────────────────────────────────────────
+
+interface SelectOption {
+  value: string;
+  label: string;
+  icon?: React.ElementType;
+}
+
+interface CustomSelectProps {
+  id: string;
+  label: string;
+  required?: boolean;
+  placeholder: string;
+  value: string;
+  options: SelectOption[];
+  onChange: (value: string) => void;
+}
+
+function CustomSelect({
+  id,
+  label,
+  required,
+  placeholder,
+  value,
+  options,
+  onChange,
+}: CustomSelectProps) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const typeaheadRef = useRef({ buffer: "", lastTime: 0 });
+
+  const close = (refocusTrigger: boolean) => {
+    setOpen(false);
+    if (refocusTrigger) triggerRef.current?.focus();
+  };
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const selectedIndex = options.findIndex((opt) => opt.value === value);
+    const focusIndex = selectedIndex >= 0 ? selectedIndex : 0;
+    optionRefs.current[focusIndex]?.focus();
+  }, [open, options, value]);
+
+  const focusOption = (index: number) => {
+    const clamped = Math.max(0, Math.min(options.length - 1, index));
+    optionRefs.current[clamped]?.focus();
+  };
+
+  const selectOption = (opt: SelectOption) => {
+    onChange(opt.value);
+    close(true);
+  };
+
+  const handleTriggerKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (["ArrowDown", "ArrowUp", "Enter", " "].includes(e.key)) {
+      e.preventDefault();
+      setOpen(true);
+    }
+  };
+
+  const handleOptionKeyDown = (
+    e: React.KeyboardEvent<HTMLButtonElement>,
+    index: number,
+    opt: SelectOption,
+  ) => {
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        focusOption(index + 1);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        focusOption(index - 1);
+        break;
+      case "Home":
+        e.preventDefault();
+        focusOption(0);
+        break;
+      case "End":
+        e.preventDefault();
+        focusOption(options.length - 1);
+        break;
+      case "Enter":
+      case " ":
+        e.preventDefault();
+        selectOption(opt);
+        break;
+      case "Escape":
+        e.preventDefault();
+        close(true);
+        break;
+      case "Tab":
+        setOpen(false);
+        break;
+      default:
+        if (e.key.length === 1 && /\S/.test(e.key)) {
+          const now = Date.now();
+          const buf =
+            now - typeaheadRef.current.lastTime < 600
+              ? typeaheadRef.current.buffer + e.key.toLowerCase()
+              : e.key.toLowerCase();
+          typeaheadRef.current = { buffer: buf, lastTime: now };
+          const match = options.findIndex((o) =>
+            o.label.toLowerCase().startsWith(buf),
+          );
+          if (match >= 0) focusOption(match);
+        }
+    }
+  };
+
+  const selected = options.find((opt) => opt.value === value);
+  const SelectedIcon = selected?.icon;
+
+  return (
+    <div ref={containerRef} className="relative">
+      <label
+        htmlFor={id}
+        className="mb-2 block text-sm font-semibold text-slate-800"
+      >
+        {label} {required && <span className="text-power-orange">*</span>}
+      </label>
+
+      <motion.button
+        ref={triggerRef}
+        type="button"
+        id={id}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        onKeyDown={handleTriggerKeyDown}
+        whileTap={{ scale: 0.985 }}
+        className={`flex w-full items-center justify-between gap-3 rounded-xl border bg-white/60 px-4 py-3 text-left text-sm shadow-sm transition-all duration-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25 ${
+          open
+            ? "border-orange-400 bg-white ring-2 ring-orange-400/25"
+            : "border-slate-200 hover:border-orange-300 hover:shadow-md"
+        }`}
+      >
+        <span className="flex items-center gap-2.5 truncate">
+          {SelectedIcon && (
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-power-orange">
+              <SelectedIcon className="h-4 w-4" strokeWidth={2} />
+            </span>
+          )}
+          <span className={selected ? "font-medium text-slate-900" : "text-slate-400"}>
+            {selected ? selected.label : placeholder}
+          </span>
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
+            open ? "rotate-180 text-power-orange" : ""
+          }`}
+        />
+      </motion.button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.ul
+            role="listbox"
+            aria-labelledby={id}
+            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 420, damping: 30 }}
+            style={{ originY: 0 }}
+            className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-slate-100 bg-white p-1.5 shadow-xl shadow-slate-900/10"
+          >
+            {options.map((opt, index) => {
+              const isSelected = opt.value === value;
+              const OptIcon = opt.icon;
+              return (
+                <li key={opt.value} role="option" aria-selected={isSelected}>
+                  <button
+                    ref={(el) => {
+                      optionRefs.current[index] = el;
+                    }}
+                    type="button"
+                    onClick={() => selectOption(opt)}
+                    onKeyDown={(e) => handleOptionKeyDown(e, index, opt)}
+                    className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition-colors focus:outline-none focus-visible:bg-orange-50/70 focus-visible:ring-2 focus-visible:ring-orange-400/40 ${
+                      isSelected
+                        ? "bg-orange-50 font-semibold text-power-orange"
+                        : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    {OptIcon && (
+                      <span
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                          isSelected
+                            ? "bg-white text-power-orange"
+                            : "bg-slate-100 text-slate-400"
+                        }`}
+                      >
+                        <OptIcon className="h-4 w-4" strokeWidth={2} />
+                      </span>
+                    )}
+                    <span className="flex-1 truncate">{opt.label}</span>
+                    {isSelected && <Check className="h-4 w-4 shrink-0" />}
+                  </button>
+                </li>
+              );
+            })}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ─── Stats Strip ──────────────────────────────────────────────────────────────
 
 
@@ -286,6 +524,12 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.subject) {
+      toast.error("Please select a subject.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -494,54 +738,35 @@ export default function ContactPage() {
                       placeholder="+91 9876543210"
                     />
 
-                    <div>
-                      <label
-                        htmlFor="userType"
-                        className="mb-2 block text-sm font-semibold text-slate-800"
-                      >
-                        I am a <span className="text-power-orange">*</span>
-                      </label>
-                      <select
-                        id="userType"
-                        name="userType"
-                        value={formData.userType}
-                        onChange={handleChange}
-                        required
-                        className="w-full rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
-                      >
-                        <option value="player">Player</option>
-                        <option value="venue_owner">Venue Owner</option>
-                        <option value="coach">Coach</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
+                    <CustomSelect
+                      id="userType"
+                      label="I am a"
+                      required
+                      placeholder="Select an option"
+                      value={formData.userType}
+                      options={USER_TYPE_OPTIONS}
+                      onChange={(value) =>
+                        setFormData((prev) => ({ ...prev, userType: value }))
+                      }
+                    />
                   </motion.div>
 
                   {/* Subject */}
                   <motion.div variants={fadeSlideUp}>
-                    <label
-                      htmlFor="subject"
-                      className="mb-2 block text-sm font-semibold text-slate-800"
-                    >
-                      Subject <span className="text-power-orange">*</span>
-                    </label>
-                    <select
+                    <CustomSelect
                       id="subject"
-                      name="subject"
-                      value={formData.subject}
-                      onChange={handleChange}
+                      label="Subject"
                       required
-                      className="w-full rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
-                    >
-                      <option value="" disabled>
-                        Select a subject
-                      </option>
-                      {SUBJECT_OPTIONS.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
+                      placeholder="Select a subject"
+                      value={formData.subject}
+                      options={SUBJECT_OPTIONS.map((opt) => ({
+                        value: opt,
+                        label: opt,
+                      }))}
+                      onChange={(value) =>
+                        setFormData((prev) => ({ ...prev, subject: value }))
+                      }
+                    />
                   </motion.div>
 
                   {/* Message */}

@@ -57,6 +57,21 @@ export interface VenueListerProfile {
   canAddMoreVenues?: boolean;
 }
 
+/**
+ * A dependent (child) profile, grouped by what the data actually means rather
+ * than which wizard step happened to collect it.
+ *
+ * This is the CLIENT-FACING shape only. The server stores (and the wire
+ * format sends/receives) the same fields flat — see `DependentWire` in
+ * `@/modules/player/utils/dependentNormalize`, which also has the
+ * `normalizeDependent`/`denormalizeDependent` functions that convert between
+ * the two. Every read of a dependent from the API goes through
+ * `normalizeDependent` once, at the profile-fetch boundary
+ * (`useProfile.ts`); every write goes through `denormalizeDependent`, inside
+ * `authApi.addDependent`/`updateDependent`. Nothing else should convert
+ * between the two shapes by hand — that duplication (three write flows each
+ * building their own payload) is exactly what this redesign replaced.
+ */
 export interface Dependent {
   _id?: string;
   name: string;
@@ -64,48 +79,90 @@ export interface Dependent {
   age?: number;
   gender?: "MALE" | "FEMALE" | "OTHER";
   relation?: string;
-  sportsFocus?: string[];
-  yearsPlaying?: number;
-  personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Fitness" | "Compete";
-  weeklyTimeCommitment?: number;
-  budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string; // Indian state
-  heightCm?: number;
-  weightKg?: number;
   medicalConditions?: string[];
-  // Wizard physical
-  build?: "lean" | "average" | "stocky";
-  heightCategory?: "short" | "average" | "tall";
-  energyType?: "explosive" | "endurance";
-  motorType?: "gross" | "fine";
-  visualTracking?: "strong" | "moderate" | "weak";
-  // Wizard personality
-  teamIndividual?: number;
-  competitiveResponse?: "fired-up" | "calm" | "discouraged";
-  focusStyle?: "bursts" | "sustained";
-  decisionStyle?: "react" | "strategic";
-  pressureResponse?: "thrives" | "manages" | "avoids";
-  repetitionTolerance?: "high" | "low";
-  // Wizard comfort
-  contactComfort?: "loves" | "neutral" | "avoids";
-  environment?: "outdoor" | "indoor" | "no-preference";
-  waterComfort?: "comfortable" | "neutral" | "uncomfortable";
-  // Wizard practical
-  budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
-  ambition?: "fun" | "competitive" | "national" | "career" | "professional";
-  eyesight?: "sharp" | "corrected" | "limited";
-  agility?: "high" | "moderate" | "low";
-  weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
-  experienceLevel?: "beginner" | "intermediate" | "competitive";
-  trainingType?: "self" | "club" | "academy" | "private";
-  /** Sports the parent shortlisted themselves in the assessment (max 3). */
-  consideringSports?: string[];
-  sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
-  wizardCompletedAt?: string;
-  /** The sport the parent committed to on the results page — a decision, not a score. */
-  chosenSport?: string;
-  chosenSportAt?: string;
+
+  /** What sport they're on, and how they got there. Every write flow (the
+   * Discover wizard, "I already know my sport", the profile modal) must
+   * agree on this section — `chosenSport` in particular is the one
+   * committed decision, set by EITHER path, not just the wizard. */
+  sport?: {
+    /** What the parent told us directly (may be more than one). */
+    sportsFocus?: string[];
+    /** Shortlisted during the assessment (max 3) — a candidate, not a decision. */
+    consideringSports?: string[];
+    sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
+    wizardCompletedAt?: string;
+    /** The sport the parent committed to — a decision, not a score. */
+    chosenSport?: string;
+    chosenSportAt?: string;
+  };
+
+  physical?: {
+    heightCm?: number;
+    weightKg?: number;
+    build?: "lean" | "average" | "stocky";
+    heightCategory?: "short" | "average" | "tall";
+    energyType?: "explosive" | "endurance";
+    motorType?: "gross" | "fine";
+    visualTracking?: "strong" | "moderate" | "weak";
+    eyesight?: "sharp" | "corrected" | "limited";
+    agility?: "high" | "moderate" | "low";
+  };
+
+  personality?: {
+    personalityTags?: string[];
+    teamIndividual?: number; // 1-5
+    competitiveResponse?: "fired-up" | "calm" | "discouraged";
+    focusStyle?: "bursts" | "sustained";
+    decisionStyle?: "react" | "strategic";
+    pressureResponse?: "thrives" | "manages" | "avoids";
+    repetitionTolerance?: "high" | "low";
+  };
+
+  comfort?: {
+    contactComfort?: "loves" | "neutral" | "avoids";
+    environment?: "outdoor" | "indoor" | "no-preference";
+    waterComfort?: "comfortable" | "neutral" | "uncomfortable";
+  };
+
+  /** Logistics — what it takes to actually do this sport. */
+  practical?: {
+    primaryObjective?: "Recreational" | "Fitness" | "Compete";
+    weeklyTimeCommitment?: number;
+    budgetTier?: "Budget" | "Moderate" | "Premium";
+    budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
+    ambition?: "fun" | "competitive" | "national" | "career" | "professional";
+    weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
+    trainingType?: "self" | "club" | "academy" | "private";
+  };
+
+  /** Where they currently stand in the sport — distinct from "practical"
+   * (logistics) and "sport" (which sport / how they found it). */
+  standing?: {
+    skillLevel?: string;
+    yearsPlaying?: number;
+    experienceLevel?: "beginner" | "intermediate" | "competitive";
+    currentStandingTier?: number; // 1-5
+    bestResultTier?: number; // 1-5
+    achievementsNote?: string;
+  };
+
+  training?: {
+    academyName?: string;
+    sessionsPerWeek?: number;
+    trainingMonths?: number;
+    wizardCity?: string;
+  };
+
+  pathwayState?: {
+    satisfiedPrerequisites?: string[];
+    currentGpa?: number;
+    targetDivision?: string;
+    graduationYear?: number;
+  };
+
+  paymentHistory?: Array<{ bookingId: string; amount: number; date: string }>;
 }
 
 export interface UserShippingAddress {

@@ -23,34 +23,13 @@ import { ProfileFormSelect } from "@/modules/player/components/ProfileFormSelect
 import { ProfileInfoField } from "@/modules/player/components/ProfileInfoField";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { formatDependentRelation } from "@/modules/player/data/dependentRelations";
-import {
-  AGILITY_LABELS,
-  AMBITION_LABELS,
-  BUDGET_RANGE_LABELS,
-  BUILD_LABELS,
-  COMPETITIVE_RESPONSE_LABELS,
-  CONTACT_LABELS,
-  DECISION_LABELS,
-  ENERGY_LABELS,
-  ENV_LABELS,
-  EYESIGHT_LABELS,
-  FOCUS_LABELS,
-  GENDER_LABELS,
-  HEIGHT_LABELS,
-  MATCH_RANK_META,
-  PRESSURE_LABELS,
-  REPETITION_LABELS,
-  TEAM_INDIVIDUAL_LABELS,
-  VISUAL_TRACKING_LABELS,
-  WATER_COMFORT_LABELS,
-  WEEKLY_HOURS_LABELS,
-  wizardChip,
-} from "@/modules/player/data/wizardLabels";
+import { GENDER_LABELS, wizardChip } from "@/modules/player/data/wizardLabels";
 import { getDependentAge } from "@/modules/player/utils/dependentAge";
 import { calculateDependentCompletion } from "@/modules/player/utils/dependentCompletion";
+import { denormalizeDependent } from "@/modules/player/utils/dependentNormalize";
 import { calculateProfileCompletion } from "@/modules/player/utils/profileCompletion";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card, CardContent, CardFooter } from "@/modules/shared/ui/Card";
+import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Modal } from "@/modules/shared/ui/Modal";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
@@ -58,9 +37,8 @@ import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { User } from "@/types";
 import { cn } from "@/utils/cn";
 import {
+    ArrowRight,
     Calendar,
-    Edit2,
-    GraduationCap,
     Info,
     Mail,
     Phone,
@@ -117,10 +95,6 @@ function ProfilePageContent() {
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [graduatingDependentId, setGraduatingDependentId] = useState<
-    string | null
-  >(null);
-  const [showGraduationModal, setShowGraduationModal] = useState(false);
   const [showDependentModal, setShowDependentModal] = useState(false);
   const [dependentModalMode, setDependentModalMode] = useState<"add" | "edit">(
     "add",
@@ -140,13 +114,6 @@ function ProfilePageContent() {
   const [dependentToDelete, setDependentToDelete] = useState<Dependent | null>(
     null,
   );
-  const [graduationForm, setGraduationForm] = useState({
-    dependentId: "",
-    dependentName: "",
-    email: "",
-    password: "",
-    phone: "",
-  });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
@@ -208,86 +175,9 @@ function ProfilePageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, searchParams]);
 
-  const handleStartGraduation = (dependent: Dependent) => {
-    if (!dependent._id) {
-      toast.error("Unable to graduate dependent without an id.");
-      return;
-    }
-
-    const age = getDependentAge(dependent.dob);
-    if (age === null) {
-      toast.error("Dependent date of birth is missing or invalid.");
-      return;
-    }
-
-    if (age < 18) {
-      toast.error(`Must be at least 18 to graduate (currently ${age}).`);
-      return;
-    }
-
-    setGraduationForm({
-      dependentId: dependent._id?.toString() || "",
-      dependentName: dependent.name,
-      email: "",
-      password: "",
-      phone: "",
-    });
-    setShowGraduationModal(true);
-  };
-
-  const handleSubmitGraduation = async () => {
-    if (
-      !graduationForm.dependentId ||
-      !graduationForm.email ||
-      !graduationForm.password ||
-      !graduationForm.phone
-    ) {
-      toast.error("Please fill in all required fields.");
-      return;
-    }
-
-    setGraduatingDependentId(graduationForm.dependentId);
-
-    try {
-      const response = await authApi.graduateDependent({
-        dependentId: graduationForm.dependentId,
-        email: graduationForm.email,
-        password: graduationForm.password,
-        phone: graduationForm.phone,
-      });
-      if (response.success) {
-        toast.success("Dependent graduated to an independent account.");
-        setShowGraduationModal(false);
-        setGraduationForm({
-          dependentId: "",
-          dependentName: "",
-          email: "",
-          password: "",
-          phone: "",
-        });
-        await fetchProfile();
-      } else {
-        toast.error(response.message || "Failed to graduate dependent");
-      }
-    } catch (error: unknown) {
-      const errorMessage =
-        getErrorMessage(error) || "Failed to graduate dependent";
-      toast.error(errorMessage);
-    } finally {
-      setGraduatingDependentId(null);
-    }
-  };
-
   const handleAddDependent = () => {
     setSelectedDependent(null);
     setDependentModalMode("add");
-    setDependentModalStepId(undefined);
-    setShowDependentModal(true);
-  };
-
-  const handleEditDependent = (dependent: Dependent) => {
-    setSelectedDependent(dependent);
-    setDependentModalMode("edit");
     setDependentModalStepId(undefined);
     setShowDependentModal(true);
   };
@@ -444,17 +334,6 @@ function ProfilePageContent() {
     } finally {
       setIsSavingSports(false);
     }
-  };
-
-  const closeGraduationModal = () => {
-    setShowGraduationModal(false);
-    setGraduationForm({
-      dependentId: "",
-      dependentName: "",
-      email: "",
-      password: "",
-      phone: "",
-    });
   };
 
   if (isLoading) {
@@ -1141,45 +1020,9 @@ function ProfilePageContent() {
                 {user.dependents.map((dependent) => {
                   const age =
                     getDependentAge(dependent.dob) ?? dependent.age ?? null;
-                  const isEligible = age !== null && age >= 18;
                   const genderLabel = formatGender(dependent.gender);
                   const dependentCompletion =
-                    calculateDependentCompletion(dependent);
-
-                  const physicalChips = [
-                    dependent.heightCm && dependent.weightKg
-                      ? `${dependent.heightCm} cm · ${dependent.weightKg} kg`
-                      : null,
-                    wizardChip(dependent.build, BUILD_LABELS),
-                    wizardChip(dependent.heightCategory, HEIGHT_LABELS),
-                    wizardChip(dependent.energyType, ENERGY_LABELS),
-                    wizardChip(dependent.visualTracking, VISUAL_TRACKING_LABELS),
-                    wizardChip(dependent.eyesight, EYESIGHT_LABELS),
-                    wizardChip(dependent.agility, AGILITY_LABELS),
-                  ].filter(Boolean) as string[];
-
-                  const personalityChips = [
-                    dependent.teamIndividual !== undefined
-                      ? TEAM_INDIVIDUAL_LABELS[dependent.teamIndividual as number]
-                      : null,
-                    wizardChip(dependent.competitiveResponse, COMPETITIVE_RESPONSE_LABELS),
-                    wizardChip(dependent.focusStyle, FOCUS_LABELS),
-                    wizardChip(dependent.decisionStyle, DECISION_LABELS),
-                    wizardChip(dependent.pressureResponse, PRESSURE_LABELS),
-                    wizardChip(dependent.repetitionTolerance, REPETITION_LABELS),
-                  ].filter(Boolean) as string[];
-
-                  const comfortChips = [
-                    wizardChip(dependent.contactComfort, CONTACT_LABELS),
-                    wizardChip(dependent.environment, ENV_LABELS),
-                    wizardChip(dependent.waterComfort, WATER_COMFORT_LABELS),
-                  ].filter(Boolean) as string[];
-
-                  const practicalChips = [
-                    wizardChip(dependent.budgetRange, BUDGET_RANGE_LABELS),
-                    wizardChip(dependent.ambition, AMBITION_LABELS),
-                    wizardChip(dependent.weeklyHoursCategory, WEEKLY_HOURS_LABELS),
-                  ].filter(Boolean) as string[];
+                    calculateDependentCompletion(denormalizeDependent(dependent));
 
                   return (
                     <div
@@ -1243,142 +1086,12 @@ function ProfilePageContent() {
                               </p>
                             )}
 
-                            {/* Sport focus / match results */}
-                            {dependent.sportsFocus && dependent.sportsFocus.length > 0 ? (
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {dependent.sportsFocus.map((sport: string) => (
-                                  <Badge
-                                    key={sport}
-                                    className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50"
-                                  >
-                                    {sport}
-                                  </Badge>
-                                ))}
-                              </div>
-                            ) : (dependent.sportMatches?.length ?? 0) > 0 ? (
-                              <div className="mt-3 space-y-1.5">
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                                  Sport match results
-                                </p>
-                                {dependent.sportMatches!.slice(0, 3).map((m, i) => {
-                                  const meta = MATCH_RANK_META[i] ?? MATCH_RANK_META[2];
-                                  const RankIcon = meta.icon;
-                                  return (
-                                    <div
-                                      key={m.sport}
-                                      className={`flex items-center justify-between rounded-lg border ${meta.ring} bg-white px-3 py-1.5`}
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        <span
-                                          className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${meta.badge}`}
-                                        >
-                                          <RankIcon className="h-3 w-3" />
-                                        </span>
-                                        <span className="text-sm font-semibold text-slate-800">
-                                          {m.sport}
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-xs font-medium text-slate-500">
-                                          {m.fitLabel}
-                                        </span>
-                                        <span className="text-[11px] tabular-nums text-slate-300">
-                                          {m.score}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : null}
-
-                            {/* Physical profile */}
-                            {physicalChips.length > 0 && (
+                            {/* Sport, at a glance — full detail lives on the profile page */}
+                            {(dependent.sport?.chosenSport || dependent.sport?.sportsFocus?.[0]) && (
                               <div className="mt-3">
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                                  Physical profile
-                                </p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {physicalChips.map((chip) => (
-                                    <span
-                                      key={chip}
-                                      className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700"
-                                    >
-                                      {chip}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Personality & play style */}
-                            {personalityChips.length > 0 && (
-                              <div className="mt-3">
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                                  Personality &amp; play style
-                                </p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {personalityChips.map((chip) => (
-                                    <span
-                                      key={chip}
-                                      className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-[11px] font-medium text-indigo-700"
-                                    >
-                                      {chip}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Comfort & environment */}
-                            {comfortChips.length > 0 && (
-                              <div className="mt-3">
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                                  Comfort &amp; environment
-                                </p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {comfortChips.map((chip) => (
-                                    <span
-                                      key={chip}
-                                      className="rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-[11px] font-medium text-teal-700"
-                                    >
-                                      {chip}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Practical */}
-                            {practicalChips.length > 0 && (
-                              <div className="mt-3">
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                                  Practical
-                                </p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {practicalChips.map((chip) => (
-                                    <span
-                                      key={chip}
-                                      className="rounded-full border border-amber-100 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700"
-                                    >
-                                      {chip}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Medical conditions */}
-                            {(dependent.medicalConditions?.length ?? 0) > 0 && (
-                              <div className="mt-2 flex flex-wrap gap-1.5">
-                                {dependent.medicalConditions!.map((cond) => (
-                                  <Badge
-                                    key={cond}
-                                    className="border-amber-200 bg-amber-50 text-[11px] text-amber-700 hover:bg-amber-50"
-                                  >
-                                    {cond}
-                                  </Badge>
-                                ))}
+                                <Badge className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50">
+                                  {dependent.sport?.chosenSport || dependent.sport?.sportsFocus?.[0]}
+                                </Badge>
                               </div>
                             )}
                           </div>
@@ -1386,13 +1099,15 @@ function ProfilePageContent() {
 
                         <div className="flex flex-wrap gap-2 sm:justify-end">
                           <Button
-                            onClick={() => handleEditDependent(dependent)}
+                            onClick={() =>
+                              router.push(`/dashboard/dependents/${dependent._id}`)
+                            }
                             variant="outline"
                             size="sm"
-                            disabled={savingDependentId === dependent._id}
-                            icon={<Edit2 size={14} />}
+                            disabled={!dependent._id}
+                            icon={<ArrowRight size={14} />}
                           >
-                            Edit
+                            View Profile
                           </Button>
                           <Button
                             onClick={() => setDependentToDelete(dependent)}
@@ -1408,26 +1123,6 @@ function ProfilePageContent() {
                           </Button>
                         </div>
                       </div>
-
-                      <CardFooter className="mt-4 border-slate-200/70 px-0 pb-0">
-                        <Button
-                          onClick={() => handleStartGraduation(dependent)}
-                          disabled={
-                            !isEligible ||
-                            graduatingDependentId === dependent._id
-                          }
-                          variant={isEligible ? "primary" : "secondary"}
-                          size="sm"
-                          icon={<GraduationCap size={14} />}
-                          className="w-full sm:w-auto"
-                        >
-                          {graduatingDependentId === dependent._id
-                            ? "Graduating..."
-                            : isEligible
-                              ? "Graduate to Independent"
-                              : `Eligible at 18 (${age ?? "?"} yrs now)`}
-                        </Button>
-                      </CardFooter>
                     </div>
                   );
                 })}
@@ -1505,107 +1200,6 @@ function ProfilePageContent() {
           </span>
           ? This action cannot be undone.
         </p>
-      </Modal>
-
-      <Modal
-        isOpen={showGraduationModal}
-        onClose={closeGraduationModal}
-        title="Graduate to Independent Account"
-        footer={
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={closeGraduationModal}
-              disabled={graduatingDependentId === graduationForm.dependentId}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSubmitGraduation}
-              loading={graduatingDependentId === graduationForm.dependentId}
-              disabled={
-                !graduationForm.email ||
-                !graduationForm.password ||
-                !graduationForm.phone
-              }
-            >
-              Graduate
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-5">
-          <ProfileEditPanel
-            title={`Account for ${graduationForm.dependentName}`}
-            description="They will use these credentials to sign in and book independently."
-          >
-            <div className="space-y-4">
-              <ProfileEditField
-                label="Email"
-                htmlFor="graduation-email"
-                required
-                icon={Mail}
-                hint="This becomes their login email."
-              >
-                <Input
-                  id="graduation-email"
-                  type="email"
-                  value={graduationForm.email}
-                  onChange={(event) =>
-                    setGraduationForm((prev) => ({
-                      ...prev,
-                      email: event.target.value,
-                    }))
-                  }
-                  placeholder="newaccount@example.com"
-                />
-              </ProfileEditField>
-
-              <ProfileEditField
-                label="Password"
-                htmlFor="graduation-password"
-                required
-                hint="Minimum 8 characters recommended."
-              >
-                <Input
-                  id="graduation-password"
-                  type="password"
-                  value={graduationForm.password}
-                  onChange={(event) =>
-                    setGraduationForm((prev) => ({
-                      ...prev,
-                      password: event.target.value,
-                    }))
-                  }
-                  placeholder="Create a password"
-                />
-              </ProfileEditField>
-
-              <ProfileEditField
-                label="Phone"
-                htmlFor="graduation-phone"
-                required
-                icon={Phone}
-                hint="Used for booking confirmations."
-              >
-                <Input
-                  id="graduation-phone"
-                  type="tel"
-                  value={graduationForm.phone}
-                  onChange={(event) =>
-                    setGraduationForm((prev) => ({
-                      ...prev,
-                      phone: event.target.value,
-                    }))
-                  }
-                  placeholder="Phone number"
-                />
-              </ProfileEditField>
-            </div>
-          </ProfileEditPanel>
-        </div>
       </Modal>
     </div>
   );

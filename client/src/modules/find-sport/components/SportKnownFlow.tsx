@@ -16,6 +16,9 @@ import api from "@/lib/api/axios";
 import { buildStepGateFlow } from "@/flow/defineFlow";
 import { useFlow } from "@/flow/useFlow";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { authApi } from "@/modules/auth/services/auth";
+import { useRefreshProfile } from "@/modules/auth/hooks/useProfile";
+import type { Dependent } from "@/types";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { roadmapHref } from "../../pathway/data/sports";
 import { getAmbitionOptions, getCurrentStandingLadder, getGoverningBodyName, deriveExperienceLevel } from "../data/sportArchetypes";
@@ -305,6 +308,7 @@ function QuestionInput({
 
 export function SportKnownFlow({ onBack }: { onBack: () => void }) {
   const { token } = useAuthStore();
+  const refreshProfile = useRefreshProfile();
   const [form, setForm] = useState<KnownSportForm>(EMPTY_FORM);
   // Active step lives in the URL (?step=): Back walks the questionnaire, each
   // step is linkable, and a mid-flow deep link is gated to the first unanswered
@@ -399,19 +403,44 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
 
     if (!token) return null;
 
-    const wizardFields = {
-      ...(form.sport ? { sportsFocus: [form.sport] } : {}),
-      ...(form.gender ? { gender: form.gender } : {}),
+    const wizardFields: Partial<Dependent> = {
+      // Loosely typed as `string` on the form (see sportKnownFlowUtils), but
+      // this flow only ever writes "MALE"/"FEMALE" into it.
+      ...(form.gender ? { gender: form.gender as Dependent["gender"] } : {}),
       ...(form.state ? { location: form.state } : {}),
-      ...(form.ambition ? { ambition: form.ambition } : {}),
       ...(form.dateOfBirth ? { dob: form.dateOfBirth } : {}),
-      ...(form.yearsPlaying !== null ? { yearsPlaying: form.yearsPlaying } : {}),
-      ...(form.currentStandingTier !== null
-        ? {
-            currentStandingTier: form.currentStandingTier,
-            experienceLevel: deriveExperienceLevel(form.currentStandingTier),
-          }
-        : {}),
+      sport: {
+        ...(form.sport
+          ? {
+              sportsFocus: [form.sport],
+              // This flow's entire premise is "the parent already knows the
+              // sport" — that's a decision, not just an interest, so it sets
+              // chosenSport too. (Previously this only ever wrote
+              // sportsFocus, which is why "I know my sport" didn't register
+              // as a completed choice anywhere else in the app.)
+              chosenSport: form.sport,
+              chosenSportAt: new Date().toISOString(),
+            }
+          : {}),
+      },
+      practical: {
+        // `form.ambition` is typed as a loose `string` because the options
+        // vary per sport archetype (see getAmbitionOptions), but every value
+        // it can actually hold comes from AMBITION_OPTIONS, whose `value` is
+        // this exact literal union.
+        ...(form.ambition
+          ? { ambition: form.ambition as NonNullable<Dependent["practical"]>["ambition"] }
+          : {}),
+      },
+      standing: {
+        ...(form.yearsPlaying !== null ? { yearsPlaying: form.yearsPlaying } : {}),
+        ...(form.currentStandingTier !== null
+          ? {
+              currentStandingTier: form.currentStandingTier,
+              experienceLevel: deriveExperienceLevel(form.currentStandingTier),
+            }
+          : {}),
+      },
     };
 
     // The dependent-sharing mechanism the expert-booking CTA relies on needs a
@@ -420,8 +449,8 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
     const name = form.childName.trim() || "My child";
 
     const save = matchedDep?._id
-      ? api.put(`/auth/dependents/${matchedDep._id}`, wizardFields)
-      : api.post("/auth/dependents", { name, ...wizardFields });
+      ? authApi.updateDependent(matchedDep._id, wizardFields)
+      : authApi.addDependent({ name, ...wizardFields });
 
     try {
       const res = await Promise.race([
@@ -429,7 +458,10 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
         new Promise<null>((resolve) => setTimeout(() => resolve(null), SAVE_HANDOFF_TIMEOUT_MS)),
       ]);
       const dependentId =
-        (res as { data?: { data?: { _id?: string } } } | null)?.data?.data?._id ?? matchedDep?._id ?? null;
+        (res as { data?: { _id?: string } } | null)?.data?._id ?? matchedDep?._id ?? null;
+      // The auth store's `user.dependents` otherwise keeps the pre-save
+      // snapshot until the next login/reload — same fix as the Discover wizard.
+      if (dependentId) void refreshProfile();
       return dependentId ?? null;
     } catch {
       return matchedDep?._id ?? null;

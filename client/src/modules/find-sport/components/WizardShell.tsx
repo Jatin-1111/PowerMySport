@@ -5,6 +5,8 @@ import api from "@/lib/api/axios";
 import { defineFlow } from "@/flow/defineFlow";
 import { useFlow } from "@/flow/useFlow";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { useRefreshProfile } from "@/modules/auth/hooks/useProfile";
+import { authApi } from "@/modules/auth/services/auth";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, CheckCircle, Clock, Zap, Users, Brain, Heart, Target, User, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -852,6 +854,7 @@ function ProcessingScreen({ name }: { name: string }) {
 
 export function WizardShell() {
   const { user, token } = useAuthStore();
+  const refreshProfile = useRefreshProfile();
   const [answers, setAnswers] = useState<WizardAnswers>({ ...EMPTY_ANSWERS });
   // Scores are a pure function of the answers, so they are derived, not stored.
   // Previously they lived in state and were populated by the `processing` step's
@@ -956,16 +959,17 @@ export function WizardShell() {
           const { answers: a, scored, chosen, chosenSport: pickedSport } = pendingImport.current;
           pendingImport.current = null;
           const childName = a.childName?.trim() || "My Child";
-          api
-            .post<{ success: boolean; data: { _id: string } }>(
-              "/auth/dependents",
-              buildDependentPayload(a, scored, childName, chosen, pickedSport),
-            )
+          authApi
+            .addDependent({
+              name: childName,
+              ...buildDependentPayload(a, scored, childName, chosen, pickedSport),
+            })
             .then((r) => {
-              if (r.data?.data?._id) setSelectedDependentId(r.data.data._id);
+              if (r.data?._id) setSelectedDependentId(r.data._id);
               setSavedForName(childName);
               setSavedStatus("saved");
               try { localStorage.removeItem("pms_wizard_results"); } catch {}
+              void refreshProfile();
             })
             .catch(() => setSavedStatus("error"));
         } else {
@@ -1090,6 +1094,12 @@ export function WizardShell() {
           answers.childName,
         ),
       })
+      .then(() => {
+        // The auth store's `user.dependents` otherwise keeps the pre-choice
+        // snapshot — anything reading it (e.g. the homepage hero) would show
+        // stale state until the next login/reload.
+        if (selectedDependentId) void refreshProfile();
+      })
       .catch(() => {})
       .finally(() => setChoosingSport(false));
   };
@@ -1106,13 +1116,14 @@ export function WizardShell() {
           setSavedStatus("saving");
           const displayName = players.find((p) => p._id === selectedDependentId)?.name.split(" ")[0] ?? answers.childName;
           try {
-            await api.put(
-              `/auth/dependents/${selectedDependentId}`,
+            await authApi.updateDependent(
+              selectedDependentId,
               buildDependentPayload(answers, scored, undefined, chosen),
             );
             setSavedForName(displayName || undefined);
             setSavedStatus("saved");
             scheduleTrialCheckIn(selectedDependentId, scored, chosen, displayName || answers.childName);
+            void refreshProfile();
           } catch {
             setSavedStatus("error");
           }
@@ -1121,14 +1132,15 @@ export function WizardShell() {
           setSavedStatus("saving");
           const childName = answers.childName?.trim() || "My Child";
           try {
-            const res = await api.post<{ success: boolean; data: { _id: string } }>(
-              "/auth/dependents",
-              buildDependentPayload(answers, scored, childName, chosen),
-            );
-            if (res.data?.data?._id) setSelectedDependentId(res.data.data._id);
+            const res = await authApi.addDependent({
+              name: childName,
+              ...buildDependentPayload(answers, scored, childName, chosen),
+            });
+            if (res.data?._id) setSelectedDependentId(res.data._id);
             setSavedForName(childName);
             setSavedStatus("saved");
-            scheduleTrialCheckIn(res.data?.data?._id ?? null, scored, chosen, childName);
+            scheduleTrialCheckIn(res.data?._id ?? null, scored, chosen, childName);
+            void refreshProfile();
           } catch {
             setSavedStatus("error");
           }
