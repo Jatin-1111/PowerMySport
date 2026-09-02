@@ -51,3 +51,89 @@ export async function resolveEditionSlug(key: EditionKey): Promise<string> {
   // fall back to a unique suffix rather than failing the approval.
   return `${base}-${new mongoose.Types.ObjectId().toString().slice(-6)}`;
 }
+
+const editionKeyId = (key: EditionKey): string =>
+  `${key.sportSlug}|${key.name}|${key.startDate.toISOString()}`;
+
+const escapeRegex = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Batched sibling of resolveEditionSlug — same stability guarantee and same
+ * numeric-suffix algorithm, but resolves a whole calendar's worth of editions
+ * (up to ~150 for a full tennis calendar) in a constant, small number of
+ * round trips instead of 1-51 sequential queries per edition.
+ */
+export async function resolveEditionSlugsBatch(
+  keys: EditionKey[],
+): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+  if (keys.length === 0) return result;
+
+  const existingDocs = await TournamentEdition.find({
+    $or: keys.map((k) => ({
+      sportSlug: k.sportSlug,
+      name: k.name,
+      startDate: k.startDate,
+    })),
+  })
+    .select("sportSlug name startDate slug")
+    .lean();
+
+  const existingByKeyId = new Map(
+    existingDocs.map((d) => [
+      editionKeyId({
+        sportSlug: d.sportSlug,
+        name: d.name,
+        startDate: d.startDate,
+      }),
+      d.slug as string | undefined,
+    ]),
+  );
+
+  const needsNewSlug: Array<{ id: string; base: string }> = [];
+  for (const key of keys) {
+    const id = editionKeyId(key);
+    if (result.has(id)) continue; // duplicate key in the input batch
+    const existingSlug = existingByKeyId.get(id);
+    if (existingSlug) {
+      result.set(id, existingSlug);
+      continue;
+    }
+    const base =
+      `${slugifyEditionName(key.name)}-${key.startDate.toISOString().slice(0, 10)}`.replace(/^-/, "");
+    needsNewSlug.push({ id, base });
+  }
+
+  if (needsNewSlug.length === 0) return result;
+
+  const bases = [...new Set(needsNewSlug.map((n) => n.base))];
+  const takenDocs = await TournamentEdition.find({
+    $or: bases.map((base) => ({
+      slug: { $regex: `^${escapeRegex(base)}(-\\d+)?$` },
+    })),
+  })
+    .select("slug")
+    .lean();
+  const takenSlugs = new Set(takenDocs.map((d) => d.slug as string));
+
+  for (const { id, base } of needsNewSlug) {
+    let attempt = 0;
+    let candidate = base;
+    while (takenSlugs.has(candidate) && attempt < 49) {
+      attempt += 1;
+      candidate = `${base}-${attempt + 1}`;
+    }
+    if (takenSlugs.has(candidate)) {
+      candidate = `${base}-${new mongoose.Types.ObjectId().toString().slice(-6)}`;
+    } else {
+      // Reserve within this batch so two new editions sharing a base
+      // (same slugified name + date, different sport) don't collide —
+      // the sequential version got this for free via its per-item DB probe.
+      takenSlugs.add(candidate);
+    }
+    result.set(id, candidate);
+  }
+
+  return result;
+}

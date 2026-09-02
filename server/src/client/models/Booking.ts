@@ -639,6 +639,15 @@ bookingSchema.index({ userId: 1, createdAt: -1 });
 bookingSchema.index({ venueId: 1, status: 1, date: -1 });
 bookingSchema.index({ coachId: 1, status: 1, date: -1 });
 
+// Backs admin listRefunds — filters {refundStatus} (a value, or $exists/$ne
+// null for "all refunded/refunding"), sorts {updatedAt:-1}.
+bookingSchema.index({ refundStatus: 1, updatedAt: -1 });
+
+// Backs admin getAllBookings — unfiltered, sorts {createdAt:-1}. None of the
+// compound indexes above have createdAt as a leading-usable sort key for an
+// unfiltered query.
+bookingSchema.index({ createdAt: -1 });
+
 // Index for venue bookings only
 bookingSchema.index(
   { userId: 1, venueId: 1, date: 1, startTime: 1 },

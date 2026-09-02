@@ -11,13 +11,31 @@ function run(cmd, opts = {}) {
 }
 
 const gitSha = execSync("git rev-parse --short HEAD").toString().trim();
+const dirtyFiles = execSync("git status --porcelain").toString().trim();
+const allowDirty = process.argv.includes("--allow-dirty");
+
+if (dirtyFiles) {
+  console.log(
+    `\nWorking tree has uncommitted changes — the image will NOT match commit ${gitSha}:\n`,
+  );
+  console.log(dirtyFiles);
+  if (!allowDirty) {
+    console.log(
+      "\nCommit (or stash) first, or re-run with --allow-dirty to deploy this working tree anyway.",
+    );
+    process.exit(1);
+  }
+  console.log("\n--allow-dirty passed — proceeding with uncommitted changes.");
+}
+
+const imageTag = dirtyFiles ? `${gitSha}-dirty` : gitSha;
 
 run(
   `aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ECR_URI.split("/")[0]}`
 );
-run(`docker build -t ${ECR_URI}:${gitSha} -t ${ECR_URI}:latest .`);
-run(`docker push ${ECR_URI}:${gitSha}`);
+run(`docker build -t ${ECR_URI}:${imageTag} -t ${ECR_URI}:latest .`);
+run(`docker push ${ECR_URI}:${imageTag}`);
 run(`docker push ${ECR_URI}:latest`);
 run(`eb deploy ${EB_ENV}`);
 
-console.log(`\nDeployed ${gitSha} to ${EB_ENV}.`);
+console.log(`\nDeployed ${imageTag} to ${EB_ENV}.`);

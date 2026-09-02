@@ -346,13 +346,17 @@ export const getImageUploadPresignedUrls = async (
     }
 
     if (type === "galleryPhotos") {
-      for (let i = 0; i < 5; i += 1) {
-        const uploadResponse = await s3Service.generateImageUploadUrl(
-          `gallery_${i}.jpg`,
-          "image/jpeg",
-          academyId,
-          false,
-        );
+      const responses = await Promise.all(
+        Array.from({ length: 5 }, (_, i) =>
+          s3Service.generateImageUploadUrl(
+            `gallery_${i}.jpg`,
+            "image/jpeg",
+            academyId,
+            false,
+          ),
+        ),
+      );
+      responses.forEach((uploadResponse, i) => {
         urls.push({
           field: `galleryPhoto_${i}`,
           uploadUrl: uploadResponse.uploadUrl,
@@ -362,19 +366,23 @@ export const getImageUploadPresignedUrls = async (
           contentType: "image/jpeg",
           maxSizeBytes: UPLOAD_CONSTRAINTS.IMAGES.galleryPhotos.maxSize,
         });
-      }
+      });
     }
 
     // New types for academy onboarding step 4 (venues) and step 5 (coaches)
     if (type === "academyVenue_general") {
       // Provide 3 general images per venue call
-      for (let i = 0; i < 3; i += 1) {
-        const uploadResponse = await s3Service.generateImageUploadUrl(
-          `academy/${academyId}/venue_general_${Date.now()}_${i}.jpg`,
-          "image/jpeg",
-          academyId,
-          false,
-        );
+      const responses = await Promise.all(
+        Array.from({ length: 3 }, (_, i) =>
+          s3Service.generateImageUploadUrl(
+            `academy/${academyId}/venue_general_${Date.now()}_${i}.jpg`,
+            "image/jpeg",
+            academyId,
+            false,
+          ),
+        ),
+      );
+      responses.forEach((uploadResponse, i) => {
         urls.push({
           field: `academyVenue_general_${i}`,
           uploadUrl: uploadResponse.uploadUrl,
@@ -384,18 +392,22 @@ export const getImageUploadPresignedUrls = async (
           contentType: "image/jpeg",
           maxSizeBytes: UPLOAD_CONSTRAINTS.IMAGES.academyVenueGeneral.maxSize,
         });
-      }
+      });
     }
 
     if (type === "academyVenue_sport") {
       // Provide 5 sport-specific images (frontend should request per sport as needed)
-      for (let i = 0; i < 5; i += 1) {
-        const uploadResponse = await s3Service.generateImageUploadUrl(
-          `academy/${academyId}/venue_sport_${Date.now()}_${i}.jpg`,
-          "image/jpeg",
-          academyId,
-          false,
-        );
+      const responses = await Promise.all(
+        Array.from({ length: 5 }, (_, i) =>
+          s3Service.generateImageUploadUrl(
+            `academy/${academyId}/venue_sport_${Date.now()}_${i}.jpg`,
+            "image/jpeg",
+            academyId,
+            false,
+          ),
+        ),
+      );
+      responses.forEach((uploadResponse, i) => {
         urls.push({
           field: `academyVenue_sport_${i}`,
           uploadUrl: uploadResponse.uploadUrl,
@@ -405,7 +417,7 @@ export const getImageUploadPresignedUrls = async (
           contentType: "image/jpeg",
           maxSizeBytes: UPLOAD_CONSTRAINTS.IMAGES.academyVenueSport.maxSize,
         });
-      }
+      });
     }
 
     if (type === "academyVenue_cover") {
@@ -620,7 +632,8 @@ export const getPendingAcademies = async (
     .populate("ownerId", "email phone name")
     .skip((page - 1) * limit)
     .limit(limit)
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 
   return {
     academies: academies.map((a) => ({

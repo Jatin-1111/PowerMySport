@@ -68,6 +68,9 @@ const communityReportSchema = new Schema<CommunityReportDocument>(
 );
 
 communityReportSchema.index({ targetType: 1, targetId: 1, createdAt: -1 });
+// Backs admin listCommunityReports — always filters by status (single value
+// or the full $in list) and sorts {createdAt:-1}.
+communityReportSchema.index({ status: 1, createdAt: -1 });
 
 const notifyReportUpdated = (doc: any) => {
   if (!doc || !doc.reporterUserId) return;

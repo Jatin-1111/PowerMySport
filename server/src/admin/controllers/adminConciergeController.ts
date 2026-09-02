@@ -14,7 +14,9 @@ export const getAllConciergeRequests = async (
   try {
     const requests = await ConciergeRequest.find()
       .populate("userId", "name email phone")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(1000)
+      .lean();
 
     res.status(200).json({ success: true, requests });
   } catch (error) {

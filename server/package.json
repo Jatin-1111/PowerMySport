@@ -25,6 +25,8 @@
     "migrate:drop-reaction-index": "ts-node src/migrations/33_drop_redundant_message_reaction_index.ts",
     "migrate:client-domain-indexes": "ts-node src/migrations/34_add_client_domain_indexes.ts",
     "migrate:second-pass-client-indexes": "ts-node src/migrations/35_add_second_pass_client_indexes.ts",
+    "migrate:admin-domain-indexes": "ts-node src/migrations/36_add_admin_domain_indexes.ts",
+    "migrate:admin-domain-indexes-pass2": "ts-node src/migrations/37_add_admin_domain_indexes_pass2.ts",
     "migrate:split-pending": "ts-node src/migrations/23_split_pending_confirmation_status.ts",
     "migrate:admin-permissions": "ts-node src/scripts/migrateAdminPermissions.ts",
     "community:players-public": "ts-node src/scripts/makePlayerProfilesPublic.ts",

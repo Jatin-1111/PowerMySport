@@ -417,7 +417,8 @@ export const listCoaches = async (
         .populate({
           path: "userId",
           select: "_id name email phone photoUrl photoS3Key role",
-        }),
+        })
+        .lean(),
     ]);
 
     res.status(200).json({
@@ -1707,7 +1708,9 @@ export const listDisputes = async (
         populate: { path: "venueId", select: "name" },
       })
       .populate("userId", "firstName lastName email phone")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(1000)
+      .lean();
 
     res.status(200).json({
       success: true,
@@ -2038,7 +2041,7 @@ export const approveCoachVerification = async (
     );
 
     try {
-      const user = await User.findById(coach.userId);
+      const user = await User.findById(coach.userId).select("_id name email").lean();
       if (user?.email) {
         await sendCoachVerificationStatusEmail({
           name: user.name,
@@ -2123,7 +2126,7 @@ export const rejectCoachVerification = async (
     );
 
     try {
-      const user = await User.findById(coach.userId);
+      const user = await User.findById(coach.userId).select("_id name email").lean();
       if (user?.email) {
         await sendCoachVerificationStatusEmail({
           name: user.name,
@@ -2204,7 +2207,7 @@ export const markCoachVerificationForReview = async (
     );
 
     try {
-      const user = await User.findById(coach.userId);
+      const user = await User.findById(coach.userId).select("_id name email").lean();
       if (user?.email) {
         await sendCoachVerificationStatusEmail({
           name: user.name,

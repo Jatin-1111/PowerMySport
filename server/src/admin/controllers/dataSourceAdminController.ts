@@ -15,7 +15,10 @@ import {
   enrichEditionsWithDetailPages,
   ValidEdition,
 } from "../services/DataSourceExtractionService";
-import { resolveEditionSlug } from "../../shared/services/editionSlug";
+import {
+  resolveEditionSlugsBatch,
+  EditionKey,
+} from "../../shared/services/editionSlug";
 import { s3Service } from "../../shared/services/S3Service";
 import { recordAuditLog } from "../services/AuditLogService";
 import { getAdminsWithPermission, resolveAdminAppUrl } from "../services/AdminService";
@@ -747,39 +750,59 @@ export const approveDataSource = async (
         return;
       }
       const sourceUrl = citedSourceUrls[0] || "admin-submitted";
-      for (const edition of valid as ValidEdition[]) {
+      const editionEntries = (valid as ValidEdition[]).map((edition) => {
         const startDate = new Date(`${edition.startDate}T00:00:00.000Z`);
-        const key = { sportSlug: submission.sportSlug, name: edition.name, startDate };
-        await TournamentEdition.findOneAndUpdate(
-          key,
-          {
-            $set: {
-              editionYear: startDate.getUTCFullYear(),
-              endDate: edition.endDate ? new Date(`${edition.endDate}T00:00:00.000Z`) : null,
-              registrationDeadlineDate: edition.registrationDeadlineDate
-                ? new Date(`${edition.registrationDeadlineDate}T00:00:00.000Z`)
-                : null,
-              venue: edition.venue ?? null,
-              city: edition.city ?? null,
-              level: edition.level ?? null,
-              ageGroups: edition.ageGroups,
-              sourceUrl,
-              lastCheckedAt: new Date(),
-              // Detail-page fields. Written with ?? null so re-approving a
-              // source that was enriched, then re-extracted without
-              // enrichment, doesn't leave stale details attached to the row.
-              detailUrl: edition.detailUrl ?? null,
-              officialName: edition.officialName ?? null,
-              organiser: edition.organiser ?? null,
-              state: edition.state ?? null,
-              category: edition.category ?? null,
-              documents: edition.documents ?? null,
-              slug: await resolveEditionSlug(key),
+        const key: EditionKey = {
+          sportSlug: submission.sportSlug,
+          name: edition.name,
+          startDate,
+        };
+        return { edition, startDate, key };
+      });
+
+      // Resolves every edition's slug in a handful of round trips instead of
+      // 1-51 sequential queries PER edition — a full calendar approval can be
+      // ~150 editions, so this keeps the admin request from timing out.
+      const slugsById = await resolveEditionSlugsBatch(
+        editionEntries.map((e) => e.key),
+      );
+
+      const editionKeyId = (key: EditionKey) =>
+        `${key.sportSlug}|${key.name}|${key.startDate.toISOString()}`;
+
+      await TournamentEdition.bulkWrite(
+        editionEntries.map(({ edition, startDate, key }) => ({
+          updateOne: {
+            filter: key,
+            update: {
+              $set: {
+                editionYear: startDate.getUTCFullYear(),
+                endDate: edition.endDate ? new Date(`${edition.endDate}T00:00:00.000Z`) : null,
+                registrationDeadlineDate: edition.registrationDeadlineDate
+                  ? new Date(`${edition.registrationDeadlineDate}T00:00:00.000Z`)
+                  : null,
+                venue: edition.venue ?? null,
+                city: edition.city ?? null,
+                level: edition.level ?? null,
+                ageGroups: edition.ageGroups,
+                sourceUrl,
+                lastCheckedAt: new Date(),
+                // Detail-page fields. Written with ?? null so re-approving a
+                // source that was enriched, then re-extracted without
+                // enrichment, doesn't leave stale details attached to the row.
+                detailUrl: edition.detailUrl ?? null,
+                officialName: edition.officialName ?? null,
+                organiser: edition.organiser ?? null,
+                state: edition.state ?? null,
+                category: edition.category ?? null,
+                documents: edition.documents ?? null,
+                slug: slugsById.get(editionKeyId(key)),
+              },
             },
+            upsert: true,
           },
-          { upsert: true, runValidators: true },
-        );
-      }
+        })),
+      );
     }
 
     submission.status = "APPROVED";

@@ -18,7 +18,7 @@ import {
   getObservabilitySnapshot,
 } from "../../middleware/observability";
 import { transformDocuments } from "../../middleware/responseTransform";
-import { isUserOnline } from "../../shared/services/UserPresenceService";
+import { areUsersOnline } from "../../shared/services/UserPresenceService";
 import { getAllVenues as getAllVenuesService } from "../../client/services/VenueService";
 import { getPaginationParams } from "../../utils/pagination";
 
@@ -475,46 +475,48 @@ export const getPlayersUsers = async (
       profilesByUserId.get(uidStr)!.push(profile);
     }
 
-    const data = await Promise.all(
-      users.map(async (user) => {
-        const userProfiles = profilesByUserId.get(user._id.toString()) || [];
-
-        const selfProfile = userProfiles.find((p) => p.type === "SELF");
-        const dependentsProfiles = userProfiles.filter(
-          (p) => p.type === "DEPENDENT",
-        );
-
-        const sports = selfProfile?.sportsFocus || [];
-        const sportsCount = sports.length;
-        const dependentsCount = dependentsProfiles.length;
-        const hasSportsProfile = sportsCount > 0;
-
-        const dependents = dependentsProfiles.map((d) => ({
-          id: d._id.toString(),
-          name: d.name,
-          age: d.age,
-          gender: d.gender,
-          sports: d.sportsFocus || [],
-          skillLevel: d.skillLevel,
-        }));
-
-        return {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: "Player",
-          createdAt: user.createdAt,
-          lastActiveAt: user.lastActiveAt || user.createdAt,
-          isOnlineNow: await isUserOnline(user._id.toString()),
-          sports,
-          sportsCount,
-          hasSportsProfile,
-          dependents,
-          dependentsCount,
-        };
-      }),
+    const onlineByUserId = await areUsersOnline(
+      users.map((user) => user._id.toString()),
     );
+
+    const data = users.map((user) => {
+      const userProfiles = profilesByUserId.get(user._id.toString()) || [];
+
+      const selfProfile = userProfiles.find((p) => p.type === "SELF");
+      const dependentsProfiles = userProfiles.filter(
+        (p) => p.type === "DEPENDENT",
+      );
+
+      const sports = selfProfile?.sportsFocus || [];
+      const sportsCount = sports.length;
+      const dependentsCount = dependentsProfiles.length;
+      const hasSportsProfile = sportsCount > 0;
+
+      const dependents = dependentsProfiles.map((d) => ({
+        id: d._id.toString(),
+        name: d.name,
+        age: d.age,
+        gender: d.gender,
+        sports: d.sportsFocus || [],
+        skillLevel: d.skillLevel,
+      }));
+
+      return {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: "Player",
+        createdAt: user.createdAt,
+        lastActiveAt: user.lastActiveAt || user.createdAt,
+        isOnlineNow: onlineByUserId.get(user._id.toString()) ?? false,
+        sports,
+        sportsCount,
+        hasSportsProfile,
+        dependents,
+        dependentsCount,
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -567,29 +569,31 @@ export const getCoachUsers = async (
       coachProfiles.map((profile) => [profile.userId.toString(), profile]),
     );
 
-    const data = await Promise.all(
-      users.map(async (user) => {
-        const profile = coachByUserId.get(user._id.toString());
-        return {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: "Coach",
-          createdAt: user.createdAt,
-          lastActiveAt: user.lastActiveAt || user.createdAt,
-          isOnlineNow: await isUserOnline(user._id.toString()),
-          sports: profile?.sports || [],
-          hourlyRate: profile?.hourlyRate ?? null,
-          serviceMode: profile?.serviceMode ?? null,
-          verificationStatus: profile?.verificationStatus ?? "UNVERIFIED",
-          isVerified: profile?.isVerified ?? false,
-          rating: profile?.rating ?? 0,
-          reviewCount: profile?.reviewCount ?? 0,
-          profileIncomplete: !profile,
-        };
-      }),
+    const onlineByUserId = await areUsersOnline(
+      users.map((user) => user._id.toString()),
     );
+
+    const data = users.map((user) => {
+      const profile = coachByUserId.get(user._id.toString());
+      return {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: "Coach",
+        createdAt: user.createdAt,
+        lastActiveAt: user.lastActiveAt || user.createdAt,
+        isOnlineNow: onlineByUserId.get(user._id.toString()) ?? false,
+        sports: profile?.sports || [],
+        hourlyRate: profile?.hourlyRate ?? null,
+        serviceMode: profile?.serviceMode ?? null,
+        verificationStatus: profile?.verificationStatus ?? "UNVERIFIED",
+        isVerified: profile?.isVerified ?? false,
+        rating: profile?.rating ?? 0,
+        reviewCount: profile?.reviewCount ?? 0,
+        profileIncomplete: !profile,
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -669,26 +673,28 @@ export const getVenueListerUsers = async (
       venueCounts.map((item) => [String(item._id), item]),
     );
 
-    const data = await Promise.all(
-      users.map(async (user) => {
-        const counts = venueCountByOwnerId.get(user._id.toString());
-        return {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: "VenueLister",
-          createdAt: user.createdAt,
-          lastActiveAt: user.lastActiveAt || user.createdAt,
-          isOnlineNow: await isUserOnline(user._id.toString()),
-          businessName: "",
-          canAddMoreVenues: false,
-          venueCount: counts?.venueCount ?? 0,
-          approvedVenueCount: counts?.approvedVenueCount ?? 0,
-          pendingVenueCount: counts?.pendingVenueCount ?? 0,
-        };
-      }),
+    const onlineByUserId = await areUsersOnline(
+      users.map((user) => user._id.toString()),
     );
+
+    const data = users.map((user) => {
+      const counts = venueCountByOwnerId.get(user._id.toString());
+      return {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: "VenueLister",
+        createdAt: user.createdAt,
+        lastActiveAt: user.lastActiveAt || user.createdAt,
+        isOnlineNow: onlineByUserId.get(user._id.toString()) ?? false,
+        businessName: "",
+        canAddMoreVenues: false,
+        venueCount: counts?.venueCount ?? 0,
+        approvedVenueCount: counts?.approvedVenueCount ?? 0,
+        pendingVenueCount: counts?.pendingVenueCount ?? 0,
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -1242,99 +1248,78 @@ export const getFinanceReconciliation = async (
   res: Response,
 ): Promise<void> => {
   try {
-    // Run entirely in MongoDB – no data pulled into Node memory
-    const [summary, mismatches] = await Promise.all([
-      Booking.aggregate<{
-        total: number;
-        matched: number;
-        mismatched: number;
-      }>([
-        {
-          $match: {
-            status: {
-              $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"],
-            },
-          },
-        },
-        {
-          $addFields: {
-            paidAmount: {
-              $reduce: {
-                input: {
-                  $filter: {
-                    input: { $ifNull: ["$payments", []] },
-                    cond: { $eq: ["$$this.status", "PAID"] },
-                  },
-                },
-                initialValue: 0,
-                in: { $add: ["$$value", { $ifNull: ["$$this.amount", 0] }] },
-              },
-            },
-          },
-        },
-        {
-          $addFields: {
-            delta: { $abs: { $subtract: ["$totalAmount", "$paidAmount"] } },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: 1 },
-            matched: { $sum: { $cond: [{ $lte: ["$delta", 1] }, 1, 0] } },
-            mismatched: { $sum: { $cond: [{ $gt: ["$delta", 1] }, 1, 0] } },
-          },
-        },
-      ]),
-      Booking.aggregate<{
+    // Run entirely in MongoDB – no data pulled into Node memory. Both the
+    // summary counts and the sample mismatches need the same
+    // paidAmount/delta computation over the same document set, so a single
+    // $facet does that work once instead of twice.
+    const [result] = await Booking.aggregate<{
+      summary: Array<{ total: number; matched: number; mismatched: number }>;
+      mismatches: Array<{
         bookingId: string;
         expected: number;
         paid: number;
         status: string;
-      }>([
-        {
-          $match: {
-            status: {
-              $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"],
+      }>;
+    }>([
+      {
+        $match: {
+          status: {
+            $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"],
+          },
+        },
+      },
+      {
+        $addFields: {
+          paidAmount: {
+            $reduce: {
+              input: {
+                $filter: {
+                  input: { $ifNull: ["$payments", []] },
+                  cond: { $eq: ["$$this.status", "PAID"] },
+                },
+              },
+              initialValue: 0,
+              in: { $add: ["$$value", { $ifNull: ["$$this.amount", 0] }] },
             },
           },
         },
-        {
-          $addFields: {
-            paidAmount: {
-              $reduce: {
-                input: {
-                  $filter: {
-                    input: { $ifNull: ["$payments", []] },
-                    cond: { $eq: ["$$this.status", "PAID"] },
-                  },
-                },
-                initialValue: 0,
-                in: { $add: ["$$value", { $ifNull: ["$$this.amount", 0] }] },
+      },
+      {
+        $addFields: {
+          delta: { $abs: { $subtract: ["$totalAmount", "$paidAmount"] } },
+        },
+      },
+      {
+        $facet: {
+          summary: [
+            {
+              $group: {
+                _id: null,
+                total: { $sum: 1 },
+                matched: { $sum: { $cond: [{ $lte: ["$delta", 1] }, 1, 0] } },
+                mismatched: { $sum: { $cond: [{ $gt: ["$delta", 1] }, 1, 0] } },
               },
             },
-          },
+          ],
+          mismatches: [
+            { $match: { delta: { $gt: 1 } } },
+            { $sort: { createdAt: -1 } },
+            { $limit: 25 },
+            {
+              $project: {
+                bookingId: { $toString: "$_id" },
+                expected: "$totalAmount",
+                paid: "$paidAmount",
+                status: 1,
+              },
+            },
+          ],
         },
-        {
-          $addFields: {
-            delta: { $abs: { $subtract: ["$totalAmount", "$paidAmount"] } },
-          },
-        },
-        { $match: { delta: { $gt: 1 } } },
-        { $sort: { createdAt: -1 } },
-        { $limit: 25 },
-        {
-          $project: {
-            bookingId: { $toString: "$_id" },
-            expected: "$totalAmount",
-            paid: "$paidAmount",
-            status: 1,
-          },
-        },
-      ]),
+      },
     ]);
 
-    const totals = summary[0] ?? { total: 0, matched: 0, mismatched: 0 };
+    const totals = result?.summary[0] ?? { total: 0, matched: 0, mismatched: 0 };
+    const mismatches = result?.mismatches ?? [];
 
     res.status(200).json({
       success: true,

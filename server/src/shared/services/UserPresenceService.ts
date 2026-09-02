@@ -113,3 +113,29 @@ export const isUserOnline = async (userId: string): Promise<boolean> => {
     return false;
   }
 };
+
+/**
+ * Batched version of isUserOnline — one Redis pipeline round trip instead of
+ * N sequential/parallel HLEN calls. Used by admin list endpoints that need
+ * presence for a whole page of users at once.
+ */
+export const areUsersOnline = async (
+  userIds: string[],
+): Promise<Map<string, boolean>> => {
+  const result = new Map<string, boolean>();
+  if (userIds.length === 0) return result;
+  try {
+    const pipeline = redis.pipeline();
+    for (const userId of userIds) {
+      pipeline.hlen(presenceKey(userId));
+    }
+    const responses = await pipeline.exec();
+    userIds.forEach((userId, index) => {
+      const count = (responses?.[index]?.[1] as number) ?? 0;
+      result.set(userId, count > 0);
+    });
+  } catch {
+    for (const userId of userIds) result.set(userId, false);
+  }
+  return result;
+};

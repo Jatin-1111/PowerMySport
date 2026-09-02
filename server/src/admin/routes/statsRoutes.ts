@@ -40,6 +40,7 @@ import {
 import { funnelEventSchema, guestEventSchema } from "../../middleware/schemas";
 import { validateRequest } from "../../middleware/validation";
 import { guestTrackRateLimiter } from "../../middleware/rateLimit";
+import { cacheResponse } from "../../middleware/cacheMiddleware";
 
 const router = Router();
 
@@ -70,8 +71,8 @@ router.use(adminMiddleware);
 // "is an active admin" — restricting these would break the home page for
 // any role whose custom permission set doesn't happen to include the
 // permission chosen here.
-router.get("/platform", getPlatformStats);
-router.get("/pending-counts", getPendingCounts);
+router.get("/platform", cacheResponse(30), getPlatformStats);
+router.get("/pending-counts", cacheResponse(15), getPendingCounts);
 
 // Destructive / irreversible — reserved for System Admin, same tier as
 // admin-account creation.
@@ -93,26 +94,31 @@ router.get(
 router.get(
   "/guests/activity",
   requirePermission("analytics:view"),
+  cacheResponse(60),
   getGuestActivity,
 );
 router.get(
   "/users/growth",
   requirePermission("analytics:view"),
+  cacheResponse(60),
   getUserGrowthAnalytics,
 );
 router.get(
   "/funnel/summary",
   requirePermission("analytics:view"),
+  cacheResponse(60),
   getFunnelSummary,
 );
 router.get(
   "/funnel/trends",
   requirePermission("analytics:view"),
+  cacheResponse(60),
   getFunnelTrends,
 );
 router.get(
   "/finance/reconciliation",
   requirePermission("analytics:view"),
+  cacheResponse(60),
   getFinanceReconciliation,
 );
 router.get(
@@ -155,6 +161,7 @@ router.get(
 router.get(
   "/users/analytics/venue-listers",
   requirePermission("users:view"),
+  cacheResponse(60),
   getVenueListersAnalytics,
 );
 router.get("/users/experts", requirePermission("users:view"), getExpertUsers);
@@ -166,6 +173,7 @@ router.get("/bookings", requirePermission("bookings:view"), getAllBookings);
 router.get(
   "/unsupported-sports",
   requirePermission("analytics:view"),
+  cacheResponse(60),
   getUnsupportedSportsStats,
 );
 

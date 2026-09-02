@@ -295,5 +295,11 @@ userSchema.methods.refreshPhotoUrl = async function (
 
 userSchema.index({ role: 1, createdAt: -1 });
 userSchema.index({ role: 1, isActive: 1 });
+// Backs admin listUsersForSafety — filters {role (or $in list)} + optional
+// {isActive}, sorts {updatedAt:-1}. Two variants since isActive is optional:
+// an unconstrained middle field blocks a compound index from serving the
+// trailing sort.
+userSchema.index({ role: 1, updatedAt: -1 });
+userSchema.index({ role: 1, isActive: 1, updatedAt: -1 });
 
 export const User = mongoose.model<UserDocument>("User", userSchema);

@@ -43,7 +43,6 @@ const disputeSchema = new Schema<DisputeDocument>(
       type: String,
       enum: ["OPEN", "RESOLVED", "CLOSED"],
       default: "OPEN",
-      index: true,
     },
     resolutionMethod: {
       type: String,
@@ -71,6 +70,14 @@ const disputeSchema = new Schema<DisputeDocument>(
   },
   { timestamps: true },
 );
+
+// listDisputes (admin) has no filter, only sorts {createdAt:-1} — none of
+// the single-field indexes above serve that sort.
+disputeSchema.index({ createdAt: -1 });
+// getPendingCounts (admin dashboard/nav badge, hit on every admin page load)
+// runs countDocuments({status:"OPEN"}) — also serves a future status-filtered
+// list without needing a separate solo index.
+disputeSchema.index({ status: 1, createdAt: -1 });
 
 export const Dispute = mongoose.model<DisputeDocument>(
   "Dispute",

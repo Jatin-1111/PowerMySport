@@ -115,6 +115,8 @@ tournamentEditionSchema.index({ sportSlug: 1, startDate: 1 });
 // approved before that page existed carry no slug, and a plain unique index
 // would treat every one of those nulls as a duplicate of the last.
 tournamentEditionSchema.index({ slug: 1 }, { unique: true, sparse: true });
+// Backs admin getCalendarFreshness — per-sport findOne sorted {lastCheckedAt:-1}.
+tournamentEditionSchema.index({ sportSlug: 1, lastCheckedAt: -1 });
 
 export const TournamentEdition =
   mongoose.models.TournamentEdition ||

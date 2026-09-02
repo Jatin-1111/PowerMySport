@@ -511,4 +511,10 @@ coachSchema.index({
   _id: 1,
 });
 
+// Backs admin listCoaches — filters {} or {verificationStatus} and always
+// sorts {createdAt:-1}; the solo verificationStatus index above doesn't
+// cover the sort.
+coachSchema.index({ verificationStatus: 1, createdAt: -1 });
+coachSchema.index({ createdAt: -1 });
+
 export const Coach = mongoose.model<CoachDocument>("Coach", coachSchema);

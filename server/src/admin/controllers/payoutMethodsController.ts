@@ -436,7 +436,7 @@ export const updateVenuePayoutMethod = async (
       return;
     }
 
-    const venues = await Venue.find({ ownerId: userId });
+    const venues = await Venue.find({ ownerId: userId }).sort({ createdAt: 1 });
     if (venues.length === 0) {
       res
         .status(404)
@@ -444,14 +444,15 @@ export const updateVenuePayoutMethod = async (
       return;
     }
 
-    for (const venue of venues) {
-      const existing = (venue.payoutMethods || []).find(
-        (method) => method.id === methodId,
-      );
-      if (!existing) {
-        continue;
-      }
+    // Payout methods are mirrored across every venue an owner has, so the
+    // same methodId matches (or doesn't) on every venue — validate once
+    // instead of once per venue, and only if at least one venue actually has
+    // this method (preserves the original no-op-on-unknown-id behavior).
+    const hasMatch = venues.some((venue) =>
+      (venue.payoutMethods || []).some((method) => method.id === methodId),
+    );
 
+    if (hasMatch) {
       const validationError = validateMethodPayload(
         req.body.type === "UPI" ? "UPI" : "BANK_TRANSFER",
         req.body as Record<string, unknown>,
@@ -460,29 +461,34 @@ export const updateVenuePayoutMethod = async (
         res.status(400).json({ success: false, message: validationError });
         return;
       }
-
-      const updated = buildMethodFromBody(
-        req.body as Record<string, unknown>,
-        existing,
-      );
-      updated.isDefault = existing.isDefault ?? false;
-
-      venue.payoutMethods = (venue.payoutMethods || []).map((method) =>
-        method.id === methodId ? updated : method,
-      );
-      venue.payoutMethods = ensureDefaultMethod(venue.payoutMethods);
-      await venue.save();
     }
+
+    await Promise.all(
+      venues.map(async (venue) => {
+        const existing = (venue.payoutMethods || []).find(
+          (method) => method.id === methodId,
+        );
+        if (!existing) {
+          return;
+        }
+
+        const updated = buildMethodFromBody(
+          req.body as Record<string, unknown>,
+          existing,
+        );
+        updated.isDefault = existing.isDefault ?? false;
+
+        venue.payoutMethods = (venue.payoutMethods || []).map((method) =>
+          method.id === methodId ? updated : method,
+        );
+        venue.payoutMethods = ensureDefaultMethod(venue.payoutMethods);
+        await venue.save();
+      }),
+    );
 
     res.json({
       success: true,
-      data:
-        (
-          await Venue.findOne({ ownerId: userId })
-            .sort({ createdAt: 1 })
-            .select("payoutMethods")
-            .lean()
-        )?.payoutMethods || [],
+      data: venues[0]!.payoutMethods || [],
     });
   } catch (error) {
     res
@@ -504,7 +510,7 @@ export const deleteVenuePayoutMethod = async (
       return;
     }
 
-    const venues = await Venue.find({ ownerId: userId });
+    const venues = await Venue.find({ ownerId: userId }).sort({ createdAt: 1 });
     if (venues.length === 0) {
       res
         .status(404)
@@ -512,23 +518,19 @@ export const deleteVenuePayoutMethod = async (
       return;
     }
 
-    for (const venue of venues) {
-      venue.payoutMethods = (venue.payoutMethods || []).filter(
-        (method) => method.id !== methodId,
-      );
-      venue.payoutMethods = ensureDefaultMethod(venue.payoutMethods);
-      await venue.save();
-    }
+    await Promise.all(
+      venues.map(async (venue) => {
+        venue.payoutMethods = (venue.payoutMethods || []).filter(
+          (method) => method.id !== methodId,
+        );
+        venue.payoutMethods = ensureDefaultMethod(venue.payoutMethods);
+        await venue.save();
+      }),
+    );
 
     res.json({
       success: true,
-      data:
-        (
-          await Venue.findOne({ ownerId: userId })
-            .sort({ createdAt: 1 })
-            .select("payoutMethods")
-            .lean()
-        )?.payoutMethods || [],
+      data: venues[0]!.payoutMethods || [],
     });
   } catch (error) {
     res
@@ -550,7 +552,7 @@ export const setDefaultVenuePayoutMethod = async (
       return;
     }
 
-    const venues = await Venue.find({ ownerId: userId });
+    const venues = await Venue.find({ ownerId: userId }).sort({ createdAt: 1 });
     if (venues.length === 0) {
       res
         .status(404)
@@ -558,23 +560,19 @@ export const setDefaultVenuePayoutMethod = async (
       return;
     }
 
-    for (const venue of venues) {
-      venue.payoutMethods = (venue.payoutMethods || []).map((method) => ({
-        ...method,
-        isDefault: method.id === methodId,
-      }));
-      await venue.save();
-    }
+    await Promise.all(
+      venues.map(async (venue) => {
+        venue.payoutMethods = (venue.payoutMethods || []).map((method) => ({
+          ...method,
+          isDefault: method.id === methodId,
+        }));
+        await venue.save();
+      }),
+    );
 
     res.json({
       success: true,
-      data:
-        (
-          await Venue.findOne({ ownerId: userId })
-            .sort({ createdAt: 1 })
-            .select("payoutMethods")
-            .lean()
-        )?.payoutMethods || [],
+      data: venues[0]!.payoutMethods || [],
     });
   } catch (error) {
     res

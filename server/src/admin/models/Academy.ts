@@ -624,6 +624,11 @@ academySchema.index({ isApproved: 1, kycVerified: 1 });
 
 // Create compound index for filtering
 academySchema.index({ isApproved: 1, isActive: 1, sports: 1 });
+// Backs admin getPendingAcademies (review queue) — filters
+// {onboardingCompleted, isApproved?} sorted {createdAt:-1}, and
+// getPendingCounts' countDocuments({onboardingCompleted:true,isApproved:false})
+// hit on every admin dashboard load.
+academySchema.index({ onboardingCompleted: 1, isApproved: 1, createdAt: -1 });
 
 const Academy =
   mongoose.models.Academy ||

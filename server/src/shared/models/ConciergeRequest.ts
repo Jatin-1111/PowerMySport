@@ -50,6 +50,11 @@ const ConciergeRequestSchema = new Schema<IConciergeRequest>(
   { timestamps: true },
 );
 
+// getAllConciergeRequests (admin) sorts {createdAt:-1} unfiltered;
+// getPendingCounts filters {status:"pending"}. No index served either before.
+ConciergeRequestSchema.index({ status: 1, createdAt: -1 });
+ConciergeRequestSchema.index({ createdAt: -1 });
+
 export const ConciergeRequest = mongoose.model<IConciergeRequest>(
   "ConciergeRequest",
   ConciergeRequestSchema,

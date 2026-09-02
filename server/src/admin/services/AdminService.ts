@@ -252,8 +252,8 @@ export const getAdminById = async (adminId: string): Promise<IAdmin | null> => {
   return await Admin.findById(adminId);
 };
 
-export const getAllAdmins = async (): Promise<IAdmin[]> => {
-  return await Admin.find().sort({ createdAt: -1 });
+export const getAllAdmins = async () => {
+  return await Admin.find().sort({ createdAt: -1 }).lean();
 };
 
 /**

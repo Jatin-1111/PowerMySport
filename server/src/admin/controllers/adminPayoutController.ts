@@ -48,7 +48,10 @@ export const listPendingPayouts = async (
       status: "COMPLETED",
       "payments.status": "PENDING",
       "payments.userType": { $in: ["VenueLister", "Coach"] },
-    }).lean();
+    })
+      .select("payments")
+      .limit(2000)
+      .lean();
 
     const payoutMap = new Map<string, any>();
 
@@ -177,56 +180,77 @@ export const listPendingPayouts = async (
 
     const pendingPayouts = Array.from(payoutMap.values());
 
-    // Populate vendor details and payout methods
-    const populatedPayouts = await Promise.all(
-      pendingPayouts.map(async (payout) => {
-        const user = await User.findById(payout.vendorId)
-          .select("name email phone")
-          .lean();
+    // Populate vendor details and payout methods — batched via $in instead
+    // of one User.findById + one Coach/Venue/Expert.findOne per vendor.
+    const vendorIds = pendingPayouts.map((p) => p.vendorId);
+    const coachVendorIds = pendingPayouts
+      .filter((p) => p.vendorRole === "Coach" || p.vendorRole === "CoachSession")
+      .map((p) => p.vendorId);
+    const venueVendorIds = pendingPayouts
+      .filter((p) => p.vendorRole === "VenueLister")
+      .map((p) => p.vendorId);
+    const expertVendorIds = pendingPayouts
+      .filter((p) => p.vendorRole === "Expert")
+      .map((p) => p.vendorId);
 
-        let payoutMethod: IPayoutMethod | null = null;
-        if (payout.vendorRole === "Coach") {
-          const coach = await Coach.findOne({ userId: payout.vendorId })
-            .select("payoutMethods")
-            .lean();
-          payoutMethod = getPrimaryPayoutMethod(
-            coach?.payoutMethods as IPayoutMethod[] | undefined,
-          );
-        } else if (payout.vendorRole === "CoachSession") {
-          const coach = await Coach.findOne({ userId: payout.vendorId })
-            .select("payoutMethods")
-            .lean();
-          payoutMethod = getPrimaryPayoutMethod(
-            coach?.payoutMethods as IPayoutMethod[] | undefined,
-          );
-        } else if (payout.vendorRole === "VenueLister") {
-          const venue = await Venue.findOne({ ownerId: payout.vendorId })
-            .select("payoutMethods")
-            .lean();
-          payoutMethod = getPrimaryPayoutMethod(
-            venue?.payoutMethods as IPayoutMethod[] | undefined,
-          );
-        } else if (payout.vendorRole === "Expert") {
-          const expert = await Expert.findOne({ userId: payout.vendorId })
-            .select("payoutMethods")
-            .lean();
-          payoutMethod = getPrimaryPayoutMethod(
-            expert?.payoutMethods as unknown as IPayoutMethod[] | undefined,
-          );
-        }
-        // .lean() bypasses the models' schema-level decrypt getters — admin
-        // needs the real, unmasked value here to actually process the payout.
-        if (payoutMethod) payoutMethod = decryptPayoutMethod(payoutMethod);
+    const [users, coaches, venues, experts] = await Promise.all([
+      User.find({ _id: { $in: vendorIds } })
+        .select("name email phone")
+        .lean(),
+      Coach.find({ userId: { $in: coachVendorIds } })
+        .select("userId payoutMethods")
+        .lean(),
+      Venue.find({ ownerId: { $in: venueVendorIds } })
+        .select("ownerId payoutMethods")
+        .lean(),
+      Expert.find({ userId: { $in: expertVendorIds } })
+        .select("userId payoutMethods")
+        .lean(),
+    ]);
 
-        return {
-          ...payout,
-          vendorName: user?.name || "Unknown",
-          vendorEmail: user?.email || "Unknown",
-          vendorPhone: user?.phone || "Unknown",
-          payoutMethod,
-        };
-      }),
+    const usersByVendorId = new Map(users.map((u) => [u._id.toString(), u]));
+    const coachesByUserId = new Map(
+      coaches.map((c) => [c.userId.toString(), c]),
     );
+    const venuesByOwnerId = new Map(
+      venues.map((v) => [String(v.ownerId), v]),
+    );
+    const expertsByUserId = new Map(
+      experts.map((e) => [e.userId.toString(), e]),
+    );
+
+    const populatedPayouts = pendingPayouts.map((payout) => {
+      const user = usersByVendorId.get(payout.vendorId);
+
+      let payoutMethod: IPayoutMethod | null = null;
+      if (payout.vendorRole === "Coach" || payout.vendorRole === "CoachSession") {
+        const coach = coachesByUserId.get(payout.vendorId);
+        payoutMethod = getPrimaryPayoutMethod(
+          coach?.payoutMethods as IPayoutMethod[] | undefined,
+        );
+      } else if (payout.vendorRole === "VenueLister") {
+        const venue = venuesByOwnerId.get(payout.vendorId);
+        payoutMethod = getPrimaryPayoutMethod(
+          venue?.payoutMethods as IPayoutMethod[] | undefined,
+        );
+      } else if (payout.vendorRole === "Expert") {
+        const expert = expertsByUserId.get(payout.vendorId);
+        payoutMethod = getPrimaryPayoutMethod(
+          expert?.payoutMethods as unknown as IPayoutMethod[] | undefined,
+        );
+      }
+      // .lean() bypasses the models' schema-level decrypt getters — admin
+      // needs the real, unmasked value here to actually process the payout.
+      if (payoutMethod) payoutMethod = decryptPayoutMethod(payoutMethod);
+
+      return {
+        ...payout,
+        vendorName: user?.name || "Unknown",
+        vendorEmail: user?.email || "Unknown",
+        vendorPhone: user?.phone || "Unknown",
+        payoutMethod,
+      };
+    });
 
     res.status(200).json({
       success: true,
