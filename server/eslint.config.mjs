@@ -40,4 +40,3 @@ const eslintConfig = [
 ];
 
 export default eslintConfig;
-// hook-test

@@ -8,6 +8,14 @@
     "lint": {
       "outputs": []
     },
+    "typecheck": {
+      "outputs": [],
+      "dependsOn": []
+    },
+    "test": {
+      "outputs": [],
+      "cache": false
+    },
     "dev": {
       "cache": false,
       "persistent": true

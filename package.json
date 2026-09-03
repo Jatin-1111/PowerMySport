@@ -20,7 +20,7 @@
     "lint-staged": "^15.5.2"
   },
   "lint-staged": {
-    "**/*.{ts,tsx,js,jsx}": [
+    "**/*.{ts,tsx,js,jsx,mjs}": [
       "prettier --write",
       "eslint --fix --no-warn-ignored"
     ],

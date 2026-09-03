@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit --project tsconfig.check.json",
     "test": "vitest run",
     "test:watch": "vitest"
   },
