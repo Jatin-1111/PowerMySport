@@ -1,1 +1,20 @@
+# Normalize all text files to LF regardless of a contributor's local
+# core.autocrlf setting — Prettier is configured for endOfLine: "lf",
+# so without this, any Windows checkout with autocrlf=true fails
+# `npm run format:check` repo-wide even though nothing actually changed.
+* text=auto eol=lf
+
 *.sh text eol=lf
+
+# Binary assets — leave untouched
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
