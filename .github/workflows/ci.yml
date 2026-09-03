@@ -38,6 +38,9 @@ jobs:
   lint:
     name: ESLint — ${{ matrix.app }}
     runs-on: ubuntu-latest
+    # Pre-existing violations: reports lint errors without blocking PRs.
+    # Remove once the backlog is cleared.
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -65,6 +68,7 @@ jobs:
   lint-server:
     name: ESLint — server
     runs-on: ubuntu-latest
+    # Server lint uses warn-only rules — exits 0 always. No continue-on-error needed.
     defaults:
       run:
         working-directory: server

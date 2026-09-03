@@ -135,12 +135,10 @@ export const listDataSourceTargets = async (req: Request, res: Response): Promis
 
     if (targetType === "FEDERATION") {
       const docs = await Federation.find({ sportSlug }).select("slug name acronym").lean();
-      res
-        .status(200)
-        .json({
-          success: true,
-          data: docs.map((d) => ({ slug: d.slug, name: `${d.name} (${d.acronym})` })),
-        });
+      res.status(200).json({
+        success: true,
+        data: docs.map((d) => ({ slug: d.slug, name: `${d.name} (${d.acronym})` })),
+      });
       return;
     }
 
@@ -258,12 +256,10 @@ export const createDataSource = async (req: Request, res: Response): Promise<voi
       body.targetType === "CURATED_TOURNAMENT" &&
       (!body.federationSlug || !body.tournamentSlug)
     ) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "federationSlug and tournamentSlug are required for a CURATED_TOURNAMENT source",
-        });
+      res.status(400).json({
+        success: false,
+        message: "federationSlug and tournamentSlug are required for a CURATED_TOURNAMENT source",
+      });
       return;
     }
     if (body.sourceKind === "LINK" && !body.sourceUrl) {
