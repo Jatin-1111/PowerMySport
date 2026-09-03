@@ -7,11 +7,6 @@ import { toast } from "@/lib/toast";
 import { communityService } from "@/modules/community/services/community";
 import { communityFollowStore } from "@/modules/community/lib/followStore";
 import { uploadChatImage } from "@/modules/community/hooks/useChatImageUpload";
-import { computeWaveform } from "@/modules/community/utils/audioWaveform";
-import {
-  COMMUNITY_PINNED_KEY,
-  COMMUNITY_MUTED_KEY,
-} from "@/modules/community/constants/communityPage";
 import {
   getCachedMessages,
   setCachedMessages,
@@ -22,14 +17,11 @@ import {
   CommunityUserSearchResult,
   CommunityGroupSummary,
   CommunityProfile,
-  CommunityMemberProfile,
   ConversationListResponse,
   ConversationItem,
   ConversationMessage,
   MessageReaction,
-  BlockedUser,
 } from "@/modules/community/types";
-import { GroupMember } from "@/modules/community/components/GroupMembersList";
 import { getAvatarCharacter, isWithinMessageEditWindow } from "@/modules/community/utils/chatUtils";
 import {
   COMMUNITY_ACTIVE_TAB_KEY,
@@ -49,6 +41,11 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
+import { useReportModal } from "@/modules/community/hooks/useReportModal";
+import { useBlockedUsers } from "@/modules/community/hooks/useBlockedUsers";
+import { useVoiceRecording } from "@/modules/community/hooks/useVoiceRecording";
+import { useMemberProfile } from "@/modules/community/hooks/useMemberProfile";
+import { useChatEnhancements } from "@/modules/community/hooks/useChatEnhancements";
 
 export function useCommunityPage(options?: { forceView?: "community-overview" | "conversations" }) {
   const prefersReducedMotion = useReducedMotion();
@@ -128,11 +125,13 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
   const [isLeavingGroupId, setIsLeavingGroupId] = useState<string | null>(null);
   const [isDeletingGroupId, setIsDeletingGroupId] = useState<string | null>(null);
 
-  const [reportModal, setReportModal] = useState<{
-    targetType: "MESSAGE" | "GROUP";
-    targetId: string;
-  } | null>(null);
-  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const {
+    reportModal,
+    setReportModal,
+    isSubmittingReport,
+    handleOpenReportModal,
+    handleSubmitReportWrapper,
+  } = useReportModal();
 
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -149,85 +148,21 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
   const [error, setError] = useState<string | null>(null);
   const [isConversationSidebarOpen, setIsConversationSidebarOpen] = useState(true);
   const [showGroupMembersPanel, setShowGroupMembersPanel] = useState(false);
-  const [isMemberProfileOpen, setIsMemberProfileOpen] = useState(false);
-  const [isLoadingMemberProfile, setIsLoadingMemberProfile] = useState(false);
-  const [memberProfileError, setMemberProfileError] = useState<string | null>(null);
-  const [selectedMemberProfile, setSelectedMemberProfile] = useState<CommunityMemberProfile | null>(
-    null
-  );
   const [typingUsers, setTypingUsers] = useState<Record<string, string[]>>({});
 
-  // ── Chat Enhancement State (client-side, localStorage-backed) ──
-  const [pinnedConversationIds, setPinnedConversationIds] = useState<string[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      return JSON.parse(localStorage.getItem(COMMUNITY_PINNED_KEY) || "[]");
-    } catch {
-      return [];
-    }
-  });
-  const [mutedConversationIds, setMutedConversationIds] = useState<string[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      return JSON.parse(localStorage.getItem(COMMUNITY_MUTED_KEY) || "[]");
-    } catch {
-      return [];
-    }
-  });
-  const mutedConversationIdsRef = useRef<string[]>(mutedConversationIds);
-  useEffect(() => {
-    mutedConversationIdsRef.current = mutedConversationIds;
-  }, [mutedConversationIds]);
-
-  const [conversationSearchQuery, setConversationSearchQuery] = useState("");
   const [showChatDetailsSidebar, setShowChatDetailsSidebar] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  // New features state
-  const [blockedUsersList, setBlockedUsersList] = useState<BlockedUser[]>([]);
-  const [isLoadingBlockedUsers, setIsLoadingBlockedUsers] = useState(false);
-  const [selectChatsMode, setSelectChatsMode] = useState(false);
-  const [selectedChatIds, setSelectedChatIds] = useState<string[]>([]);
-  const [showBlockedUsersModal, setShowBlockedUsersModal] = useState(false);
   const [showAddChatModal, setShowAddChatModal] = useState(false);
   const [forwardingMessages, setForwardingMessages] = useState<ConversationMessage[]>([]);
   const [messageToDelete, setMessageToDelete] = useState<ConversationMessage | null>(null);
 
-  const loadBlockedUsers = useCallback(async () => {
-    setIsLoadingBlockedUsers(true);
-    try {
-      const users = await communityService.getBlockedUsers();
-      setBlockedUsersList(users);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to load blocked users");
-    } finally {
-      setIsLoadingBlockedUsers(false);
-    }
-  }, []);
-
-  const handleUnblockUserById = useCallback(async (targetUserId: string) => {
-    try {
-      await communityService.unblockUser(targetUserId);
-      setBlockedUsersList((current) => current.filter((user) => user.id !== targetUserId));
-      setProfile((current) =>
-        current
-          ? {
-              ...current,
-              blockedUsers: (current.blockedUsers || []).filter((id) => id !== targetUserId),
-            }
-          : current
-      );
-      toast.success("User unblocked");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to unblock user");
-    }
-  }, []);
-
-  useEffect(() => {
-    if (showBlockedUsersModal) {
-      void loadBlockedUsers();
-    }
-  }, [showBlockedUsersModal, loadBlockedUsers]);
+  const {
+    blockedUsersList,
+    isLoadingBlockedUsers,
+    showBlockedUsersModal,
+    setShowBlockedUsersModal,
+    handleUnblockUserById,
+  } = useBlockedUsers(setProfile);
 
   /**
    * Pins a message for the whole group. This used to write to localStorage, so
@@ -245,32 +180,17 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     }
   };
 
-  const toggleChatSelection = useCallback((chatId: string) => {
-    setSelectedChatIds((prev) =>
-      prev.includes(chatId) ? prev.filter((id) => id !== chatId) : [...prev, chatId]
-    );
-  }, []);
-
-  const clearChatSelection = useCallback(() => {
-    setSelectedChatIds([]);
-    setSelectChatsMode(false);
-  }, []);
-
   const selectedConversationIdRef = useRef<string | null>(null);
   // The socket listeners below are bound once, before `profile` has
   // loaded. Reading `profile` from their closure therefore compares against
   // undefined forever, so "is this mine?" checks go through this ref.
   const profileUserIdRef = useRef<string | undefined>(undefined);
   const typingTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const memberProfileRequestIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [selectedConversationPinnedId, setSelectedConversationPinnedId] = useState<string | null>(
     null
   );
   const imageInputRef = useRef<HTMLInputElement | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordingChunksRef = useRef<Blob[]>([]);
-  const recordingStartedAtRef = useRef<number>(0);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const isInitialMessageLoadRef = useRef<boolean>(false);
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -310,6 +230,34 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     () => getConversationById(selectedConversationId),
     [getConversationById, selectedConversationId]
   );
+
+  const {
+    pinnedConversationIds,
+    mutedConversationIds,
+    mutedConversationIdsRef,
+    conversationSearchQuery,
+    setConversationSearchQuery,
+    showEmojiPicker,
+    setShowEmojiPicker,
+    selectChatsMode,
+    setSelectChatsMode,
+    selectedChatIds,
+    toggleChatSelection,
+    clearChatSelection,
+    handleTogglePinConversation,
+    handleToggleMuteConversation,
+    handleMarkAllAsRead,
+    handleMarkConversationAsUnread,
+    handleClearChat,
+    handleDeleteChat,
+  } = useChatEnhancements(
+    selectedConversationId,
+    selectedConversation,
+    setSelectedConversationId,
+    setMessages,
+    setConversations
+  );
+
   const mobileActionMessage = useMemo(() => {
     if (!mobileActionMessageId) return null;
     return messages.find((m) => m.id === mobileActionMessageId) || null;
@@ -1404,29 +1352,6 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     }
   };
 
-  const handleOpenReportModal = (targetType: "MESSAGE" | "GROUP", targetId: string) => {
-    setReportModal({ targetType, targetId });
-  };
-
-  const handleSubmitReportWrapper = async (reason: string, details: string) => {
-    if (!reportModal || !reason) return;
-    try {
-      setIsSubmittingReport(true);
-      await communityService.reportContent({
-        targetType: reportModal.targetType,
-        targetId: reportModal.targetId,
-        reason,
-        details: details || undefined,
-      });
-      setReportModal(null);
-      toast.success("Report submitted");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to submit report");
-    } finally {
-      setIsSubmittingReport(false);
-    }
-  };
-
   const handleAddMemberToGroup = async (groupId: string, targetUserId: string) => {
     try {
       setIsAddingMemberUserId(targetUserId);
@@ -1551,56 +1476,29 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     }
   };
 
-  const handleOpenConversation = useCallback((conversationId: string) => {
-    setSelectedConversationId(conversationId);
-    setActiveSidebarTab("conversations");
-    setWorkspaceView("CHAT");
-    setSidebarMode("INBOX");
-    setShowChatDetailsSidebar(false);
-    // Inline member profile reset (handleCloseMemberProfile is declared later)
-    memberProfileRequestIdRef.current = null;
-    setIsMemberProfileOpen(false);
-    setIsLoadingMemberProfile(false);
-    setMemberProfileError(null);
-    setSelectedMemberProfile(null);
-  }, []);
+  const {
+    isMemberProfileOpen,
+    isLoadingMemberProfile,
+    memberProfileError,
+    selectedMemberProfile,
+    resetMemberProfile,
+    handleCloseMemberProfile,
+    handleOpenMemberProfile,
+    handleMemberClick,
+    handleMessageSelectedMember,
+  } = useMemberProfile(router, handleStartConversation, setShowChatDetailsSidebar);
 
-  const handleCloseMemberProfile = useCallback(() => {
-    memberProfileRequestIdRef.current = null;
-    setIsMemberProfileOpen(false);
-    setIsLoadingMemberProfile(false);
-    setMemberProfileError(null);
-    setSelectedMemberProfile(null);
-  }, []);
-
-  const handleOpenMemberProfile = useCallback(async (memberId: string) => {
-    memberProfileRequestIdRef.current = memberId;
-    setIsMemberProfileOpen(true);
-    setShowChatDetailsSidebar(true);
-    setIsLoadingMemberProfile(true);
-    setMemberProfileError(null);
-    setSelectedMemberProfile(null);
-
-    try {
-      const profileData = await communityService.getPlayerProfile(memberId);
-      if (memberProfileRequestIdRef.current === memberId) setSelectedMemberProfile(profileData);
-    } catch (e) {
-      if (memberProfileRequestIdRef.current === memberId) {
-        setMemberProfileError(e instanceof Error ? e.message : "Failed to load profile");
-        toast.error(e instanceof Error ? e.message : "Failed to load profile");
-      }
-    } finally {
-      if (memberProfileRequestIdRef.current === memberId) setIsLoadingMemberProfile(false);
-    }
-  }, []);
-
-  const handleMemberClick = (member: GroupMember) => router.push(`/members/${member.id}`);
-
-  const handleMessageSelectedMember = useCallback(() => {
-    if (!selectedMemberProfile) return;
-    handleCloseMemberProfile();
-    void handleStartConversation(selectedMemberProfile.id);
-  }, [handleCloseMemberProfile, handleStartConversation, selectedMemberProfile]);
+  const handleOpenConversation = useCallback(
+    (conversationId: string) => {
+      setSelectedConversationId(conversationId);
+      setActiveSidebarTab("conversations");
+      setWorkspaceView("CHAT");
+      setSidebarMode("INBOX");
+      setShowChatDetailsSidebar(false);
+      resetMemberProfile();
+    },
+    [resetMemberProfile]
+  );
 
   const handleLoadMoreConversations = async () => {
     if (isLoadingMoreConversations || !hasMoreConversations) return;
@@ -2199,150 +2097,7 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     }
   };
 
-  const [isRecording, setIsRecording] = useState(false);
-
-  /**
-   * Press to start, press again to send. The clip is uploaded on stop rather
-   * than streamed, which keeps it on the same presigned-POST path as every
-   * other attachment.
-   */
-  const toggleVoiceRecording = async () => {
-    if (isRecording) {
-      mediaRecorderRef.current?.stop();
-      return;
-    }
-
-    if (typeof window === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-      toast.error("Recording is not supported in this browser");
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Safari does not produce audio/webm; letting the browser pick and
-      // reading back what it chose keeps the MIME honest for the allowlist.
-      const preferred = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
-      const recorder = new MediaRecorder(stream, { mimeType: preferred });
-
-      recordingChunksRef.current = [];
-      recordingStartedAtRef.current = Date.now();
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordingChunksRef.current.push(event.data);
-        }
-      };
-
-      recorder.onstop = () => {
-        void (async () => {
-          // Release the mic straight away — a live indicator lingering after the
-          // clip is sent reads as the app still listening.
-          stream.getTracks().forEach((track) => track.stop());
-          setIsRecording(false);
-
-          const durationMs = Date.now() - recordingStartedAtRef.current;
-          const blob = new Blob(recordingChunksRef.current, {
-            type: preferred,
-          });
-          recordingChunksRef.current = [];
-
-          if (durationMs < 700 || blob.size === 0) {
-            toast.error("That was too short to send");
-            return;
-          }
-
-          const extension = preferred === "audio/webm" ? "webm" : "m4a";
-          const file = new File([blob], `voice-message.${extension}`, {
-            type: preferred,
-          });
-          // Peaks are computed here, once, by the device that recorded the clip.
-          const waveform = await computeWaveform(blob);
-          void handleSendAttachment(file, "VOICE", durationMs, waveform);
-        })();
-      };
-
-      mediaRecorderRef.current = recorder;
-      recorder.start();
-      setIsRecording(true);
-    } catch {
-      toast.error("Microphone access was denied");
-    }
-  };
-
-  // ── Chat Enhancement Handlers ──
-
-  const handleClearChat = useCallback(
-    async (conversationId: string) => {
-      if (selectedConversationId === conversationId) {
-        setMessages([]);
-      }
-      try {
-        await setCachedMessages(conversationId, []);
-      } catch {}
-      toast.success("Chat cleared");
-    },
-    [selectedConversationId]
-  );
-
-  const handleDeleteChat = useCallback(
-    async (conversationId: string) => {
-      setConversations((prev) => prev.filter((c) => c.id !== conversationId));
-      if (selectedConversationId === conversationId) {
-        setSelectedConversationId(null);
-        setMessages([]);
-      }
-      try {
-        await setCachedMessages(conversationId, []);
-      } catch {}
-      toast.success("Chat deleted");
-    },
-    [selectedConversationId]
-  );
-
-  const handleTogglePinConversation = useCallback((conversationId: string) => {
-    setPinnedConversationIds((prev) => {
-      const next = prev.includes(conversationId)
-        ? prev.filter((id) => id !== conversationId)
-        : [...prev, conversationId];
-      try {
-        localStorage.setItem(COMMUNITY_PINNED_KEY, JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-  }, []);
-
-  const handleToggleMuteConversation = useCallback((conversationId: string) => {
-    setMutedConversationIds((prev) => {
-      const next = prev.includes(conversationId)
-        ? prev.filter((id) => id !== conversationId)
-        : [...prev, conversationId];
-      try {
-        localStorage.setItem(COMMUNITY_MUTED_KEY, JSON.stringify(next));
-      } catch {}
-      toast.success(
-        next.includes(conversationId) ? "Notifications muted" : "Notifications unmuted"
-      );
-      return next;
-    });
-  }, []);
-
-  const handleMarkAllAsRead = useCallback(() => {
-    if (!selectedConversation) return;
-    // Optimistically set unread count to 0
-    setConversations((current) =>
-      (Array.isArray(current) ? current : []).map((c) =>
-        c.id === selectedConversation.id && c.unreadCount !== 0 ? { ...c, unreadCount: 0 } : c
-      )
-    );
-    toast.success("Marked all as read");
-  }, [selectedConversation]);
-
-  const handleMarkConversationAsUnread = useCallback((conversationId: string) => {
-    setConversations((prev) =>
-      prev.map((c) => (c.id === conversationId ? { ...c, unreadCount: 1 } : c))
-    );
-    toast.success("Marked as unread");
-  }, []);
+  const { isRecording, toggleVoiceRecording } = useVoiceRecording(handleSendAttachment);
 
   const showDetailsSidebar =
     isConversationsView && showChatDetailsSidebar && !!selectedConversation;
