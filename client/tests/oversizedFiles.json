@@ -22,8 +22,6 @@
   "app/(marketing)/contact/page.tsx": 986,
   "app/(marketing)/faq/page.tsx": 481,
   "app/(marketing)/federations/[slug]/FederationDetailClient.tsx": 1439,
-  "app/(marketing)/guidance/guidanceUtils.ts": 443,
-  "app/(marketing)/guidance/page.tsx": 1656,
   "app/(marketing)/HomeClient.tsx": 463,
   "app/(marketing)/how-it-works/page.tsx": 730,
   "app/(marketing)/parental-consent/page.tsx": 478,

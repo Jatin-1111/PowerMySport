@@ -24,7 +24,7 @@ import {
   DESIRED_OUTCOME_LABELS,
   type ConsultForm,
   type ProblemId,
-} from "./guidanceUtils";
+} from "@/modules/guidance/config/wizard/guidanceUtils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
