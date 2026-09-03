@@ -163,7 +163,7 @@ function SportTile({
           secondary "show stages" toggle tempts you into. */}
       <Link
         href={stageHref(entry.sportSlug, match?.key)}
-        className="font-title hover:text-power-orange focus-visible:outline-power-orange text-[17px] leading-tight font-bold text-slate-900 transition after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="font-title hover:text-power-orange focus-visible:outline-power-orange text-[17px] font-bold leading-tight text-slate-900 transition after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         {entry.sportName}
       </Link>
@@ -343,7 +343,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
           <div className="relative">
             <Search
               aria-hidden
-              className="pointer-events-none absolute top-1/2 left-3.5 h-4.5 w-4.5 -translate-y-1/2 text-slate-400"
+              className="h-4.5 w-4.5 pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
             />
             <input
               id={searchId}
@@ -351,13 +351,13 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={`Search ${entries.length} sport${entries.length === 1 ? "" : "s"}`}
-              className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white py-2.5 pr-9 pl-10 text-[15px] font-semibold text-slate-800 shadow-sm placeholder:font-normal placeholder:text-slate-400 focus:outline-none"
+              className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-[15px] font-semibold text-slate-800 shadow-sm placeholder:font-normal placeholder:text-slate-400 focus:outline-none"
             />
             {query && (
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className="focus-visible:outline-power-orange absolute top-1/2 right-2 -translate-y-1/2 rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2"
+                className="focus-visible:outline-power-orange absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 <X aria-hidden className="h-4 w-4" />
                 <span className="sr-only">Clear search</span>

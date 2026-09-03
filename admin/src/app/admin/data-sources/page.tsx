@@ -188,7 +188,7 @@ export default function AdminDataSourcesPage() {
                         {TARGET_LABEL[s.targetType]}
                       </span>
                       <span className="text-xs text-slate-500">·</span>
-                      <span className="text-sm text-slate-700 capitalize">{s.sportSlug}</span>
+                      <span className="text-sm capitalize text-slate-700">{s.sportSlug}</span>
                       <span
                         className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_BADGE[s.status]}`}
                       >
@@ -280,7 +280,7 @@ function CalendarFreshnessCard() {
     <Card className="bg-white">
       <div className="mb-3 flex items-center gap-2">
         <CalendarClock size={16} className="text-slate-500" />
-        <h2 className="text-sm font-bold tracking-wide text-slate-500 uppercase">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
           Tournament Calendar Freshness
         </h2>
       </div>
@@ -420,11 +420,11 @@ function AddSourceForm({ onCreated, onCancel }: { onCreated: () => void; onCance
 
   return (
     <Card className="space-y-4 bg-white">
-      <h2 className="text-sm font-bold tracking-wide text-slate-500 uppercase">New Data Source</h2>
+      <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">New Data Source</h2>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
             Target Type
           </label>
           <select
@@ -441,7 +441,7 @@ function AddSourceForm({ onCreated, onCancel }: { onCreated: () => void; onCance
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
             Sport
           </label>
           <select
@@ -463,7 +463,7 @@ function AddSourceForm({ onCreated, onCancel }: { onCreated: () => void; onCance
 
       {needsTarget && (
         <div>
-          <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
             {targetType === "FEDERATION" ? "Federation" : "Tournament"}
           </label>
           <select
@@ -498,7 +498,7 @@ function AddSourceForm({ onCreated, onCancel }: { onCreated: () => void; onCance
       )}
 
       <div>
-        <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
           Source
         </label>
         <div className="mb-2 flex gap-2">

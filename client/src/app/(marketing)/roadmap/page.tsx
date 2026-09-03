@@ -122,7 +122,7 @@ function SectionHead({
 }) {
   return (
     <div className="mx-auto max-w-2xl text-center">
-      <p className="text-power-orange text-[11px] font-black tracking-[0.2em] uppercase">
+      <p className="text-power-orange text-[11px] font-black uppercase tracking-[0.2em]">
         {eyebrow}
       </p>
       <h2 className="font-title mt-2.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
@@ -162,15 +162,15 @@ export default async function PathwaysIndexPage() {
           pushed the only thing a parent can actually click below the fold on a
           laptop: a page whose job is "pick your sport" opened with no sport in
           sight. */}
-      <section className="relative pt-14 pb-14 sm:pt-20 sm:pb-16">
-        <AmbientBlob className="-top-10 -right-24 h-80 w-80 bg-orange-100/50" />
-        <AmbientBlob className="top-40 -left-28 h-72 w-72 bg-emerald-100/40" />
+      <section className="relative pb-14 pt-14 sm:pb-16 sm:pt-20">
+        <AmbientBlob className="-right-24 -top-10 h-80 w-80 bg-orange-100/50" />
+        <AmbientBlob className="-left-28 top-40 h-72 w-72 bg-emerald-100/40" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* No eyebrow badge: "Sports Pathways" restated the headline a line
               above it, and cost a row to do it. */}
           <div className="mx-auto max-w-3xl text-center">
-            <h1 className="font-title text-[2rem] leading-[1.1] font-bold tracking-[-0.02em] text-slate-900 sm:text-5xl lg:text-[3.5rem]">
+            <h1 className="font-title text-[2rem] font-bold leading-[1.1] tracking-[-0.02em] text-slate-900 sm:text-5xl lg:text-[3.5rem]">
               Starting a sport is easy.
               {/* The turn is the whole headline, so it gets its own line rather
                   than wrapping wherever the viewport happens to break it. */}
@@ -240,11 +240,11 @@ export default async function PathwaysIndexPage() {
                     )}#${sectionDomId("questions")}`}
                     className={`group flex h-full flex-col justify-between gap-3 p-4 ${SURFACE_LINK}`}
                   >
-                    <span className="group-hover:text-power-orange text-[15px] leading-snug font-bold text-slate-900 transition">
+                    <span className="group-hover:text-power-orange text-[15px] font-bold leading-snug text-slate-900 transition">
                       {item.question}
                     </span>
                     <span className="flex items-center justify-between gap-2">
-                      <span className="truncate text-[12px] font-semibold tracking-wider text-slate-400 uppercase">
+                      <span className="truncate text-[12px] font-semibold uppercase tracking-wider text-slate-400">
                         {item.sportName} · {item.stageName}
                       </span>
                       <ArrowRight
@@ -341,7 +341,7 @@ export default async function PathwaysIndexPage() {
           and the "PowerMySport helps you grow faster" pair, which between them
           asked for a long scroll and offered no specific action. */}
       <section className="reveal-on-scroll relative overflow-hidden border-y border-white/60 bg-white/50 py-16 sm:py-20">
-        <AmbientBlob className="top-10 -right-24 h-72 w-72 bg-orange-100/40" />
+        <AmbientBlob className="-right-24 top-10 h-72 w-72 bg-orange-100/40" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHead
@@ -363,7 +363,7 @@ export default async function PathwaysIndexPage() {
                   >
                     <Icon aria-hidden className="h-5 w-5" />
                   </span>
-                  <span className="font-title text-[17px] leading-snug font-bold text-slate-900">
+                  <span className="font-title text-[17px] font-bold leading-snug text-slate-900">
                     {step.title}
                   </span>
                   <span className="mt-2.5 flex-1 text-[14px] leading-relaxed text-slate-600">

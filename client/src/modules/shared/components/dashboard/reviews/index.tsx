@@ -71,7 +71,7 @@ export function ReviewCard({ review }: { review: ReviewItem }) {
       {/* Header row */}
       <div className="flex items-start gap-3">
         {/* Avatar */}
-        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-orange-400 text-sm font-semibold text-white select-none">
+        <div className="flex h-10 w-10 flex-shrink-0 select-none items-center justify-center rounded-full bg-orange-400 text-sm font-semibold text-white">
           {initials || <User size={16} />}
         </div>
 
@@ -94,7 +94,7 @@ export function ReviewCard({ review }: { review: ReviewItem }) {
 
       {/* Review text */}
       {review.review && (
-        <p className="mt-3 text-sm leading-relaxed text-slate-600 italic">
+        <p className="mt-3 text-sm italic leading-relaxed text-slate-600">
           &ldquo;{review.review}&rdquo;
         </p>
       )}
@@ -145,7 +145,7 @@ export function ReviewSummaryCard({
       <div className="flex flex-col items-center gap-8 sm:flex-row">
         {/* Left: big rating */}
         <div className="flex flex-shrink-0 flex-col items-center">
-          <span className="text-5xl leading-none font-bold text-slate-900">
+          <span className="text-5xl font-bold leading-none text-slate-900">
             {summary.averageRating.toFixed(1)}
           </span>
           <div className="mt-2">

@@ -48,7 +48,7 @@ function PodiumSlot({ item }: { item: LeaderboardItem }) {
             initial={{ opacity: 0, y: -6, rotate: -8, scale: 0.6 }}
             animate={{ opacity: 1, y: 0, rotate: -8, scale: 1 }}
             transition={{ delay: 0.35, duration: 0.35, type: "spring" }}
-            className="absolute -top-4 -left-2 text-amber-400"
+            className="absolute -left-2 -top-4 text-amber-400"
           >
             <Crown size={18} fill="currentColor" />
           </motion.div>
@@ -81,7 +81,7 @@ function PodiumSlot({ item }: { item: LeaderboardItem }) {
         style={{ transformOrigin: "bottom" }}
         className={`relative mt-2 flex w-full flex-col items-center justify-end gap-2 overflow-hidden rounded-t-xl pb-4 shadow-md ${style.bar} ${style.height}`}
       >
-        <span className="text-xs font-bold tracking-wide text-slate-600 uppercase">
+        <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
           {ORDINALS[item.rank] || `#${item.rank}`}
         </span>
         <span className="inline-flex items-center gap-1 rounded-full bg-white/85 px-2.5 py-1 text-xs font-bold text-slate-700 shadow-sm">

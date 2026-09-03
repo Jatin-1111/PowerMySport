@@ -150,7 +150,7 @@ export default function AddExpertPage() {
           placeholder={placeholder}
           {...register(field)}
           className={cn(
-            "w-full rounded-xl border bg-slate-50 px-4 py-2.5 text-sm transition-all focus:bg-white focus:ring-2 focus:outline-none",
+            "w-full rounded-xl border bg-slate-50 px-4 py-2.5 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2",
             error
               ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
               : "focus:border-power-orange focus:ring-power-orange/20 border-slate-200"
@@ -239,7 +239,7 @@ export default function AddExpertPage() {
                 <label className="text-sm font-medium text-slate-700">Session Mode</label>
                 <select
                   {...register("sessionMode")}
-                  className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:bg-white focus:ring-2 focus:outline-none"
+                  className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
                 >
                   <option value="ONLINE">Online</option>
                   <option value="IN_PERSON">In-person</option>
@@ -253,7 +253,7 @@ export default function AddExpertPage() {
                   <input
                     placeholder="e.g. 2nd Floor, ABC Sports Complex, Sector 15, Chandigarh"
                     {...register("inPersonAddress")}
-                    className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:bg-white focus:ring-2 focus:outline-none"
+                    className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
                   />
                   <p className="text-xs text-slate-500">
                     Shown to a client only after they've booked a session — never on the public
@@ -312,7 +312,7 @@ export default function AddExpertPage() {
                   rows={4}
                   {...register("bio")}
                   placeholder="Tell clients about this expert..."
-                  className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:bg-white focus:ring-2 focus:outline-none"
+                  className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
                 />
               </div>
 
@@ -322,7 +322,7 @@ export default function AddExpertPage() {
                   rows={3}
                   {...register("achievements")}
                   placeholder="List major accomplishments..."
-                  className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:bg-white focus:ring-2 focus:outline-none"
+                  className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
                 />
               </div>
             </div>
@@ -356,14 +356,14 @@ export default function AddExpertPage() {
             </p>
 
             <div className="mb-6 flex flex-col gap-1.5 border-b border-slate-100 pb-6">
-              <label className="text-xs font-semibold text-slate-500 uppercase">
+              <label className="text-xs font-semibold uppercase text-slate-500">
                 Session length (mins)
               </label>
               <input
                 type="number"
                 min={15}
                 step={15}
-                className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:bg-white focus:ring-2 focus:outline-none"
+                className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
               />
@@ -379,7 +379,7 @@ export default function AddExpertPage() {
         </div>
 
         {/* Action Bar */}
-        <div className="fixed right-0 bottom-0 left-0 z-10 border-t border-slate-200 bg-white p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:pl-64 lg:pl-72">
+        <div className="fixed bottom-0 left-0 right-0 z-10 border-t border-slate-200 bg-white p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:pl-64 lg:pl-72">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-4">
             <p className="hidden text-sm text-slate-500 sm:block">
               Login credentials will be automatically emailed to the expert.

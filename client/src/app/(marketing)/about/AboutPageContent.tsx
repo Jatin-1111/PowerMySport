@@ -67,8 +67,8 @@ export function AboutPageContent() {
       {/* Mission Section */}
       <section className="relative overflow-hidden py-16 sm:py-20 lg:py-28">
         {/* Ambient background blobs for premium feel */}
-        <div className="pointer-events-none absolute top-0 left-0 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-100/40 blur-3xl" />
-        <div className="pointer-events-none absolute right-0 bottom-0 h-96 w-96 translate-x-1/3 translate-y-1/3 rounded-full bg-emerald-100/30 blur-3xl" />
+        <div className="pointer-events-none absolute left-0 top-0 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-100/40 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 right-0 h-96 w-96 translate-x-1/3 translate-y-1/3 rounded-full bg-emerald-100/30 blur-3xl" />
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -138,7 +138,7 @@ export function AboutPageContent() {
 
       {/* Testimonial Spotlight */}
       <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
-        <div className="pointer-events-none absolute top-0 left-1/2 h-72 w-[120%] -translate-x-1/2 bg-gradient-to-b from-orange-50/40 to-transparent" />
+        <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-[120%] -translate-x-1/2 bg-gradient-to-b from-orange-50/40 to-transparent" />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
             variants={orchestrator}
@@ -165,7 +165,7 @@ export function AboutPageContent() {
           >
             <motion.p
               variants={fadeUp}
-              className="text-power-orange mb-3 text-sm font-bold tracking-widest uppercase"
+              className="text-power-orange mb-3 text-sm font-bold uppercase tracking-widest"
             >
               The Team
             </motion.p>
@@ -210,7 +210,7 @@ export function AboutPageContent() {
                 variants={cardReveal}
                 whileHover={{ y: -8, scale: 1.02 }}
                 transition={SPRING_STIFF}
-                className="group premium-shadow relative rounded-3xl border border-white/70 bg-white/80 p-8 text-center backdrop-blur-md transition-all hover:border-white/90"
+                className="premium-shadow group relative rounded-3xl border border-white/70 bg-white/80 p-8 text-center backdrop-blur-md transition-all hover:border-white/90"
               >
                 <div className="mx-auto mb-6 flex h-28 w-28 transform items-center justify-center overflow-hidden rounded-full bg-slate-100 shadow-lg ring-4 ring-white transition-transform duration-300 group-hover:scale-110">
                   <span className="text-power-orange text-5xl font-bold">
@@ -228,7 +228,7 @@ export function AboutPageContent() {
 
       {/* Vision Section */}
       <section className="relative overflow-hidden py-16 sm:py-20 lg:py-28">
-        <div className="pointer-events-none absolute top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-b from-indigo-50/50 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-b from-indigo-50/50 to-transparent blur-3xl" />
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div

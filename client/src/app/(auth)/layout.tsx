@@ -50,12 +50,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               transition={{ duration: 0.55, ease: "easeOut" }}
             >
               <Link href="/" className="group inline-flex flex-col gap-1">
-                <span className="font-title text-2xl leading-none font-black tracking-tight">
+                <span className="font-title text-2xl font-black leading-none tracking-tight">
                   <span className="text-white">Power</span>
                   <span className="text-power-orange">My</span>
                   <span className="text-white">Sport</span>
                 </span>
-                <span className="text-[11px] font-medium tracking-[0.18em] text-slate-300/80 uppercase">
+                <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-300/80">
                   Guiding Every Sporting Journey
                 </span>
               </Link>
@@ -69,7 +69,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
             >
               <h2
-                className="font-title max-w-md text-[2.5rem] leading-[1.08] font-black text-white"
+                className="font-title max-w-md text-[2.5rem] font-black leading-[1.08] text-white"
                 style={{ textWrap: "balance" } as React.CSSProperties}
               >
                 The trusted guide for{" "}
@@ -107,7 +107,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="flex items-center justify-between px-6 pt-6 sm:px-10">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 py-1.5 pr-4 pl-3 text-sm font-medium text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-white"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 py-1.5 pl-3 pr-4 text-sm font-medium text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />
             Back

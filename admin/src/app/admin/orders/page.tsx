@@ -330,14 +330,14 @@ function AdminOrdersPageContent() {
                 </div>
 
                 <div className="mb-4 rounded-lg bg-slate-50 p-4">
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Customer
                   </p>
                   <EntityBadge {...getCustomer(orderDetail.userId)} />
                 </div>
 
                 <div className="mb-4">
-                  <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Line items
                   </p>
                   <div className="divide-y divide-slate-100 rounded-lg border border-slate-200">
@@ -387,7 +387,7 @@ function AdminOrdersPageContent() {
 
                 {orderDetail.shippingAddress && (
                   <div className="mb-4 rounded-lg border border-slate-200 p-4 text-sm text-slate-700">
-                    <p className="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Shipping address
                     </p>
                     <p>{orderDetail.shippingAddress.fullName}</p>
@@ -406,7 +406,7 @@ function AdminOrdersPageContent() {
                 )}
 
                 <div>
-                  <p className="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Fulfillment status
                   </p>
                   <select

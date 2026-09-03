@@ -143,7 +143,7 @@ function HomeHero({
       </motion.div>
 
       {/* ── Scrims — heavier on mobile where text covers the full width ── */}
-      <div className="absolute inset-0 bg-gradient-to-r from-slate-950/98 via-slate-950/80 to-slate-950/50 sm:from-slate-950/95 sm:via-slate-950/55 sm:to-slate-950/15" />
+      <div className="from-slate-950/98 absolute inset-0 bg-gradient-to-r via-slate-950/80 to-slate-950/50 sm:from-slate-950/95 sm:via-slate-950/55 sm:to-slate-950/15" />
       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-slate-950/55 sm:from-slate-950/85 sm:via-slate-950/10 sm:to-slate-950/40" />
       <div className="absolute inset-0 bg-[radial-gradient(110%_110%_at_50%_20%,transparent_45%,rgba(2,6,23,0.6)_100%)]" />
 
@@ -182,7 +182,7 @@ function HomeHero({
           {subtitle && (
             <motion.div
               variants={itemVariants}
-              className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold tracking-[0.18em] text-orange-200 uppercase backdrop-blur-md sm:mb-6 sm:gap-2 sm:px-4 sm:py-1.5 sm:text-xs sm:tracking-[0.2em]"
+              className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-orange-200 backdrop-blur-md sm:mb-6 sm:gap-2 sm:px-4 sm:py-1.5 sm:text-xs sm:tracking-[0.2em]"
             >
               <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               {subtitle}
@@ -192,7 +192,7 @@ function HomeHero({
           {/* ── Headline ── */}
           <motion.h1
             variants={headlineVariants}
-            className="font-title mb-4 text-[2.1rem] leading-[1.08] font-extrabold tracking-tight text-white sm:mb-6 sm:text-5xl lg:text-[4.5rem]"
+            className="font-title mb-4 text-[2.1rem] font-extrabold leading-[1.08] tracking-tight text-white sm:mb-6 sm:text-5xl lg:text-[4.5rem]"
           >
             {words.map((w, i) => {
               if (!w.hl) {
@@ -323,7 +323,7 @@ function HomeHero({
                   key={stat.label}
                   className="rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 backdrop-blur-md sm:rounded-2xl sm:px-4 sm:py-3"
                 >
-                  <p className="text-[10px] font-semibold tracking-widest text-slate-300 uppercase sm:text-xs">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-300 sm:text-xs">
                     {stat.label}
                   </p>
                   <p className="mt-0.5 text-xl font-bold text-white sm:mt-1 sm:text-2xl">
@@ -404,7 +404,7 @@ function PageHero({
         </>
       ) : (
         <>
-          <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-sky-200/20 blur-3xl" />
+          <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-sky-200/20 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 left-8 h-64 w-64 rounded-full bg-amber-200/20 blur-3xl" />
         </>
       )}
@@ -420,7 +420,7 @@ function PageHero({
           {subtitle &&
             (hasImage ? (
               <motion.div variants={itemVariants} className="mb-6 flex justify-center">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold tracking-[0.2em] text-orange-200 uppercase backdrop-blur-md">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-orange-200 backdrop-blur-md">
                   <Sparkles className="h-3.5 w-3.5" />
                   {subtitle}
                 </span>
@@ -499,7 +499,7 @@ function SplitHero({
 }: HeroProps) {
   return (
     <section className="bg-ghost-white relative overflow-hidden py-20 sm:py-24 lg:py-28">
-      <div className="pointer-events-none absolute -top-24 -right-24 h-80 w-80 rounded-full bg-sky-200/20 blur-[100px]" />
+      <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-sky-200/20 blur-[100px]" />
       <div className="pointer-events-none absolute -bottom-24 left-0 h-80 w-80 rounded-full bg-amber-200/20 blur-[100px]" />
       <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-14 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
         <motion.div
@@ -515,7 +515,7 @@ function SplitHero({
           )}
           <motion.h1
             variants={itemVariants}
-            className="font-title mb-6 text-3xl leading-tight font-extrabold text-slate-900 sm:text-4xl lg:text-5xl xl:text-6xl"
+            className="font-title mb-6 text-3xl font-extrabold leading-tight text-slate-900 sm:text-4xl lg:text-5xl xl:text-6xl"
           >
             {title}
           </motion.h1>
@@ -568,7 +568,7 @@ function SplitHero({
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover transition-transform duration-700 hover:scale-105"
               />
-              <div className="absolute inset-0 rounded-3xl ring-1 ring-black/8 ring-inset" />
+              <div className="ring-black/8 absolute inset-0 rounded-3xl ring-1 ring-inset" />
             </div>
           </motion.div>
         )}

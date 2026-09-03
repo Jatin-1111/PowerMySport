@@ -3,9 +3,9 @@ import { Flag } from "lucide-react";
 export function ModerationProcess() {
   return (
     <section id="moderation-process" className="mb-8">
-      <h2 className="mt-8 mb-4 text-2xl font-semibold">8. Content Moderation Process</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">8. Content Moderation Process</h2>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">8.1 How Content is Reviewed</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">8.1 How Content is Reviewed</h3>
       <p>We review content through:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>
@@ -26,7 +26,7 @@ export function ModerationProcess() {
         </li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">8.2 Reporting Content</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">8.2 Reporting Content</h3>
       <p>To report prohibited content:</p>
       <ol className="mt-3 list-decimal space-y-2 pl-6">
         <li>Click the "Report" or "Flag" button on the content</li>
@@ -36,7 +36,7 @@ export function ModerationProcess() {
         <li>Submit the report</li>
       </ol>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">8.3 Review Timeline</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">8.3 Review Timeline</h3>
       <ul className="list-disc space-y-2 pl-6">
         <li>
           <strong>Severe violations (threats, CSAM, fraud):</strong> Reviewed within 24 hours,
@@ -56,7 +56,7 @@ export function ModerationProcess() {
         </li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">8.4 Moderation Decisions</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">8.4 Moderation Decisions</h3>
       <p>After review, we may:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>

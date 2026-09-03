@@ -162,7 +162,7 @@ export const BookingHealthWaiverModal: React.FC<{
   const [accepted, setAccepted] = useState(false);
 
   return (
-    <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white">
         <div className="bg-linear-to-r from-orange-600 to-orange-500 p-6 text-white">
           <h2 className="text-2xl font-bold">Health & Safety Waiver</h2>

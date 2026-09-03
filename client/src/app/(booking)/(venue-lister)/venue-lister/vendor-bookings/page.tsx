@@ -178,7 +178,7 @@ export default function VenueBookingsPage() {
                     setCheckInCode(nextValue);
                   }}
                   placeholder="Enter 8-character code"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm tracking-[0.35em] uppercase"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm uppercase tracking-[0.35em]"
                   autoComplete="one-time-code"
                 />
               </div>

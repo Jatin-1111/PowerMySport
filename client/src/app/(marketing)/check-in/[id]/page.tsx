@@ -168,7 +168,7 @@ export default function CheckInPage() {
 
         {checkIn && checkIn.signals.length > 0 && (
           <div className="mb-6 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
-            <p className="mb-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
               What we asked you to watch for
             </p>
             <ul className="space-y-1.5">
@@ -204,7 +204,7 @@ export default function CheckInPage() {
           onChange={(e) => setNote(e.target.value)}
           placeholder="Anything else worth mentioning? (optional)"
           rows={3}
-          className="focus:border-power-orange focus:ring-power-orange/20 mb-5 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:outline-none"
+          className="focus:border-power-orange focus:ring-power-orange/20 mb-5 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2"
         />
 
         <button

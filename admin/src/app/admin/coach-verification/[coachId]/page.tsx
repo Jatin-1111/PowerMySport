@@ -203,19 +203,19 @@ export default function AdminCoachVerificationDetailPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="text-xs tracking-wide text-slate-500 uppercase">Email</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Email</p>
               <p className="text-sm font-medium text-slate-800">{userInfo?.email || "No email"}</p>
             </div>
             <div>
-              <p className="text-xs tracking-wide text-slate-500 uppercase">Service Mode</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Service Mode</p>
               <p className="text-sm font-medium text-slate-800">{coach.serviceMode || "Not set"}</p>
             </div>
             <div>
-              <p className="text-xs tracking-wide text-slate-500 uppercase">Hourly Rate</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Hourly Rate</p>
               <p className="text-sm font-medium text-slate-800">₹{coach.hourlyRate || 0}</p>
             </div>
             <div>
-              <p className="text-xs tracking-wide text-slate-500 uppercase">
+              <p className="text-xs uppercase tracking-wide text-slate-500">
                 Verification Submitted
               </p>
               <p className="text-sm font-medium text-slate-800">
@@ -227,15 +227,15 @@ export default function AdminCoachVerificationDetailPage() {
           </div>
 
           <div>
-            <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">Sports</p>
+            <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">Sports</p>
             <p className="text-sm text-slate-800">
               {coach.sports?.length ? coach.sports.join(", ") : "No sports"}
             </p>
           </div>
 
           <div>
-            <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">Bio</p>
-            <p className="text-sm whitespace-pre-wrap text-slate-800">
+            <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">Bio</p>
+            <p className="whitespace-pre-wrap text-sm text-slate-800">
               {coach.bio || "No bio provided."}
             </p>
           </div>
@@ -253,20 +253,20 @@ export default function AdminCoachVerificationDetailPage() {
           <h3 className="mb-4 text-lg font-semibold text-slate-900">Own Venue Details</h3>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="text-xs tracking-wide text-slate-500 uppercase">Venue Name</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Venue Name</p>
               <p className="text-sm text-slate-800">{coach.ownVenueDetails.name || "-"}</p>
             </div>
             <div>
-              <p className="text-xs tracking-wide text-slate-500 uppercase">Price Per Hour</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Price Per Hour</p>
               <p className="text-sm text-slate-800">₹{coach.ownVenueDetails.pricePerHour || 0}</p>
             </div>
             <div className="sm:col-span-2">
-              <p className="text-xs tracking-wide text-slate-500 uppercase">Address</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Address</p>
               <p className="text-sm text-slate-800">{coach.ownVenueDetails.address || "-"}</p>
             </div>
             {coach.ownVenueDetails.description ? (
               <div className="sm:col-span-2">
-                <p className="text-xs tracking-wide text-slate-500 uppercase">Description</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Description</p>
                 <p className="text-sm text-slate-800">{coach.ownVenueDetails.description}</p>
               </div>
             ) : null}

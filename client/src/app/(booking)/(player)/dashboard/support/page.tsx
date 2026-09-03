@@ -158,17 +158,17 @@ export default function SupportTicketsPage() {
       {/* Stats strip */}
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Total</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{tickets.length}</p>
         </div>
         <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Open / In Progress
           </p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{openCount}</p>
         </div>
         <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Resolved</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Resolved</p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{resolvedCount}</p>
         </div>
       </div>
@@ -241,7 +241,7 @@ export default function SupportTicketsPage() {
 
                       {ticket.notes && ticket.notes.length > 0 && (
                         <div className="mt-4 space-y-2 border-t border-slate-200/60 pt-4">
-                          <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                             <MessageSquare className="h-3.5 w-3.5" />
                             Updates
                           </p>
@@ -312,7 +312,7 @@ export default function SupportTicketsPage() {
               value={form.subject}
               onChange={(e) => setForm((prev) => ({ ...prev, subject: e.target.value }))}
               placeholder="Brief summary of your issue"
-              className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition focus:ring-1 focus:outline-none"
+              className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition focus:outline-none focus:ring-1"
             />
           </div>
           <div>
@@ -324,7 +324,7 @@ export default function SupportTicketsPage() {
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
               placeholder="Describe your issue in detail"
               rows={4}
-              className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition focus:ring-1 focus:outline-none"
+              className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition focus:outline-none focus:ring-1"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -338,7 +338,7 @@ export default function SupportTicketsPage() {
                     category: e.target.value as SupportTicket["category"],
                   }))
                 }
-                className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:ring-1 focus:outline-none"
+                className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-1"
               >
                 <option value="BOOKING">Booking</option>
                 <option value="PAYMENT">Payment</option>
@@ -357,7 +357,7 @@ export default function SupportTicketsPage() {
                     priority: e.target.value as SupportTicket["priority"],
                   }))
                 }
-                className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:ring-1 focus:outline-none"
+                className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-1"
               >
                 <option value="LOW">Low</option>
                 <option value="MEDIUM">Medium</option>

@@ -256,7 +256,7 @@ function VenueCard({
         )}
 
         {/* Status badge */}
-        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+        <div className="absolute right-3 top-3 flex items-center gap-1.5">
           {totalImages > 0 && (
             <span className="rounded-full bg-black/40 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
               {totalImages} photo{totalImages !== 1 ? "s" : ""}
@@ -274,8 +274,8 @@ function VenueCard({
 
         {/* Name overlay (only when cover photo present) */}
         {coverPhoto && (
-          <div className="absolute right-0 bottom-0 left-0 px-4 py-3">
-            <h3 className="line-clamp-1 text-lg leading-tight font-bold text-white drop-shadow-sm">
+          <div className="absolute bottom-0 left-0 right-0 px-4 py-3">
+            <h3 className="line-clamp-1 text-lg font-bold leading-tight text-white drop-shadow-sm">
               {venue.name}
             </h3>
           </div>
@@ -286,7 +286,7 @@ function VenueCard({
       <div className="flex flex-1 flex-col gap-3 p-4">
         {/* Name (when no cover photo) */}
         {!coverPhoto && (
-          <h3 className="line-clamp-2 text-lg leading-tight font-bold text-slate-900">
+          <h3 className="line-clamp-2 text-lg font-bold leading-tight text-slate-900">
             {venue.name}
           </h3>
         )}
@@ -361,7 +361,7 @@ function VenueCard({
               )}
             </div>
           ) : (
-            <span className="text-xs text-slate-300 italic">No reviews yet</span>
+            <span className="text-xs italic text-slate-300">No reviews yet</span>
           )}
         </div>
 
@@ -1132,7 +1132,7 @@ export default function VenueInventoryPage() {
                   {stat.icon}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-lg leading-tight font-bold text-slate-900">{stat.value}</p>
+                  <p className="text-lg font-bold leading-tight text-slate-900">{stat.value}</p>
                   <p className="truncate text-xs text-slate-500">{stat.label}</p>
                 </div>
               </div>
@@ -1327,7 +1327,7 @@ export default function VenueInventoryPage() {
                       required
                     />
                     {isSearching && (
-                      <span className="absolute top-9 right-3 text-xs text-slate-500">
+                      <span className="absolute right-3 top-9 text-xs text-slate-500">
                         Searching…
                       </span>
                     )}
@@ -1588,13 +1588,13 @@ export default function VenueInventoryPage() {
                                 <button
                                   type="button"
                                   onClick={() => removeExistingImage(url)}
-                                  className="absolute top-2 left-2 rounded-full bg-red-500 p-1.5 text-white transition-colors hover:bg-red-600"
+                                  className="absolute left-2 top-2 rounded-full bg-red-500 p-1.5 text-white transition-colors hover:bg-red-600"
                                   aria-label="Remove image"
                                 >
                                   <X className="h-3.5 w-3.5" />
                                 </button>
                                 {existingCoverPhotoUrl === url && (
-                                  <span className="bg-power-orange absolute top-2 right-2 rounded-full px-2 py-1 text-xs font-medium text-white">
+                                  <span className="bg-power-orange absolute right-2 top-2 rounded-full px-2 py-1 text-xs font-medium text-white">
                                     Cover
                                   </span>
                                 )}
@@ -1624,13 +1624,13 @@ export default function VenueInventoryPage() {
                                   <button
                                     type="button"
                                     onClick={() => removeExistingImage(url)}
-                                    className="absolute top-2 left-2 rounded-full bg-red-500 p-1.5 text-white transition-colors hover:bg-red-600"
+                                    className="absolute left-2 top-2 rounded-full bg-red-500 p-1.5 text-white transition-colors hover:bg-red-600"
                                     aria-label="Remove image"
                                   >
                                     <X className="h-3.5 w-3.5" />
                                   </button>
                                   {existingCoverPhotoUrl === url && (
-                                    <span className="bg-power-orange absolute top-2 right-2 rounded-full px-2 py-1 text-xs font-medium text-white">
+                                    <span className="bg-power-orange absolute right-2 top-2 rounded-full px-2 py-1 text-xs font-medium text-white">
                                       Cover
                                     </span>
                                   )}
@@ -1694,16 +1694,16 @@ export default function VenueInventoryPage() {
                             <button
                               type="button"
                               onClick={() => handleRemoveImage(index)}
-                              className="absolute top-2 right-2 rounded-full bg-red-500 p-1.5 text-white transition-colors hover:bg-red-600"
+                              className="absolute right-2 top-2 rounded-full bg-red-500 p-1.5 text-white transition-colors hover:bg-red-600"
                             >
                               <X className="h-3.5 w-3.5" />
                             </button>
                             {coverPhotoIndex === index && (
-                              <span className="bg-power-orange absolute top-2 left-2 rounded-full px-2 py-1 text-xs font-medium text-white">
+                              <span className="bg-power-orange absolute left-2 top-2 rounded-full px-2 py-1 text-xs font-medium text-white">
                                 Cover
                               </span>
                             )}
-                            <div className="absolute right-0 bottom-0 left-0 bg-black/40 px-3 py-2">
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/40 px-3 py-2">
                               <label className="flex cursor-pointer items-center gap-2">
                                 <input
                                   type="radio"

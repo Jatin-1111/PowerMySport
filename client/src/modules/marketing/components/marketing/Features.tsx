@@ -87,10 +87,10 @@ function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
       variants={cardVariants}
       whileHover={{ y: -8, scale: 1.015 }}
       transition={{ type: "spring", stiffness: 280, damping: 20 }}
-      className="group premium-shadow relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md will-change-transform hover:border-white/90 hover:bg-white/90"
+      className="premium-shadow group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md will-change-transform hover:border-white/90 hover:bg-white/90"
     >
       {/* Subtle corner accent */}
-      <div className="pointer-events-none absolute top-0 right-0 h-20 w-20 rounded-bl-[3rem] bg-gradient-to-bl from-slate-100/80 to-transparent opacity-40" />
+      <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-bl-[3rem] bg-gradient-to-bl from-slate-100/80 to-transparent opacity-40" />
 
       {/* Icon badge */}
       {feature.icon && (
@@ -108,7 +108,7 @@ function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
 
       {/* Content */}
       {feature.label && (
-        <p className="mb-1 text-xs font-semibold tracking-[0.12em] text-slate-400 uppercase">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
           {feature.label}
         </p>
       )}
@@ -117,7 +117,7 @@ function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
 
       {/* Bottom hover accent line */}
       <motion.div
-        className="from-power-orange/60 to-turf-green/40 absolute right-6 bottom-0 left-6 h-0.5 origin-left rounded-full bg-gradient-to-r"
+        className="from-power-orange/60 to-turf-green/40 absolute bottom-0 left-6 right-6 h-0.5 origin-left rounded-full bg-gradient-to-r"
         initial={{ scaleX: 0 }}
         whileInView={{ scaleX: 0 }}
         whileHover={{ scaleX: 1 }}
@@ -225,7 +225,7 @@ function BentoFeatureCard({ feature, index }: { feature: Feature; index: number 
 
       {/* Floating stat pill — top right */}
       {feature.stat && (
-        <div className="absolute top-4 right-4 flex items-center gap-1.5 rounded-full border border-white/15 bg-black/35 px-3 py-1.5 backdrop-blur-md">
+        <div className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full border border-white/15 bg-black/35 px-3 py-1.5 backdrop-blur-md">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
           <span className="text-[11px] font-semibold tracking-wide text-white/85">
             {feature.stat}
@@ -249,7 +249,7 @@ function BentoFeatureCard({ feature, index }: { feature: Feature; index: number 
         )}
 
         {feature.label && (
-          <p className="mb-1.5 text-[11px] font-semibold tracking-[0.14em] text-white/50 uppercase">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
             {feature.label}
           </p>
         )}
@@ -295,8 +295,8 @@ export const Features: React.FC<FeaturesProps> = ({
   return (
     <section className="relative py-16 sm:py-20 lg:py-24">
       {/* Section ambient blobs */}
-      <div className="pointer-events-none absolute top-0 left-1/4 h-64 w-64 -translate-x-1/2 rounded-full bg-blue-100/30 blur-3xl" />
-      <div className="pointer-events-none absolute right-1/4 bottom-0 h-56 w-56 translate-x-1/2 rounded-full bg-orange-100/25 blur-3xl" />
+      <div className="pointer-events-none absolute left-1/4 top-0 h-64 w-64 -translate-x-1/2 rounded-full bg-blue-100/30 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 right-1/4 h-56 w-56 translate-x-1/2 rounded-full bg-orange-100/25 blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section Header ── */}

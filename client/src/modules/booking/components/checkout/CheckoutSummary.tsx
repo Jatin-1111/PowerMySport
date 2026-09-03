@@ -40,7 +40,7 @@ export function CheckoutSummary({
       </div>
 
       {/* Line items */}
-      <div className="px-5 pt-4 pb-5 sm:px-6 sm:pb-6">
+      <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
         <div className="space-y-2.5">
           {items.map((item) => (
             <div

@@ -388,7 +388,7 @@ export function VenueDetailClient() {
     <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
       {/* Header */}
       <div className="border-b border-white/60 bg-white/70 backdrop-blur-md">
-        <div className="mx-auto max-w-7xl px-4 pt-4 pb-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 pb-6 pt-4 sm:px-6 lg:px-8">
           <BackButton label="Back to Venues" />
           <div className="relative mt-4 overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-6 text-slate-900 shadow-sm sm:p-8">
             <div className="relative z-10">
@@ -412,7 +412,7 @@ export function VenueDetailClient() {
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="mb-1 text-xs tracking-wide text-slate-600 uppercase">
+                  <p className="mb-1 text-xs uppercase tracking-wide text-slate-600">
                     Starting from
                   </p>
                   <div className="text-power-orange flex items-center justify-end gap-1 text-3xl font-bold">
@@ -423,7 +423,7 @@ export function VenueDetailClient() {
                 </div>
               </div>
             </div>
-            <div className="bg-power-orange/20 pointer-events-none absolute -top-16 -right-20 h-48 w-48 rounded-full blur-3xl" />
+            <div className="bg-power-orange/20 pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full blur-3xl" />
             <div className="bg-turf-green/20 pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-3xl" />
           </div>
         </div>
@@ -436,11 +436,11 @@ export function VenueDetailClient() {
           <div className="space-y-6 lg:col-span-2">
             {/* Images */}
             {venueImages.length > 0 && (
-              <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
+              <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
                 <div className="border-b border-slate-200/70 bg-white/80 px-4 py-3 sm:px-5">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                      <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
                         Venue Gallery
                       </p>
                       <h2 className="text-lg font-bold text-slate-900">
@@ -462,7 +462,7 @@ export function VenueDetailClient() {
 
                 <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_180px]">
                   <div
-                    className="group relative h-80 w-full cursor-zoom-in overflow-hidden bg-slate-100 sm:h-112"
+                    className="sm:h-112 group relative h-80 w-full cursor-zoom-in overflow-hidden bg-slate-100"
                     onClick={() => openLightbox(selectedImageIndex)}
                   >
                     <img
@@ -470,10 +470,10 @@ export function VenueDetailClient() {
                       alt={venue.name}
                       className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                     />
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-linear-to-t from-black/70 via-black/35 to-transparent" />
-                    <div className="absolute right-4 bottom-4 left-4 flex items-end justify-between gap-3 text-white">
+                    <div className="bg-linear-to-t pointer-events-none absolute inset-x-0 bottom-0 h-36 from-black/70 via-black/35 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3 text-white">
                       <div className="space-y-1">
-                        <p className="text-xs tracking-wide text-white/75 uppercase">
+                        <p className="text-xs uppercase tracking-wide text-white/75">
                           Tap to expand
                         </p>
                         <p className="text-sm font-semibold sm:text-base">
@@ -492,7 +492,7 @@ export function VenueDetailClient() {
                             e.stopPropagation();
                             showPreviousImage();
                           }}
-                          className="absolute top-1/2 left-4 -translate-y-1/2 rounded-full border border-white/40 bg-black/35 p-2 text-white backdrop-blur-sm transition hover:bg-black/55"
+                          className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full border border-white/40 bg-black/35 p-2 text-white backdrop-blur-sm transition hover:bg-black/55"
                           aria-label="Previous image"
                         >
                           <ChevronLeft size={18} />
@@ -503,7 +503,7 @@ export function VenueDetailClient() {
                             e.stopPropagation();
                             showNextImage();
                           }}
-                          className="absolute top-1/2 right-4 -translate-y-1/2 rounded-full border border-white/40 bg-black/35 p-2 text-white backdrop-blur-sm transition hover:bg-black/55"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full border border-white/40 bg-black/35 p-2 text-white backdrop-blur-sm transition hover:bg-black/55"
                           aria-label="Next image"
                         >
                           <ChevronRight size={18} />
@@ -512,19 +512,19 @@ export function VenueDetailClient() {
                     )}
                   </div>
 
-                  <div className="border-t border-slate-200/70 bg-white lg:border-t-0 lg:border-l">
+                  <div className="border-t border-slate-200/70 bg-white lg:border-l lg:border-t-0">
                     <div className="flex items-center justify-between px-4 py-3">
                       <p className="text-sm font-semibold text-slate-900">Photos</p>
                       <p className="text-xs text-slate-500">Scroll to browse</p>
                     </div>
-                    <div className="overflow-x-hidden overflow-y-auto lg:h-112">
+                    <div className="lg:h-112 overflow-y-auto overflow-x-hidden">
                       <div className="grid grid-cols-3 gap-2 px-4 pb-4 sm:grid-cols-4 lg:grid-cols-2">
                         {venueImages.map((image, index) => (
                           <button
                             type="button"
                             key={`${image}-${index}`}
                             onClick={() => setSelectedImageIndex(index)}
-                            className={`group relative aspect-4/3 overflow-hidden rounded-2xl border transition ${
+                            className={`aspect-4/3 group relative overflow-hidden rounded-2xl border transition ${
                               selectedImageIndex === index
                                 ? "border-power-orange ring-power-orange/40 ring-2"
                                 : "border-slate-200 hover:border-slate-300"
@@ -554,7 +554,7 @@ export function VenueDetailClient() {
                 <button
                   type="button"
                   onClick={() => setLightboxOpen(false)}
-                  className="absolute top-5 right-5 rounded-full border border-white/30 bg-black/35 p-2 text-white hover:bg-black/55"
+                  className="absolute right-5 top-5 rounded-full border border-white/30 bg-black/35 p-2 text-white hover:bg-black/55"
                   aria-label="Close gallery"
                 >
                   <X size={20} />
@@ -602,7 +602,7 @@ export function VenueDetailClient() {
             )}
 
             {/* Description */}
-            <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">
+            <Card className="premium-shadow bg-white/92 rounded-3xl border border-slate-200/70 p-6 backdrop-blur-sm">
               <h2 className="mb-4 text-xl font-bold text-slate-900">About this Venue</h2>
               <p className="leading-relaxed text-slate-600">
                 {venue.description ||
@@ -620,7 +620,7 @@ export function VenueDetailClient() {
             />
 
             {/* Sports Available */}
-            <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">
+            <Card className="premium-shadow bg-white/92 rounded-3xl border border-slate-200/70 p-6 backdrop-blur-sm">
               <h2 className="mb-4 text-lg font-semibold text-slate-900">Sports Available</h2>
               <div className="flex flex-wrap gap-2">
                 {venue.sports?.map((sport, index) => (
@@ -641,10 +641,10 @@ export function VenueDetailClient() {
             </Card>
 
             {selectedSport && selectedSportImages.length > 0 && (
-              <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
+              <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
                 <div className="flex items-center justify-between gap-3 border-b border-slate-200/70 bg-slate-50/80 px-5 py-4">
                   <div>
-                    <p className="text-xs font-semibold tracking-[0.22em] text-slate-500 uppercase">
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                       Sport spotlight
                     </p>
                     <h2 className="text-lg font-bold text-slate-900">{selectedSport} Photos</h2>
@@ -664,7 +664,7 @@ export function VenueDetailClient() {
                           type="button"
                           key={`${selectedSport}-${index}-${image}`}
                           onClick={() => openLightbox(globalIndex >= 0 ? globalIndex : 0)}
-                          className="group relative aspect-4/3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                          className="aspect-4/3 group relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                           aria-label={`Open ${selectedSport} image ${index + 1}`}
                         >
                           <img
@@ -672,7 +672,7 @@ export function VenueDetailClient() {
                             alt={`${venue.name} ${selectedSport} image ${index + 1}`}
                             className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                           />
-                          <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/20 to-transparent opacity-0 transition group-hover:opacity-100" />
+                          <div className="bg-linear-to-t pointer-events-none absolute inset-0 from-black/20 to-transparent opacity-0 transition group-hover:opacity-100" />
                           <div className="pointer-events-none absolute bottom-2 left-2 rounded-full bg-black/45 px-2 py-0.5 text-[11px] font-semibold text-white opacity-0 backdrop-blur-sm transition group-hover:opacity-100">
                             {selectedSport} {index + 1}
                           </div>
@@ -686,7 +686,7 @@ export function VenueDetailClient() {
 
             {/* Amenities */}
             {venue.amenities && venue.amenities.length > 0 && (
-              <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">
+              <Card className="premium-shadow bg-white/92 rounded-3xl border border-slate-200/70 p-6 backdrop-blur-sm">
                 <h2 className="mb-4 text-lg font-semibold text-slate-900">
                   Amenities & Facilities
                 </h2>
@@ -705,7 +705,7 @@ export function VenueDetailClient() {
             )}
 
             {/* Reviews */}
-            <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">
+            <Card className="premium-shadow bg-white/92 rounded-3xl border border-slate-200/70 p-6 backdrop-blur-sm">
               <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-xl font-bold text-slate-900">Venue Reviews</h2>
@@ -745,7 +745,7 @@ export function VenueDetailClient() {
                     rows={3}
                     maxLength={1000}
                     placeholder="Write your review (optional)"
-                    className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                    className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
                   />
                   <div className="mt-3 flex justify-end">
                     <Button
@@ -844,7 +844,7 @@ export function VenueDetailClient() {
                   </label>
                   <div className="relative">
                     <Calendar
-                      className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                       size={18}
                     />
                     <input
@@ -852,7 +852,7 @@ export function VenueDetailClient() {
                       value={selectedDate}
                       min={getLocalDateString()}
                       onChange={(e) => setSelectedDate(e.target.value)}
-                      className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border-2 border-slate-200 bg-white py-3 pr-4 pl-10 font-medium text-slate-900 focus:ring-2 focus:outline-none"
+                      className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border-2 border-slate-200 bg-white py-3 pl-10 pr-4 font-medium text-slate-900 focus:outline-none focus:ring-2"
                     />
                   </div>
                 </div>

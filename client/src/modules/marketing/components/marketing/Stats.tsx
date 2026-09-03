@@ -93,7 +93,7 @@ export const Stats: React.FC<StatsProps> = ({ stats, variant = "default", column
       {/* Ambient overlays */}
       {isGradient && (
         <>
-          <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+          <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
         </>
       )}

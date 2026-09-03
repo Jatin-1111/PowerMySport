@@ -122,19 +122,19 @@ export default function ScreeningsPage() {
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search child, sport, city…"
-              className="focus:ring-power-orange/30 focus:border-power-orange w-52 rounded-lg border border-slate-200 py-2 pr-3 pl-8 text-sm focus:ring-2 focus:outline-none"
+              className="focus:ring-power-orange/30 focus:border-power-orange w-52 rounded-lg border border-slate-200 py-2 pl-8 pr-3 text-sm focus:outline-none focus:ring-2"
             />
           </div>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="focus:ring-power-orange/30 focus:border-power-orange rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:outline-none"
+            className="focus:ring-power-orange/30 focus:border-power-orange rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2"
           >
             <option value="">All statuses</option>
             {STATUS_OPTIONS.map((s) => (
@@ -162,28 +162,28 @@ export default function ScreeningsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/60">
-                  <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Child
                   </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Sport
                   </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Contact
                   </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Availability
                   </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                     City
                   </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Status
                   </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Received
                   </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Update
                   </th>
                 </tr>
@@ -218,7 +218,7 @@ export default function ScreeningsPage() {
                           {meta.label}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 whitespace-nowrap text-slate-400">
+                      <td className="whitespace-nowrap px-5 py-3.5 text-slate-400">
                         {format(new Date(r.createdAt), "dd MMM yyyy")}
                       </td>
                       <td className="px-5 py-3.5">
@@ -226,7 +226,7 @@ export default function ScreeningsPage() {
                           value={r.status}
                           disabled={updatingId === r._id}
                           onChange={(e) => updateStatus(r._id, e.target.value as ScreeningStatus)}
-                          className="focus:ring-power-orange/30 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs focus:ring-2 focus:outline-none disabled:opacity-50"
+                          className="focus:ring-power-orange/30 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 disabled:opacity-50"
                         >
                           {STATUS_OPTIONS.map((s) => (
                             <option key={s} value={s}>

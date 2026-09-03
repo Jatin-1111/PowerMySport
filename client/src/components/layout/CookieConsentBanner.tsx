@@ -49,7 +49,7 @@ export function CookieConsentBanner() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 80 }}
           transition={{ type: "spring", stiffness: 260, damping: 26 }}
-          className="fixed right-0 bottom-0 z-[60] flex max-w-full justify-end p-4 sm:p-6"
+          className="fixed bottom-0 right-0 z-[60] flex max-w-full justify-end p-4 sm:p-6"
           role="dialog"
           aria-modal="false"
           aria-label="Cookie notice"
@@ -58,7 +58,7 @@ export function CookieConsentBanner() {
             {/* Soft brand glow */}
             <div
               aria-hidden
-              className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-orange-200/30 blur-3xl"
+              className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-orange-200/30 blur-3xl"
             />
 
             <div className="relative">
@@ -71,7 +71,7 @@ export function CookieConsentBanner() {
                 <button
                   onClick={dismiss}
                   aria-label="Dismiss cookie notice"
-                  className="focus:ring-power-orange/40 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:outline-none"
+                  className="focus:ring-power-orange/40 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2"
                 >
                   <X className="h-[18px] w-[18px]" strokeWidth={2.25} />
                 </button>
@@ -93,7 +93,7 @@ export function CookieConsentBanner() {
               <div className="flex gap-2">
                 <button
                   onClick={dismiss}
-                  className="bg-power-orange focus:ring-power-orange flex-1 rounded-xl px-6 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(233,115,22,0.55)] transition-colors hover:bg-orange-600 focus:ring-2 focus:ring-offset-2 focus:outline-none"
+                  className="bg-power-orange focus:ring-power-orange flex-1 rounded-xl px-6 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(233,115,22,0.55)] transition-colors hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2"
                 >
                   Got it
                 </button>

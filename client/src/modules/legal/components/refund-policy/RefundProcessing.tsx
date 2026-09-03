@@ -4,9 +4,9 @@ import { Wallet } from "lucide-react";
 export function RefundProcessing() {
   return (
     <section id="refund-processing" className="mb-8">
-      <h2 className="mt-8 mb-4 text-2xl font-semibold">3. Refund Processing</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">3. Refund Processing</h2>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">3.1 Refund Timeline</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">3.1 Refund Timeline</h3>
       <ul className="list-disc space-y-2 pl-6">
         <li>
           <strong>Approval:</strong> Within 2-5 business days after a complete cancellation or
@@ -26,7 +26,7 @@ export function RefundProcessing() {
         platform wallet credit rather than a cash refund to the original payment method.
       </p>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">3.2 Refund Method</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">3.2 Refund Method</h3>
       <ul className="list-disc space-y-2 pl-6">
         <li>
           <strong>Card Payments:</strong> Refunded to the original card within 5-10 business days of

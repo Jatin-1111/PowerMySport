@@ -150,7 +150,7 @@ export function ProductReviews({ productId }: { productId: string }) {
               <textarea
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
-                className="w-full rounded-xl border-slate-200 bg-white p-3 text-sm transition outline-none focus:border-[#ff5722] focus:ring-1 focus:ring-[#ff5722]"
+                className="w-full rounded-xl border-slate-200 bg-white p-3 text-sm outline-none transition focus:border-[#ff5722] focus:ring-1 focus:ring-[#ff5722]"
                 rows={4}
                 placeholder="What did you like or dislike?"
               />
@@ -199,7 +199,7 @@ export function ProductReviews({ productId }: { productId: string }) {
                       <p className="flex items-center gap-2 font-bold text-slate-900">
                         {rev.userId?.name || "Anonymous User"}
                         {rev.isVerified && (
-                          <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-black tracking-widest text-emerald-600 uppercase">
+                          <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-emerald-600">
                             Verified Buyer
                           </span>
                         )}

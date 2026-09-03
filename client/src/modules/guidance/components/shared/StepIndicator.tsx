@@ -9,7 +9,7 @@ export function StepIndicator({ current, steps }: { current: number; steps: type
     <div className="mb-8">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
             Progress
           </span>
         </div>

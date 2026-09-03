@@ -248,7 +248,7 @@ export function SessionRow({
                   {playerTraitChips(session.player).map((chip) => (
                     <span
                       key={chip}
-                      className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200 ring-inset"
+                      className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200"
                     >
                       {chip}
                     </span>
@@ -264,7 +264,7 @@ export function SessionRow({
             </div>
           )}
           {session.clientNote && (
-            <p className="mt-1 text-sm text-slate-500 italic">“{session.clientNote}”</p>
+            <p className="mt-1 text-sm italic text-slate-500">“{session.clientNote}”</p>
           )}
           {session.reviewed && session.rating && (
             <p className="mt-1 flex items-center gap-1 text-sm text-amber-600">
@@ -296,7 +296,7 @@ export function SessionRow({
           <div className="flex items-center gap-3">
             <span className="font-semibold text-slate-900">{formatInr(session.amount)}</span>
             <span
-              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide uppercase ${STATUS_STYLES[session.status] || "bg-slate-100 text-slate-600"}`}
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${STATUS_STYLES[session.status] || "bg-slate-100 text-slate-600"}`}
             >
               {session.status.replace(/_/g, " ")}
             </span>
@@ -479,7 +479,7 @@ export function SessionRow({
           value={momText}
           onChange={(e) => setMomText(e.target.value)}
           placeholder="What did you cover? Any homework or next steps for the player?"
-          className="focus:border-power-orange focus:ring-power-orange/20 mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm transition-all focus:bg-white focus:ring-2 focus:outline-none"
+          className="focus:border-power-orange focus:ring-power-orange/20 mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
         />
         <p className="mt-1 text-xs text-slate-400">
           {momText.trim().length}/{MOM_MIN_LENGTH} characters minimum

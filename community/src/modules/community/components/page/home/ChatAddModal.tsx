@@ -59,19 +59,19 @@ export function ChatAddModal({
             <div className="relative mb-6">
               <Search
                 size={16}
-                className="absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400"
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
               />
               <input
                 autoFocus
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={isGroup ? "Search communities..." : "Search for users..."}
-                className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pr-10 pl-10 text-sm transition focus:bg-white focus:ring-2 focus:outline-none"
+                className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-10 text-sm transition focus:bg-white focus:outline-none focus:ring-2"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute top-1/2 right-3.5 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
                 >
                   <X size={16} />
                 </button>
@@ -81,7 +81,7 @@ export function ChatAddModal({
             {searchQuery ? (
               <div className="flex max-h-[300px] flex-col gap-2 overflow-y-auto">
                 <div className="mb-1 flex items-center justify-between px-1">
-                  <p className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                     Results
                   </p>
                   {isSearching && <Loader2 size={12} className="text-power-orange animate-spin" />}
@@ -112,7 +112,7 @@ export function ChatAddModal({
                             className="h-10 w-10 shrink-0 rounded-full object-cover"
                           />
                         ) : (
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-sm font-bold text-slate-700 uppercase">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-sm font-bold uppercase text-slate-700">
                             {name?.charAt(0) || "?"}
                           </div>
                         )}

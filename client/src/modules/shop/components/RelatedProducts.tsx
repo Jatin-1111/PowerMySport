@@ -11,7 +11,7 @@ export async function RelatedProducts({ productId }: { productId: string }) {
   return (
     <section className="mt-16 sm:mt-24">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-black tracking-tight text-slate-900 uppercase sm:text-3xl">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900 sm:text-3xl">
           You Might Also Like
         </h2>
         <div className="ml-6 hidden h-0.5 flex-1 bg-gradient-to-r from-slate-200 to-transparent sm:block" />

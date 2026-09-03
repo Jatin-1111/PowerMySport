@@ -408,7 +408,7 @@ export default function AdminVenueApprovalPanel({
                       className="object-cover"
                     />
                     {photo === selectedVenue.coverPhotoUrl && (
-                      <div className="bg-power-orange absolute top-2 right-2 rounded px-2 py-1 text-xs font-semibold text-white">
+                      <div className="bg-power-orange absolute right-2 top-2 rounded px-2 py-1 text-xs font-semibold text-white">
                         Cover Photo
                       </div>
                     )}
@@ -468,7 +468,7 @@ export default function AdminVenueApprovalPanel({
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 placeholder="Explain why the venue is being rejected..."
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-red-500 focus:ring-2 focus:ring-red-500/50 focus:outline-none"
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/50"
                 rows={3}
               />
             </div>
@@ -482,7 +482,7 @@ export default function AdminVenueApprovalPanel({
                 value={reviewNotes}
                 onChange={(e) => setReviewNotes(e.target.value)}
                 placeholder="What needs to be updated or reviewed..."
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/50 focus:outline-none"
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/50"
                 rows={3}
               />
             </div>

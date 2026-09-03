@@ -245,7 +245,7 @@ function SectionHeader({
         {icon}
       </div>
       <div className="min-w-0">
-        <h2 className="font-title text-base leading-tight font-bold text-slate-900">{title}</h2>
+        <h2 className="font-title text-base font-bold leading-tight text-slate-900">{title}</h2>
         <p className="mt-0.5 text-xs text-slate-400">{sub}</p>
       </div>
     </div>
@@ -280,7 +280,7 @@ function SportCard({
       }`}
     >
       {/* Role badge */}
-      <div className="border-b border-slate-50 px-5 pt-5 pb-4">
+      <div className="border-b border-slate-50 px-5 pb-4 pt-5">
         <div className="mb-3 flex items-center justify-between gap-2">
           <div
             className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badgeBg}`}
@@ -298,7 +298,7 @@ function SportCard({
             <span className="text-xl font-bold">{result.sport.name[0]}</span>
           </div>
           <div className="min-w-0">
-            <h3 className="font-title text-xl leading-tight font-bold text-slate-900">
+            <h3 className="font-title text-xl font-bold leading-tight text-slate-900">
               {result.sport.name}
             </h3>
             <p className="mt-0.5 text-xs text-slate-400">{result.sport.tagline}</p>
@@ -320,7 +320,7 @@ function SportCard({
 
       {/* What to watch for in a trial */}
       <div className="mx-5 mb-4 rounded-xl bg-slate-50 px-3.5 py-3">
-        <p className="mb-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+        <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
           Cost to try: {result.sport.costRange}
         </p>
         <p className="text-xs leading-relaxed text-slate-600">{meta.watchFor(name)}</p>
@@ -439,7 +439,7 @@ export function ResultsView({
         <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-10">
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-              <p className="text-xs font-semibold tracking-widest text-slate-400 uppercase">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
                 Assessment complete
               </p>
               {savedStatus === "saving" && (
@@ -461,7 +461,7 @@ export function ResultsView({
               )}
             </div>
 
-            <h1 className="font-title text-3xl leading-tight font-bold text-slate-900 sm:text-4xl">
+            <h1 className="font-title text-3xl font-bold leading-tight text-slate-900 sm:text-4xl">
               {hasShortlist
                 ? `How ${name} fits the sports you're considering`
                 : `${name}'s personalised sports roadmap`}
@@ -478,13 +478,13 @@ export function ResultsView({
           {headlineSport && (
             <div className="w-full shrink-0 rounded-2xl bg-slate-900 p-5 lg:w-[268px]">
               <p
-                className={`text-[10px] font-bold tracking-[0.18em] uppercase ${
+                className={`text-[10px] font-bold uppercase tracking-[0.18em] ${
                   chosenSport ? "text-turf-green" : "text-power-orange"
                 }`}
               >
                 {chosenSport ? "You're starting with" : topFit ? "Strongest fit" : "Best fit"}
               </p>
-              <p className="font-title mt-1 text-2xl leading-tight font-bold text-white">
+              <p className="font-title mt-1 text-2xl font-bold leading-tight text-white">
                 {headlineSport}
               </p>
 
@@ -493,11 +493,11 @@ export function ResultsView({
               {topFit && !chosenSport && (
                 <div className="mt-3">
                   <div className="flex items-baseline gap-1.5">
-                    <span className="font-title text-3xl leading-none font-bold text-white tabular-nums">
+                    <span className="font-title text-3xl font-bold tabular-nums leading-none text-white">
                       {topFit.score}
                     </span>
                     <span className="text-xs font-medium text-slate-500">/ 100</span>
-                    <span className="ml-auto text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                    <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       {topFit.hasBlocker ? "Needs a fix" : topFit.fitLabel}
                     </span>
                   </div>
@@ -525,7 +525,7 @@ export function ResultsView({
         {/* Constraints every score was measured against */}
         {contextChips.length > 0 && (
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-100 bg-slate-50/60 px-6 py-3 sm:px-8">
-            <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Scored against
             </span>
             {contextChips.map((chip) => (

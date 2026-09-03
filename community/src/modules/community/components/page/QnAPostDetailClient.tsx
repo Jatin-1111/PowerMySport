@@ -651,14 +651,14 @@ export default function QnAPostDetailClient({
               <input
                 value={postTitleDraft}
                 onChange={(event) => setPostTitleDraft(event.target.value)}
-                className="focus:border-power-orange focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-lg font-bold text-slate-900 focus:ring-1 focus:outline-none"
+                className="focus:border-power-orange focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-lg font-bold text-slate-900 focus:outline-none focus:ring-1"
                 placeholder="Question title..."
               />
               <textarea
                 value={postBodyDraft}
                 onChange={(event) => setPostBodyDraft(event.target.value)}
                 rows={6}
-                className="focus:border-power-orange focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 focus:ring-1 focus:outline-none"
+                className="focus:border-power-orange focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-1"
                 placeholder="Question details..."
               />
               <div className="flex flex-wrap gap-2">
@@ -683,10 +683,10 @@ export default function QnAPostDetailClient({
             </div>
           ) : (
             <>
-              <h1 className="text-2xl leading-tight font-bold text-slate-900 sm:text-3xl">
+              <h1 className="text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">
                 {post.title}
               </h1>
-              <p className="mt-3 text-base leading-relaxed whitespace-pre-wrap text-slate-700">
+              <p className="mt-3 whitespace-pre-wrap text-base leading-relaxed text-slate-700">
                 {post.body}
               </p>
             </>
@@ -727,7 +727,7 @@ export default function QnAPostDetailClient({
                 {post.isAnonymous ? "Anonymous" : post.author.displayName}
               </span>
               {post.author.isVerifiedExpert ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-700 uppercase">
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
                   ★ {post.author.expertTitle}
                 </span>
               ) : null}
@@ -800,7 +800,7 @@ export default function QnAPostDetailClient({
               : "Write your answer here... Include specific steps, tips, or experiences that helped solve the problem."
           }
           disabled={post.status === "CLOSED"}
-          className="focus:border-power-orange focus:ring-power-orange mt-4 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-500 focus:ring-1 focus:outline-none disabled:bg-slate-50"
+          className="focus:border-power-orange focus:ring-power-orange mt-4 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-1 disabled:bg-slate-50"
         />
         <div className="mt-4 flex flex-wrap items-center gap-3 sm:gap-4">
           <button
@@ -839,7 +839,7 @@ export default function QnAPostDetailClient({
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold tracking-wide text-slate-600 uppercase">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
             Community Answers
           </h3>
           <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600">
@@ -913,12 +913,12 @@ export default function QnAPostDetailClient({
                           {answer.isAnonymous ? "Anonymous" : answer.author.displayName}
                         </span>
                         {answer.author.isVerifiedExpert ? (
-                          <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-700 uppercase">
+                          <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
                             ★ {answer.author.expertTitle}
                           </span>
                         ) : null}
                         {index === 0 && answer.voteScore > 0 && !answer.isAccepted ? (
-                          <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase">
+                          <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700">
                             Top Answer
                           </span>
                         ) : null}
@@ -945,7 +945,7 @@ export default function QnAPostDetailClient({
                       value={editingAnswerDraft}
                       onChange={(event) => setEditingAnswerDraft(event.target.value)}
                       rows={5}
-                      className="focus:border-power-orange focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal text-slate-900 focus:ring-1 focus:outline-none"
+                      className="focus:border-power-orange focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal text-slate-900 focus:outline-none focus:ring-1"
                       placeholder="Share your answer..."
                     />
                     <div className="flex flex-wrap gap-2">
@@ -969,7 +969,7 @@ export default function QnAPostDetailClient({
                   </div>
                 ) : (
                   <div className="mt-3">
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap text-slate-700">
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
                       {answer.content}
                     </p>
                   </div>

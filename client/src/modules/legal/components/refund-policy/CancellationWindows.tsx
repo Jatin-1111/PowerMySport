@@ -1,11 +1,11 @@
 export function CancellationWindows() {
   return (
     <section id="cancellation-windows" className="mb-8">
-      <h2 className="mt-8 mb-4 text-2xl font-semibold">2. Cancellation &amp; Refund Windows</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">2. Cancellation &amp; Refund Windows</h2>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">2.1 Player-Initiated Cancellations</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">2.1 Player-Initiated Cancellations</h3>
       <div className="overflow-x-auto">
-        <table className="mt-4 mb-4 w-full border-collapse border border-gray-300">
+        <table className="mb-4 mt-4 w-full border-collapse border border-gray-300">
           <thead className="bg-gray-100">
             <tr>
               <th className="border border-gray-300 p-3 text-left">Cancellation Window</th>
@@ -48,7 +48,7 @@ export function CancellationWindows() {
         re-booked in a manner suggestive of abuse of this policy.
       </p>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">2.2 Coach/Venue-Initiated Cancellations</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">2.2 Coach/Venue-Initiated Cancellations</h3>
       <p>If a coach or venue owner cancels a confirmed booking, the player is entitled to:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>
@@ -63,7 +63,7 @@ export function CancellationWindows() {
         <li>No cancellation fee imposed on the player</li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">2.3 Force Majeure Cancellations</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">2.3 Force Majeure Cancellations</h3>
       <p>
         In cases of force majeure (natural disasters, government lockdown, venue closure, or other
         events beyond any party&apos;s reasonable control), PowerMySport will, at its sole

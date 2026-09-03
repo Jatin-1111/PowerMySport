@@ -227,7 +227,7 @@ function RegisterContent() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: "easeOut" }}
         >
-          <h1 className="font-title text-3xl leading-tight font-black tracking-tight text-slate-900 dark:text-white">
+          <h1 className="font-title text-3xl font-black leading-tight tracking-tight text-slate-900 dark:text-white">
             Create your account
           </h1>
           <p className="mt-2 text-[15px] text-slate-500 dark:text-slate-400">
@@ -324,7 +324,7 @@ function RegisterContent() {
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label="Toggle password visibility"
-                  className="absolute top-1/2 right-3.5 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -387,7 +387,7 @@ function RegisterContent() {
                       )}
                     </div>
                     {selected && (
-                      <span className="bg-power-orange absolute top-2.5 right-2.5 flex h-4.5 w-4.5 items-center justify-center rounded-full">
+                      <span className="bg-power-orange h-4.5 w-4.5 absolute right-2.5 top-2.5 flex items-center justify-center rounded-full">
                         <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
                       </span>
                     )}
@@ -421,7 +421,7 @@ function RegisterContent() {
                 name="serviceMode"
                 value={formData.serviceMode}
                 onChange={handleChange}
-                className="focus:border-power-orange focus:ring-power-orange/10 h-12 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm text-slate-900 transition-all duration-200 focus:bg-white focus:ring-4 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                className="focus:border-power-orange focus:ring-power-orange/10 h-12 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm text-slate-900 transition-all duration-200 focus:bg-white focus:outline-none focus:ring-4 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
               >
                 <option value="OWN_VENUE">Own Venue — coach at your location</option>
                 <option value="FREELANCE">Freelance — travel to players</option>
@@ -488,7 +488,7 @@ function RegisterContent() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="group bg-power-orange focus:ring-power-orange/20 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold text-white shadow-lg shadow-orange-500/25 transition-all duration-200 hover:bg-orange-600 hover:shadow-orange-500/30 focus:ring-4 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+            className="bg-power-orange focus:ring-power-orange/20 group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold text-white shadow-lg shadow-orange-500/25 transition-all duration-200 hover:bg-orange-600 hover:shadow-orange-500/30 focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? (
               <>
@@ -510,7 +510,7 @@ function RegisterContent() {
             <div className="w-full border-t border-slate-100 dark:border-slate-800" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-white px-3 text-xs font-medium tracking-wider text-slate-400 uppercase dark:bg-slate-950 dark:text-slate-500">
+            <span className="bg-white px-3 text-xs font-medium uppercase tracking-wider text-slate-400 dark:bg-slate-950 dark:text-slate-500">
               or
             </span>
           </div>

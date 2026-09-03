@@ -1,9 +1,9 @@
 export function EscalationAppeals() {
   return (
     <section id="escalation-appeals" className="mb-8">
-      <h2 className="mt-8 mb-4 text-2xl font-semibold">7. Escalation &amp; Appeals</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">7. Escalation &amp; Appeals</h2>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">7.1 Disagreement with Decision</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">7.1 Disagreement with Decision</h3>
       <p>If you disagree with a dispute decision:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>You may file a single appeal within 3 business days of the decision</li>
@@ -18,7 +18,7 @@ export function EscalationAppeals() {
         </li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">7.2 Binding Arbitration</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">7.2 Binding Arbitration</h3>
       <p>
         Any dispute not resolved through the above process shall be subject to the mandatory,
         binding arbitration provisions of our Terms of Service. You waive any right to bring a

@@ -31,7 +31,7 @@ export function BottomNav({ items, className }: BottomNavProps) {
   return (
     <nav
       className={cn(
-        "fixed right-0 bottom-0 left-0 z-50 md:hidden",
+        "fixed bottom-0 left-0 right-0 z-50 md:hidden",
         "border-t border-slate-200/60 bg-white shadow-md",
         "safe-area-inset-bottom",
         className
@@ -62,7 +62,7 @@ export function BottomNav({ items, className }: BottomNavProps) {
                 {item.badge && (
                   <Badge
                     variant="destructive"
-                    className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center px-0.5 text-[9px]"
+                    className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center px-0.5 text-[9px]"
                     aria-label={`${item.badge} pending`}
                   >
                     {item.badge}
@@ -71,7 +71,7 @@ export function BottomNav({ items, className }: BottomNavProps) {
               </div>
               <span
                 className={cn(
-                  "mt-0.5 text-[9px] leading-tight font-medium",
+                  "mt-0.5 text-[9px] font-medium leading-tight",
                   active && "font-semibold"
                 )}
                 aria-hidden="true"
@@ -80,7 +80,7 @@ export function BottomNav({ items, className }: BottomNavProps) {
               </span>
               {active && (
                 <div
-                  className="bg-power-orange absolute top-0 left-1/2 h-0.5 w-12 -translate-x-1/2 rounded-b-full"
+                  className="bg-power-orange absolute left-1/2 top-0 h-0.5 w-12 -translate-x-1/2 rounded-b-full"
                   aria-hidden="true"
                 />
               )}

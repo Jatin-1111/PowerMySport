@@ -114,7 +114,7 @@ export function BookingTimeline({ subjectId }: { subjectId: string }) {
 
         return (
           <li key={event._id} className="relative">
-            <span className="absolute top-1.5 -left-[1.4rem] h-2.5 w-2.5 rounded-full bg-slate-300 ring-2 ring-white" />
+            <span className="absolute -left-[1.4rem] top-1.5 h-2.5 w-2.5 rounded-full bg-slate-300 ring-2 ring-white" />
 
             <div className="flex flex-wrap items-center gap-2">
               <span

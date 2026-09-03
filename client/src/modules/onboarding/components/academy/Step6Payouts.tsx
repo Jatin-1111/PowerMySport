@@ -256,7 +256,7 @@ export default function Step6Payouts({
                 payoutFrequency: e.target.value as AcademyPayoutFrequency,
               }))
             }
-            className="focus:ring-power-orange h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
+            className="focus:ring-power-orange h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
             disabled={isSubmitting}
           >
             <option value="weekly">Weekly</option>

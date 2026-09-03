@@ -284,7 +284,7 @@ function Stat({
 }) {
   return (
     <div className="px-5 py-4 sm:px-6">
-      <dt className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
+      <dt className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide">
         {icon}
         {label}
       </dt>

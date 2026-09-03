@@ -38,7 +38,7 @@ export function CommunityPageHeader({
       <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           {badge && (
-            <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold tracking-[0.22em] text-slate-600 uppercase backdrop-blur">
+            <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600 backdrop-blur">
               {badge}
             </span>
           )}
@@ -75,7 +75,7 @@ export function CommunityPageHeader({
                 ease: "easeInOut",
               }
         }
-        className="bg-power-orange/30 pointer-events-none absolute -top-20 -right-24 h-56 w-56 rounded-full blur-3xl"
+        className="bg-power-orange/30 pointer-events-none absolute -right-24 -top-20 h-56 w-56 rounded-full blur-3xl"
       />
       <motion.div
         aria-hidden="true"

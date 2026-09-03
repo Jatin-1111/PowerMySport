@@ -51,9 +51,9 @@ export function PastRoadmapsDropdown({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.96 }}
             transition={{ duration: 0.13 }}
-            className="absolute top-full right-0 z-50 mt-2 max-h-72 w-72 overflow-y-auto rounded-2xl border border-slate-100 bg-white p-2 shadow-xl"
+            className="absolute right-0 top-full z-50 mt-2 max-h-72 w-72 overflow-y-auto rounded-2xl border border-slate-100 bg-white p-2 shadow-xl"
           >
-            <p className="px-3 pt-1 pb-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+            <p className="px-3 pb-2 pt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
               {history.length} saved roadmaps
             </p>
             {history.map((h) => (

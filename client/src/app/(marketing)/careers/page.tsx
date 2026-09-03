@@ -140,11 +140,11 @@ export default function CareersPage() {
       {/* Header Section */}
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
+          <div className="bg-linear-to-br relative overflow-hidden rounded-2xl from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
             <div className="relative z-10">
               <div className="mb-2 flex items-center gap-3">
                 <Briefcase size={32} className="text-power-orange" />
-                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-white/80 uppercase">
+                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
                   Join Us
                 </span>
               </div>
@@ -156,7 +156,7 @@ export default function CareersPage() {
                 experience sports. We're looking for talented individuals who share our vision.
               </p>
             </div>
-            <div className="bg-power-orange/20 pointer-events-none absolute -top-16 -right-20 h-48 w-48 rounded-full blur-3xl" />
+            <div className="bg-power-orange/20 pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full blur-3xl" />
             <div className="bg-turf-green/20 pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-3xl" />
           </div>
         </div>
@@ -277,7 +277,7 @@ export default function CareersPage() {
         </section>
 
         {/* CTA Section */}
-        <Card className="from-power-orange/5 to-turf-green/5 border-power-orange/20 border-2 bg-linear-to-br p-8 text-center">
+        <Card className="from-power-orange/5 to-turf-green/5 border-power-orange/20 bg-linear-to-br border-2 p-8 text-center">
           <Users size={48} className="text-power-orange mx-auto mb-4" />
           <h2 className="mb-2 text-2xl font-bold text-slate-900">Don't See a Perfect Fit?</h2>
           <p className="mx-auto mb-6 max-w-xl text-slate-600">

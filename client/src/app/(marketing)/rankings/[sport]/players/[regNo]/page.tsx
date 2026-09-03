@@ -336,7 +336,7 @@ function StandingCard({
         <div className="min-w-0">
           <Link
             href={comboHref(sportSlug, combo)}
-            className="text-foreground hover:text-power-orange focus-visible:ring-power-orange text-sm font-semibold hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+            className="text-foreground hover:text-power-orange focus-visible:ring-power-orange text-sm font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
           >
             {comboLabel(combo)}
           </Link>
@@ -352,7 +352,7 @@ function StandingCard({
       </div>
 
       <p className="mt-3 flex items-baseline gap-2">
-        <span className="text-4xl font-bold tracking-tight tabular-nums">
+        <span className="text-4xl font-bold tabular-nums tracking-tight">
           #{entry.rank.toLocaleString("en-IN")}
         </span>
         {insight.listSize && (
@@ -367,7 +367,7 @@ function StandingCard({
       {standing && <p className="mt-1 text-sm font-medium first-letter:uppercase">{standing}</p>}
       {insight.listSize && <FieldPosition rank={entry.rank} listSize={insight.listSize} />}
 
-      <dl className="mt-4 mb-4 space-y-1.5 text-sm">
+      <dl className="mb-4 mt-4 space-y-1.5 text-sm">
         <Row label="Points" value={formatPoints(entry.totalPoints)} />
         {entry.stateRank && entry.state && (
           <Row

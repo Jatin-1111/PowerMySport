@@ -26,7 +26,7 @@ export function RankDelta({
   if (delta === null || delta === undefined) {
     return (
       <span
-        className={`text-muted-foreground ring-border inline-flex items-center rounded px-1.5 py-0.5 text-[0.6875rem] font-semibold tracking-wide uppercase ring-1 ${className}`}
+        className={`text-muted-foreground ring-border inline-flex items-center rounded px-1.5 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide ring-1 ${className}`}
       >
         New
         <span className="sr-only"> to this list</span>

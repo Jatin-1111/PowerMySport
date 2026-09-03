@@ -132,8 +132,8 @@ function Field({ label, value }: { label: string; value?: React.ReactNode }) {
   if (value === undefined || value === null || value === "") return null;
   return (
     <div className="-mx-2.5 rounded-lg px-2.5 py-1.5 transition-colors hover:bg-slate-50">
-      <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">{label}</p>
-      <p className="mt-1 text-sm leading-snug font-medium text-slate-800">{value}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="mt-1 text-sm font-medium leading-snug text-slate-800">{value}</p>
     </div>
   );
 }
@@ -142,12 +142,12 @@ function TagList({ label, values }: { label: string; values?: string[] }) {
   if (!values || values.length === 0) return null;
   return (
     <div className="-mx-2.5 rounded-lg px-2.5 py-1.5">
-      <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">{label}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {values.map((v) => (
           <span
             key={v}
-            className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 ring-inset"
+            className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200"
           >
             {v}
           </span>
@@ -186,7 +186,7 @@ function Section({
 function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">{label}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
       <p className="mt-1 truncate text-sm font-bold text-slate-900">{value}</p>
     </div>
   );
@@ -321,9 +321,9 @@ export default function ExpertSessionPlayerDetailPage() {
       <FadeIn>
         <div className="overflow-hidden rounded-2xl border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
           <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 px-6 py-8 text-white sm:px-8">
-            <div className="bg-power-orange/20 pointer-events-none absolute -top-14 -right-14 h-44 w-44 rounded-full blur-3xl" />
+            <div className="bg-power-orange/20 pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full blur-3xl" />
             <div className="pointer-events-none absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl" />
-            <span className="relative inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-white/70 uppercase ring-1 ring-white/10 ring-inset">
+            <span className="relative inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white/70 ring-1 ring-inset ring-white/10">
               Booking briefing
             </span>
             <div className="relative mt-4 flex items-center gap-4">
@@ -400,7 +400,7 @@ export default function ExpertSessionPlayerDetailPage() {
                 {player.medicalConditions.map((c) => (
                   <span
                     key={c}
-                    className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200 ring-inset"
+                    className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-200"
                   >
                     {c}
                   </span>

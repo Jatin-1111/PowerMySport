@@ -12,8 +12,8 @@ export default function AssessmentPage() {
       {/* Ambient background */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50/60 via-white to-slate-50" />
-        <div className="bg-power-orange/8 absolute -top-10 -left-32 h-[28rem] w-[28rem] rounded-full blur-3xl" />
-        <div className="absolute top-40 right-[-6rem] h-80 w-80 rounded-full bg-amber-200/25 blur-3xl" />
+        <div className="bg-power-orange/8 absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full blur-3xl" />
+        <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/25 blur-3xl" />
         <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-indigo-200/15 blur-3xl" />
       </div>
 
@@ -25,7 +25,7 @@ export default function AssessmentPage() {
           transition={{ duration: 0.4, ease: "easeOut" }}
           className="mb-10 text-center"
         >
-          <div className="text-power-orange mb-4 inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50 px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase">
+          <div className="text-power-orange mb-4 inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest">
             <Sparkles className="h-3 w-3" />
             Get Started
           </div>
@@ -49,12 +49,12 @@ export default function AssessmentPage() {
             <button
               type="button"
               onClick={() => router.push("/assessment/discover")}
-              className="group hover:border-power-orange flex h-full w-full flex-col rounded-3xl border-2 border-slate-200 bg-white p-7 text-left shadow-sm transition-all duration-200 hover:shadow-md active:scale-[0.99]"
+              className="hover:border-power-orange group flex h-full w-full flex-col rounded-3xl border-2 border-slate-200 bg-white p-7 text-left shadow-sm transition-all duration-200 hover:shadow-md active:scale-[0.99]"
             >
               <div className="text-power-orange mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 transition-transform duration-300 group-hover:scale-110">
                 <HelpCircle className="h-6 w-6" />
               </div>
-              <p className="text-power-orange mb-1 text-[11px] font-bold tracking-wider uppercase">
+              <p className="text-power-orange mb-1 text-[11px] font-bold uppercase tracking-wider">
                 Not sure yet?
               </p>
               <h2 className="font-title mb-2 text-xl font-bold text-slate-900">
@@ -87,7 +87,7 @@ export default function AssessmentPage() {
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 transition-transform duration-300 group-hover:scale-110">
                 <CheckCircle2 className="h-6 w-6" />
               </div>
-              <p className="mb-1 text-[11px] font-bold tracking-wider text-emerald-600 uppercase">
+              <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-emerald-600">
                 Already know it?
               </p>
               <h2 className="font-title mb-2 text-xl font-bold text-slate-900">

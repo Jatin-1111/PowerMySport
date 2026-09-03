@@ -1,7 +1,7 @@
 export function ContactSupport() {
   return (
     <section id="contact-support" className="mb-8">
-      <h2 className="mt-8 mb-4 text-2xl font-semibold">8. Contact &amp; Support</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">8. Contact &amp; Support</h2>
       <p>For refund or dispute inquiries:</p>
       <div className="mt-4 rounded-lg bg-gray-100 p-6">
         <p>

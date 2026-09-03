@@ -146,7 +146,7 @@ export default function ReportsPage() {
                   )}
                   {report.resolutionNote && (
                     <div className="mt-2 rounded-2xl border border-green-200 bg-green-50 px-3 py-2.5">
-                      <p className="text-[11px] font-semibold tracking-wide text-green-700 uppercase">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-green-700">
                         Admin note
                       </p>
                       <p className="mt-0.5 text-xs text-green-900">{report.resolutionNote}</p>

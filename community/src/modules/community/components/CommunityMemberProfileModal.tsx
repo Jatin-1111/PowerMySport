@@ -96,7 +96,7 @@ export function CommunityMemberProfileModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-60 flex items-end justify-center bg-slate-950/50 p-2 backdrop-blur-sm sm:items-center sm:p-4"
+          className="z-60 fixed inset-0 flex items-end justify-center bg-slate-950/50 p-2 backdrop-blur-sm sm:items-center sm:p-4"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               onClose();
@@ -114,7 +114,7 @@ export function CommunityMemberProfileModal({
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(233,115,22,0.18),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(26,163,88,0.12),transparent_36%)]" />
               <div className="relative flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold tracking-[0.24em] text-white/60 uppercase">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/60">
                     Community member profile
                   </p>
                   <h3 className="mt-2 text-xl font-semibold tracking-tight sm:text-3xl">
@@ -234,16 +234,16 @@ export function CommunityMemberProfileModal({
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="border-border rounded-2xl border bg-white p-4 shadow-xs sm:p-5">
-                      <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+                    <div className="border-border shadow-xs rounded-2xl border bg-white p-4 sm:p-5">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                         Role
                       </p>
                       <p className="mt-2 text-sm font-medium text-slate-900">
                         {profile.role === "Coach" ? "Coach" : "Player"}
                       </p>
                     </div>
-                    <div className="border-border rounded-2xl border bg-white p-4 shadow-xs sm:p-5">
-                      <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+                    <div className="border-border shadow-xs rounded-2xl border bg-white p-4 sm:p-5">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                         Privacy
                       </p>
                       <p className="mt-2 text-sm font-medium text-slate-900">
@@ -254,8 +254,8 @@ export function CommunityMemberProfileModal({
                             : "Open messages"}
                       </p>
                     </div>
-                    <div className="border-border rounded-2xl border bg-white p-4 shadow-xs sm:p-5">
-                      <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+                    <div className="border-border shadow-xs rounded-2xl border bg-white p-4 sm:p-5">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                         Read receipts
                       </p>
                       <p className="mt-2 text-sm font-medium text-slate-900">
@@ -264,8 +264,8 @@ export function CommunityMemberProfileModal({
                     </div>
                   </div>
 
-                  <div className="border-border rounded-2xl border bg-white p-4 shadow-xs sm:p-5">
-                    <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+                  <div className="border-border shadow-xs rounded-2xl border bg-white p-4 sm:p-5">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                       Public sports
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">

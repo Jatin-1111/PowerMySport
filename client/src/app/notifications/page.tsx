@@ -203,7 +203,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
       aria-checked={checked}
       onClick={onChange}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none",
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
         checked ? "bg-power-orange" : "bg-slate-200"
       )}
     >
@@ -386,13 +386,13 @@ function PreferencesPanel({
         <table className="w-full min-w-[500px] text-sm">
           <thead>
             <tr className="border-b border-slate-100">
-              <th className="w-full px-4 py-3 text-left text-xs font-semibold tracking-wider text-slate-500 uppercase sm:px-5">
+              <th className="w-full px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 sm:px-5">
                 Notification Type
               </th>
               {channels.map((ch) => (
                 <th
                   key={ch}
-                  className="px-4 py-3 text-center text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase"
+                  className="whitespace-nowrap px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-500"
                 >
                   {channelLabels[ch]}
                 </th>
@@ -629,7 +629,7 @@ function NotificationsPageContent() {
 
           {/* Filter Tabs */}
           <div className="relative">
-            <div className="-mx-1 flex scrollbar-none items-center gap-1.5 overflow-x-auto px-1 pb-1">
+            <div className="scrollbar-none -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1">
               {filterOptions.map((option) => {
                 const Icon = option.icon;
                 const isActive = filter === option.value;
@@ -641,7 +641,7 @@ function NotificationsPageContent() {
                       setPage(1);
                     }}
                     className={cn(
-                      "inline-flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium whitespace-nowrap transition-all duration-150",
+                      "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-sm font-medium transition-all duration-150",
                       isActive
                         ? "bg-power-orange border-orange-300 text-white shadow-sm shadow-orange-200"
                         : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
@@ -652,7 +652,7 @@ function NotificationsPageContent() {
                     {option.value === "unread" && unreadCount > 0 && (
                       <span
                         className={cn(
-                          "min-w-[20px] rounded-full px-1.5 py-0 text-center text-[11px] leading-5 font-bold",
+                          "min-w-[20px] rounded-full px-1.5 py-0 text-center text-[11px] font-bold leading-5",
                           isActive ? "bg-white/20 text-white" : "bg-red-500 text-white"
                         )}
                       >

@@ -1272,7 +1272,7 @@ export default function CoachVerificationPage() {
       <Card className="bg-white">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs tracking-wide text-slate-500 uppercase">Coach Verification</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Coach Verification</p>
             <h1 className="text-xl font-bold text-slate-900 sm:text-3xl">
               Complete Your Verification
             </h1>
@@ -1428,7 +1428,7 @@ export default function CoachVerificationPage() {
                 disabled={isLockedByReview}
                 minLength={20}
                 maxLength={2000}
-                className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
+                className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2"
                 placeholder="Tell players about your experience, achievements, and coaching style."
               />
             </div>
@@ -1445,7 +1445,7 @@ export default function CoachVerificationPage() {
                 inputMode="tel"
                 pattern="^[+]?[0-9\s().\-]+$"
                 maxLength={20}
-                className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
+                className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2"
                 placeholder="e.g., 9876543210"
               />
             </div>
@@ -1508,7 +1508,7 @@ export default function CoachVerificationPage() {
                   onChange={(event) => setHourlyRateInput(event.target.value)}
                   inputMode="decimal"
                   pattern="^\d+(\.\d{1,2})?$"
-                  className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
+                  className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2"
                   placeholder="e.g., 500"
                 />
               </div>
@@ -1554,7 +1554,7 @@ export default function CoachVerificationPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   {selectedSports.map((sport) => (
                     <div key={sport}>
-                      <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase">
+                      <label className="mb-1 block text-xs font-semibold uppercase text-slate-600">
                         {sport}
                       </label>
                       <input
@@ -1571,7 +1571,7 @@ export default function CoachVerificationPage() {
                             [sport]: event.target.value,
                           }))
                         }
-                        className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:ring-2 focus:outline-none"
+                        className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2"
                         placeholder="e.g., 600"
                       />
                     </div>
@@ -1608,7 +1608,7 @@ export default function CoachVerificationPage() {
                         }))
                       }
                       disabled={isLockedByReview}
-                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
+                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2"
                       placeholder="e.g., Elite Sports Arena"
                     />
                   </div>
@@ -1623,11 +1623,11 @@ export default function CoachVerificationPage() {
                         value={addressQuery}
                         onChange={handleAddressChange}
                         disabled={isLockedByReview}
-                        className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
+                        className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2"
                         placeholder="Search your venue location"
                       />
                       {isAddressSearching && (
-                        <span className="absolute top-3 right-3 text-xs text-slate-500">
+                        <span className="absolute right-3 top-3 text-xs text-slate-500">
                           Searching...
                         </span>
                       )}
@@ -1676,7 +1676,7 @@ export default function CoachVerificationPage() {
                       }
                       disabled={isLockedByReview}
                       rows={3}
-                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
+                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2"
                       placeholder="Describe the facilities, equipment, and amenities available at your venue."
                     />
                   </div>
@@ -1727,11 +1727,11 @@ export default function CoachVerificationPage() {
                       value={addressQuery}
                       onChange={handleAddressChange}
                       disabled={isLockedByReview}
-                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
+                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2"
                       placeholder="Search your base location"
                     />
                     {isAddressSearching && (
-                      <span className="absolute top-3 right-3 text-xs text-slate-500">
+                      <span className="absolute right-3 top-3 text-xs text-slate-500">
                         Searching...
                       </span>
                     )}
@@ -1783,7 +1783,7 @@ export default function CoachVerificationPage() {
                       value={serviceRadiusKmInput}
                       disabled={isLockedByReview}
                       onChange={(event) => setServiceRadiusKmInput(event.target.value)}
-                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
+                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2"
                       placeholder="e.g., 10"
                     />
                   </div>
@@ -1799,7 +1799,7 @@ export default function CoachVerificationPage() {
                       value={travelBufferTimeInput}
                       disabled={isLockedByReview}
                       onChange={(event) => setTravelBufferTimeInput(event.target.value)}
-                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
+                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2"
                       placeholder="e.g., 30"
                     />
                   </div>
@@ -1958,7 +1958,7 @@ export default function CoachVerificationPage() {
                   <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
                     <div className="grid gap-3 md:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase">
+                        <label className="mb-1 block text-xs font-semibold uppercase text-slate-600">
                           Document Type
                         </label>
                         <select
@@ -1988,7 +1988,7 @@ export default function CoachVerificationPage() {
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase">
+                        <label className="mb-1 block text-xs font-semibold uppercase text-slate-600">
                           Uploaded File
                         </label>
                         <div className="truncate rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">

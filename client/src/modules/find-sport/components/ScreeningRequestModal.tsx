@@ -61,7 +61,7 @@ export function ScreeningRequestModal({
       {/* Panel */}
       <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 pt-5 pb-4">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 pb-4 pt-5">
           <div>
             <h2 className="font-title text-base font-bold text-slate-900">
               Book Physical Screening
@@ -117,7 +117,7 @@ export function ScreeningRequestModal({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+91 98765 43210"
-                className="focus:ring-power-orange/30 focus:border-power-orange w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 transition-colors placeholder:text-slate-300 focus:ring-2 focus:outline-none"
+                className="focus:ring-power-orange/30 focus:border-power-orange w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 transition-colors placeholder:text-slate-300 focus:outline-none focus:ring-2"
               />
             </div>
 
@@ -132,7 +132,7 @@ export function ScreeningRequestModal({
                 value={preferredTime}
                 onChange={(e) => setPreferredTime(e.target.value)}
                 placeholder="e.g. Weekday evenings, this Saturday…"
-                className="focus:ring-power-orange/30 focus:border-power-orange w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 transition-colors placeholder:text-slate-300 focus:ring-2 focus:outline-none"
+                className="focus:ring-power-orange/30 focus:border-power-orange w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 transition-colors placeholder:text-slate-300 focus:outline-none focus:ring-2"
               />
             </div>
 

@@ -238,7 +238,7 @@ export default function BookingInvoicePage() {
       <Card className="bg-white p-6 sm:p-8 print:border-none print:shadow-none">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs tracking-wide text-slate-400 uppercase">Invoice</p>
+            <p className="text-xs uppercase tracking-wide text-slate-400">Invoice</p>
             <h1 className="text-2xl font-bold text-slate-900">PowerMySport</h1>
             <p className="mt-2 text-sm text-slate-600">Thank you for booking with PowerMySport.</p>
           </div>
@@ -252,7 +252,7 @@ export default function BookingInvoicePage() {
 
         <div className="mt-6 grid gap-6 md:grid-cols-2">
           <div className="rounded-xl border border-slate-200 p-4">
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Billed To
             </p>
             <p className="mt-2 text-base font-semibold text-slate-900">
@@ -263,7 +263,7 @@ export default function BookingInvoicePage() {
           </div>
 
           <div className="rounded-xl border border-slate-200 p-4">
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Provider</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Provider</p>
             <p className="mt-2 text-base font-semibold text-slate-900">{providerName}</p>
             <p className="text-sm text-slate-600">{providerAddress}</p>
             <p className="text-sm text-slate-600">GST: {providerGst}</p>
@@ -271,7 +271,7 @@ export default function BookingInvoicePage() {
         </div>
 
         <div className="mt-6 rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Booking Summary
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -299,7 +299,7 @@ export default function BookingInvoicePage() {
         </div>
 
         <div className="mt-6 rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Pricing</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pricing</p>
           <div className="mt-4 space-y-2 text-sm text-slate-700">
             <div className="flex items-center justify-between">
               <span>Subtotal</span>

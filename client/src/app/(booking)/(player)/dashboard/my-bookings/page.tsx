@@ -300,15 +300,15 @@ export default function BookingsPage() {
       {/* Stats strip */}
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Total</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{bookings.length}</p>
         </div>
         <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Upcoming</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Upcoming</p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{upcomingCount}</p>
         </div>
         <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Confirmed</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Confirmed</p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{confirmedCount}</p>
         </div>
       </div>
@@ -403,7 +403,7 @@ export default function BookingsPage() {
 
                         {booking.status === "CONFIRMED" && booking.checkInCode && (
                           <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-                            <span className="text-xs font-semibold tracking-wide text-emerald-700 uppercase">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
                               Check-in Code
                             </span>
                             <span className="font-mono text-sm font-bold text-emerald-900">

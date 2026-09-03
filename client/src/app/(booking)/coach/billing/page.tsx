@@ -429,7 +429,7 @@ export default function CoachBillingPage() {
         <Card className="overflow-hidden border-white/70 bg-white/85 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-md">
           <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f7fbff_45%,#fff5e8_100%)] p-4 sm:p-6">
             <div className="relative z-10 max-w-3xl space-y-3">
-              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-slate-600 uppercase">
+              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
                 <Sparkles size={12} /> Package builder
               </span>
               <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl lg:text-4xl">
@@ -441,7 +441,7 @@ export default function CoachBillingPage() {
                 so the backend gets clean numeric data.
               </p>
             </div>
-            <div className="bg-turf-green/15 pointer-events-none absolute -top-16 -right-20 h-48 w-48 rounded-full blur-3xl" />
+            <div className="bg-turf-green/15 pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full blur-3xl" />
             <div className="bg-power-orange/20 pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-3xl" />
           </div>
         </Card>
@@ -872,7 +872,7 @@ export default function CoachBillingPage() {
               <div className="mt-4 rounded-3xl border border-slate-200 bg-[linear-gradient(135deg,#f8fbff_0%,#ffffff_40%,#fff8ef_100%)] p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                       Package headline
                     </p>
                     <h3 className="mt-2 text-xl font-bold text-slate-950">

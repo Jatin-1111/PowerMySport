@@ -279,7 +279,7 @@ function AdminUserSafetyPageContent() {
               <select
                 value={statusFilter}
                 onChange={(event) => handleStatusChange(event.target.value as typeof statusFilter)}
-                className="focus:ring-power-orange/40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                className="focus:ring-power-orange/40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2"
               >
                 <option value="ALL">All</option>
                 <option value="ACTIVE">Active</option>
@@ -310,7 +310,7 @@ function AdminUserSafetyPageContent() {
             </p>
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Reason <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -318,7 +318,7 @@ function AdminUserSafetyPageContent() {
                   value={modalReason}
                   onChange={(e) => setModalReason(e.target.value)}
                   placeholder="Enter detailed reason here..."
-                  className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                  className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">

@@ -35,7 +35,7 @@ export function FeaturedCommunitiesStrip({
     >
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
             Explore communities
           </p>
           <h3 className="font-title mt-1 text-sm font-semibold text-slate-900 sm:text-base">
@@ -81,7 +81,7 @@ export function FeaturedCommunitiesStrip({
                     {group.name}
                   </p>
                   {group.isMember && (
-                    <span className="bg-turf-green/10 text-turf-green rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
+                    <span className="bg-turf-green/10 text-turf-green rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
                       Joined
                     </span>
                   )}

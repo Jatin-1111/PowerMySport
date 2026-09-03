@@ -231,12 +231,12 @@ export default function AdminCommunityReportsPage() {
                   {isExpanded && (
                     <div className="mt-3 space-y-3 border-t border-slate-100 pt-3">
                       <div>
-                        <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                           Resolution Note (optional)
                         </label>
                         <textarea
                           rows={2}
-                          className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                          className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                           placeholder="Optional note for your records..."
                           value={noteInputs[report.id] ?? ""}
                           onChange={(e) =>

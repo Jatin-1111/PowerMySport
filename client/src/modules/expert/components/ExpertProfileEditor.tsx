@@ -66,7 +66,7 @@ function SectionHeader({
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-      <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
     </div>
   );
@@ -215,7 +215,7 @@ export function ExpertProfileEditor({
                 }}
               />
               <div>
-                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Expert Profile
                 </p>
                 <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">
@@ -574,7 +574,7 @@ export function ExpertProfileEditor({
       </div>
 
       {/* Sticky save bar */}
-      <div className="fixed right-0 bottom-0 left-0 z-10 border-t border-slate-200 bg-white/95 px-6 py-3 backdrop-blur-sm lg:left-72">
+      <div className="fixed bottom-0 left-0 right-0 z-10 border-t border-slate-200 bg-white/95 px-6 py-3 backdrop-blur-sm lg:left-72">
         <div className="mx-auto flex max-w-5xl justify-end">
           <Button onClick={save} loading={saving} variant="primary" size="md">
             Save changes

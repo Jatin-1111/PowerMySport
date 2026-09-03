@@ -187,20 +187,20 @@ export default function AcademyReviewsPage() {
           >
             <label
               htmlFor="venue-select"
-              className="mb-1.5 block text-xs font-semibold tracking-wider text-slate-500 uppercase"
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500"
             >
               Select venue
             </label>
             <div className="relative inline-block w-full max-w-sm">
               <Building2
                 size={16}
-                className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               />
               <select
                 id="venue-select"
                 value={selectedVenueId ?? ""}
                 onChange={(e) => setSelectedVenueId(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pr-10 pl-9 text-sm font-medium text-slate-700 shadow-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-300 focus:outline-none"
+                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-10 text-sm font-medium text-slate-700 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300"
               >
                 {venues.map((v) => (
                   <option key={v.id ?? v._id} value={v.id ?? v._id}>
@@ -210,7 +210,7 @@ export default function AcademyReviewsPage() {
               </select>
               {/* Chevron */}
               <svg
-                className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

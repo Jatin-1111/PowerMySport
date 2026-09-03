@@ -138,7 +138,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
       {inviteCode && (
         <div className="mt-4 space-y-3">
           <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-            <code className="flex-1 text-xs break-all text-slate-600 sm:text-sm">
+            <code className="flex-1 break-all text-xs text-slate-600 sm:text-sm">
               {buildInviteLink(inviteCode)}
             </code>
             <button

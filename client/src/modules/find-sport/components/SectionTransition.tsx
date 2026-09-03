@@ -11,7 +11,7 @@ export function SectionTransition({
 }) {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 flex flex-col items-center justify-center px-4 py-16 text-center duration-300">
-      <p className="font-title mb-2 text-2xl leading-snug font-bold text-slate-900">{text}</p>
+      <p className="font-title mb-2 text-2xl font-bold leading-snug text-slate-900">{text}</p>
       <p className="mb-8 text-sm text-slate-500">{sub}</p>
       <button
         type="button"

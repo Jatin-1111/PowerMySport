@@ -128,7 +128,7 @@ export default function CommentItem({
             <span className="text-xs text-slate-400">· {toRelativeTime(comment.createdAt)}</span>
           </div>
 
-          <p className="mt-1 text-sm leading-relaxed break-words whitespace-pre-wrap text-slate-700">
+          <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700">
             {renderContent(comment.content)}
           </p>
 
@@ -170,7 +170,7 @@ export default function CommentItem({
                 onChange={(event) => setReplyText(event.target.value)}
                 rows={2}
                 placeholder={`Reply to ${comment.author.name}...`}
-                className="focus:border-power-orange focus:ring-power-orange w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:ring-1 focus:outline-none"
+                className="focus:border-power-orange focus:ring-power-orange w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1"
               />
               <button
                 type="button"

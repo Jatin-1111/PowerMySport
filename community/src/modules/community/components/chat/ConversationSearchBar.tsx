@@ -54,7 +54,7 @@ export default function ConversationSearchBar({
           className="flex-1 bg-transparent text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none"
         />
         {query.trim() && (
-          <span className="shrink-0 text-[11px] font-medium text-slate-500 tabular-nums">
+          <span className="shrink-0 text-[11px] font-medium tabular-nums text-slate-500">
             {matchCount === 0 ? "No results" : `${currentMatchIndex + 1} / ${matchCount}`}
           </span>
         )}

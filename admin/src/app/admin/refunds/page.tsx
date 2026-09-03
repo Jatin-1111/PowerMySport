@@ -460,7 +460,7 @@ export default function AdminRefundsPage() {
         <div className="space-y-8">
           {pendingRefunds.length > 0 && (
             <div className="space-y-4">
-              <h2 className="text-sm font-semibold tracking-wider text-slate-500 uppercase">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
                 Pending ({pendingRefunds.length})
               </h2>
               {pendingRefunds.map((refund) => (
@@ -514,7 +514,7 @@ export default function AdminRefundsPage() {
 
           {failedRefunds.length > 0 && (
             <div className="space-y-4">
-              <h2 className="text-sm font-semibold tracking-wider text-red-500 uppercase">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-red-500">
                 Failed — Retry Required ({failedRefunds.length})
               </h2>
               {failedRefunds.map((refund) => (

@@ -433,7 +433,7 @@ function QuestionInput({
           placeholder="e.g. 12"
           min={3}
           max={25}
-          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-base text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:outline-none"
+          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2"
         />
       );
 
@@ -926,7 +926,7 @@ function QuestionInput({
           onChange={(e) => set("challenge", e.target.value)}
           placeholder="e.g. My son has been struggling with motivation after a string of losses. He loves cricket but keeps saying he wants to quit. How do we help him get his confidence back?"
           rows={5}
-          className="focus:border-power-orange focus:ring-power-orange/20 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:outline-none"
+          className="focus:border-power-orange focus:ring-power-orange/20 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2"
         />
       );
 
@@ -996,7 +996,7 @@ function LoadingView({ problemId }: { problemId: ProblemId }) {
     >
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
-        <div className="bg-power-orange/8 absolute top-10 -left-32 h-96 w-96 rounded-full blur-3xl" />
+        <div className="bg-power-orange/8 absolute -left-32 top-10 h-96 w-96 rounded-full blur-3xl" />
       </div>
       <div className="max-w-xs text-center">
         <div className="bg-power-orange/10 mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl">
@@ -1054,18 +1054,18 @@ function ResultsScreen({
   };
 
   return (
-    <div className="relative min-h-screen px-4 pt-4 pb-10 sm:px-6">
+    <div className="relative min-h-screen px-4 pb-10 pt-4 sm:px-6">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
-        <div className="bg-power-orange/10 absolute -top-10 -left-32 h-[28rem] w-[28rem] rounded-full blur-3xl" />
-        <div className="absolute top-40 right-[-6rem] h-80 w-80 rounded-full bg-amber-200/30 blur-3xl" />
+        <div className="bg-power-orange/10 absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full blur-3xl" />
+        <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/30 blur-3xl" />
       </div>
 
       <div className="mx-auto w-full max-w-4xl">
         {/* Header */}
         <div className="pb-4">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/85 px-3 py-1.5 text-[11px] font-semibold tracking-widest text-slate-500 uppercase shadow-sm backdrop-blur">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/85 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-slate-500 shadow-sm backdrop-blur">
               <BrainCircuit className="text-power-orange h-3.5 w-3.5" />
               {pt.label}
             </div>
@@ -1331,7 +1331,7 @@ function ProblemWizardInner({ problemId, onBack }: { problemId: ProblemId; onBac
       <div className="relative flex min-h-screen items-center justify-center px-4">
         <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
-          <div className="bg-power-orange/8 absolute top-10 -left-32 h-96 w-96 rounded-full blur-3xl" />
+          <div className="bg-power-orange/8 absolute -left-32 top-10 h-96 w-96 rounded-full blur-3xl" />
         </div>
         <div className="w-full max-w-sm">
           <button
@@ -1386,8 +1386,8 @@ function ProblemWizardInner({ problemId, onBack }: { problemId: ProblemId; onBac
     <div className="relative min-h-screen">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
-        <div className="bg-power-orange/8 absolute -top-10 -left-32 h-[28rem] w-[28rem] rounded-full blur-3xl" />
-        <div className="absolute top-40 right-[-6rem] h-80 w-80 rounded-full bg-amber-200/20 blur-3xl" />
+        <div className="bg-power-orange/8 absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full blur-3xl" />
+        <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/20 blur-3xl" />
       </div>
 
       {/* Transition card */}
@@ -1427,7 +1427,7 @@ function ProblemWizardInner({ problemId, onBack }: { problemId: ProblemId; onBac
 
       {/* Question card */}
       {current.kind === "question" && (
-        <div className="px-4 pt-6 pb-10 sm:px-6">
+        <div className="px-4 pb-10 pt-6 sm:px-6">
           <div className="mx-auto w-full max-w-2xl">
             {levelPlanLabel && (
               <div className="mb-4 flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5">
@@ -1448,7 +1448,7 @@ function ProblemWizardInner({ problemId, onBack }: { problemId: ProblemId; onBac
                 {idx === 0 ? "Back to options" : "Back"}
               </button>
               <div className="flex items-center gap-3">
-                <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                   {pt.label}
                 </span>
                 {qNum !== null && (
@@ -1527,8 +1527,8 @@ function ProblemPicker({ onSelect }: { onSelect: (id: ProblemId) => void }) {
     <div className="relative flex min-h-screen items-center justify-center px-4 py-16">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50/60 via-white to-slate-50" />
-        <div className="bg-power-orange/8 absolute -top-10 -left-32 h-[28rem] w-[28rem] rounded-full blur-3xl" />
-        <div className="absolute top-40 right-[-6rem] h-80 w-80 rounded-full bg-amber-200/25 blur-3xl" />
+        <div className="bg-power-orange/8 absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full blur-3xl" />
+        <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/25 blur-3xl" />
         <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-indigo-200/15 blur-3xl" />
       </div>
 
@@ -1539,7 +1539,7 @@ function ProblemPicker({ onSelect }: { onSelect: (id: ProblemId) => void }) {
           transition={{ duration: 0.4, ease: "easeOut" }}
           className="mb-10 text-center"
         >
-          <div className="text-power-orange mb-4 inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50 px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase">
+          <div className="text-power-orange mb-4 inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest">
             <BrainCircuit className="h-3 w-3" />
             Expert Help
           </div>
@@ -1570,7 +1570,7 @@ function ProblemPicker({ onSelect }: { onSelect: (id: ProblemId) => void }) {
                   <Icon className="h-5 w-5" />
                 </div>
                 <p
-                  className={`text-[11px] font-bold tracking-wider uppercase ${pt.accentText} mb-0.5`}
+                  className={`text-[11px] font-bold uppercase tracking-wider ${pt.accentText} mb-0.5`}
                 >
                   {pt.tagline}
                 </p>

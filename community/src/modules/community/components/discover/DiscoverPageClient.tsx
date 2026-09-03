@@ -342,13 +342,13 @@ export default function DiscoverPageClient() {
                   >
                     <div className="grid gap-6 sm:grid-cols-2">
                       <div>
-                        <label className="mb-2 block text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                        <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
                           Sport
                         </label>
                         <select
                           value={selectedSport}
                           onChange={(e) => setSelectedSport(e.target.value)}
-                          className="focus:border-power-orange/40 focus:ring-power-orange/10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 transition-colors outline-none focus:ring-2"
+                          className="focus:border-power-orange/40 focus:ring-power-orange/10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition-colors focus:ring-2"
                         >
                           <option value="All">All Sports</option>
                           {availableSports.map((s) => (
@@ -360,13 +360,13 @@ export default function DiscoverPageClient() {
                       </div>
 
                       <div>
-                        <label className="mb-2 block text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                        <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
                           City
                         </label>
                         <select
                           value={selectedCity}
                           onChange={(e) => setSelectedCity(e.target.value)}
-                          className="focus:border-power-orange/40 focus:ring-power-orange/10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 transition-colors outline-none focus:ring-2"
+                          className="focus:border-power-orange/40 focus:ring-power-orange/10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition-colors focus:ring-2"
                         >
                           <option value="All">All Cities</option>
                           {availableCities.map((c) => (
@@ -525,7 +525,7 @@ export default function DiscoverPageClient() {
                                 background: "linear-gradient(135deg, #fff7ed, #f1f5f9)",
                               }}
                             >
-                              <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-1.5">
+                              <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1.5">
                                 {group.isMember && (
                                   <span
                                     className="discover-badge"
@@ -600,7 +600,7 @@ export default function DiscoverPageClient() {
                                       setSelectedCommunity(group);
                                       setIsCommunityModalOpen(true);
                                     }}
-                                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold tracking-wider text-slate-600 uppercase transition hover:border-slate-300 hover:bg-slate-50"
+                                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                                   >
                                     <Eye size={14} /> Details
                                   </button>
@@ -608,7 +608,7 @@ export default function DiscoverPageClient() {
                                     <button
                                       onClick={() => handleCommunityChat(group.id)}
                                       style={{ background: "rgba(233,115,22,0.85)" }}
-                                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold tracking-wider text-white uppercase shadow-sm transition hover:opacity-90"
+                                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition hover:opacity-90"
                                     >
                                       <MessageSquare size={14} /> Chat
                                     </button>
@@ -616,7 +616,7 @@ export default function DiscoverPageClient() {
                                     <button
                                       onClick={() => handleJoinGroup(group.id)}
                                       disabled={isJoiningCommunity}
-                                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-800 px-3 py-2 text-[11px] font-bold tracking-wider text-white uppercase shadow-sm transition hover:bg-slate-700 disabled:opacity-60"
+                                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-800 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition hover:bg-slate-700 disabled:opacity-60"
                                     >
                                       <LogIn size={14} /> Join
                                     </button>
@@ -745,14 +745,14 @@ export default function DiscoverPageClient() {
                                   setSelectedPlayerId(player.id);
                                   setIsPlayerModalOpen(true);
                                 }}
-                                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2 text-[10px] font-bold tracking-wider text-slate-600 uppercase transition hover:border-slate-300 hover:bg-slate-50"
+                                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                               >
                                 <Eye size={12} /> Details
                               </button>
                               <button
                                 onClick={() => handlePlayerChat(player.id)}
                                 style={{ background: "rgba(233,115,22,0.85)" }}
-                                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-[10px] font-bold tracking-wider text-white uppercase shadow-sm transition hover:opacity-90"
+                                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm transition hover:opacity-90"
                               >
                                 <MessageSquare size={12} /> Chat
                               </button>

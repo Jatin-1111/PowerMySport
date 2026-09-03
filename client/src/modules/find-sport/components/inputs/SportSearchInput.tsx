@@ -168,7 +168,7 @@ export function SportSearchInput({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute top-full right-0 left-0 z-30 mt-1.5 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl">
+        <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl">
           <div className="from-power-orange/60 via-power-orange to-power-orange/60 h-0.5 w-full bg-gradient-to-r" />
           {suggestions.length > 0 ? (
             <ul role="listbox" className="max-h-64 overflow-y-auto py-1.5">
@@ -199,7 +199,7 @@ export function SportSearchInput({
                         {highlightMatch(s.name, query)}
                       </span>
                       {s.category && (
-                        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-slate-500 uppercase">
+                        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                           {s.category}
                         </span>
                       )}

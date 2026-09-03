@@ -61,7 +61,7 @@ export default function BlogPreviewModal({
             <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
               <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-bold tracking-wider text-white uppercase">
+                  <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
                     Preview
                   </span>
                   <span className="text-sm text-slate-500">How your story will look</span>
@@ -90,7 +90,7 @@ export default function BlogPreviewModal({
                   )}
                 </div>
 
-                <h1 className="font-title mt-5 text-3xl leading-tight font-bold tracking-tight text-slate-900">
+                <h1 className="font-title mt-5 text-3xl font-bold leading-tight tracking-tight text-slate-900">
                   {title || "Untitled story"}
                 </h1>
 

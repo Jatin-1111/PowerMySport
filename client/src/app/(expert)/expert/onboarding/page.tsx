@@ -438,7 +438,7 @@ function ExpertOnboardingContent() {
     <div className="mx-auto max-w-2xl px-4 py-4 sm:py-6">
       {/* Header */}
       <div className="mb-8 text-center">
-        <span className="border-power-orange/30 bg-power-orange/10 text-power-orange inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold tracking-wide uppercase">
+        <span className="border-power-orange/30 bg-power-orange/10 text-power-orange inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide">
           <ShieldCheck className="h-3.5 w-3.5" /> Expert Onboarding
         </span>
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">

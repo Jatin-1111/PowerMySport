@@ -191,7 +191,7 @@ export default function Step2ImageUpload({
   const isComplete = totalUploaded === totalRequired;
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
+    <div className="shadow-xs rounded-2xl border border-slate-200 bg-white/90 p-6 md:p-8">
       <h2 className="mb-2 text-2xl font-bold text-slate-900">Upload Venue Images</h2>
       <p className="mb-6 text-slate-600">
         Upload {totalRequired} images: 3 general venue images + 5 images per sport
@@ -245,7 +245,7 @@ export default function Step2ImageUpload({
                     />
                     <button
                       onClick={() => handleRemoveImage(presignedUrl.field)}
-                      className="absolute top-2 right-2 rounded-full bg-red-500 p-2 text-white transition-colors hover:bg-red-600"
+                      className="absolute right-2 top-2 rounded-full bg-red-500 p-2 text-white transition-colors hover:bg-red-600"
                       aria-label="Remove image"
                     >
                       <X className="h-4 w-4" />
@@ -340,7 +340,7 @@ export default function Step2ImageUpload({
                         />
                         <button
                           onClick={() => handleRemoveImage(presignedUrl.field)}
-                          className="absolute top-1 right-1 rounded-full bg-red-500 p-1 text-xs text-white transition-colors hover:bg-red-600"
+                          className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-xs text-white transition-colors hover:bg-red-600"
                           aria-label="Remove image"
                         >
                           <X className="h-3 w-3" />

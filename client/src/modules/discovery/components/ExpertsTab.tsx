@@ -279,7 +279,7 @@ export function ExpertsTab({
             Maximum session fee (₹)
           </label>
           <div className="relative">
-            <span className="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-slate-400">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
               ₹
             </span>
             <input
@@ -288,7 +288,7 @@ export function ExpertsTab({
               value={maxFee}
               onChange={(e) => setMaxFee(e.target.value)}
               placeholder="Max fee"
-              className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pr-3 pl-7 text-sm text-slate-900 focus:bg-white focus:outline-none"
+              className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:bg-white focus:outline-none"
             />
           </div>
         </div>
@@ -415,7 +415,7 @@ export function ExpertsTab({
                           expert={expert}
                           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
-                        <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
+                        <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
                           <Globe className="h-3 w-3" />
                           {modeLabel(expert.sessionMode)}
                         </span>

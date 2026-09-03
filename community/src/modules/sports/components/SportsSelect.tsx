@@ -120,7 +120,7 @@ export default function SportsSelect({
       {/* Dropdown */}
       {isOpen && !disabled && (
         <div
-          className={`absolute left-0 z-[100] max-h-80 w-full min-w-[300px] overflow-x-hidden overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ${
+          className={`absolute left-0 z-[100] max-h-80 w-full min-w-[300px] overflow-y-auto overflow-x-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ${
             placement === "top" ? "bottom-full mb-2" : "top-full mt-2"
           }`}
         >
@@ -131,7 +131,7 @@ export default function SportsSelect({
               placeholder="Search sports..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:bg-white focus:ring-4 focus:outline-none"
+              className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-4"
               autoFocus
             />
           </div>

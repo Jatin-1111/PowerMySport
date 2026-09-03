@@ -72,7 +72,7 @@ export default function AdminLoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
       <div className="w-full max-w-md">
         {/* Header Card */}
-        <div className="relative mb-6 overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
+        <div className="bg-linear-to-br relative mb-6 overflow-hidden rounded-2xl from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
           <div className="relative z-10 text-center">
             <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
               <Shield className="h-8 w-8 text-white" />
@@ -80,7 +80,7 @@ export default function AdminLoginPage() {
             <h1 className="mb-2 text-2xl font-bold sm:text-3xl">Admin Portal</h1>
             <p className="text-sm text-slate-200">PowerMySport Administration Panel</p>
           </div>
-          <div className="bg-power-orange/20 pointer-events-none absolute -top-16 -right-20 h-48 w-48 rounded-full blur-3xl" />
+          <div className="bg-power-orange/20 pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full blur-3xl" />
           <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-blue-500/20 blur-3xl" />
         </div>
 
@@ -97,7 +97,7 @@ export default function AdminLoginPage() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-all focus:ring-2 focus:outline-none"
+                className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-all focus:outline-none focus:ring-2"
                 placeholder="teams@powermysport.com"
               />
             </div>
@@ -111,13 +111,13 @@ export default function AdminLoginPage() {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-all focus:ring-2 focus:outline-none"
+                  className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-all focus:outline-none focus:ring-2"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>

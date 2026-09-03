@@ -97,7 +97,7 @@ function ChipRow({ label, chips, group }: { label: string; chips: string[]; grou
   const c = CHIP_GROUPS[group];
   return (
     <div>
-      <p className="mb-1.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
         {label}
       </p>
       <div className="flex flex-wrap gap-1.5">
@@ -399,7 +399,7 @@ export default function DependentDetailPage() {
         {effectiveSport ? (
           <div className="mt-5 flex flex-col gap-3 rounded-xl border border-orange-100 bg-orange-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-[11px] font-semibold tracking-wide text-orange-600 uppercase">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-600">
                 Playing
               </p>
               <p className="text-lg font-bold text-slate-900">{effectiveSport}</p>
@@ -468,7 +468,7 @@ export default function DependentDetailPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium text-slate-500">{m.fitLabel}</span>
-                    <span className="text-[11px] text-slate-300 tabular-nums">{m.score}</span>
+                    <span className="text-[11px] tabular-nums text-slate-300">{m.score}</span>
                   </div>
                 </div>
               );
@@ -495,7 +495,7 @@ export default function DependentDetailPage() {
               <ChipRow label="Practical" chips={practicalChips} group={3} />
               {(dependent.medicalConditions?.length ?? 0) > 0 && (
                 <div>
-                  <p className="mb-1.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                     Medical conditions
                   </p>
                   <div className="flex flex-wrap gap-1.5">

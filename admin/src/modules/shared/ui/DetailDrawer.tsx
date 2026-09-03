@@ -100,7 +100,7 @@ export function DetailSection({
 }) {
   return (
     <section className={className}>
-      <h4 className="mb-2 text-xs font-semibold tracking-wide text-slate-400 uppercase">{title}</h4>
+      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{title}</h4>
       <div className="space-y-2">{children}</div>
     </section>
   );
@@ -121,7 +121,7 @@ export function DetailRow({
   return (
     <div className={cn("flex items-start justify-between gap-4 text-sm", className)}>
       <span className="shrink-0 text-slate-500">{label}</span>
-      <span className="min-w-0 text-right font-medium break-words text-slate-900">
+      <span className="min-w-0 break-words text-right font-medium text-slate-900">
         {value ?? "—"}
       </span>
     </div>

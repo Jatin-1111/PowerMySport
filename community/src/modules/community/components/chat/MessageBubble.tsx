@@ -112,7 +112,7 @@ function ImageMessageContent({
       href={src}
       target="_blank"
       rel="noopener noreferrer"
-      className="focus:ring-power-orange/60 block overflow-hidden rounded-2xl focus:ring-2 focus:outline-none"
+      className="focus:ring-power-orange/60 block overflow-hidden rounded-2xl focus:outline-none focus:ring-2"
       style={{ width: displayWidth, maxWidth: "100%", height: displayHeight }}
       aria-label="View full image"
     >
@@ -255,7 +255,7 @@ export const MessageBubble = memo(function MessageBubble({
     >
       {/* Checkbox for Select Messages Mode */}
       {isSelectMode && (
-        <div className={`mt-auto mb-1 flex shrink-0 items-center justify-center`}>
+        <div className={`mb-1 mt-auto flex shrink-0 items-center justify-center`}>
           <button
             onClick={() => onToggleSelect?.(message.id)}
             className={`flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${
@@ -279,7 +279,7 @@ export const MessageBubble = memo(function MessageBubble({
         {!isOwnMessage && isGroupConversation && (
           <div
             onClick={onClickName ? () => onClickName(message) : undefined}
-            className={`mt-auto mb-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-[10px] font-bold text-slate-700 uppercase shadow-sm ring-2 ring-white ${onClickName ? "cursor-pointer transition-opacity hover:opacity-80" : ""}`}
+            className={`mb-1 mt-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-[10px] font-bold uppercase text-slate-700 shadow-sm ring-2 ring-white ${onClickName ? "cursor-pointer transition-opacity hover:opacity-80" : ""}`}
           >
             {senderAvatarChar}
           </div>
@@ -287,7 +287,7 @@ export const MessageBubble = memo(function MessageBubble({
 
         {/* Avatar for DM other's messages */}
         {!isOwnMessage && !isGroupConversation && (
-          <div className="mt-auto mb-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-[10px] font-bold text-slate-700 uppercase shadow-sm ring-2 ring-white">
+          <div className="mb-1 mt-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-[10px] font-bold uppercase text-slate-700 shadow-sm ring-2 ring-white">
             {senderAvatarChar}
           </div>
         )}
@@ -370,7 +370,7 @@ export const MessageBubble = memo(function MessageBubble({
               isUploading ? (
                 <ImageUploadingPlaceholder isOwn={isOwnMessage} />
               ) : message.isDeleted ? (
-                <div className="px-2 py-1 text-[13px] leading-5 italic opacity-60">
+                <div className="px-2 py-1 text-[13px] italic leading-5 opacity-60">
                   Image deleted
                 </div>
               ) : (
@@ -382,7 +382,7 @@ export const MessageBubble = memo(function MessageBubble({
                     isOwn={isOwnMessage}
                   />
                   {message.metadata?.caption && !message.isDeleted && (
-                    <div className="mt-1.5 px-0.5 pb-0.5 text-[13px] leading-5 whitespace-pre-wrap">
+                    <div className="mt-1.5 whitespace-pre-wrap px-0.5 pb-0.5 text-[13px] leading-5">
                       {message.metadata.caption}
                     </div>
                   )}
@@ -391,7 +391,7 @@ export const MessageBubble = memo(function MessageBubble({
             ) : isFileMessage ? (
               /* ── File attachment ── */
               message.isDeleted ? (
-                <div className="px-2 py-1 text-[13px] leading-5 italic opacity-60">
+                <div className="px-2 py-1 text-[13px] italic leading-5 opacity-60">
                   File deleted
                 </div>
               ) : (
@@ -427,7 +427,7 @@ export const MessageBubble = memo(function MessageBubble({
             ) : isVoiceMessage ? (
               /* ── Voice note ── */
               message.isDeleted ? (
-                <div className="px-2 py-1 text-[13px] leading-5 italic opacity-60">
+                <div className="px-2 py-1 text-[13px] italic leading-5 opacity-60">
                   Voice message deleted
                 </div>
               ) : (
@@ -441,7 +441,7 @@ export const MessageBubble = memo(function MessageBubble({
             ) : (
               /* ── Text message ── */
               <div
-                className={`leading-relaxed whitespace-pre-wrap ${
+                className={`whitespace-pre-wrap leading-relaxed ${
                   message.isDeleted ? "italic opacity-60" : ""
                 }`}
               >
@@ -525,8 +525,8 @@ export const MessageBubble = memo(function MessageBubble({
           <div
             className={`absolute hidden items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover/msg:opacity-100 sm:flex ${
               isOwnMessage
-                ? "top-1/2 left-0 -translate-x-full -translate-y-1/2 pr-1"
-                : "top-1/2 right-0 translate-x-full -translate-y-1/2 pl-1"
+                ? "left-0 top-1/2 -translate-x-full -translate-y-1/2 pr-1"
+                : "right-0 top-1/2 -translate-y-1/2 translate-x-full pl-1"
             }`}
           >
             <div

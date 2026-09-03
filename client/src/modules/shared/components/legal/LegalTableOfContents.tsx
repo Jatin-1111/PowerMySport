@@ -163,7 +163,7 @@ export function LegalTableOfContents({ items }: { items: LegalTocItem[] }) {
             aria-label="Table of contents"
             className="pointer-events-auto max-h-[calc(100vh-8rem)] w-[280px] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
           >
-            <p className="mb-2 px-2.5 pt-1.5 text-xs font-bold tracking-widest text-slate-400 uppercase">
+            <p className="mb-2 px-2.5 pt-1.5 text-xs font-bold uppercase tracking-widest text-slate-400">
               On this page
             </p>
             {list}

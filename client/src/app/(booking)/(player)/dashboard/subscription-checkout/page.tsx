@@ -200,7 +200,7 @@ function SubscriptionCheckoutContent() {
         <Card className="rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-sm">
           <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
             <div>
-              <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                 Package summary
               </p>
               <h2 className="mt-2 text-2xl font-bold text-slate-950">{subscriptionPackage.name}</h2>
@@ -216,7 +216,7 @@ function SubscriptionCheckoutContent() {
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Price</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Price</p>
               <p className="mt-2 text-2xl font-bold text-slate-950">
                 {formatCurrency(subscriptionPackage.price / 100)}
               </p>
@@ -225,7 +225,7 @@ function SubscriptionCheckoutContent() {
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Coach</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Coach</p>
               <p className="mt-2 text-lg font-semibold text-slate-950">{coachDisplayName}</p>
               <p className="text-xs text-slate-500">
                 {coach.sports?.slice(0, 2).join(", ") || "Coaching"}
@@ -332,7 +332,7 @@ function SubscriptionCheckoutContent() {
               <select
                 value={selectedDependentId}
                 onChange={(e) => setSelectedDependentId(e.target.value)}
-                className="focus:border-power-orange focus:ring-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm focus:ring-1 focus:outline-none"
+                className="focus:border-power-orange focus:ring-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm focus:outline-none focus:ring-1"
               >
                 <option value="">Myself ({user.name})</option>
                 {user.dependents.map((d: any) => (

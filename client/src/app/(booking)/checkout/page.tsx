@@ -255,7 +255,7 @@ function BookingSummaryRow({
         {icon}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold tracking-wide text-slate-400 uppercase">{label}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
         <p className="mt-0.5 text-sm font-semibold text-slate-800">{value}</p>
         {hint && <p className="mt-0.5 text-xs text-slate-400">{hint}</p>}
       </div>
@@ -893,7 +893,7 @@ function CheckoutPageContent() {
   if (!isDetailsReady) {
     return (
       <div className="flex min-h-[360px] flex-col items-center justify-center gap-4 rounded-2xl border border-slate-200/70 bg-white/95 p-8 text-center">
-        <p className="text-sm text-slate-500 capitalize">{entityLabel} not found.</p>
+        <p className="text-sm capitalize text-slate-500">{entityLabel} not found.</p>
         <Button variant="outline" onClick={() => router.push("/booking")}>
           Browse options
         </Button>
@@ -965,13 +965,13 @@ function CheckoutPageContent() {
         transition={{ delay: 0.05 }}
         className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-6 shadow-lg sm:p-8"
       >
-        <div className="bg-power-orange/20 pointer-events-none absolute -top-10 -right-12 h-48 w-48 rounded-full blur-3xl" />
+        <div className="bg-power-orange/20 pointer-events-none absolute -right-12 -top-10 h-48 w-48 rounded-full blur-3xl" />
         <div className="bg-turf-green/15 pointer-events-none absolute -bottom-8 left-1/3 h-32 w-32 rounded-full blur-2xl" />
 
         <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="bg-power-orange/20 text-power-orange inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wider uppercase">
+              <span className="bg-power-orange/20 text-power-orange inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider">
                 <Zap size={11} />
                 Secure Checkout
               </span>
@@ -1016,7 +1016,7 @@ function CheckoutPageContent() {
 
         <div className="relative z-10 mt-6 flex items-center justify-between rounded-xl bg-white/10 px-4 py-3 backdrop-blur-sm">
           <div>
-            <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
               Step {currentStep} of {steps.length}
             </p>
             <p className="mt-0.5 text-sm font-semibold text-white">
@@ -1066,7 +1066,7 @@ function CheckoutPageContent() {
                     <div className="space-y-4 p-5 sm:p-6">
                       {/* Sport */}
                       <div>
-                        <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                        <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
                           <Zap size={12} />
                           Sport
                         </label>
@@ -1074,7 +1074,7 @@ function CheckoutPageContent() {
                           <select
                             value={sport}
                             onChange={(e) => setSport(e.target.value)}
-                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:outline-none"
+                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2"
                           >
                             <option value="">Select sport</option>
                             {availableSports.map((s) => (
@@ -1089,13 +1089,13 @@ function CheckoutPageContent() {
                             value={sport}
                             onChange={(e) => setSport(e.target.value)}
                             placeholder="e.g. Cricket, Football"
-                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:outline-none"
+                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2"
                           />
                         )}
                       </div>
                       {/* Date */}
                       <div>
-                        <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                        <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
                           <Calendar size={12} />
                           Date
                         </label>
@@ -1104,13 +1104,13 @@ function CheckoutPageContent() {
                           value={date}
                           min={new Date().toISOString().split("T")[0]}
                           onChange={(e) => setDate(e.target.value)}
-                          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:outline-none"
+                          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2"
                         />
                       </div>
                       {/* Start / End time */}
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                          <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
                             <Clock size={12} />
                             Start time
                           </label>
@@ -1118,11 +1118,11 @@ function CheckoutPageContent() {
                             type="time"
                             value={startTime}
                             onChange={(e) => setStartTime(e.target.value)}
-                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:outline-none"
+                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2"
                           />
                         </div>
                         <div>
-                          <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                          <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
                             <Clock size={12} />
                             End time
                           </label>
@@ -1130,7 +1130,7 @@ function CheckoutPageContent() {
                             type="time"
                             value={endTime}
                             onChange={(e) => setEndTime(e.target.value)}
-                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:outline-none"
+                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2"
                           />
                         </div>
                       </div>
@@ -1145,14 +1145,14 @@ function CheckoutPageContent() {
                       {/* Attendee */}
                       {user?.dependents && user.dependents.length > 0 && (
                         <div>
-                          <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                          <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
                             <Users size={12} />
                             Who is attending?
                           </label>
                           <select
                             value={selectedDependentId}
                             onChange={(e) => setSelectedDependentId(e.target.value)}
-                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:outline-none"
+                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2"
                           >
                             <option value="">Me ({user.name})</option>
                             {user.dependents.map((d) => (
@@ -1392,13 +1392,13 @@ function CheckoutPageContent() {
           >
             {isZeroCommission && (
               <div className="border-turf-green/20 from-turf-green/5 relative overflow-hidden rounded-2xl border bg-gradient-to-br via-white to-emerald-50/40 p-4">
-                <div className="bg-turf-green/10 absolute -top-6 -right-6 h-16 w-16 rounded-full blur-xl" />
+                <div className="bg-turf-green/10 absolute -right-6 -top-6 h-16 w-16 rounded-full blur-xl" />
                 <div className="relative flex items-start gap-3">
                   <div className="bg-turf-green/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl">
                     <span className="text-turf-green text-xs font-extrabold">0%</span>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                       Limited offer
                     </p>
                     <p className="mt-0.5 text-sm font-semibold text-slate-900">
@@ -1426,13 +1426,13 @@ function CheckoutPageContent() {
                     <div className="relative flex-1">
                       <TicketPercent
                         size={14}
-                        className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                       />
                       <input
                         value={promoCode}
                         onChange={(e) => setPromoCode(e.target.value)}
                         placeholder="Enter promo code"
-                        className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white py-2 pr-3 pl-9 text-sm text-slate-700 uppercase placeholder:text-slate-400 focus:ring-2 focus:outline-none"
+                        className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm uppercase text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2"
                       />
                     </div>
                     <Button
@@ -1470,7 +1470,7 @@ function CheckoutPageContent() {
             {/* Order summary */}
             <SectionCard>
               <SectionHeader title="Order summary" />
-              <div className="px-5 pt-4 pb-5 sm:px-6 sm:pb-6">
+              <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
                 <div className="space-y-2.5">
                   {[
                     {
@@ -1572,11 +1572,11 @@ function CheckoutPageContent() {
       </div>
 
       {/* Mobile Fixed CTA */}
-      <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] lg:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] lg:hidden">
         <div className="mx-auto flex max-w-7xl items-center gap-4">
           <div className="flex-1">
             <p className="text-xs font-medium text-slate-500">Total due</p>
-            <p className="mt-0.5 text-lg leading-none font-bold text-slate-900">
+            <p className="mt-0.5 text-lg font-bold leading-none text-slate-900">
               {formatCurrency(total)}
             </p>
           </div>

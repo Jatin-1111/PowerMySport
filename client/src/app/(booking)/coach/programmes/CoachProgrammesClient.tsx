@@ -264,7 +264,7 @@ export const CoachProgrammesClient = () => {
                         kind={offering.deliveryKind}
                         {...(offering.onlinePlatform ? { platform: offering.onlinePlatform } : {})}
                       />
-                      <span className="text-muted-foreground text-xs tracking-wide uppercase">
+                      <span className="text-muted-foreground text-xs uppercase tracking-wide">
                         {offering.status}
                       </span>
                     </div>
@@ -338,7 +338,7 @@ const EarningsStrip = ({ earnings }: { earnings: CoachEarningsSummary }) => {
       <dl className="grid grid-cols-3 gap-3">
         {buckets.map(([key, label]) => (
           <Card key={key} className="p-3">
-            <dt className="text-muted-foreground text-xs tracking-wide uppercase">{label}</dt>
+            <dt className="text-muted-foreground text-xs uppercase tracking-wide">{label}</dt>
             <dd className="mt-1 text-lg font-semibold">
               {formatPaise(earnings[key]?.amountPaise ?? 0)}
             </dd>

@@ -88,11 +88,11 @@ export default function WalletPage() {
           <div className="md:col-span-1">
             <Card className="relative h-full overflow-hidden border-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-2xl transition-all hover:shadow-[0_0_40px_-10px_rgba(0,0,0,0.5)]">
               {/* Premium Glow Effects */}
-              <div className="bg-power-orange/20 pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full blur-[80px]" />
+              <div className="bg-power-orange/20 pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full blur-[80px]" />
               <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-blue-500/20 blur-[80px]" />
 
               <CardHeader className="relative z-10 pb-2">
-                <CardTitle className="text-sm font-medium tracking-wider text-white/80 uppercase">
+                <CardTitle className="text-sm font-medium uppercase tracking-wider text-white/80">
                   Available Balance
                 </CardTitle>
               </CardHeader>

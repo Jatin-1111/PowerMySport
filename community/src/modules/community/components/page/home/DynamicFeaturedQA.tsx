@@ -42,7 +42,7 @@ export default function DynamicFeaturedQA() {
     // Fallback if no answered posts exist in the community yet
     return (
       <div className="border-power-orange/20 relative overflow-hidden rounded-3xl border bg-[linear-gradient(135deg,rgba(233,115,22,0.08),rgba(255,255,255,0.98))] p-5 shadow-sm shadow-slate-900/5">
-        <div className="bg-power-orange/10 absolute -top-8 -right-8 h-28 w-28 rounded-full blur-2xl" />
+        <div className="bg-power-orange/10 absolute -right-8 -top-8 h-28 w-28 rounded-full blur-2xl" />
         <div className="relative">
           <div className="flex items-center gap-2">
             <span className="bg-power-orange/10 text-power-orange inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold">
@@ -61,7 +61,7 @@ export default function DynamicFeaturedQA() {
             and a coach who rewards effort before competition.
           </p>
           <div className="mt-4 rounded-2xl border border-slate-200 bg-white/80 p-4">
-            <p className="text-xs font-bold tracking-[0.22em] text-slate-500 uppercase">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">
               Parent takeaway
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-700">
@@ -79,7 +79,7 @@ export default function DynamicFeaturedQA() {
 
   return (
     <div className="border-power-orange/20 relative overflow-hidden rounded-3xl border bg-[linear-gradient(135deg,rgba(233,115,22,0.08),rgba(255,255,255,0.98))] p-5 shadow-sm shadow-slate-900/5">
-      <div className="bg-power-orange/10 absolute -top-8 -right-8 h-28 w-28 rounded-full blur-2xl" />
+      <div className="bg-power-orange/10 absolute -right-8 -top-8 h-28 w-28 rounded-full blur-2xl" />
       <div className="relative">
         <div className="flex items-center gap-2">
           <span className="bg-power-orange/10 text-power-orange inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold">
@@ -93,7 +93,7 @@ export default function DynamicFeaturedQA() {
         <h3 className="mt-4 text-xl font-semibold tracking-tight text-slate-900">{post.title}</h3>
         <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">{post.body}</p>
         <div className="mt-4 rounded-2xl border border-slate-200 bg-white/80 p-4">
-          <p className="text-xs font-bold tracking-[0.22em] text-slate-500 uppercase">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">
             Coach takeaway
           </p>
           <p className="mt-2 line-clamp-4 text-sm leading-6 text-slate-700">{topAnswer.content}</p>

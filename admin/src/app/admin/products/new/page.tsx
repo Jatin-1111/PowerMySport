@@ -12,7 +12,7 @@ const Input = ({
   <div className="w-full">
     <input
       {...props}
-      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange focus:ring-power-orange border-slate-300"} px-3 py-2 text-sm focus:ring-1 focus:outline-none ${className || ""}`}
+      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange focus:ring-power-orange border-slate-300"} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
     />
     {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
   </div>
@@ -26,7 +26,7 @@ const Textarea = ({
   <div className="w-full">
     <textarea
       {...props}
-      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange focus:ring-power-orange border-slate-300"} px-3 py-2 text-sm focus:ring-1 focus:outline-none ${className || ""}`}
+      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange focus:ring-power-orange border-slate-300"} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
     />
     {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
   </div>
@@ -40,7 +40,7 @@ const Select = ({
   <div className="w-full">
     <select
       {...props}
-      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange focus:ring-power-orange border-slate-300"} bg-white px-3 py-2 text-sm focus:ring-1 focus:outline-none ${className || ""}`}
+      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange focus:ring-power-orange border-slate-300"} bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
     />
     {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
   </div>
@@ -507,7 +507,7 @@ export default function AddProductPage() {
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(index)}
-                        className="absolute top-1 right-1 rounded-full bg-black/60 p-1.5 text-white opacity-0 backdrop-blur-sm transition-all group-hover:opacity-100 hover:scale-110 hover:bg-red-500"
+                        className="absolute right-1 top-1 rounded-full bg-black/60 p-1.5 text-white opacity-0 backdrop-blur-sm transition-all hover:scale-110 hover:bg-red-500 group-hover:opacity-100"
                         title="Remove image"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -530,7 +530,7 @@ export default function AddProductPage() {
                 </Button>
 
                 {isDropdownOpen && (
-                  <div className="absolute top-full left-0 z-10 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg">
+                  <div className="absolute left-0 top-full z-10 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg">
                     <div className="p-1">
                       <label className="flex w-full cursor-pointer items-center rounded-sm px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
                         <UploadCloud className="mr-2 h-4 w-4 text-slate-500" /> Upload File to S3
@@ -576,7 +576,7 @@ export default function AddProductPage() {
                       <button
                         type="button"
                         onClick={() => handleRemoveVariant(index)}
-                        className="absolute top-2 right-2 text-slate-400 hover:text-red-500"
+                        className="absolute right-2 top-2 text-slate-400 hover:text-red-500"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

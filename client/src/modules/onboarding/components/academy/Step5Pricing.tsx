@@ -95,7 +95,7 @@ export default function Step5Pricing({
   };
 
   return (
-    <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
+    <div className="shadow-xs space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 md:p-8">
       <div className="mb-8 text-center">
         <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 5: Pricing & Subscriptions</h2>
         <p className="text-slate-600">Set your pricing structure</p>
@@ -127,7 +127,7 @@ export default function Step5Pricing({
               placeholder="500"
               min="1"
               step="1"
-              className={`focus:ring-power-orange flex-1 rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+              className={`focus:ring-power-orange flex-1 rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                 fieldErrors.sessionRatePerHour
                   ? "border-red-300 bg-red-50"
                   : "border-slate-300 bg-white"
@@ -189,7 +189,7 @@ export default function Step5Pricing({
             min="1"
             max="100"
             placeholder="20"
-            className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+            className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
               fieldErrors.maxBatchSize ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
             }`}
             disabled={isSubmitting}
@@ -236,7 +236,7 @@ export default function Step5Pricing({
                   placeholder="100"
                   min="0"
                   step="1"
-                  className="focus:ring-power-orange flex-1 rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:outline-none"
+                  className="focus:ring-power-orange flex-1 rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
                   disabled={isSubmitting}
                 />
               </div>

@@ -130,7 +130,7 @@ export default async function SportPathwayPage({
 
             {guide.sportIntro.length > 0 && (
               <aside className="premium-shadow w-full rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm lg:max-w-sm">
-                <p className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
                   About {guide.sportName}
                 </p>
                 <div className="mt-2 space-y-2 text-sm leading-relaxed text-slate-600">

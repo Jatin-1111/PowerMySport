@@ -269,7 +269,7 @@ export default function OpeningHoursInput({ value, onChange }: OpeningHoursInput
                   ))}
                 </div>
               ) : (
-                <span className="text-sm text-slate-500 italic">Closed</span>
+                <span className="text-sm italic text-slate-500">Closed</span>
               )}
             </div>
           );

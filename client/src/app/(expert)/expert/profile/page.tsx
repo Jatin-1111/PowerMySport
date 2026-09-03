@@ -30,8 +30,8 @@ export default function ExpertProfilePage() {
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
-        <div className="bg-power-orange/20 pointer-events-none absolute -top-12 -right-16 h-40 w-40 rounded-full blur-3xl" />
-        <span className="relative inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-white/80 uppercase">
+        <div className="bg-power-orange/20 pointer-events-none absolute -right-16 -top-12 h-40 w-40 rounded-full blur-3xl" />
+        <span className="relative inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
           Expert
         </span>
         <h1 className="relative mt-3 text-2xl font-bold sm:text-3xl">Profile &amp; availability</h1>

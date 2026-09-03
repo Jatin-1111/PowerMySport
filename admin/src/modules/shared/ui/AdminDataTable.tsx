@@ -163,13 +163,13 @@ export function AdminDataTable<T>({
         <div className="flex flex-wrap items-center justify-between gap-3">
           {search && (
             <div className="relative w-full max-w-xs">
-              <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={search.value}
                 onChange={(e) => search.onChange(e.target.value)}
                 placeholder={search.placeholder || "Search..."}
-                className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 bg-white py-2 pr-3 pl-9 text-sm focus:ring-2 focus:outline-none"
+                className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2"
               />
             </div>
           )}
@@ -187,7 +187,7 @@ export function AdminDataTable<T>({
                   <th
                     key={col.key}
                     className={cn(
-                      "px-4 py-3 text-xs font-semibold text-slate-500 uppercase",
+                      "px-4 py-3 text-xs font-semibold uppercase text-slate-500",
                       alignClass(col.align),
                       col.sortable && "cursor-pointer select-none hover:text-slate-700",
                       col.className

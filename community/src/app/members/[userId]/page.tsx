@@ -155,8 +155,8 @@ export default function MemberProfilePage() {
       className="relative isolate flex min-h-[calc(100vh-72px)] w-full overflow-hidden bg-slate-50"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(219,234,254,0.9),transparent_38%),radial-gradient(circle_at_top_right,rgba(255,237,213,0.85),transparent_34%),linear-gradient(180deg,rgba(248,250,252,0.98),rgba(241,245,249,1))]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-linear-to-b from-white/70 to-transparent" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-slate-100 to-transparent" />
+      <div className="bg-linear-to-b pointer-events-none absolute inset-x-0 top-0 h-24 from-white/70 to-transparent" />
+      <div className="bg-linear-to-t pointer-events-none absolute inset-x-0 bottom-0 h-24 from-slate-100 to-transparent" />
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-5 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Link
@@ -166,16 +166,16 @@ export default function MemberProfilePage() {
             <ArrowLeft size={16} />
             Back to community
           </Link>
-          <div className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold tracking-wide text-slate-500 uppercase sm:w-auto">
+          <div className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 sm:w-auto">
             Member profile
           </div>
         </div>
 
-        <section className="border-border relative overflow-hidden rounded-3xl border bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,41,59,0.92))] p-5 text-white shadow-xl sm:rounded-4xl sm:p-8 lg:p-10">
+        <section className="border-border sm:rounded-4xl relative overflow-hidden rounded-3xl border bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,41,59,0.92))] p-5 text-white shadow-xl sm:p-8 lg:p-10">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(233,115,22,0.2),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(26,163,88,0.12),transparent_35%)]" />
           <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.6fr),minmax(280px,0.9fr)] lg:items-start">
             <div>
-              <p className="text-xs font-semibold tracking-[0.24em] text-white/55 uppercase">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">
                 Community identity
               </p>
               <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-4xl">
@@ -307,13 +307,13 @@ export default function MemberProfilePage() {
         {profile && (
           <section className="grid gap-3 md:grid-cols-3">
             <div className="border-border rounded-3xl border bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Joined</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Joined</p>
               <p className="mt-2 text-base font-semibold text-slate-900 sm:text-lg">
                 {formatDate(profile.createdAt) || "Unavailable"}
               </p>
             </div>
             <div className="border-border rounded-3xl border bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Last active
               </p>
               <p className="mt-2 text-base font-semibold text-slate-900 sm:text-lg">
@@ -326,7 +326,7 @@ export default function MemberProfilePage() {
               )}
             </div>
             <div className="border-border rounded-3xl border bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Read receipts
               </p>
               <p className="mt-2 text-base font-semibold text-slate-900 sm:text-lg">
@@ -341,7 +341,7 @@ export default function MemberProfilePage() {
             <section className="border-border rounded-4xl border bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-power-orange text-xs font-semibold tracking-[0.2em] uppercase">
+                  <p className="text-power-orange text-xs font-semibold uppercase tracking-[0.2em]">
                     Public sports
                   </p>
                   <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-900">

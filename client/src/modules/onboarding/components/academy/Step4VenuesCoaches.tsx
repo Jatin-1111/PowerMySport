@@ -45,7 +45,7 @@ export default function Step4VenuesCoaches({
   };
 
   return (
-    <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
+    <div className="shadow-xs space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 md:p-8">
       <div className="mb-8 text-center">
         <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 4: Venues & Coaches</h2>
         <p className="text-slate-600">Link your venues and coaches (optional for now)</p>
@@ -76,7 +76,7 @@ export default function Step4VenuesCoaches({
               Allow external coaches to book your venues
             </span>
           </label>
-          <p className="mt-2 ml-7 text-xs text-slate-600">
+          <p className="ml-7 mt-2 text-xs text-slate-600">
             If enabled, coaches can rent your venues for their sessions
           </p>
         </div>

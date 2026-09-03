@@ -150,7 +150,7 @@ export default function AdminExpertsPage() {
             <span className="text-slate-400">({e.reviewCount})</span>
           </span>
         ) : (
-          <span className="text-xs text-slate-400 uppercase">New</span>
+          <span className="text-xs uppercase text-slate-400">New</span>
         ),
     },
     {

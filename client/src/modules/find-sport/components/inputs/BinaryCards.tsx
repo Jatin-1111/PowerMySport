@@ -42,7 +42,7 @@ export function BinaryCards({
               />
             </div>
             <p
-              className={`mb-1.5 text-[15px] leading-snug font-semibold ${
+              className={`mb-1.5 text-[15px] font-semibold leading-snug ${
                 selected ? "text-power-orange" : "text-slate-900"
               }`}
             >

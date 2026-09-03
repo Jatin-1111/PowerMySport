@@ -190,11 +190,11 @@ export default function VenueListerReviewsPage() {
             {/* ── Venue Selector (only if multiple venues) ── */}
             {venues.length > 1 && (
               <div className="relative inline-flex w-full items-center sm:w-auto">
-                <Building2 className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <select
                   value={selectedVenueId}
                   onChange={handleVenueChange}
-                  className="w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pr-10 pl-9 text-sm font-medium text-slate-700 shadow-sm transition focus:border-orange-400 focus:ring-2 focus:ring-orange-400 focus:outline-none sm:w-72"
+                  className="w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-10 text-sm font-medium text-slate-700 shadow-sm transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400 sm:w-72"
                 >
                   {venues.map((v) => {
                     const id = v._id ?? v.id;
@@ -205,7 +205,7 @@ export default function VenueListerReviewsPage() {
                     );
                   })}
                 </select>
-                <ChevronDown className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               </div>
             )}
 

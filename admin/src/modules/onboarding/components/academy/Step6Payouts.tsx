@@ -108,7 +108,7 @@ export default function Step6Payouts({
   };
 
   return (
-    <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
+    <div className="shadow-xs space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 md:p-8">
       <div className="mb-8 text-center">
         <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 7: Payouts & Policies</h2>
         <p className="text-slate-600">Final step - Set up your payment details</p>
@@ -145,7 +145,7 @@ export default function Step6Payouts({
                     bankAccountName: e.target.value,
                   }))
                 }
-                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                   fieldErrors.bankAccountName
                     ? "border-red-300 bg-red-50"
                     : "border-slate-300 bg-white"
@@ -171,7 +171,7 @@ export default function Step6Payouts({
                   }))
                 }
                 placeholder="1234567890123456"
-                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                   fieldErrors.bankAccountNumber
                     ? "border-red-300 bg-red-50"
                     : "border-slate-300 bg-white"
@@ -197,7 +197,7 @@ export default function Step6Payouts({
                   }))
                 }
                 placeholder="SBIN0001234"
-                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                   fieldErrors.bankIfsc ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
                 }`}
                 disabled={isSubmitting}
@@ -231,7 +231,7 @@ export default function Step6Payouts({
                 }));
             }}
             placeholder="username@upi"
-            className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+            className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
               fieldErrors.upiId ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
             }`}
             disabled={isSubmitting}
@@ -251,7 +251,7 @@ export default function Step6Payouts({
                 payoutFrequency: e.target.value as AcademyPayoutFrequency,
               }))
             }
-            className="focus:ring-power-orange w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:outline-none"
+            className="focus:ring-power-orange w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
             disabled={isSubmitting}
           >
             <option value="weekly">Weekly</option>
@@ -274,7 +274,7 @@ export default function Step6Payouts({
             }
             placeholder="Describe your cancellation policy (e.g., 24 hours before session)"
             rows={3}
-            className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+            className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
               fieldErrors.cancellationPolicy
                 ? "border-red-300 bg-red-50"
                 : "border-slate-300 bg-white"
@@ -300,7 +300,7 @@ export default function Step6Payouts({
             }
             placeholder="Describe your refund policy"
             rows={3}
-            className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+            className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
               fieldErrors.refundPolicy ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
             }`}
             disabled={isSubmitting}

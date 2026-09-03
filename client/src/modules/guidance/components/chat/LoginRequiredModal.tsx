@@ -84,7 +84,7 @@ export function LoginRequiredModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 16 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed top-1/2 left-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 px-4"
+            className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 px-4"
           >
             <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_20px_60px_-15px_rgba(15,23,42,0.3)] ring-1 ring-slate-900/[0.04]">
               {/* Close button */}
@@ -92,20 +92,20 @@ export function LoginRequiredModal({
                 onClick={onClose}
                 id="login-modal-close"
                 aria-label="Close modal"
-                className="absolute top-3 right-3 flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
 
               {/* Header */}
-              <div className="flex flex-col items-center px-6 pt-7 pb-5 text-center">
+              <div className="flex flex-col items-center px-6 pb-5 pt-7 text-center">
                 <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 ring-1 ring-orange-100">
                   {copy.icon}
                 </div>
 
                 <h2
                   id="login-modal-title"
-                  className="text-lg leading-snug font-bold text-slate-900"
+                  className="text-lg font-bold leading-snug text-slate-900"
                 >
                   {copy.title}
                 </h2>

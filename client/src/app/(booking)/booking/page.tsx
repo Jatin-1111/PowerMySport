@@ -91,7 +91,7 @@ function TabBar({ activeTab, onTabChange }: { activeTab: Tab; onTabChange: (t: T
                   · {sub}
                 </span>
                 {isActive && (
-                  <span className="bg-power-orange absolute right-0 bottom-0 left-0 h-0.5 rounded-t-full" />
+                  <span className="bg-power-orange absolute bottom-0 left-0 right-0 h-0.5 rounded-t-full" />
                 )}
               </button>
             );
@@ -126,11 +126,11 @@ function BookingPageContent() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             {/* Headline block */}
             <div className="max-w-2xl">
-              <p className="mb-4 text-[11px] font-bold tracking-[0.22em] text-orange-700 uppercase">
+              <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.22em] text-orange-700">
                 Instant Booking
               </p>
               <h1
-                className="font-title leading-[0.92] font-black tracking-tight text-slate-900"
+                className="font-title font-black leading-[0.92] tracking-tight text-slate-900"
                 style={{
                   fontSize: "clamp(2.2rem, 5vw, 3.75rem)",
                   textWrap: "balance",

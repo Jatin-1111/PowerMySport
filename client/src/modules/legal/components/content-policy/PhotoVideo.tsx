@@ -1,9 +1,9 @@
 export function PhotoVideo() {
   return (
     <section id="photo-video" className="mb-8">
-      <h2 className="mt-8 mb-4 text-2xl font-semibold">6. Photo & Video Guidelines</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">6. Photo & Video Guidelines</h2>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">6.1 Ownership & Consent Requirements</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">6.1 Ownership & Consent Requirements</h3>
       <p>When uploading photos or videos, you must:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Be the original creator or have permission from the copyright holder</li>
@@ -13,7 +13,7 @@ export function PhotoVideo() {
         <li>Confirm you own all rights to the content</li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">6.2 Appropriate Content</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">6.2 Appropriate Content</h3>
       <p>Photos and videos should:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Relate to the activity or venue</li>
@@ -23,7 +23,7 @@ export function PhotoVideo() {
         <li>Be original or properly attributed if sourced</li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">6.3 Prohibited Images</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">6.3 Prohibited Images</h3>
       <p>We remove images that:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Show nudity, sexual content, or violence</li>
@@ -33,7 +33,7 @@ export function PhotoVideo() {
         <li>Violate others' privacy or are shared without consent</li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">6.4 AI-Generated & Synthetic Content</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">6.4 AI-Generated & Synthetic Content</h3>
       <p>
         If a photo, video, or audio clip you upload is fully or partially AI-generated,
         synthetically altered, or a deepfake — for example, an AI-generated profile photo or an

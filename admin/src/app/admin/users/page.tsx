@@ -87,7 +87,7 @@ function OnlinePill({ online, lastActiveAt }: { online: boolean; lastActiveAt: s
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${
         online
-          ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 ring-inset"
+          ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200"
           : "bg-slate-100 text-slate-600"
       }`}
       title={`Last active: ${formatDateTime(lastActiveAt)}`}
@@ -101,7 +101,7 @@ function OnlinePill({ online, lastActiveAt }: { online: boolean; lastActiveAt: s
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
     <Card className="bg-white">
-      <p className="text-xs tracking-wide text-slate-500 uppercase">{label}</p>
+      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
     </Card>
   );

@@ -39,7 +39,7 @@ export function CommunityInsightsCard({
   };
 
   return (
-    <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-5 backdrop-blur-sm">
+    <Card className="premium-shadow bg-white/92 rounded-3xl border border-slate-200/70 p-5 backdrop-blur-sm">
       <div className="flex items-start gap-3">
         <span className="text-power-orange mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100">
           <MessageCircle size={18} />

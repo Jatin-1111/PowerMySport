@@ -98,7 +98,7 @@ export const Footer: React.FC = () => {
           {/* Brand block — owns its own row until lg, then sits beside the nav */}
           <div className="sm:col-span-2 md:col-span-4 lg:col-span-2">
             <Link href="/" className="inline-flex items-center">
-              <span className="font-title text-3xl leading-none font-extrabold tracking-tight">
+              <span className="font-title text-3xl font-extrabold leading-none tracking-tight">
                 <span className="text-white">Power</span>
                 <span className="text-power-orange">My</span>
                 <span className="text-white">Sport</span>
@@ -151,7 +151,7 @@ export const Footer: React.FC = () => {
           {/* Navigation columns */}
           {navColumns.map((col) => (
             <div key={col.title}>
-              <h3 className="mb-4 text-xs font-bold tracking-widest text-slate-500 uppercase">
+              <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-500">
                 {col.title}
               </h3>
               <ul className="space-y-2.5">

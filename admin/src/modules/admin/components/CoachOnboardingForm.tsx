@@ -672,10 +672,10 @@ export function CoachOnboardingForm() {
 
   if (successCoachId) {
     return (
-      <Card className="border border-emerald-200 bg-linear-to-br from-white to-emerald-50 p-6 shadow-sm">
+      <Card className="bg-linear-to-br border border-emerald-200 from-white to-emerald-50 p-6 shadow-sm">
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-semibold tracking-[0.2em] text-emerald-700 uppercase">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
               Onboarding complete
             </p>
             <h2 className="mt-2 text-2xl font-bold text-slate-950">
@@ -710,10 +710,10 @@ export function CoachOnboardingForm() {
 
   return (
     <Card className="overflow-hidden border-slate-200 bg-white/90 shadow-sm">
-      <div className="to-power-orange border-b border-slate-200 bg-linear-to-r from-slate-950 via-slate-900 px-6 py-6 text-white">
+      <div className="to-power-orange bg-linear-to-r border-b border-slate-200 from-slate-950 via-slate-900 px-6 py-6 text-white">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs tracking-[0.24em] text-orange-200 uppercase">
+            <p className="text-xs uppercase tracking-[0.24em] text-orange-200">
               Coach onboarding on behalf of
             </p>
             <h1 className="mt-2 text-3xl font-bold">Create a coach account as admin</h1>
@@ -743,7 +743,7 @@ export function CoachOnboardingForm() {
                   : "border-slate-200 bg-slate-50 text-slate-500"
               }`}
             >
-              <p className="text-xs tracking-wide uppercase">Step {current}</p>
+              <p className="text-xs uppercase tracking-wide">Step {current}</p>
               <p className="mt-1 text-sm font-semibold">
                 {current === 1 && "Identity"}
                 {current === 2 && "Coaching setup"}
@@ -767,7 +767,7 @@ export function CoachOnboardingForm() {
                   <input
                     value={firstName}
                     onChange={(event) => setFirstName(event.target.value)}
-                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
+                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                       errors.firstName
                         ? "border-red-400 focus:ring-red-200"
                         : "focus:ring-power-orange/30 border-slate-300"
@@ -787,7 +787,7 @@ export function CoachOnboardingForm() {
                   <input
                     value={lastName}
                     onChange={(event) => setLastName(event.target.value)}
-                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
+                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                       errors.lastName
                         ? "border-red-400 focus:ring-red-200"
                         : "focus:ring-power-orange/30 border-slate-300"
@@ -808,7 +808,7 @@ export function CoachOnboardingForm() {
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
+                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                       errors.email
                         ? "border-red-400 focus:ring-red-200"
                         : "focus:ring-power-orange/30 border-slate-300"
@@ -827,7 +827,7 @@ export function CoachOnboardingForm() {
                     type="tel"
                     value={phone}
                     onChange={(event) => setPhone(sanitizeMobileNumber(event.target.value))}
-                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
+                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                       errors.phone
                         ? "border-red-400 focus:ring-red-200"
                         : "focus:ring-power-orange/30 border-slate-300"
@@ -848,7 +848,7 @@ export function CoachOnboardingForm() {
                   onChange={(event) => setBio(event.target.value)}
                   rows={5}
                   maxLength={2000}
-                  className={`w-full rounded-2xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                     errors.bio
                       ? "border-red-400 focus:ring-red-200"
                       : "focus:ring-power-orange/30 border-slate-300"
@@ -943,7 +943,7 @@ export function CoachOnboardingForm() {
                     step={0.01}
                     value={hourlyRateInput}
                     onChange={(event) => setHourlyRateInput(event.target.value)}
-                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
+                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                       errors.hourlyRate
                         ? "border-red-400 focus:ring-red-200"
                         : "focus:ring-power-orange/30 border-slate-300"
@@ -1071,7 +1071,7 @@ export function CoachOnboardingForm() {
                         setBaseLocationError("");
                       }}
                       placeholder="Search base location"
-                      className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
+                      className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                         errors.baseLocation
                           ? "border-red-400 focus:ring-red-200"
                           : "focus:ring-power-orange/30 border-slate-300"
@@ -1113,7 +1113,7 @@ export function CoachOnboardingForm() {
                         min={1}
                         value={serviceRadiusKmInput}
                         onChange={(event) => setServiceRadiusKmInput(event.target.value)}
-                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
+                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                           errors.serviceRadiusKm
                             ? "border-red-400 focus:ring-red-200"
                             : "focus:ring-power-orange/30 border-slate-300"
@@ -1133,7 +1133,7 @@ export function CoachOnboardingForm() {
                         min={0}
                         value={travelBufferTimeInput}
                         onChange={(event) => setTravelBufferTimeInput(event.target.value)}
-                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
+                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                           errors.travelBufferTime
                             ? "border-red-400 focus:ring-red-200"
                             : "focus:ring-power-orange/30 border-slate-300"
@@ -1164,7 +1164,7 @@ export function CoachOnboardingForm() {
                       <input
                         value={venueName}
                         onChange={(event) => setVenueName(event.target.value)}
-                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
+                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                           errors.venueName
                             ? "border-red-400 focus:ring-red-200"
                             : "focus:ring-power-orange/30 border-slate-300"
@@ -1187,7 +1187,7 @@ export function CoachOnboardingForm() {
                           setVenueLocation(null);
                           setVenueAddressError("");
                         }}
-                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
+                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                           errors.venueAddress
                             ? "border-red-400 focus:ring-red-200"
                             : "focus:ring-power-orange/30 border-slate-300"
@@ -1229,7 +1229,7 @@ export function CoachOnboardingForm() {
                       value={venueDescription}
                       onChange={(event) => setVenueDescription(event.target.value)}
                       rows={4}
-                      className="focus:ring-power-orange/30 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 transition outline-none focus:ring-2"
+                      className="focus:ring-power-orange/30 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:ring-2"
                       placeholder="Optional venue description"
                       disabled={loading}
                     />
@@ -1269,7 +1269,7 @@ export function CoachOnboardingForm() {
             >
               <div className="grid gap-4 lg:grid-cols-2">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Identity
                   </p>
                   <div className="mt-3 space-y-2 text-sm text-slate-700">
@@ -1290,7 +1290,7 @@ export function CoachOnboardingForm() {
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Coaching setup
                   </p>
                   <div className="mt-3 space-y-2 text-sm text-slate-700">
@@ -1316,7 +1316,7 @@ export function CoachOnboardingForm() {
 
               {isOwnVenue ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Venue details
                   </p>
                   <div className="mt-3 space-y-2 text-sm text-slate-700">
@@ -1338,7 +1338,7 @@ export function CoachOnboardingForm() {
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Verification documents
                     </p>
                     <p className="text-sm text-slate-600">
@@ -1364,7 +1364,7 @@ export function CoachOnboardingForm() {
                     >
                       <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
                         <div>
-                          <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase">
+                          <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
                             Document type
                           </label>
                           <select
@@ -1395,7 +1395,7 @@ export function CoachOnboardingForm() {
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase">
+                          <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
                             Uploaded file
                           </label>
                           <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
@@ -1440,7 +1440,7 @@ export function CoachOnboardingForm() {
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Venue images
                       </p>
                       <p className="text-sm text-slate-600">

@@ -27,7 +27,7 @@ export function SpectrumSlider({
 
   return (
     <div className="space-y-5">
-      <div className="flex justify-between text-xs font-semibold tracking-widest text-slate-500 uppercase">
+      <div className="flex justify-between text-xs font-semibold uppercase tracking-widest text-slate-500">
         <span>{leftLabel}</span>
         <span>{rightLabel}</span>
       </div>
@@ -54,7 +54,7 @@ export function SpectrumSlider({
                 {tick}
               </span>
               <span
-                className={`text-center text-[10px] leading-none font-medium ${
+                className={`text-center text-[10px] font-medium leading-none ${
                   selected ? "text-white/80" : "text-slate-400"
                 }`}
               >

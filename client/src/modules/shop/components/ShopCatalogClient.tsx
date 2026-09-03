@@ -145,7 +145,7 @@ export function ShopCatalogClient({
           className="relative flex flex-col items-center justify-between overflow-hidden rounded-[2rem] border border-slate-200/50 bg-gradient-to-br from-slate-50 to-white p-8 shadow-sm sm:p-10 lg:flex-row"
         >
           {/* Decorative background blur */}
-          <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-[#ff5722] opacity-10 blur-[100px]" />
+          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#ff5722] opacity-10 blur-[100px]" />
           <div className="pointer-events-none absolute -bottom-32 left-10 h-64 w-64 rounded-full bg-blue-500 opacity-10 blur-[100px]" />
 
           <div className="relative z-10 w-full lg:w-1/2">
@@ -153,7 +153,7 @@ export function ShopCatalogClient({
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 rounded-full border border-[#ff5722]/20 bg-[#ff5722]/10 px-4 py-1.5 text-xs font-bold tracking-[0.2em] text-[#ff5722] uppercase"
+              className="inline-flex items-center gap-2 rounded-full border border-[#ff5722]/20 bg-[#ff5722]/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-[#ff5722]"
             >
               <Sparkles className="h-3.5 w-3.5" />
               Pro-Level Gear
@@ -162,7 +162,7 @@ export function ShopCatalogClient({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="mt-6 max-w-xl text-5xl leading-[1.1] font-black tracking-tight text-slate-900 sm:text-6xl"
+              className="mt-6 max-w-xl text-5xl font-black leading-[1.1] tracking-tight text-slate-900 sm:text-6xl"
             >
               Elevate Your <span className="text-[#ff5722]">Performance</span>
             </motion.h1>
@@ -186,7 +186,7 @@ export function ShopCatalogClient({
                 className="group inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#ff5722] px-8 text-sm font-bold text-white shadow-lg shadow-[#ff5722]/20 transition-all hover:bg-[#e64a19] hover:shadow-xl hover:shadow-[#ff5722]/30 active:scale-95"
               >
                 Shop Now{" "}
-                <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
+                <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
               </a>
               <a
                 href="#catalog"
@@ -253,7 +253,7 @@ export function ShopCatalogClient({
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={cn(
-                  "relative px-2 py-3 text-sm font-bold whitespace-nowrap transition-all",
+                  "relative whitespace-nowrap px-2 py-3 text-sm font-bold transition-all",
                   activeTab === tab ? "text-[#ff5722]" : "text-slate-500 hover:text-slate-900"
                 )}
               >
@@ -261,7 +261,7 @@ export function ShopCatalogClient({
                 {activeTab === tab && (
                   <motion.div
                     layoutId="activeTabIndicator"
-                    className="absolute right-0 bottom-[-1px] left-0 h-0.5 bg-[#ff5722]"
+                    className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-[#ff5722]"
                   />
                 )}
               </button>
@@ -278,7 +278,7 @@ export function ShopCatalogClient({
                 setSort(e.target.value);
                 applyFilters({ sort: e.target.value });
               }}
-              className="cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-1.5 pr-8 pl-3 text-sm font-bold shadow-sm transition outline-none focus:border-[#ff5722]"
+              className="cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-sm font-bold shadow-sm outline-none transition focus:border-[#ff5722]"
             >
               {sortOptions.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -286,7 +286,7 @@ export function ShopCatalogClient({
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
           </div>
         </div>
       </div>
@@ -326,26 +326,26 @@ export function ShopCatalogClient({
               className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm"
               open
             >
-              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 transition-colors outline-none group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
                 Search
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>
               <div className="mt-4">
                 <div className="relative">
-                  <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && applyFilters()}
                     placeholder="Search..."
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pr-3 pl-10 text-sm transition outline-none focus:border-[#ff5722] focus:ring-1 focus:ring-[#ff5722]"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-[#ff5722] focus:ring-1 focus:ring-[#ff5722]"
                   />
                 </div>
               </div>
             </details>
 
             <details className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
-              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 transition-colors outline-none group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
                 Category
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>
@@ -371,7 +371,7 @@ export function ShopCatalogClient({
             </details>
 
             <details className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
-              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 transition-colors outline-none group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
                 Brands
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>
@@ -411,7 +411,7 @@ export function ShopCatalogClient({
             </details>
 
             <details className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
-              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 transition-colors outline-none group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
                 Price Range
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>
@@ -433,7 +433,7 @@ export function ShopCatalogClient({
             </details>
 
             <details className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
-              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 transition-colors outline-none group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
                 Rating
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>
@@ -463,7 +463,7 @@ export function ShopCatalogClient({
               className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm"
               open
             >
-              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 transition-colors outline-none group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
                 Gear Condition
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>
@@ -517,7 +517,7 @@ export function ShopCatalogClient({
               className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm"
               open
             >
-              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 transition-colors outline-none group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
                 Seller Type
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>

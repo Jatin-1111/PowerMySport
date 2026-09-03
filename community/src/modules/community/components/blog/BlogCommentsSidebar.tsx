@@ -170,7 +170,7 @@ export default function BlogCommentsSidebar({
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed top-0 right-0 z-[301] flex h-dvh w-full max-w-md flex-col bg-white shadow-2xl"
+            className="fixed right-0 top-0 z-[301] flex h-dvh w-full max-w-md flex-col bg-white shadow-2xl"
           >
             {/* Header */}
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">

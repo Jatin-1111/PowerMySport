@@ -372,7 +372,7 @@ export default function Step2VenueDetails({
   };
 
   return (
-    <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
+    <div className="shadow-xs space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 md:p-8">
       <div className="mb-8 text-center">
         <h1 className="mb-2 text-3xl font-bold text-slate-900">Tell us about your venue</h1>
         <p className="text-slate-600">Step 2 of 4: Venue Details</p>
@@ -393,7 +393,7 @@ export default function Step2VenueDetails({
             value={formData.name}
             onChange={handleInputChange}
             placeholder="e.g., Central Sports Complex"
-            className="focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-500 transition focus:ring-2 focus:ring-offset-1 focus:outline-none"
+            className="focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-500 transition focus:outline-none focus:ring-2 focus:ring-offset-1"
             required
             disabled={loading}
           />
@@ -470,7 +470,7 @@ export default function Step2VenueDetails({
                   onChange={(e) => handleBasePriceChange(parseFloat(e.target.value) || 0)}
                   placeholder="500"
                   min="0"
-                  className="focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-500 transition focus:ring-2 focus:ring-offset-1 focus:outline-none"
+                  className="focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-500 transition focus:outline-none focus:ring-2 focus:ring-offset-1"
                   required
                   disabled={loading}
                 />
@@ -497,7 +497,7 @@ export default function Step2VenueDetails({
                     onChange={(e) => handleSportPriceChange(sport, parseFloat(e.target.value) || 0)}
                     placeholder="500"
                     min="0"
-                    className="focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-500 transition focus:ring-2 focus:ring-offset-1 focus:outline-none"
+                    className="focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-500 transition focus:outline-none focus:ring-2 focus:ring-offset-1"
                     required
                     disabled={loading}
                   />
@@ -533,12 +533,12 @@ export default function Step2VenueDetails({
               value={addressQuery}
               onChange={handleAddressChange}
               placeholder="Search your venue location"
-              className="focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-500 transition focus:ring-2 focus:ring-offset-1 focus:outline-none"
+              className="focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-500 transition focus:outline-none focus:ring-2 focus:ring-offset-1"
               required
               disabled={loading}
             />
             {isSearching && (
-              <span className="absolute top-2.5 right-3 text-xs text-slate-500">Searching...</span>
+              <span className="absolute right-3 top-2.5 text-xs text-slate-500">Searching...</span>
             )}
           </div>
           <div className="mt-2 flex items-center justify-between">
@@ -581,7 +581,7 @@ export default function Step2VenueDetails({
             onChange={handleInputChange}
             placeholder="Tell players about your venue..."
             rows={4}
-            className="focus:ring-power-orange w-full resize-none rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-500 transition focus:ring-2 focus:ring-offset-1 focus:outline-none"
+            className="focus:ring-power-orange w-full resize-none rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-500 transition focus:outline-none focus:ring-2 focus:ring-offset-1"
             disabled={loading}
           />
         </OnboardingSectionCard>

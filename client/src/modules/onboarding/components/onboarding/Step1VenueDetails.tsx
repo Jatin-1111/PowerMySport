@@ -414,7 +414,7 @@ export default function Step1VenueDetails({ onSubmit, loading }: Step1VenueDetai
             onFocus={() => addressInput && setShowSuggestions(true)}
           />
           {autocompleteLoading && (
-            <div className="absolute top-[2.4rem] right-3 text-slate-500">
+            <div className="absolute right-3 top-[2.4rem] text-slate-500">
               <svg
                 className="h-5 w-5 animate-spin"
                 xmlns="http://www.w3.org/2000/svg"

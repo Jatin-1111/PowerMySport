@@ -36,7 +36,7 @@ export function FourContextCards({
               }`}
             />
             <p
-              className={`mb-1 text-[15px] leading-snug font-semibold ${
+              className={`mb-1 text-[15px] font-semibold leading-snug ${
                 selected ? "text-power-orange" : "text-slate-900"
               }`}
             >

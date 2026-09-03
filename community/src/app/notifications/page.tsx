@@ -254,7 +254,7 @@ export default function CommunityNotificationsPage() {
       <section className="rounded-2xl border border-white/90 bg-white/90 p-4 shadow-sm backdrop-blur-md sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
               Community
             </p>
             <h1 className="font-title mt-1 text-2xl font-semibold text-slate-900">Notifications</h1>
@@ -275,7 +275,7 @@ export default function CommunityNotificationsPage() {
         <div className="mt-4 flex items-center gap-2">
           <button
             onClick={() => setFilter("ALL")}
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold tracking-wide uppercase transition ${
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
               filter === "ALL"
                 ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
                 : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
@@ -285,7 +285,7 @@ export default function CommunityNotificationsPage() {
           </button>
           <button
             onClick={() => setFilter("UNREAD")}
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold tracking-wide uppercase transition ${
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
               filter === "UNREAD"
                 ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
                 : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
@@ -320,7 +320,7 @@ export default function CommunityNotificationsPage() {
             {groupedItems.map((dateGroup) => (
               <div key={dateGroup.dateKey} className="space-y-3">
                 <div className="py-1.5">
-                  <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                     {dateGroup.heading}
                   </p>
                 </div>
@@ -328,7 +328,7 @@ export default function CommunityNotificationsPage() {
                 {dateGroup.typeGroups.map((typeGroup) => (
                   <div key={`${dateGroup.dateKey}-${typeGroup.label}`} className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                         {typeGroup.label}
                       </p>
                       <span className="text-[11px] text-slate-400">{typeGroup.items.length}</span>
@@ -349,7 +349,7 @@ export default function CommunityNotificationsPage() {
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-slate-600 uppercase">
+                                <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
                                   {getEventLabel(item)}
                                 </span>
                                 {!item.isRead ? (

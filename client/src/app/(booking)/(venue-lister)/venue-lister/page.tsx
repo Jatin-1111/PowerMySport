@@ -164,7 +164,7 @@ export default function VenueListerDashboard() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-slate-500 uppercase">Starting at</p>
+                    <p className="text-xs uppercase text-slate-500">Starting at</p>
                     <p className="text-power-orange text-lg font-bold">
                       {formatCurrency(getDisplayPrice(primaryVenue))}/hr
                     </p>

@@ -72,7 +72,7 @@ function ExpertHeroAvatar({ expert }: { expert: Expert }) {
 function DetailSkeleton() {
   return (
     <div className="min-h-screen bg-[#F4F3F0]">
-      <div className="relative bg-slate-900 pt-6 pb-10">
+      <div className="relative bg-slate-900 pb-10 pt-6">
         <div className="mx-auto max-w-6xl px-6">
           <div className="mb-8 flex justify-between">
             <Skeleton className="h-8 w-28 rounded-full opacity-30" />
@@ -247,7 +247,7 @@ export function ExpertDetailClient() {
     <div className="min-h-screen bg-[#F4F3F0]">
       {/* ── Full-width Hero ── */}
       <div className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
-        <div className="bg-power-orange/15 pointer-events-none absolute -top-32 -right-32 h-96 w-96 rounded-full blur-[100px]" />
+        <div className="bg-power-orange/15 pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full blur-[100px]" />
         <div className="pointer-events-none absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-indigo-500/10 blur-[80px]" />
         {/* Nav */}
         <div className="relative mx-auto max-w-6xl px-6 pt-6">
@@ -267,11 +267,11 @@ export function ExpertDetailClient() {
           </div>
         </div>
         {/* Hero content */}
-        <div className="relative mx-auto max-w-6xl px-6 pt-8 pb-10">
+        <div className="relative mx-auto max-w-6xl px-6 pb-10 pt-8">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-end">
             <ExpertHeroAvatar expert={expert} />
             <div className="flex-1">
-              <span className="border-power-orange/30 bg-power-orange/10 text-power-orange inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold tracking-widest uppercase">
+              <span className="border-power-orange/30 bg-power-orange/10 text-power-orange inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-widest">
                 <Award className="h-3 w-3" /> Verified Expert
               </span>
               <h1 className="font-title mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl">
@@ -302,7 +302,7 @@ export function ExpertDetailClient() {
             </div>
             {/* Price callout — desktop */}
             <div className="hidden shrink-0 flex-col items-end gap-1 lg:flex">
-              <span className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Session fee
               </span>
               <span className="text-4xl font-black text-white">{formatInr(expert.sessionFee)}</span>
@@ -345,10 +345,10 @@ export function ExpertDetailClient() {
             {expert.bio && (
               <SlideUp>
                 <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
-                  <h2 className="mb-3 flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase">
+                  <h2 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
                     <Zap className="text-power-orange h-3.5 w-3.5" /> About
                   </h2>
-                  <p className="text-[15px] leading-relaxed whitespace-pre-line text-slate-700">
+                  <p className="whitespace-pre-line text-[15px] leading-relaxed text-slate-700">
                     {expert.bio}
                   </p>
                 </div>
@@ -357,10 +357,10 @@ export function ExpertDetailClient() {
             {expert.achievements && (
               <SlideUp>
                 <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
-                  <h2 className="mb-3 flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase">
+                  <h2 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
                     <Award className="text-power-orange h-3.5 w-3.5" /> Achievements
                   </h2>
-                  <p className="text-[15px] leading-relaxed whitespace-pre-line text-slate-700">
+                  <p className="whitespace-pre-line text-[15px] leading-relaxed text-slate-700">
                     {expert.achievements}
                   </p>
                 </div>
@@ -369,7 +369,7 @@ export function ExpertDetailClient() {
             <FadeIn delay={0.1}>
               <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
                 <div className="mb-4 flex items-center justify-between">
-                  <h2 className="flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase">
+                  <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
                     <Star className="h-3.5 w-3.5 text-amber-400" /> Reviews
                   </h2>
                   {reviews.length > 0 && (
@@ -437,7 +437,7 @@ export function ExpertDetailClient() {
                 <div className="border-b border-slate-100 bg-slate-50/60 px-6 py-5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                         Session fee
                       </p>
                       <div className="mt-1 flex items-baseline gap-2">
@@ -462,7 +462,7 @@ export function ExpertDetailClient() {
                 {/* Body */}
                 <div className="space-y-5 p-6">
                   <div>
-                    <label className="mb-2 flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                    <label className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                       <CalendarClock className="text-power-orange h-3 w-3" /> Choose a time
                     </label>
                     <SlotPicker
@@ -474,7 +474,7 @@ export function ExpertDetailClient() {
                   </div>
                   {expert.sessionMode === "BOTH" && (
                     <div>
-                      <label className="mb-2 flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                      <label className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                         <Globe className="text-power-orange h-3 w-3" /> Session mode
                       </label>
                       <div className="grid grid-cols-2 gap-2">
@@ -493,7 +493,7 @@ export function ExpertDetailClient() {
                   )}
                   {dependents.length > 0 && (
                     <div>
-                      <label className="mb-2 flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                      <label className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                         <Users className="text-power-orange h-3 w-3" /> Who is this for?
                       </label>
                       <div className="flex flex-wrap gap-2">
@@ -521,16 +521,16 @@ export function ExpertDetailClient() {
                     </div>
                   )}
                   <div>
-                    <label className="mb-2 flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                    <label className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                       <MessageSquareText className="text-power-orange h-3 w-3" /> What to discuss?{" "}
-                      <span className="font-normal text-slate-400 normal-case">(optional)</span>
+                      <span className="font-normal normal-case text-slate-400">(optional)</span>
                     </label>
                     <textarea
                       rows={3}
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
                       placeholder="e.g. Is football sustainable with his school schedule? Should we push for state trials?"
-                      className="focus:border-power-orange focus:ring-power-orange/20 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-700 placeholder-slate-400 transition-all focus:bg-white focus:ring-2 focus:outline-none"
+                      className="focus:border-power-orange focus:ring-power-orange/20 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-700 placeholder-slate-400 transition-all focus:bg-white focus:outline-none focus:ring-2"
                     />
                   </div>
                   <Button

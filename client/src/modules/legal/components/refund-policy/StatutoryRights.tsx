@@ -1,7 +1,7 @@
 export function StatutoryRights() {
   return (
     <section id="statutory-rights" className="mb-8">
-      <h2 className="mt-8 mb-4 text-2xl font-semibold">9. Your Statutory Rights</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">9. Your Statutory Rights</h2>
       <p>
         Nothing in this policy limits, excludes, or waives any non-waivable right you have as a
         consumer under the Consumer Protection Act, 2019, the Consumer Protection (E-Commerce)

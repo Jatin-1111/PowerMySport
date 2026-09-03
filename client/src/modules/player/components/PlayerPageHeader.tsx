@@ -19,7 +19,7 @@ export function PlayerPageHeader({ title, subtitle, action }: PlayerPageHeaderPr
         </div>
         {action && <div className="flex shrink-0 gap-3">{action}</div>}
       </div>
-      <div className="bg-power-orange/5 pointer-events-none absolute -top-16 -right-20 h-48 w-48 rounded-full blur-3xl" />
+      <div className="bg-power-orange/5 pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full blur-3xl" />
       <div className="bg-turf-green/5 pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-3xl" />
     </div>
   );

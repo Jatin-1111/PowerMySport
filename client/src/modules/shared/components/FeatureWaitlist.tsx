@@ -57,8 +57,8 @@ export default function FeatureWaitlist({
   return (
     <div className="relative -mb-12 flex min-h-[80vh] w-full flex-1 flex-col items-center justify-center overflow-hidden bg-slate-50 py-12 font-sans">
       {/* Background Orbs */}
-      <div className="bg-power-orange/20 pointer-events-none absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full mix-blend-multiply blur-[120px]" />
-      <div className="pointer-events-none absolute right-[-10%] bottom-[-10%] h-[500px] w-[500px] rounded-full bg-blue-400/20 mix-blend-multiply blur-[120px]" />
+      <div className="bg-power-orange/20 pointer-events-none absolute left-[-10%] top-[-10%] h-[500px] w-[500px] rounded-full mix-blend-multiply blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-[-10%] right-[-10%] h-[500px] w-[500px] rounded-full bg-blue-400/20 mix-blend-multiply blur-[120px]" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -94,7 +94,7 @@ export default function FeatureWaitlist({
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Get notified when we launch"
               required
-              className="w-full rounded-full border border-slate-200 bg-white/80 py-4 pr-36 pl-12 text-sm text-slate-900 shadow-sm backdrop-blur-xl transition-all outline-none focus:ring-4"
+              className="w-full rounded-full border border-slate-200 bg-white/80 py-4 pl-12 pr-36 text-sm text-slate-900 shadow-sm outline-none backdrop-blur-xl transition-all focus:ring-4"
               style={{
                 outlineColor: gradientFrom,
               }}
@@ -102,7 +102,7 @@ export default function FeatureWaitlist({
             <button
               type="submit"
               disabled={loading}
-              className={`absolute top-2 right-2 bottom-2 flex items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 ${buttonColorClass}`}
+              className={`absolute bottom-2 right-2 top-2 flex items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 ${buttonColorClass}`}
             >
               {loading ? "Joining..." : submitted ? "Subscribed!" : "Notify Me"}
             </button>

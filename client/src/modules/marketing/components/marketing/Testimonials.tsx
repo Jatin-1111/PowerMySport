@@ -72,7 +72,7 @@ function TestimonialCard({ testimonial, index }: { testimonial: Testimonial; ind
     >
       {/* Left accent stripe for highlighted card */}
       {isHighlighted && (
-        <div className="from-power-orange absolute top-6 bottom-6 left-0 w-1 rounded-full bg-gradient-to-b to-amber-400" />
+        <div className="from-power-orange absolute bottom-6 left-0 top-6 w-1 rounded-full bg-gradient-to-b to-amber-400" />
       )}
 
       {/* Quote icon */}
@@ -161,8 +161,8 @@ export const Testimonials: React.FC<TestimonialsProps> = ({ title, subtitle, tes
       </div>
 
       {/* Ambient blobs */}
-      <div className="pointer-events-none absolute top-1/4 left-0 h-72 w-72 -translate-x-1/2 rounded-full bg-amber-100/40 blur-3xl" />
-      <div className="pointer-events-none absolute right-0 bottom-1/4 h-72 w-72 translate-x-1/2 rounded-full bg-indigo-100/30 blur-3xl" />
+      <div className="pointer-events-none absolute left-0 top-1/4 h-72 w-72 -translate-x-1/2 rounded-full bg-amber-100/40 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-1/4 right-0 h-72 w-72 translate-x-1/2 rounded-full bg-indigo-100/30 blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section Header ── */}

@@ -104,7 +104,7 @@ export default function EditProfileModal({
                   <AuthorAvatar name={profile.name} photoUrl={profile.photoUrl} size={64} />
                   <div className="grid flex-1 gap-2">
                     <div>
-                      <label className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+                      <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                         Name
                       </label>
                       <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
@@ -112,7 +112,7 @@ export default function EditProfileModal({
                       </div>
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+                      <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                         Email
                       </label>
                       <div className="truncate rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">

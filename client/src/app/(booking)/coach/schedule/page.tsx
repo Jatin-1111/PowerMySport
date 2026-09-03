@@ -231,7 +231,7 @@ function SessionModal({
           </div>
           <div>
             <p className="font-semibold text-slate-900">{playerName}</p>
-            <p className="text-xs text-slate-500 capitalize">{booking.sport}</p>
+            <p className="text-xs capitalize text-slate-500">{booking.sport}</p>
           </div>
           <span
             className={cn(
@@ -250,7 +250,7 @@ function SessionModal({
           <div className="rounded-xl bg-slate-50 px-4 py-3">
             <div className="mb-1 flex items-center gap-2 text-slate-500">
               <CalendarDays size={14} />
-              <span className="text-xs font-medium tracking-wide uppercase">Date</span>
+              <span className="text-xs font-medium uppercase tracking-wide">Date</span>
             </div>
             <p className="text-sm font-semibold text-slate-800">
               {formatFullDate(new Date(booking.date))}
@@ -259,7 +259,7 @@ function SessionModal({
           <div className="rounded-xl bg-slate-50 px-4 py-3">
             <div className="mb-1 flex items-center gap-2 text-slate-500">
               <Clock size={14} />
-              <span className="text-xs font-medium tracking-wide uppercase">Time</span>
+              <span className="text-xs font-medium uppercase tracking-wide">Time</span>
             </div>
             <p className="text-sm font-semibold text-slate-800">
               {formatTime(booking.startTime)} – {formatTime(booking.endTime)}
@@ -268,7 +268,7 @@ function SessionModal({
           <div className="rounded-xl bg-slate-50 px-4 py-3">
             <div className="mb-1 flex items-center gap-2 text-slate-500">
               <IndianRupee size={14} />
-              <span className="text-xs font-medium tracking-wide uppercase">Amount</span>
+              <span className="text-xs font-medium uppercase tracking-wide">Amount</span>
             </div>
             <p className="text-sm font-semibold text-slate-800">
               ₹{booking.totalAmount.toLocaleString("en-IN")}
@@ -278,7 +278,7 @@ function SessionModal({
             <div className="rounded-xl bg-slate-50 px-4 py-3">
               <div className="mb-1 flex items-center gap-2 text-slate-500">
                 <MapPin size={14} />
-                <span className="text-xs font-medium tracking-wide uppercase">Location</span>
+                <span className="text-xs font-medium uppercase tracking-wide">Location</span>
               </div>
               <p className="truncate text-sm font-semibold text-slate-800">
                 {typeof booking.venue === "object" && booking.venue
@@ -309,7 +309,7 @@ function SessionModal({
                       min={today}
                       value={rescheduleDate}
                       onChange={(e) => setRescheduleDate(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -319,7 +319,7 @@ function SessionModal({
                         type="time"
                         value={rescheduleStart}
                         onChange={(e) => setRescheduleStart(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
                       />
                     </div>
                     <div>
@@ -328,7 +328,7 @@ function SessionModal({
                         type="time"
                         value={rescheduleEnd}
                         onChange={(e) => setRescheduleEnd(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
                       />
                     </div>
                   </div>
@@ -435,7 +435,7 @@ function MonthView({
         {DAY_LABELS.map((l) => (
           <div
             key={l}
-            className="py-2 text-center text-xs font-semibold tracking-wide text-slate-400 uppercase"
+            className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-400"
           >
             {l}
           </div>
@@ -456,7 +456,7 @@ function MonthView({
               key={i}
               onClick={() => onDayClick(day)}
               className={cn(
-                "relative cursor-pointer border-r border-b border-slate-100 p-1.5 transition-colors hover:bg-slate-50",
+                "relative cursor-pointer border-b border-r border-slate-100 p-1.5 transition-colors hover:bg-slate-50",
                 !isCurrentMonth && "opacity-40",
                 blocked && "bg-rose-50"
               )}
@@ -489,7 +489,7 @@ function MonthView({
                       onBookingClick(b);
                     }}
                     className={cn(
-                      "w-full truncate rounded px-1.5 py-0.5 text-left text-xs leading-tight font-medium",
+                      "w-full truncate rounded px-1.5 py-0.5 text-left text-xs font-medium leading-tight",
                       BOOKING_BLOCK[b.status] ?? "bg-slate-100 text-slate-600"
                     )}
                   >
@@ -545,7 +545,7 @@ function TimeGrid({
           const isToday = sameDay(d, now);
           return (
             <div key={i} className="py-2 text-center">
-              <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                 {DAY_LABELS[d.getDay()]}
               </p>
               <p
@@ -574,7 +574,7 @@ function TimeGrid({
               className="absolute flex w-full items-start justify-end pr-2"
               style={{ top: (h - HOUR_START) * ROW_HEIGHT }}
             >
-              <span className="-translate-y-1/2 text-[11px] leading-none font-medium text-slate-400">
+              <span className="-translate-y-1/2 text-[11px] font-medium leading-none text-slate-400">
                 {h === 12 ? "12 PM" : h > 12 ? `${h - 12} PM` : `${h} AM`}
               </span>
             </div>
@@ -628,7 +628,7 @@ function TimeGrid({
               {/* Current-time indicator */}
               {isToday && nowTop !== null && (
                 <div
-                  className="pointer-events-none absolute right-0 left-0 z-20 flex items-center"
+                  className="pointer-events-none absolute left-0 right-0 z-20 flex items-center"
                   style={{ top: nowTop }}
                 >
                   <span className="bg-power-orange -ml-1.5 h-2.5 w-2.5 shrink-0 rounded-full shadow-sm" />
@@ -653,7 +653,7 @@ function TimeGrid({
                     key={b.id}
                     onClick={() => onBookingClick(b)}
                     className={cn(
-                      "absolute right-0.5 left-0.5 z-10 overflow-hidden rounded-lg border px-2 py-1 text-left",
+                      "absolute left-0.5 right-0.5 z-10 overflow-hidden rounded-lg border px-2 py-1 text-left",
                       "transition-all hover:z-20 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]",
                       BOOKING_BLOCK[b.status] ?? "border-slate-200 bg-slate-100 text-slate-600"
                     )}
@@ -661,12 +661,12 @@ function TimeGrid({
                     title={`${playerName || b.sport} — ${formatTime(b.startTime)} to ${formatTime(b.endTime)}`}
                   >
                     {/* Sport tag */}
-                    <p className="truncate text-[10px] leading-none font-bold tracking-wide uppercase opacity-60">
+                    <p className="truncate text-[10px] font-bold uppercase leading-none tracking-wide opacity-60">
                       {b.sport}
                     </p>
                     {/* Player name */}
                     {height > 24 && (
-                      <p className="mt-0.5 truncate text-xs leading-tight font-semibold">
+                      <p className="mt-0.5 truncate text-xs font-semibold leading-tight">
                         {playerName || "Session"}
                       </p>
                     )}
@@ -1100,7 +1100,7 @@ export default function CoachSchedulePage() {
                           <p className="truncate text-xs font-semibold text-slate-800">
                             {playerName}
                           </p>
-                          <p className="text-xs text-slate-500 capitalize">{b.sport}</p>
+                          <p className="text-xs capitalize text-slate-500">{b.sport}</p>
                           <p className="text-xs text-slate-400">
                             {formatFullDate(new Date(b.date))} · {formatTime(b.startTime)}
                           </p>
@@ -1161,7 +1161,7 @@ export default function CoachSchedulePage() {
                       min={today}
                       value={blockStart}
                       onChange={(e) => setBlockStart(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                      className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
                     />
                   </div>
                   <div>
@@ -1171,7 +1171,7 @@ export default function CoachSchedulePage() {
                       min={blockStart || today}
                       value={blockEnd}
                       onChange={(e) => setBlockEnd(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                      className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
                     />
                   </div>
                 </div>
@@ -1184,7 +1184,7 @@ export default function CoachSchedulePage() {
                     placeholder="Holiday, personal, travel..."
                     value={blockReason}
                     onChange={(e) => setBlockReason(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 placeholder-slate-300 focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-400"
                   />
                 </div>
                 <Button
@@ -1203,7 +1203,7 @@ export default function CoachSchedulePage() {
               {blockedDates.length > 0 && (
                 <div className="border-t border-slate-100">
                   <div className="px-4 py-2.5">
-                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Blocked periods
                     </p>
                   </div>
@@ -1239,7 +1239,7 @@ export default function CoachSchedulePage() {
                                     type="date"
                                     value={editBlockStart}
                                     onChange={(e) => setEditBlockStart(e.target.value)}
-                                    className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                                    className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
                                   />
                                 </div>
                                 <div>
@@ -1251,7 +1251,7 @@ export default function CoachSchedulePage() {
                                     min={editBlockStart}
                                     value={editBlockEnd}
                                     onChange={(e) => setEditBlockEnd(e.target.value)}
-                                    className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                                    className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
                                   />
                                 </div>
                               </div>
@@ -1260,7 +1260,7 @@ export default function CoachSchedulePage() {
                                 placeholder="Reason (optional)"
                                 value={editBlockReason}
                                 onChange={(e) => setEditBlockReason(e.target.value)}
-                                className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-800 placeholder-slate-300 focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                                className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-400"
                               />
                               <div className="flex gap-2 pt-1">
                                 <Button

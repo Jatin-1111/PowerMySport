@@ -182,7 +182,7 @@ export default function PrivacyPage() {
                 <input
                   value={aliasDraft}
                   onChange={(event) => setAliasDraft(event.target.value)}
-                  className="border-border bg-background focus:border-power-orange w-full rounded-2xl border px-3 py-2.5 text-sm shadow-xs focus:outline-none"
+                  className="border-border bg-background focus:border-power-orange shadow-xs w-full rounded-2xl border px-3 py-2.5 text-sm focus:outline-none"
                 />
                 <button
                   onClick={() => void saveAlias()}
@@ -228,7 +228,7 @@ export default function PrivacyPage() {
             <label className="block text-sm sm:text-base">
               <span className="mb-1 block text-slate-500">Who can message me</span>
               <select
-                className="border-border bg-background focus:border-power-orange w-full rounded-2xl border px-3 py-2.5 text-sm shadow-xs focus:outline-none"
+                className="border-border bg-background focus:border-power-orange shadow-xs w-full rounded-2xl border px-3 py-2.5 text-sm focus:outline-none"
                 value={profile?.messagePrivacy || "EVERYONE"}
                 onChange={(event) =>
                   void updateProfile({
@@ -259,7 +259,7 @@ export default function PrivacyPage() {
                 value={blockSearch}
                 onChange={(event) => setBlockSearch(event.target.value)}
                 placeholder="Search users by name"
-                className="border-border bg-background focus:border-power-orange w-full rounded-2xl border px-3 py-2.5 text-sm shadow-xs focus:outline-none"
+                className="border-border bg-background focus:border-power-orange shadow-xs w-full rounded-2xl border px-3 py-2.5 text-sm focus:outline-none"
               />
             </label>
 
@@ -277,7 +277,7 @@ export default function PrivacyPage() {
                     return (
                       <div
                         key={user.id}
-                        className="border-border/70 flex flex-col gap-3 rounded-2xl border bg-white px-3 py-3 shadow-xs sm:flex-row sm:items-center sm:justify-between"
+                        className="border-border/70 shadow-xs flex flex-col gap-3 rounded-2xl border bg-white px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-slate-900">

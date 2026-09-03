@@ -73,7 +73,7 @@ function SessionRow({ session }: { session: PlanSession | string }) {
             <p className="text-[13px] leading-relaxed text-slate-600">{session.how}</p>
             {session.doneRight && (
               <p className="text-xs leading-relaxed text-emerald-700">
-                <span className="font-bold tracking-wide uppercase">Done right: </span>
+                <span className="font-bold uppercase tracking-wide">Done right: </span>
                 {session.doneRight}
               </p>
             )}
@@ -95,7 +95,7 @@ export function ShortTermPlanCard({ plan }: { plan: ShortTermPlan }) {
           <CalendarDays className="text-power-orange h-5 w-5" />
         </div>
         <div>
-          <h3 className="font-title text-lg leading-tight font-bold text-slate-900">
+          <h3 className="font-title text-lg font-bold leading-tight text-slate-900">
             Your {plan.durationWeeks}-Week Plan
           </h3>
           <p className="mt-0.5 text-xs text-slate-500">
@@ -123,10 +123,10 @@ export function ShortTermPlanCard({ plan }: { plan: ShortTermPlan }) {
                 className="flex w-full items-start justify-between gap-3 p-4 text-left"
               >
                 <span className="flex min-w-0 items-baseline gap-2.5">
-                  <span className="bg-power-orange/10 text-power-orange shrink-0 rounded-lg px-2 py-0.5 text-[11px] font-bold tracking-wide uppercase">
+                  <span className="bg-power-orange/10 text-power-orange shrink-0 rounded-lg px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide">
                     {week.label}
                   </span>
-                  <span className="text-sm leading-snug font-semibold text-slate-800">
+                  <span className="text-sm font-semibold leading-snug text-slate-800">
                     {week.focus}
                   </span>
                 </span>
@@ -165,7 +165,7 @@ export function ShortTermPlanCard({ plan }: { plan: ShortTermPlan }) {
             <Target className="h-4 w-4 text-emerald-600" />
           </div>
           <div>
-            <p className="mb-0.5 text-xs font-bold tracking-wide text-emerald-700 uppercase">
+            <p className="mb-0.5 text-xs font-bold uppercase tracking-wide text-emerald-700">
               How you&apos;ll know it worked
             </p>
             <p className="text-sm leading-relaxed text-emerald-900/90">{plan.successCheck}</p>

@@ -52,7 +52,7 @@ export function PathwayStatsBanner() {
   return (
     <section className="relative py-10 sm:py-16">
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute top-0 left-1/2 h-64 w-full -translate-x-1/2 bg-gradient-to-b from-orange-50/40 to-transparent" />
+        <div className="absolute left-1/2 top-0 h-64 w-full -translate-x-1/2 bg-gradient-to-b from-orange-50/40 to-transparent" />
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -69,7 +69,7 @@ export function PathwayStatsBanner() {
               variants={cardReveal}
               whileHover={{ y: -4, scale: 1.02 }}
               transition={SPRING_STIFF}
-              className="group premium-shadow flex flex-col items-center rounded-2xl border border-white/70 bg-white/80 p-5 text-center backdrop-blur-sm will-change-transform sm:p-6"
+              className="premium-shadow group flex flex-col items-center rounded-2xl border border-white/70 bg-white/80 p-5 text-center backdrop-blur-sm will-change-transform sm:p-6"
             >
               <div
                 className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 ${stat.color}`}
@@ -91,8 +91,8 @@ export function PathwayStatsBanner() {
 export function PathwayHelpSection() {
   return (
     <section className="relative overflow-hidden py-12 sm:py-16 md:py-20 lg:py-28">
-      <AmbientBlob className="top-16 -right-24 h-80 w-80 bg-orange-100/40" />
-      <AmbientBlob className="bottom-20 -left-32 h-72 w-72 bg-emerald-100/30" />
+      <AmbientBlob className="-right-24 top-16 h-80 w-80 bg-orange-100/40" />
+      <AmbientBlob className="-left-32 bottom-20 h-72 w-72 bg-emerald-100/30" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
@@ -148,15 +148,15 @@ export function PathwayHelpSection() {
               variants={cardReveal}
               whileHover={{ y: -6, scale: 1.015 }}
               transition={SPRING_STIFF}
-              className="group premium-shadow relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-6 backdrop-blur-sm will-change-transform hover:border-white/90 sm:p-8"
+              className="premium-shadow group relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-6 backdrop-blur-sm will-change-transform hover:border-white/90 sm:p-8"
             >
               {/* decorative circle */}
               <div
                 aria-hidden
-                className="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-slate-50 opacity-60 transition-transform duration-500 group-hover:scale-150"
+                className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-slate-50 opacity-60 transition-transform duration-500 group-hover:scale-150"
               />
               <div
-                className={`relative mb-5 flex h-14 w-14 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 ${item.color}`}
+                className={`relative mb-5 flex h-14 w-14 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:rotate-3 group-hover:scale-110 ${item.color}`}
               >
                 {item.icon}
               </div>

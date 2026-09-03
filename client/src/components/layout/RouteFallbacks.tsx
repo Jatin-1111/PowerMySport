@@ -25,7 +25,7 @@ export function RouteLoading({ label = "Loading…" }: { label?: string }) {
       aria-live="polite"
     >
       <div className="flex flex-col items-center gap-3">
-        <div className="border-power-orange h-8 w-8 animate-spin rounded-full border-3 border-t-transparent" />
+        <div className="border-power-orange border-3 h-8 w-8 animate-spin rounded-full border-t-transparent" />
         <p className="text-sm text-slate-500">{label}</p>
       </div>
     </div>
@@ -45,7 +45,7 @@ export function RouteError({
 }) {
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4">
-      <div className="max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xs">
+      <div className="shadow-xs max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center">
         <AlertTriangle className="mx-auto h-8 w-8 text-amber-600" />
         <h1 className="mt-3 text-lg font-bold text-slate-900">{title}</h1>
         <p className="mt-2 text-sm text-slate-600">{description}</p>

@@ -305,13 +305,13 @@ function PaymentPageContent() {
 
               <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left">
                 <div>
-                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Coach
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-900">{coachName}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Package
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-900">
@@ -438,7 +438,7 @@ function PaymentPageContent() {
                       : venue?.name || label;
                   return (
                     <div>
-                      <p className="text-xs font-semibold text-slate-500 uppercase">{label}</p>
+                      <p className="text-xs font-semibold uppercase text-slate-500">{label}</p>
                       <p className="mt-1 text-sm font-semibold text-slate-900">{value}</p>
                     </div>
                   );
@@ -446,7 +446,7 @@ function PaymentPageContent() {
                 <div className="border-t border-slate-200"></div>
                 {booking.date && (
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase">Date</p>
+                    <p className="text-xs font-semibold uppercase text-slate-500">Date</p>
                     <p className="mt-1 text-sm text-slate-900">
                       {new Date(booking.date).toLocaleDateString("en-IN", {
                         weekday: "long",
@@ -459,7 +459,7 @@ function PaymentPageContent() {
                 )}
                 {booking.startTime && booking.endTime && (
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase">Time</p>
+                    <p className="text-xs font-semibold uppercase text-slate-500">Time</p>
                     <p className="mt-1 text-sm text-slate-900">
                       {booking.startTime} - {booking.endTime}
                     </p>
@@ -467,14 +467,14 @@ function PaymentPageContent() {
                 )}
                 {booking.sport && (
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase">Sport</p>
+                    <p className="text-xs font-semibold uppercase text-slate-500">Sport</p>
                     <p className="mt-1 text-sm text-slate-900">{booking.sport}</p>
                   </div>
                 )}
                 {/* Group Booking Participants */}
                 {booking.bookingType === "GROUP" && booking.participants && (
                   <div className="border-t border-slate-200">
-                    <p className="mb-2 text-xs font-semibold text-slate-500 uppercase">
+                    <p className="mb-2 text-xs font-semibold uppercase text-slate-500">
                       Participants (
                       {booking.participants.filter((p) => p.status === "ACCEPTED").length + 1})
                     </p>
@@ -503,7 +503,7 @@ function PaymentPageContent() {
                   booking.paymentType === "SPLIT" &&
                   booking.payments && (
                     <div className="border-t border-slate-200">
-                      <p className="mb-2 text-xs font-semibold text-slate-500 uppercase">
+                      <p className="mb-2 text-xs font-semibold uppercase text-slate-500">
                         Payment Split
                       </p>
                       <div className="space-y-1.5">
@@ -536,7 +536,7 @@ function PaymentPageContent() {
                   )}
                 {booking.totalAmount && (
                   <div className="border-t border-slate-200">
-                    <p className="text-xs font-semibold text-slate-500 uppercase">
+                    <p className="text-xs font-semibold uppercase text-slate-500">
                       {booking.bookingType === "GROUP" && booking.paymentType === "SPLIT"
                         ? "Total Booking Amount"
                         : "Amount Paid"}

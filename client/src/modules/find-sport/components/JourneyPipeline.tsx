@@ -74,10 +74,10 @@ export function JourneyPipeline({
             <CalendarCheck className="h-[18px] w-[18px]" />
           </div>
           <div className="min-w-0">
-            <p className="text-power-orange text-[10px] font-semibold tracking-wider uppercase">
+            <p className="text-power-orange text-[10px] font-semibold uppercase tracking-wider">
               Step 2 · Next up
             </p>
-            <p className="font-title text-xl leading-tight font-bold text-white">
+            <p className="font-title text-xl font-bold leading-tight text-white">
               Book a trial class{topSport ? ` in ${topSport}` : ""}
             </p>
             <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-slate-400">

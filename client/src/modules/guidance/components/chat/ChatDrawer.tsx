@@ -26,18 +26,18 @@ function MarkdownContent({ content }: { content: string }) {
       components={{
         // Headings
         h1: ({ children }) => (
-          <h1 className="mt-3 mb-1.5 text-sm font-bold text-slate-900 first:mt-0">{children}</h1>
+          <h1 className="mb-1.5 mt-3 text-sm font-bold text-slate-900 first:mt-0">{children}</h1>
         ),
         h2: ({ children }) => (
-          <h2 className="mt-3 mb-1 text-sm font-bold text-slate-900 first:mt-0">{children}</h2>
+          <h2 className="mb-1 mt-3 text-sm font-bold text-slate-900 first:mt-0">{children}</h2>
         ),
         h3: ({ children }) => (
-          <h3 className="mt-2.5 mb-1 text-[13px] font-semibold text-slate-800 first:mt-0">
+          <h3 className="mb-1 mt-2.5 text-[13px] font-semibold text-slate-800 first:mt-0">
             {children}
           </h3>
         ),
         h4: ({ children }) => (
-          <h4 className="mt-2 mb-0.5 text-[13px] font-semibold text-slate-700 first:mt-0">
+          <h4 className="mb-0.5 mt-2 text-[13px] font-semibold text-slate-700 first:mt-0">
             {children}
           </h4>
         ),
@@ -49,7 +49,7 @@ function MarkdownContent({ content }: { content: string }) {
         strong: ({ children }) => (
           <strong className="font-semibold text-slate-900">{children}</strong>
         ),
-        em: ({ children }) => <em className="text-slate-700 italic">{children}</em>,
+        em: ({ children }) => <em className="italic text-slate-700">{children}</em>,
         // Unordered list
         ul: ({ children }) => <ul className="my-1.5 space-y-1 pl-4">{children}</ul>,
         // Ordered list
@@ -79,7 +79,7 @@ function MarkdownContent({ content }: { content: string }) {
         },
         // Block quote
         blockquote: ({ children }) => (
-          <blockquote className="my-2 border-l-2 border-orange-300 pl-3 text-sm text-slate-600 italic">
+          <blockquote className="my-2 border-l-2 border-orange-300 pl-3 text-sm italic text-slate-600">
             {children}
           </blockquote>
         ),
@@ -138,7 +138,7 @@ function MessageBubble({
       className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}
     >
       {!isUser && (
-        <div className="mt-0.5 mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-100 ring-1 ring-orange-200">
+        <div className="mr-2 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-100 ring-1 ring-orange-200">
           <Zap className="text-power-orange h-3.5 w-3.5" aria-hidden="true" />
         </div>
       )}
@@ -151,7 +151,7 @@ function MessageBubble({
       >
         {isUser ? (
           /* User messages: plain text */
-          <p className="text-sm leading-relaxed whitespace-pre-wrap text-white">{content}</p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-white">{content}</p>
         ) : content ? (
           /* Assistant messages: rendered markdown */
           <div className="prose-chat">
@@ -390,7 +390,7 @@ export function ChatDrawer({
                 ? { duration: 0.01 }
                 : { type: "spring", damping: 28, stiffness: 280 }
             }
-            className="fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col border-l border-slate-200/80 bg-white shadow-[−8px_0_30px_-10px_rgba(15,23,42,0.15)] sm:max-w-[560px]"
+            className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-slate-200/80 bg-white shadow-[−8px_0_30px_-10px_rgba(15,23,42,0.15)] sm:max-w-[560px]"
           >
             {/* Screen-reader-only status announcements (streaming state, not per-chunk) */}
             <div role="status" aria-live="polite" className="sr-only">
@@ -416,7 +416,7 @@ export function ChatDrawer({
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p id={titleId} className="truncate text-sm leading-tight font-bold text-slate-900">
+                <p id={titleId} className="truncate text-sm font-bold leading-tight text-slate-900">
                   {showHistory ? "Chat History" : title}
                 </p>
                 <p className="truncate text-[11px] text-slate-400">
@@ -424,7 +424,7 @@ export function ChatDrawer({
                 </p>
               </div>
               {!showHistory && (
-                <span className="shrink-0 text-[11px] text-slate-400 tabular-nums">
+                <span className="shrink-0 text-[11px] tabular-nums text-slate-400">
                   {meta.dailyRemaining}/30 today
                 </span>
               )}
@@ -499,7 +499,7 @@ export function ChatDrawer({
                           }`}
                         >
                           <p
-                            className={`truncate text-sm leading-snug font-medium ${isActive ? "text-power-orange" : "text-slate-800"}`}
+                            className={`truncate text-sm font-medium leading-snug ${isActive ? "text-power-orange" : "text-slate-800"}`}
                           >
                             {s.title ?? "New conversation"}
                           </p>
@@ -581,7 +581,7 @@ export function ChatDrawer({
               messages.filter((m) => m.role === "user").length === 0 &&
               !rateLimitHit && (
                 <div className="border-t border-slate-100 px-4 py-3">
-                  <p className="mb-2 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                     Quick questions
                   </p>
                   <div className="flex flex-wrap gap-1.5">
@@ -625,7 +625,7 @@ export function ChatDrawer({
                     disabled={isStreaming}
                     aria-label="Chat message input"
                     aria-describedby={hintId}
-                    className="flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-orange-300 focus:bg-white focus:ring-2 focus:ring-orange-200/60 focus:outline-none disabled:opacity-50"
+                    className="flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-orange-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-200/60 disabled:opacity-50"
                     style={{ minHeight: "42px", maxHeight: "120px" }}
                     onInput={(e) => {
                       const el = e.currentTarget;

@@ -272,7 +272,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
             <p className="relative z-10 mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
               Manage your account, security, and preferences.
             </p>
-            <div className="bg-power-orange/5 pointer-events-none absolute -top-16 -right-20 h-48 w-48 rounded-full blur-3xl" />
+            <div className="bg-power-orange/5 pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full blur-3xl" />
             <div className="bg-turf-green/5 pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-3xl" />
           </div>
         </StaggerItem>
@@ -299,7 +299,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
         {/* Security */}
         <StaggerItem>
           <div>
-            <h2 className="mb-3 text-sm font-semibold tracking-wide text-slate-500 uppercase">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
               Security
             </h2>
             <Card className="border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
@@ -338,13 +338,13 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
                           type={showCurrent ? "text" : "password"}
                           value={currentPassword}
                           onChange={(e) => setCurrentPassword(e.target.value)}
-                          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 pr-10 text-sm text-slate-900 transition-all outline-none focus:ring-2"
+                          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 pr-10 text-sm text-slate-900 outline-none transition-all focus:ring-2"
                           placeholder="••••••••"
                         />
                         <button
                           type="button"
                           onClick={() => setShowCurrent((v) => !v)}
-                          className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                           aria-label="Toggle password visibility"
                         >
                           {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -362,13 +362,13 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
                             type={showNew ? "text" : "password"}
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
-                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 pr-10 text-sm text-slate-900 transition-all outline-none focus:ring-2"
+                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 pr-10 text-sm text-slate-900 outline-none transition-all focus:ring-2"
                             placeholder="At least 6 characters"
                           />
                           <button
                             type="button"
                             onClick={() => setShowNew((v) => !v)}
-                            className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                             aria-label="Toggle password visibility"
                           >
                             {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -383,7 +383,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
                           type={showNew ? "text" : "password"}
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 transition-all outline-none focus:ring-2"
+                          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition-all focus:ring-2"
                           placeholder="Re-enter new password"
                         />
                       </div>
@@ -412,7 +412,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
         {/* Linked Accounts */}
         <StaggerItem>
           <div>
-            <h2 className="mb-3 text-sm font-semibold tracking-wide text-slate-500 uppercase">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
               Linked Accounts
             </h2>
             <Card className="border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
@@ -472,7 +472,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
         {/* Notifications */}
         <StaggerItem>
           <div>
-            <h2 className="mb-3 text-sm font-semibold tracking-wide text-slate-500 uppercase">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
               General
             </h2>
             <Link href={`${basePath}/notifications`}>
@@ -505,7 +505,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
         {/* Role-specific links */}
         <StaggerItem>
           <div>
-            <h2 className="mb-3 text-sm font-semibold tracking-wide text-slate-500 uppercase">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
               {user.role.replace(/_/g, " ")} Settings
             </h2>
             <div className="grid gap-3">
@@ -535,10 +535,10 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
         {/* Danger zone */}
         <StaggerItem>
           <div>
-            <h2 className="mb-3 text-sm font-semibold tracking-wide text-rose-600 uppercase">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-rose-600">
               Danger Zone
             </h2>
-            <Card className="border-0 bg-rose-50/40 p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)] ring-1 ring-rose-100 ring-inset">
+            <Card className="border-0 bg-rose-50/40 p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)] ring-1 ring-inset ring-rose-100">
               <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100">
@@ -603,7 +603,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
             type="text"
             value={deleteConfirmText}
             onChange={(e) => setDeleteConfirmText(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 uppercase transition-all outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
+            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm uppercase text-slate-900 outline-none transition-all focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
             placeholder={DELETE_CONFIRM_WORD}
             autoFocus
           />

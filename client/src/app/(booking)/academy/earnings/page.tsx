@@ -90,7 +90,7 @@ function StatCard({ title, amount, subtitle, icon, accent, trend }: StatCardProp
       </div>
       <div>
         <p
-          className={`mb-1 text-xs font-medium tracking-wider uppercase ${
+          className={`mb-1 text-xs font-medium uppercase tracking-wider ${
             accent ? "text-white/80" : "text-slate-400"
           }`}
         >
@@ -268,7 +268,7 @@ function SportEarningsList({ sports }: { sports: SportEarning[] }) {
         return (
           <div key={s.sport} className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-slate-700 capitalize">{s.sport}</span>
+              <span className="font-medium capitalize text-slate-700">{s.sport}</span>
               <div className="flex items-center gap-3 text-right">
                 <span className="text-xs text-slate-400">
                   {s.sessions} session{s.sessions !== 1 ? "s" : ""}
@@ -309,7 +309,7 @@ function RecentTransactions({ bookings }: { bookings: Booking[] }) {
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-slate-800">{getPlayerName(b)}</p>
               <div className="mt-0.5 flex items-center gap-1.5">
-                <span className="text-xs text-slate-400 capitalize">{b.sport}</span>
+                <span className="text-xs capitalize text-slate-400">{b.sport}</span>
                 <span className="text-slate-200">·</span>
                 <span className="text-xs text-slate-400">{fmtDate(b.date)}</span>
               </div>
@@ -516,7 +516,7 @@ export default function AcademyEarningsPage() {
           >
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold tracking-widest text-orange-400 uppercase">
+                <span className="text-xs font-semibold uppercase tracking-widest text-orange-400">
                   Academy Management
                 </span>
               </div>

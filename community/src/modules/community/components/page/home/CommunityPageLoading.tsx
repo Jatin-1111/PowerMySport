@@ -12,7 +12,7 @@ export default function CommunityPageLoading({ page }: Props) {
       initial={prefersReducedMotion ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.25 }}
-      className="min-h-screen bg-[#efeae2] bg-[radial-gradient(rgba(255,255,255,0.34)_1px,transparent_1px),radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] bg-size-[22px_22px] bg-position-[0_0,11px_11px]"
+      className="bg-size-[22px_22px] bg-position-[0_0,11px_11px] min-h-screen bg-[#efeae2] bg-[radial-gradient(rgba(255,255,255,0.34)_1px,transparent_1px),radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)]"
     >
       <div className="flex h-screen w-full">
         {/* Skeleton Sidebar (Inbox) */}

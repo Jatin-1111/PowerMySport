@@ -915,7 +915,7 @@ export default function CoachProfilePage() {
                 size="xl"
               />
               <div>
-                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Coach Dashboard
                 </p>
                 <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl md:text-4xl">
@@ -923,7 +923,7 @@ export default function CoachProfilePage() {
                 </h2>
                 <div className="mt-2 space-y-1">
                   {user?.email && (
-                    <p className="text-sm font-medium break-all text-slate-600">{user.email}</p>
+                    <p className="break-all text-sm font-medium text-slate-600">{user.email}</p>
                   )}
                   {user?.phone && <p className="text-sm text-slate-600">{user.phone}</p>}
                 </div>
@@ -946,11 +946,11 @@ export default function CoachProfilePage() {
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Sports</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Sports</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{sportsCount}</p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Starting Price
               </p>
               <p className="text-power-orange mt-1 text-xl font-bold sm:text-2xl">
@@ -958,7 +958,7 @@ export default function CoachProfilePage() {
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Service Mode
               </p>
               <p className="mt-1 text-2xl font-bold text-slate-900">
@@ -970,7 +970,7 @@ export default function CoachProfilePage() {
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Time Slots
               </p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{totalSlots}</p>
@@ -1036,7 +1036,7 @@ export default function CoachProfilePage() {
                   </div>
                 </div>
               ) : (
-                <p className="text-sm leading-relaxed whitespace-pre-wrap text-slate-700">
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
                   {coachProfile.bio || "No bio added yet"}
                 </p>
               )}
@@ -1060,7 +1060,7 @@ export default function CoachProfilePage() {
               {isEditingTax ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                       GST Number (optional)
                     </label>
                     <input
@@ -1123,7 +1123,7 @@ export default function CoachProfilePage() {
               {isEditingCoaching ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Sports You Can Coach
                     </label>
                     <SportsMultiSelect
@@ -1204,7 +1204,7 @@ export default function CoachProfilePage() {
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                         {coachingForm.pricingMode === "SAME" ? "Hourly Price" : "Base Hourly Rate"}
                       </label>
                       <input
@@ -1236,7 +1236,7 @@ export default function CoachProfilePage() {
                     </div>
 
                     <div>
-                      <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Service Mode
                       </label>
                       <select
@@ -1263,7 +1263,7 @@ export default function CoachProfilePage() {
                         <div className="grid gap-3 sm:grid-cols-2">
                           {coachingForm.selectedSports.map((sport) => (
                             <div key={sport}>
-                              <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase">
+                              <label className="mb-1 block text-xs font-semibold uppercase text-slate-600">
                                 {sport}
                               </label>
                               <input
@@ -1292,7 +1292,7 @@ export default function CoachProfilePage() {
                   {coachingForm.serviceMode !== "OWN_VENUE" && (
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                           Service Radius (km)
                         </label>
                         <input
@@ -1311,7 +1311,7 @@ export default function CoachProfilePage() {
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                           Travel Buffer (minutes)
                         </label>
                         <input
@@ -1356,7 +1356,7 @@ export default function CoachProfilePage() {
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">
+                    <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">
                       Sports You Coach
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -1378,7 +1378,7 @@ export default function CoachProfilePage() {
                   {coachProfile.sportPricing &&
                     Object.keys(coachProfile.sportPricing).length > 0 && (
                       <div>
-                        <p className="mb-2 text-xs tracking-wide text-slate-500 uppercase">
+                        <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">
                           Pricing per Sport
                         </p>
                         <div className="grid gap-2 sm:grid-cols-2">
@@ -1400,7 +1400,7 @@ export default function CoachProfilePage() {
                   {coachProfile.hourlyRate &&
                     Object.keys(coachProfile.sportPricing ?? {}).length === 0 && (
                       <div>
-                        <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">
+                        <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">
                           Hourly Rate
                         </p>
                         <p className="text-power-orange text-2xl font-bold">
@@ -1410,7 +1410,7 @@ export default function CoachProfilePage() {
                     )}
 
                   <div>
-                    <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">
+                    <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">
                       Service Mode
                     </p>
                     <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700">
@@ -1426,7 +1426,7 @@ export default function CoachProfilePage() {
                     coachProfile.serviceMode === "HYBRID") &&
                     coachProfile.ownVenueDetails && (
                       <div className="mt-4 border-t border-slate-200 pt-4">
-                        <p className="mb-3 text-xs tracking-wide text-slate-500 uppercase">
+                        <p className="mb-3 text-xs uppercase tracking-wide text-slate-500">
                           Your Venue
                         </p>
                         <div className="space-y-3">
@@ -1442,7 +1442,7 @@ export default function CoachProfilePage() {
                           </div>
                           {coachProfile.ownVenueDetails.description && (
                             <div>
-                              <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">
+                              <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">
                                 Description
                               </p>
                               <p className="text-sm text-slate-700">
@@ -1452,7 +1452,7 @@ export default function CoachProfilePage() {
                           )}
                           {coachProfile.ownVenueDetails.openingHours && (
                             <div>
-                              <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">
+                              <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">
                                 Opening Hours
                               </p>
                               <p className="text-sm text-slate-700">
@@ -1463,7 +1463,7 @@ export default function CoachProfilePage() {
 
                           <div>
                             <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                              <p className="text-xs tracking-wide text-slate-500 uppercase">
+                              <p className="text-xs uppercase tracking-wide text-slate-500">
                                 Venue Images
                               </p>
                               {!isEditingVenueImages ? (
@@ -1541,7 +1541,7 @@ export default function CoachProfilePage() {
                                         className="h-32 w-full object-cover"
                                       />
                                       <div className="pointer-events-none absolute inset-0 bg-slate-900/0 transition-colors group-hover:bg-slate-900/25" />
-                                      <span className="pointer-events-none absolute right-2 bottom-2 rounded-md bg-white/90 px-2 py-1 text-xs font-semibold text-slate-800 opacity-0 transition-opacity group-hover:opacity-100">
+                                      <span className="pointer-events-none absolute bottom-2 right-2 rounded-md bg-white/90 px-2 py-1 text-xs font-semibold text-slate-800 opacity-0 transition-opacity group-hover:opacity-100">
                                         View
                                       </span>
                                     </button>
@@ -1549,7 +1549,7 @@ export default function CoachProfilePage() {
                                       <button
                                         type="button"
                                         onClick={() => handleRemoveVenueImage(index)}
-                                        className="absolute top-2 left-2 rounded-md bg-white/90 p-1 text-red-600 shadow hover:bg-white"
+                                        className="absolute left-2 top-2 rounded-md bg-white/90 p-1 text-red-600 shadow hover:bg-white"
                                         aria-label={`Remove venue image ${index + 1}`}
                                       >
                                         <Trash2 className="h-4 w-4" />
@@ -1573,7 +1573,7 @@ export default function CoachProfilePage() {
                   {coachProfile.serviceMode !== "OWN_VENUE" && (
                     <>
                       <div>
-                        <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">
+                        <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">
                           Service Radius
                         </p>
                         <p className="text-sm font-medium text-slate-900">
@@ -1582,7 +1582,7 @@ export default function CoachProfilePage() {
                       </div>
 
                       <div>
-                        <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">
+                        <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">
                           Travel Buffer Time
                         </p>
                         <p className="text-sm font-medium text-slate-900">
@@ -1643,7 +1643,7 @@ export default function CoachProfilePage() {
                       className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end"
                     >
                       <div>
-                        <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                           Day
                         </label>
                         <select
@@ -1662,7 +1662,7 @@ export default function CoachProfilePage() {
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                           Start Time
                         </label>
                         <input
@@ -1676,7 +1676,7 @@ export default function CoachProfilePage() {
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                           End Time
                         </label>
                         <input
@@ -1757,7 +1757,7 @@ export default function CoachProfilePage() {
                     setCheckInCode(nextValue);
                   }}
                   placeholder="Enter 8-character code"
-                  className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm tracking-[0.35em] text-slate-900 uppercase focus:outline-none"
+                  className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm uppercase tracking-[0.35em] text-slate-900 focus:outline-none"
                   autoComplete="one-time-code"
                 />
                 <Button
@@ -1807,7 +1807,7 @@ export default function CoachProfilePage() {
               <h3 className="mb-3 text-lg font-semibold text-slate-900">Verification Status</h3>
               <div className="space-y-3 text-sm">
                 <div>
-                  <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">Status</p>
+                  <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">Status</p>
                   <span
                     className={`inline-flex items-center gap-2 rounded px-2 py-1 text-xs font-semibold ${badge.className}`}
                   >
@@ -1846,7 +1846,7 @@ export default function CoachProfilePage() {
               {isEditingProfile ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="mb-1 block text-xs tracking-wide text-slate-500 uppercase">
+                    <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">
                       Name
                     </label>
                     <input
@@ -1863,7 +1863,7 @@ export default function CoachProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs tracking-wide text-slate-500 uppercase">
+                    <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">
                       Email
                     </label>
                     <input
@@ -1880,7 +1880,7 @@ export default function CoachProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs tracking-wide text-slate-500 uppercase">
+                    <label className="mb-1 block text-xs uppercase tracking-wide text-slate-500">
                       Phone
                     </label>
                     <input
@@ -1918,19 +1918,19 @@ export default function CoachProfilePage() {
               ) : (
                 <div className="grid gap-3 text-sm sm:grid-cols-2">
                   <div>
-                    <p className="text-xs tracking-wide text-slate-500 uppercase">Name</p>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Name</p>
                     <p className="font-medium text-slate-900">{user?.name || "Not provided"}</p>
                   </div>
                   <div>
-                    <p className="text-xs tracking-wide text-slate-500 uppercase">Email</p>
-                    <p className="font-medium break-all text-slate-900">{user?.email}</p>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Email</p>
+                    <p className="break-all font-medium text-slate-900">{user?.email}</p>
                   </div>
                   <div>
-                    <p className="text-xs tracking-wide text-slate-500 uppercase">Phone</p>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Phone</p>
                     <p className="font-medium text-slate-900">{user?.phone || "Not provided"}</p>
                   </div>
                   <div>
-                    <p className="text-xs tracking-wide text-slate-500 uppercase">Role</p>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Role</p>
                     <p className="font-medium text-slate-900">Coach</p>
                   </div>
                 </div>
@@ -1980,7 +1980,7 @@ export default function CoachProfilePage() {
             <button
               type="button"
               onClick={() => setSelectedVenueImage(null)}
-              className="absolute top-2 right-2 z-10 rounded-full bg-white/95 p-2 text-slate-800 shadow-sm transition-colors hover:bg-white"
+              className="absolute right-2 top-2 z-10 rounded-full bg-white/95 p-2 text-slate-800 shadow-sm transition-colors hover:bg-white"
               aria-label="Close image preview"
             >
               <X size={18} />

@@ -126,7 +126,7 @@ export function GroupMembersList({
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <span
-                  className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase ${
+                  className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
                     member.isIdentityPublic
                       ? "border border-emerald-100 bg-emerald-50 text-emerald-600"
                       : "border border-slate-200 bg-slate-50 text-slate-500"

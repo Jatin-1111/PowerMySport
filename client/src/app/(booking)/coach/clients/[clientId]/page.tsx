@@ -188,7 +188,7 @@ function NoteCard({
                 </span>
               )}
             </div>
-            <p className="text-sm leading-relaxed whitespace-pre-wrap text-slate-700">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
               {note.note}
             </p>
           </div>
@@ -470,7 +470,7 @@ export default function ClientProfilePage() {
           <div className="p-6">
             <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
               {/* Avatar */}
-              <div className="bg-power-orange flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white shadow-md select-none">
+              <div className="bg-power-orange flex h-16 w-16 shrink-0 select-none items-center justify-center rounded-full text-xl font-bold text-white shadow-md">
                 {client.photoUrl ? (
                   <img
                     src={client.photoUrl}
@@ -485,7 +485,7 @@ export default function ClientProfilePage() {
               {/* Name / email / sports */}
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex flex-wrap items-center gap-3">
-                  <h1 className="text-2xl leading-tight font-bold text-slate-900">{client.name}</h1>
+                  <h1 className="text-2xl font-bold leading-tight text-slate-900">{client.name}</h1>
                   <span
                     className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
                       client.isActive
@@ -591,7 +591,7 @@ export default function ClientProfilePage() {
                             value={noteText}
                             onChange={(e) => setNoteText(e.target.value)}
                             placeholder="Write your note here..."
-                            className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100 focus:outline-none"
+                            className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
                           />
                         </div>
 
@@ -604,7 +604,7 @@ export default function ClientProfilePage() {
                             <select
                               value={noteType}
                               onChange={(e) => setNoteType(e.target.value as NoteType)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100 focus:outline-none"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
                             >
                               <option value="GENERAL">General</option>
                               <option value="SESSION">Session</option>
@@ -623,7 +623,7 @@ export default function ClientProfilePage() {
                               type="date"
                               value={sessionDate}
                               onChange={(e) => setSessionDate(e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100 focus:outline-none"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
                             />
                           </div>
                         </div>

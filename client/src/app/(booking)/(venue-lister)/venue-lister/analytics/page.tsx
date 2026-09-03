@@ -177,7 +177,7 @@ export default function VenueListerAnalyticsPage() {
         <SlideUp delay={0.15}>
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-sm font-semibold tracking-wider text-slate-700 uppercase">
+              <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-700">
                 <BarChart2 size={16} className="text-power-orange" />
                 Sessions Trend
               </h2>
@@ -197,7 +197,7 @@ export default function VenueListerAnalyticsPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <SlideUp delay={0.2}>
             <div className="h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="mb-5 flex items-center gap-2 text-sm font-semibold tracking-wider text-slate-700 uppercase">
+              <h2 className="mb-5 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-700">
                 <Activity size={16} className="text-power-orange" />
                 Sport Breakdown
               </h2>
@@ -207,7 +207,7 @@ export default function VenueListerAnalyticsPage() {
 
           <SlideUp delay={0.25}>
             <div className="h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="mb-5 flex items-center gap-2 text-sm font-semibold tracking-wider text-slate-700 uppercase">
+              <h2 className="mb-5 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-700">
                 <Clock size={16} className="text-power-orange" />
                 Busy Hours
               </h2>
@@ -225,7 +225,7 @@ export default function VenueListerAnalyticsPage() {
         {/* ── Customer Retention ───────────────────────────────────────────── */}
         <SlideUp delay={0.3}>
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-5 flex items-center gap-2 text-sm font-semibold tracking-wider text-slate-700 uppercase">
+            <h2 className="mb-5 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-700">
               <Users size={16} className="text-power-orange" />
               Customer Retention
             </h2>
@@ -243,7 +243,7 @@ export default function VenueListerAnalyticsPage() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <SlideUp delay={0.35}>
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="mb-5 flex items-center gap-2 text-sm font-semibold tracking-wider text-slate-700 uppercase">
+              <h2 className="mb-5 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-700">
                 <CheckCircle size={16} className="text-power-orange" />
                 Completion Rate
               </h2>
@@ -251,11 +251,11 @@ export default function VenueListerAnalyticsPage() {
                 <DonutChart rate={overview.completionRate} />
                 <div className="space-y-3">
                   <div>
-                    <p className="text-xs tracking-wide text-slate-500 uppercase">Completed</p>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Completed</p>
                     <p className="text-xl font-bold text-slate-900">{overview.completedSessions}</p>
                   </div>
                   <div>
-                    <p className="text-xs tracking-wide text-slate-500 uppercase">Total</p>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Total</p>
                     <p className="text-xl font-bold text-slate-900">{overview.totalSessions}</p>
                   </div>
                 </div>
@@ -265,25 +265,25 @@ export default function VenueListerAnalyticsPage() {
 
           <SlideUp delay={0.4}>
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="mb-5 flex items-center gap-2 text-sm font-semibold tracking-wider text-slate-700 uppercase">
+              <h2 className="mb-5 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-700">
                 <TrendingUp size={16} className="text-power-orange" />
                 All-time Stats
               </h2>
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">Sessions</p>
+                  <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">Sessions</p>
                   <p className="text-2xl font-bold text-slate-900">{overview.totalSessions}</p>
                 </div>
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">Customers</p>
+                  <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">Customers</p>
                   <p className="text-2xl font-bold text-slate-900">{overview.totalCustomers}</p>
                 </div>
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">Reviews</p>
+                  <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">Reviews</p>
                   <p className="text-2xl font-bold text-slate-900">{overview.reviewCount}</p>
                 </div>
                 <div className="rounded-xl border border-orange-100 bg-orange-50 p-4">
-                  <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">Avg Rating</p>
+                  <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">Avg Rating</p>
                   <p className="text-power-orange text-2xl font-bold">
                     {overview.avgRating > 0 ? overview.avgRating.toFixed(1) : "—"}
                   </p>

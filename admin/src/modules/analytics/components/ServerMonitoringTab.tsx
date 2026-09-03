@@ -51,7 +51,7 @@ function colorAccent(color?: string): {
 function MetricCard({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
       {detail ? <p className="mt-1 text-sm text-slate-500">{detail}</p> : null}
     </div>
@@ -485,7 +485,7 @@ export function ServerMonitoringTab() {
                 overview.events.map((event, i) => (
                   <div key={i} className="rounded-lg border border-slate-200 bg-white px-4 py-2">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-xs font-semibold text-slate-400 uppercase">
+                      <span className="text-xs font-semibold uppercase text-slate-400">
                         {event.severity || "INFO"}
                       </span>
                       <span className="text-xs text-slate-400">

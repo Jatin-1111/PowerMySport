@@ -84,7 +84,7 @@ export function ContributorModal({
                   <div className="relative shrink-0 border-b border-slate-100 bg-[linear-gradient(125deg,#fafdff_0%,#eaf4ff_60%,#fff1dc_100%)] px-7 py-8">
                     <button
                       onClick={onClose}
-                      className="absolute top-4 right-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm ring-1 ring-slate-200 transition hover:bg-white hover:text-slate-600"
+                      className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm ring-1 ring-slate-200 transition hover:bg-white hover:text-slate-600"
                     >
                       <X size={16} />
                     </button>
@@ -121,7 +121,7 @@ export function ContributorModal({
                     ].map((stat) => (
                       <div key={stat.label} className="text-center">
                         <p className="text-base font-bold text-slate-900">{stat.value}</p>
-                        <p className="mt-0.5 text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
+                        <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                           {stat.label}
                         </p>
                       </div>
@@ -129,7 +129,7 @@ export function ContributorModal({
                   </div>
 
                   <div className="max-h-[40vh] overflow-y-auto rounded-b-[2rem] px-6 py-5">
-                    <p className="mb-3 text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
                       Questions Asked
                     </p>
                     {isLoadingThreads ? (

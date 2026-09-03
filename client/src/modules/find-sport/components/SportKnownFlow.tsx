@@ -490,8 +490,8 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
       {/* Ambient background */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
-        <div className="bg-power-orange/8 absolute -top-10 -left-32 h-[28rem] w-[28rem] rounded-full blur-3xl" />
-        <div className="absolute top-40 right-[-6rem] h-80 w-80 rounded-full bg-amber-200/20 blur-3xl" />
+        <div className="bg-power-orange/8 absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full blur-3xl" />
+        <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/20 blur-3xl" />
       </div>
 
       {/* Transition card */}
@@ -531,7 +531,7 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
 
       {/* Question card */}
       {current.kind === "question" && (
-        <div className="px-4 pt-6 pb-10 sm:px-6">
+        <div className="px-4 pb-10 pt-6 sm:px-6">
           <div className="mx-auto w-full max-w-2xl">
             {/* Nav row */}
             <div className="mb-5 flex items-center justify-between">

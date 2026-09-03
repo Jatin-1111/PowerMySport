@@ -203,7 +203,7 @@ export default function DashboardPage() {
               )}
             </div>
             <p className="mt-3 text-2xl font-bold text-slate-900">{pendingFriendRequests}</p>
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Friend Requests
             </p>
             <p className="mt-1 text-xs text-slate-400">
@@ -233,7 +233,7 @@ export default function DashboardPage() {
               )}
             </div>
             <p className="mt-3 text-2xl font-bold text-slate-900">{pendingInvitations}</p>
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Booking Invitations
             </p>
             <p className="mt-1 text-xs text-slate-400">
@@ -263,7 +263,7 @@ export default function DashboardPage() {
               )}
             </div>
             <p className="mt-3 text-2xl font-bold text-slate-900">{upcomingBookings.length}</p>
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Upcoming Bookings
             </p>
             <p className="mt-1 text-xs text-slate-400">

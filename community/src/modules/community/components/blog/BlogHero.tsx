@@ -10,17 +10,17 @@ interface BlogHeroProps {
 
 export default function BlogHero({ totalBlogs }: BlogHeroProps) {
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-white/80 bg-[linear-gradient(125deg,#fafdff_0%,#eaf4ff_38%,#fff1dc_100%)] px-5 py-10 shadow-sm sm:rounded-4xl sm:px-10 sm:py-16">
-      <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-sky-300/25 blur-3xl" />
+    <section className="sm:rounded-4xl relative overflow-hidden rounded-3xl border border-white/80 bg-[linear-gradient(125deg,#fafdff_0%,#eaf4ff_38%,#fff1dc_100%)] px-5 py-10 shadow-sm sm:px-10 sm:py-16">
+      <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-sky-300/25 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 left-0 h-72 w-72 rounded-full bg-amber-200/30 blur-3xl" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.1)_1px,transparent_1px)] bg-size-[42px_42px] opacity-40" />
+      <div className="bg-size-[42px_42px] pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.1)_1px,transparent_1px)] opacity-40" />
 
       <div className="relative mx-auto max-w-3xl text-center">
         <motion.p
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-xs font-semibold tracking-[0.2em] text-slate-600 uppercase"
+          className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600"
         >
           <Sparkles size={13} className="text-power-orange" />
           PowerMySport Stories
@@ -29,7 +29,7 @@ export default function BlogHero({ totalBlogs }: BlogHeroProps) {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.05 }}
-          className="font-title mt-4 text-3xl leading-[1.08] font-semibold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl"
+          className="font-title mt-4 text-3xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-4xl lg:text-5xl"
         >
           Where Athletes Share What They Know
         </motion.h1>

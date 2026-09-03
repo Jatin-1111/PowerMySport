@@ -125,7 +125,7 @@ export default function AdminPathwaysPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-200 text-xs tracking-wide text-slate-400 uppercase">
+              <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-400">
                 <tr>
                   <th className="py-2">Sport</th>
                   <th className="py-2">Stages</th>

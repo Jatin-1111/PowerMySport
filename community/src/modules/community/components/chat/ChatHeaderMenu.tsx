@@ -100,7 +100,7 @@ export default function ChatHeaderMenu({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: -4 }}
       transition={{ duration: 0.12 }}
-      className="absolute top-full right-0 z-50 mt-1 w-56 overflow-hidden rounded-xl border border-slate-200/60 bg-white/95 shadow-[0_4px_24px_rgba(0,0,0,0.1)] backdrop-blur-xl"
+      className="absolute right-0 top-full z-50 mt-1 w-56 overflow-hidden rounded-xl border border-slate-200/60 bg-white/95 shadow-[0_4px_24px_rgba(0,0,0,0.1)] backdrop-blur-xl"
     >
       {/* Group 1 — Info / Search */}
       <MenuItem

@@ -99,7 +99,7 @@ function RequestRow({
           </div>
           {/* Request */}
           <div>
-            <p className="truncate font-semibold text-slate-900 capitalize">
+            <p className="truncate font-semibold capitalize text-slate-900">
               {req.sportSlug} · {req.itemType || "Tournament"}
             </p>
             <p className="truncate text-xs text-slate-600">
@@ -125,17 +125,17 @@ function RequestRow({
           {/* Request details */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-4">
-              <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Request Details
               </p>
               <div className="space-y-1.5 text-sm">
                 <div className="flex gap-2">
                   <span className="shrink-0 text-slate-500">Sport:</span>
-                  <span className="font-semibold text-slate-900 capitalize">{req.sportSlug}</span>
+                  <span className="font-semibold capitalize text-slate-900">{req.sportSlug}</span>
                 </div>
                 <div className="flex gap-2">
                   <span className="shrink-0 text-slate-500">Type:</span>
-                  <span className="font-semibold text-slate-900 capitalize">
+                  <span className="font-semibold capitalize text-slate-900">
                     {req.itemType || "Tournament"}
                   </span>
                 </div>
@@ -155,11 +155,11 @@ function RequestRow({
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <p className="mb-3 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+              <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Documents Submitted
               </p>
               {req.documents.length === 0 ? (
-                <p className="text-sm text-slate-400 italic">No documents attached</p>
+                <p className="text-sm italic text-slate-400">No documents attached</p>
               ) : (
                 <div className="space-y-2">
                   {req.documents.map((doc, idx) => (
@@ -179,7 +179,7 @@ function RequestRow({
 
           {/* Action panel — status + notes */}
           <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
-            <p className="flex items-center gap-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+            <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
               <MessageSquare size={12} /> Admin Response to Parent
             </p>
 
@@ -237,7 +237,7 @@ function RequestRow({
                         ? "e.g. We have received your documents and are processing your BCCI registration. Estimated time: 3-5 business days."
                         : "Add any notes or updates for the parent..."
                 }
-                className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
+                className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
               />
               <p className="mt-1 text-right text-[10px] text-slate-400">{notes.length}/2000</p>
             </div>
@@ -245,7 +245,7 @@ function RequestRow({
             {/* Suggested next-step templates */}
             {pendingStatus === "completed" && (
               <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
-                <p className="mb-2 flex items-center gap-1 text-[10px] font-bold tracking-wider text-emerald-600 uppercase">
+                <p className="mb-2 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600">
                   <Trophy size={12} /> Suggested Next Steps for Parent
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -277,7 +277,7 @@ function RequestRow({
             {/* Existing admin notes from DB */}
             {req.adminNotes && req.adminNotes !== notes && (
               <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
-                <p className="mb-1 flex items-center gap-1 text-[10px] font-bold tracking-wider text-amber-600 uppercase">
+                <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-600">
                   <AlertCircle size={12} /> Current Saved Note
                 </p>
                 <p className="text-xs leading-relaxed text-amber-800">{req.adminNotes}</p>
@@ -392,11 +392,11 @@ export default function ConciergeRequestsAdminPage() {
           </p>
         </div>
         <div className="relative">
-          <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" size={16} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
           <input
             type="text"
             placeholder="Search by user, sport, or tournament..."
-            className="w-full rounded-lg border border-slate-300 py-2 pr-4 pl-9 text-sm focus:border-indigo-500 focus:outline-none sm:w-72"
+            className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-4 text-sm focus:border-indigo-500 focus:outline-none sm:w-72"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

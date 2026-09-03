@@ -273,10 +273,10 @@ function BalanceView() {
       <h2 className="text-2xl font-black text-slate-900">PowerMySport Wallet</h2>
 
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 p-8 shadow-xl">
-        <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-[#ff5722] opacity-20 blur-3xl" />
+        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#ff5722] opacity-20 blur-3xl" />
         <div className="relative z-10 flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
           <div>
-            <p className="text-sm font-bold tracking-wider text-slate-400 uppercase">
+            <p className="text-sm font-bold uppercase tracking-wider text-slate-400">
               Available Balance
             </p>
             <p className="mt-2 text-5xl font-black text-white">{formatInr(balance)}</p>
@@ -437,23 +437,23 @@ function ContactView() {
 
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
           <div>
-            <p className="text-xs font-bold tracking-wider text-slate-400 uppercase">Full Name</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Full Name</p>
             <p className="mt-1 font-semibold text-slate-900">{user.name}</p>
           </div>
           <div>
-            <p className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Email Address
             </p>
             <p className="mt-1 font-semibold text-slate-900">{user.email}</p>
           </div>
           <div>
-            <p className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Phone Number
             </p>
             <p className="mt-1 font-semibold text-slate-900">{user.phone || "Not provided"}</p>
           </div>
           <div>
-            <p className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Preferred Sport
             </p>
             <p className="mt-1 font-semibold text-slate-900">
@@ -692,7 +692,7 @@ function SellerDashboardView() {
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200 text-left text-sm text-slate-500">
-                  <thead className="bg-slate-50 text-xs font-bold tracking-wider text-slate-600 uppercase">
+                  <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-600">
                     <tr>
                       <th className="px-6 py-4">Item</th>
                       <th className="px-6 py-4">Category</th>
@@ -741,7 +741,7 @@ function SellerDashboardView() {
                               {p.condition}
                             </span>
                           </td>
-                          <td className="px-6 py-4 font-bold whitespace-nowrap text-slate-900">
+                          <td className="whitespace-nowrap px-6 py-4 font-bold text-slate-900">
                             {isEditing ? (
                               <input
                                 type="number"
@@ -801,13 +801,13 @@ function SellerDashboardView() {
                                     <div className="flex items-center gap-1.5">
                                       <button
                                         onClick={() => handleDeleteProduct(p.id)}
-                                        className="rounded-lg border border-red-200 px-2 py-1 text-[10px] font-black tracking-wider text-red-600 uppercase hover:bg-red-50"
+                                        className="rounded-lg border border-red-200 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-red-600 hover:bg-red-50"
                                       >
                                         Confirm
                                       </button>
                                       <button
                                         onClick={() => setDeleteConfirmId(null)}
-                                        className="rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-black tracking-wider text-slate-500 uppercase hover:bg-slate-100"
+                                        className="rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-slate-500 hover:bg-slate-100"
                                       >
                                         Cancel
                                       </button>
@@ -844,7 +844,7 @@ function SellerDashboardView() {
           <h3 className="text-lg font-black text-slate-900">Gear Listing Form</h3>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 Product Name
               </label>
               <input
@@ -853,12 +853,12 @@ function SellerDashboardView() {
                 placeholder="e.g. Kookaburra English Willow Bat"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 Description
               </label>
               <textarea
@@ -867,18 +867,18 @@ function SellerDashboardView() {
                 placeholder="Describe details like use time, scratches, dimensions, size..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 Category
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               >
                 <option value="EQUIPMENT">Equipment</option>
                 <option value="APPAREL">Apparel</option>
@@ -888,13 +888,13 @@ function SellerDashboardView() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 Brand
               </label>
               <select
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               >
                 <option value="GENERIC">Generic</option>
                 <option value="NIKE">Nike</option>
@@ -916,13 +916,13 @@ function SellerDashboardView() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 Condition
               </label>
               <select
                 value={condition}
                 onChange={(e) => setCondition(e.target.value as "NEW" | "USED")}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               >
                 <option value="USED">Pre-owned / Used</option>
                 <option value="NEW">Brand New / Unused</option>
@@ -930,7 +930,7 @@ function SellerDashboardView() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 Price (INR)
               </label>
               <input
@@ -940,12 +940,12 @@ function SellerDashboardView() {
                 placeholder="₹ Amount"
                 value={basePrice}
                 onChange={(e) => setBasePrice(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 Stock quantity
               </label>
               <input
@@ -955,12 +955,12 @@ function SellerDashboardView() {
                 placeholder="1"
                 value={stock}
                 onChange={(e) => setStock(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 Gear Image URL
               </label>
               <input
@@ -968,7 +968,7 @@ function SellerDashboardView() {
                 placeholder="https://example.com/gear.jpg"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               />
             </div>
           </div>
@@ -1030,7 +1030,7 @@ function SellerDashboardView() {
                 {/* Buyer Details */}
                 <div className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm md:grid-cols-2">
                   <div>
-                    <p className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                       Buyer Details
                     </p>
                     <p className="mt-1 font-bold text-slate-800">{o.shippingAddress.fullName}</p>
@@ -1039,7 +1039,7 @@ function SellerDashboardView() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                       Shipping Address
                     </p>
                     <p className="mt-1 leading-relaxed text-slate-600">
@@ -1053,7 +1053,7 @@ function SellerDashboardView() {
 
                 {/* Seller's Items */}
                 <div className="space-y-4">
-                  <p className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                     Items Ordered
                   </p>
                   {o.items.map((item) => {
@@ -1079,7 +1079,7 @@ function SellerDashboardView() {
                         </div>
                         <div className="flex w-full flex-wrap items-center gap-3 md:w-auto">
                           <div>
-                            <label className="mb-1 block text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                               Status
                             </label>
                             <select
@@ -1103,7 +1103,7 @@ function SellerDashboardView() {
                             </select>
                           </div>
                           <div className="flex-1 md:flex-none">
-                            <label className="mb-1 block text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                               Tracking #
                             </label>
                             <input

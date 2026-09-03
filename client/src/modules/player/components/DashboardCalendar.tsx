@@ -371,7 +371,7 @@ function AddEventForm({
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Event title…"
         maxLength={120}
-        className="focus:border-power-orange focus:ring-power-orange/40 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-1 focus:outline-none"
+        className="focus:border-power-orange focus:ring-power-orange/40 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1"
       />
 
       {/* Event type chips */}
@@ -412,7 +412,7 @@ function AddEventForm({
         placeholder="Notes (optional)"
         maxLength={500}
         rows={2}
-        className="focus:border-power-orange focus:ring-power-orange/40 w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-1 focus:outline-none"
+        className="focus:border-power-orange focus:ring-power-orange/40 w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1"
       />
 
       <div className="flex items-center justify-end gap-2">
@@ -630,7 +630,7 @@ export function DashboardCalendar() {
               {DAY_LABELS.map((d) => (
                 <div
                   key={d}
-                  className="flex items-center justify-center py-1 text-[10px] font-semibold tracking-wide text-slate-400 uppercase"
+                  className="flex items-center justify-center py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400"
                 >
                   {d}
                 </div>
@@ -739,7 +739,7 @@ export function DashboardCalendar() {
                   {/* Bookings for this day */}
                   {selectedBookings.length > 0 && (
                     <div className="space-y-2">
-                      <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
                         <Clock className="h-3 w-3" />
                         Sessions
                       </p>
@@ -752,7 +752,7 @@ export function DashboardCalendar() {
                   {/* Events for this day */}
                   {selectedEvents.length > 0 && (
                     <div className="space-y-2">
-                      <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
                         <Star className="h-3 w-3" />
                         Events
                       </p>
@@ -844,7 +844,7 @@ export function DashboardCalendar() {
                               <div key={key}>
                                 <p
                                   className={cn(
-                                    "px-1 py-1.5 text-[10px] font-bold tracking-wider uppercase",
+                                    "px-1 py-1.5 text-[10px] font-bold uppercase tracking-wider",
                                     key === todayKey ? "text-power-orange" : "text-slate-400"
                                   )}
                                 >

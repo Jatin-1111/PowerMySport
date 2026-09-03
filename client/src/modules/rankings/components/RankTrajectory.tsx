@@ -133,19 +133,19 @@ export function RankTrajectory({ points, label }: { points: TrajectoryPoint[]; l
             which is what lets the plot stretch to the full width of the card. */}
         <div className="relative w-12 shrink-0 sm:w-14" style={{ height: "13rem" }}>
           <span
-            className="text-muted-foreground absolute right-1.5 text-[10px] leading-none font-medium"
+            className="text-muted-foreground absolute right-1.5 text-[10px] font-medium leading-none"
             style={{ top: `${INSET.top}%`, transform: "translateY(-1.35rem)" }}
           >
             better ↑
           </span>
           <span
-            className="text-muted-foreground absolute right-1.5 text-[11px] leading-none tabular-nums"
+            className="text-muted-foreground absolute right-1.5 text-[11px] tabular-nums leading-none"
             style={{ top: `${INSET.top}%`, transform: "translateY(-50%)" }}
           >
             #{best.toLocaleString("en-IN")}
           </span>
           <span
-            className="text-muted-foreground absolute right-1.5 text-[11px] leading-none tabular-nums"
+            className="text-muted-foreground absolute right-1.5 text-[11px] tabular-nums leading-none"
             style={{ top: `${100 - INSET.bottom}%`, transform: "translateY(-50%)" }}
           >
             #{worst.toLocaleString("en-IN")}
@@ -157,7 +157,7 @@ export function RankTrajectory({ points, label }: { points: TrajectoryPoint[]; l
           role="group"
           tabIndex={0}
           aria-label={`${summary} Use the left and right arrow keys to read each week.`}
-          className="focus-visible:ring-power-orange relative flex-1 rounded-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+          className="focus-visible:ring-power-orange relative flex-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
           style={{ height: "13rem" }}
           onPointerMove={(event) => locate(event.clientX)}
           onPointerDown={(event) => locate(event.clientX)}
@@ -252,7 +252,7 @@ export function RankTrajectory({ points, label }: { points: TrajectoryPoint[]; l
             <>
               <span
                 aria-hidden
-                className="border-rank-accent/50 absolute top-0 bottom-0 border-l border-dashed"
+                className="border-rank-accent/50 absolute bottom-0 top-0 border-l border-dashed"
                 style={{ left: `${shown.x}%` }}
               />
               <Readout
@@ -333,7 +333,7 @@ function Readout({
   return (
     <div
       aria-hidden
-      className="border-border bg-card pointer-events-none absolute z-10 rounded-lg border px-2.5 py-2 whitespace-nowrap shadow-md"
+      className="border-border bg-card pointer-events-none absolute z-10 whitespace-nowrap rounded-lg border px-2.5 py-2 shadow-md"
       style={{
         left: `${x}%`,
         top: `${y}%`,

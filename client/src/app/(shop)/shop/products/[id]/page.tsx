@@ -127,10 +127,10 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_0.9fr]">
         <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="absolute top-4 right-4 z-20">
+          <div className="absolute right-4 top-4 z-20">
             <WishlistButton productId={product.id} className="h-12 w-12 border border-slate-200" />
           </div>
-          <div className="aspect-square bg-linear-to-br from-blue-50 via-white to-orange-50">
+          <div className="bg-linear-to-br aspect-square from-blue-50 via-white to-orange-50">
             {image ? (
               <img src={image} alt={product.name} className="h-full w-full object-cover" />
             ) : (

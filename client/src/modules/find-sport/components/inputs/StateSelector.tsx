@@ -20,13 +20,13 @@ export function StateSelector({
   return (
     <div className="space-y-3">
       <div className="relative">
-        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
           placeholder="Search your state..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-9 text-sm text-slate-800 placeholder:text-slate-400 focus:ring-1 focus:outline-none"
+          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white py-3 pl-9 pr-4 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1"
         />
       </div>
 

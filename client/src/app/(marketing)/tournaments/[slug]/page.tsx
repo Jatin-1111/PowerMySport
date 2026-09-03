@@ -229,7 +229,7 @@ export default async function TournamentEditionPage({
       <div className="bg-deep-slate">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           {federation && (
-            <div className="border-b border-white/[0.07] pt-5 pb-4">
+            <div className="border-b border-white/[0.07] pb-4 pt-5">
               <Link
                 href={`/federations/${federation.slug}?tab=calendar`}
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/50 transition hover:text-white"
@@ -240,7 +240,7 @@ export default async function TournamentEditionPage({
             </div>
           )}
 
-          <div className="mt-6 mb-5 flex flex-wrap items-center gap-2">
+          <div className="mb-5 mt-6 flex flex-wrap items-center gap-2">
             {edition.level && lc && (
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold ${lc.pill}`}
@@ -259,7 +259,7 @@ export default async function TournamentEditionPage({
             ))}
           </div>
 
-          <h1 className="font-title text-3xl leading-[1.1] font-bold tracking-tight text-white sm:text-4xl lg:text-[3rem]">
+          <h1 className="font-title text-3xl font-bold leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-[3rem]">
             {edition.officialName || edition.name}
           </h1>
           {/* The short calendar name is what the federation's own calendar prints,
@@ -284,7 +284,7 @@ export default async function TournamentEditionPage({
             )}
           </div>
 
-          <div className="pt-5 pb-8">
+          <div className="pb-8 pt-5">
             <AddToCalendarButton edition={edition} variant="hero" />
           </div>
         </div>
@@ -359,7 +359,7 @@ export default async function TournamentEditionPage({
               <div key={fact.label} className="flex items-start gap-3">
                 <span className="mt-0.5 shrink-0 text-slate-400">{fact.icon}</span>
                 <div className="min-w-0">
-                  <dt className="text-[11px] font-bold tracking-wide text-slate-400 uppercase">
+                  <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
                     {fact.label}
                   </dt>
                   <dd className="text-sm font-semibold text-slate-700">{fact.value}</dd>
@@ -377,7 +377,7 @@ export default async function TournamentEditionPage({
                 repeating under every row of the same type. */}
             {groupDocumentsByKind(otherDocuments).map((group) => (
               <div key={group.kind} className="mt-5 first:mt-4">
-                <p className="text-[11px] font-bold tracking-wide text-slate-400 uppercase">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
                   {group.items.length > 1
                     ? `${DOCUMENT_META[group.kind].label}s`
                     : DOCUMENT_META[group.kind].label}

@@ -340,13 +340,13 @@ export default function AdminDisputesPage() {
       {/* Filters */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="relative min-w-[220px] flex-1">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Search by player, booking ID, venue…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pr-4 pl-9 text-sm text-slate-700 transition outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-4 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
           />
         </div>
         <div className="flex gap-2">
@@ -508,14 +508,14 @@ export default function AdminDisputesPage() {
                 {isExpanded && (
                   <div className="space-y-3 border-t border-slate-100 bg-slate-50 px-5 py-4">
                     <div>
-                      <p className="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Player's Description
                       </p>
                       <p className="text-sm text-slate-700">{dispute.description}</p>
                     </div>
                     {dispute.evidence && (
                       <div>
-                        <p className="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                           Evidence
                         </p>
                         <p className="text-sm text-slate-700">{dispute.evidence}</p>
@@ -571,7 +571,7 @@ export default function AdminDisputesPage() {
 
             {/* Dispute summary */}
             <div className="mx-6 mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Dispute
               </p>
               <p className="text-sm text-slate-700">{selectedDispute.description}</p>
@@ -625,7 +625,7 @@ export default function AdminDisputesPage() {
                       onClick={() => setResolutionForm((f) => ({ ...f, resolution: value }))}
                       className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 text-center transition-all ${
                         resolutionForm.resolution === value
-                          ? color + " shadow-sm ring-2 ring-current/30 ring-offset-1"
+                          ? color + " ring-current/30 shadow-sm ring-2 ring-offset-1"
                           : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                       }`}
                     >
@@ -647,7 +647,7 @@ export default function AdminDisputesPage() {
                   placeholder="Explain why this resolution was chosen…"
                   value={resolutionForm.reason}
                   onChange={(e) => setResolutionForm((f) => ({ ...f, reason: e.target.value }))}
-                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
 
@@ -666,7 +666,7 @@ export default function AdminDisputesPage() {
                       evidence: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
             </div>
@@ -757,7 +757,7 @@ export default function AdminDisputesPage() {
                       onClick={() => setBulkForm((f) => ({ ...f, resolution: value }))}
                       className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 text-center transition-all ${
                         bulkForm.resolution === value
-                          ? color + " shadow-sm ring-2 ring-current/30 ring-offset-1"
+                          ? color + " ring-current/30 shadow-sm ring-2 ring-offset-1"
                           : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                       }`}
                     >
@@ -777,7 +777,7 @@ export default function AdminDisputesPage() {
                   placeholder="Explain why this resolution was chosen…"
                   value={bulkForm.reason}
                   onChange={(e) => setBulkForm((f) => ({ ...f, reason: e.target.value }))}
-                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
 
@@ -790,7 +790,7 @@ export default function AdminDisputesPage() {
                   placeholder="Reference to attached evidence…"
                   value={bulkForm.evidence}
                   onChange={(e) => setBulkForm((f) => ({ ...f, evidence: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
             </div>

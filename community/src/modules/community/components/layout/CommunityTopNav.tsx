@@ -141,19 +141,19 @@ export default function CommunityTopNav() {
     }`;
 
   return (
-    <header className="sticky top-0 z-120 border-b border-white/70 bg-white/90 backdrop-blur-xl">
+    <header className="z-120 sticky top-0 border-b border-white/70 bg-white/90 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 py-2.5 sm:px-4 sm:py-3 lg:px-6">
         <div className="flex items-center justify-between gap-2 rounded-2xl border border-white/70 bg-white/75 px-2.5 py-2 shadow-sm shadow-slate-900/5 backdrop-blur sm:px-3 lg:gap-3">
           {/* Left section: Back button & Logo */}
           <div className="flex flex-shrink-0 items-center">
             {/* ── Logo ──────────────────────────────────────────────────────── */}
             <a href="/" className="inline-flex h-full flex-col items-start justify-center">
-              <span className="font-title text-xl leading-none font-extrabold tracking-tight xl:text-2xl">
+              <span className="font-title text-xl font-extrabold leading-none tracking-tight xl:text-2xl">
                 <span className="text-slate-900">Power</span>
                 <span className="text-power-orange">My</span>
                 <span className="text-slate-900">Sport</span>
               </span>
-              <span className="mt-1.5 text-[9px] leading-none font-medium tracking-wider text-slate-400 uppercase">
+              <span className="mt-1.5 text-[9px] font-medium uppercase leading-none tracking-wider text-slate-400">
                 Community
               </span>
             </a>
@@ -178,7 +178,7 @@ export default function CommunityTopNav() {
               <MessagesSquare size={16} />
               Chats
               {unreadChatsCount > 0 && (
-                <span className="bg-power-orange absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                <span className="bg-power-orange absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
                   {unreadChatsCount > 99 ? "99+" : unreadChatsCount}
                 </span>
               )}
@@ -208,7 +208,7 @@ export default function CommunityTopNav() {
             >
               <Bell size={18} />
               {unreadCount > 0 && (
-                <span className="bg-power-orange absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                <span className="bg-power-orange absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -239,10 +239,10 @@ export default function CommunityTopNav() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -6, scale: 0.97 }}
                     transition={{ duration: 0.15, ease: "easeOut" }}
-                    className="absolute top-[calc(100%+8px)] right-0 z-50 min-w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10"
+                    className="absolute right-0 top-[calc(100%+8px)] z-50 min-w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10"
                   >
-                    <div className="px-3 pt-3 pb-1">
-                      <p className="text-[10px] font-semibold tracking-[0.18em] text-slate-400 uppercase">
+                    <div className="px-3 pb-1 pt-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                         Settings
                       </p>
                     </div>
@@ -274,7 +274,7 @@ export default function CommunityTopNav() {
             >
               <Bell size={18} />
               {unreadCount > 0 && (
-                <span className="bg-power-orange absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold text-white ring-2 ring-white">
+                <span className="bg-power-orange absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold text-white ring-2 ring-white">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -310,13 +310,13 @@ export default function CommunityTopNav() {
                   animate={{ x: 0, opacity: 1 }}
                   exit={{ x: -24, opacity: 0 }}
                   transition={{ duration: 0.22, ease: "easeOut" }}
-                  className="absolute top-0 left-0 h-full w-[88vw] max-w-sm overflow-y-auto border-r border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.98))] p-4 shadow-2xl"
+                  className="absolute left-0 top-0 h-full w-[88vw] max-w-sm overflow-y-auto border-r border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.98))] p-4 shadow-2xl"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Header */}
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold tracking-[0.22em] text-slate-500 uppercase">
+                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                         Navigate
                       </p>
                       <h2 className="mt-1 text-lg font-semibold text-slate-900">Community menu</h2>
@@ -348,7 +348,7 @@ export default function CommunityTopNav() {
                   </div>
 
                   {/* Primary nav items */}
-                  <p className="mt-5 mb-2 px-1 text-[10px] font-semibold tracking-[0.18em] text-slate-400 uppercase">
+                  <p className="mb-2 mt-5 px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                     Main
                   </p>
                   <div className="grid grid-cols-2 gap-2">
@@ -379,7 +379,7 @@ export default function CommunityTopNav() {
                         <Icon size={15} />
                         {label}
                         {!!badge && badge > 0 && (
-                          <span className="bg-power-orange absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                          <span className="bg-power-orange absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white ring-2 ring-white">
                             {badge > 99 ? "99+" : badge}
                           </span>
                         )}
@@ -433,7 +433,7 @@ export default function CommunityTopNav() {
 
                   {/* Tip */}
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                       Quick note
                     </p>
                     <p className="mt-2 text-sm leading-6 text-slate-600">

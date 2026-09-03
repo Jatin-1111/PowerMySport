@@ -21,8 +21,10 @@
   },
   "lint-staged": {
     "**/*.{ts,tsx,js,jsx,mjs}": [
-      "prettier --write",
-      "eslint --fix --no-warn-ignored"
+      "prettier --write"
+    ],
+    "server/**/*.{ts,js,mjs}": [
+      "eslint --fix --no-warn-ignored --config server/eslint.config.mjs"
     ],
     "**/*.{json,css,md,yml,yaml}": [
       "prettier --write"

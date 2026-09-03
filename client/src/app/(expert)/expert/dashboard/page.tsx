@@ -96,8 +96,8 @@ export default function ExpertDashboardPage() {
       )}
 
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
-        <div className="bg-power-orange/20 pointer-events-none absolute -top-12 -right-16 h-40 w-40 rounded-full blur-3xl" />
-        <span className="relative inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-white/80 uppercase">
+        <div className="bg-power-orange/20 pointer-events-none absolute -right-16 -top-12 h-40 w-40 rounded-full blur-3xl" />
+        <span className="relative inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
           Expert
         </span>
         <h1 className="relative mt-3 text-2xl font-bold sm:text-3xl">Your dashboard</h1>
@@ -172,7 +172,7 @@ function StatCard({
   return (
     <div className="rounded-xl border-0 bg-white p-4 shadow-[0_2px_16px_rgb(0,0,0,0.06)] transition-shadow hover:shadow-[0_8px_24px_rgb(0,0,0,0.1)]">
       <div className={`flex h-9 w-9 items-center justify-center rounded-full ${tint}`}>{icon}</div>
-      <p className="mt-3 text-xs font-semibold tracking-wide text-slate-500 uppercase">{label}</p>
+      <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
     </div>
   );

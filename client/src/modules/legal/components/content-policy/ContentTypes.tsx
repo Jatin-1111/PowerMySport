@@ -1,7 +1,7 @@
 export function ContentTypes() {
   return (
     <section id="content-types" className="mb-8">
-      <h2 className="mt-8 mb-4 text-2xl font-semibold">2. Types of User-Generated Content</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">2. Types of User-Generated Content</h2>
       <p>Users can submit the following types of content on PowerMySport:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>

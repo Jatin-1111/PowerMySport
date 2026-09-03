@@ -135,7 +135,7 @@ export default function BlogProfileView({
                     <p className="text-lg font-bold text-slate-900">
                       {formatCount(profile.blogCount)}
                     </p>
-                    <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                       {profile.blogCount === 1 ? "Blog" : "Blogs"}
                     </p>
                   </div>
@@ -144,7 +144,7 @@ export default function BlogProfileView({
                       <Heart size={15} className="fill-rose-500 text-rose-500" />
                       {formatCount(profile.totalLikes)}
                     </p>
-                    <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                       Likes
                     </p>
                   </div>

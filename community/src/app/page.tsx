@@ -76,7 +76,7 @@ function SectionHeading({
   return (
     <div className="max-w-3xl">
       {eyebrow ? (
-        <p className="text-power-orange mb-2 text-[11px] font-bold tracking-[0.26em] uppercase">
+        <p className="text-power-orange mb-2 text-[11px] font-bold uppercase tracking-[0.26em]">
           {eyebrow}
         </p>
       ) : null}
@@ -90,12 +90,12 @@ function ValuePropCard({ title, description, href, cta, icon: Icon }: ValueProp)
   return (
     <Link
       href={href}
-      className="group hover:border-power-orange/40 focus-visible:ring-power-orange flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-900/10 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+      className="hover:border-power-orange/40 focus-visible:ring-power-orange group flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-900/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
     >
       <div className="text-power-orange flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(233,115,22,0.14),rgba(245,158,11,0.16))]">
         <Icon className="h-5 w-5" />
       </div>
-      <h3 className="mt-4 text-lg font-semibold text-balance text-slate-900">{title}</h3>
+      <h3 className="mt-4 text-balance text-lg font-semibold text-slate-900">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
       {/* mt-auto pins the CTA to the card's bottom edge so a longer or shorter
           description can't shift it out of line with the sibling cards. */}
@@ -166,14 +166,14 @@ export default function CommunityLandingPage() {
                 of the photo. The stops keep headroom over each figure so a
                 different viewport crop or a re-encode cannot quietly drop a
                 row below its target. */}
-            <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-slate-950/80 via-slate-950/64 to-slate-950/48" />
+            <div className="via-slate-950/64 to-slate-950/48 pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-slate-950/80" />
 
             {/* Single column. The hero used to carry a three-step panel on
                 the right, which competed with the headline and repeated the
                 cards immediately below it. */}
             <div className="relative px-5 py-9 sm:px-7 sm:py-12 lg:px-9 lg:py-16">
               <div className="mx-auto max-w-3xl text-center">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-bold tracking-[0.2em] text-orange-200 uppercase backdrop-blur">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-orange-200 backdrop-blur">
                   <Users className="h-3.5 w-3.5" />
                   Parent-first youth sports community
                 </span>
@@ -256,7 +256,7 @@ export default function CommunityLandingPage() {
             <div className="space-y-6">
               <DynamicFeaturedQA />
               <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5">
-                <p className="text-xs font-semibold tracking-[0.22em] text-slate-500 uppercase">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                   Community safety layer
                 </p>
                 <div className="mt-4 grid gap-3 text-sm text-slate-600">

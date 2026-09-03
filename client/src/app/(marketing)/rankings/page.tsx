@@ -86,7 +86,7 @@ export default async function RankingsIndexPage() {
             <li key={sport.slug}>
               <Link
                 href={rankingSportHref(sport.slug)}
-                className="group bg-card hover:border-power-orange focus-visible:ring-power-orange flex h-full flex-col justify-between rounded-lg border p-4 shadow-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                className="bg-card hover:border-power-orange focus-visible:ring-power-orange group flex h-full flex-col justify-between rounded-lg border p-4 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className="font-medium">{sport.name}</span>

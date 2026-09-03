@@ -1,9 +1,9 @@
 export function AcceptableContent() {
   return (
     <section id="acceptable-content" className="mb-8">
-      <h2 className="mt-8 mb-4 text-2xl font-semibold">3. Acceptable Content Guidelines</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">3. Acceptable Content Guidelines</h2>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">3.1 Quality & Truthfulness</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">3.1 Quality & Truthfulness</h3>
       <p>Acceptable content:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Is factual and based on genuine personal experience</li>
@@ -14,7 +14,7 @@ export function AcceptableContent() {
         <li>Is not submitted by competitors or motivated by malice</li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">3.2 Professional & Courteous Tone</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">3.2 Professional & Courteous Tone</h3>
       <p>Acceptable content:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Criticizes services, not individuals</li>
@@ -24,7 +24,7 @@ export function AcceptableContent() {
         <li>Constructive even when expressing dissatisfaction</li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">3.3 Legal Compliance</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">3.3 Legal Compliance</h3>
       <p>Acceptable content:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Does not violate intellectual property rights</li>

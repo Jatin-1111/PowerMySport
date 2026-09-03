@@ -42,7 +42,7 @@ export function StateDistribution({
   const totalRanked = stateCounts.reduce((sum, s) => sum + s.count, 0);
 
   return (
-    <details className="group bg-card rounded-xl border">
+    <details className="bg-card group rounded-xl border">
       <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
         <span className="flex items-center justify-between gap-3">
           <span className="text-base font-semibold tracking-tight">

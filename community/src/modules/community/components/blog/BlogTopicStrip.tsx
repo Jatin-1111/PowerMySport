@@ -13,7 +13,7 @@ export default function BlogTopicStrip({ activeTopic, onSelect }: BlogTopicStrip
   const isAll = !activeTopic || activeTopic.toLowerCase() === "all";
 
   return (
-    <div className="flex [scrollbar-width:none] gap-2 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden">
+    <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <button
         onClick={() => onSelect("")}
         className={`inline-flex shrink-0 items-center gap-1.5 rounded-2xl border px-3.5 py-2 text-sm font-semibold transition ${

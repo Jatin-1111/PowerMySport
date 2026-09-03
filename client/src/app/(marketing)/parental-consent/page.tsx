@@ -24,7 +24,7 @@ export default function ParentalConsent() {
           </p>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">1. Overview</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">1. Overview</h2>
             <p>
               PowerMySport is committed to protecting the safety and well-being of minors
               (individuals under 18 years old) who use our platform. This policy outlines the
@@ -34,9 +34,9 @@ export default function ParentalConsent() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">2. Parental/Guardian Account Setup</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">2. Parental/Guardian Account Setup</h2>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">2.1 Parent/Guardian Eligibility</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">2.1 Parent/Guardian Eligibility</h3>
             <p>To book activities for a minor, you must:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Be at least 18 years old</li>
@@ -46,7 +46,7 @@ export default function ParentalConsent() {
               <li>Accept all terms, privacy policies, and liability waivers</li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">2.2 Account Verification</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">2.2 Account Verification</h3>
             <p>PowerMySport may request:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Government-issued ID verification</li>
@@ -59,7 +59,7 @@ export default function ParentalConsent() {
               be verified.
             </p>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">2.3 Account Responsibility</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">2.3 Account Responsibility</h3>
             <p>As the account holder, you are responsible for:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>All activities and bookings made through your account</li>
@@ -71,9 +71,9 @@ export default function ParentalConsent() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">3. Adding a Minor to Your Account</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">3. Adding a Minor to Your Account</h2>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">3.1 Minor Profile Creation</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">3.1 Minor Profile Creation</h3>
             <p>You can add minors (children) to your account by providing:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Child's full legal name</li>
@@ -83,13 +83,13 @@ export default function ParentalConsent() {
               <li>Medical and emergency information (see Section 5)</li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">3.2 Number of Minors</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">3.2 Number of Minors</h3>
             <p>
               You can add an unlimited number of minors to your account. Each minor will have their
               own profile with separate health records and booking history.
             </p>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">3.3 Profile Verification</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">3.3 Profile Verification</h3>
             <p>PowerMySport may request verification documents for each minor, including:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Birth certificate</li>
@@ -100,11 +100,11 @@ export default function ParentalConsent() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">
               4. Parental Consent & Liability Waiver
             </h2>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">4.1 Mandatory Consent</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">4.1 Mandatory Consent</h3>
             <p>Before booking any activity for a minor, you must:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>
@@ -115,7 +115,7 @@ export default function ParentalConsent() {
               <li>Accept all risks associated with the activity</li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">4.2 Scope of Parental Liability</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">4.2 Scope of Parental Liability</h3>
             <p>By consenting on behalf of a minor, you:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>
@@ -130,7 +130,7 @@ export default function ParentalConsent() {
               <li>Waive the child's right to sue for injuries caused by ordinary negligence</li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">4.3 Ongoing Effect of Consent</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">4.3 Ongoing Effect of Consent</h3>
             <p>
               Your acceptance of the Health, Safety &amp; Liability Waiver on behalf of your
               dependent applies to each booking you make for that dependent while these Terms remain
@@ -141,9 +141,9 @@ export default function ParentalConsent() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">5. Health & Medical Information</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">5. Health & Medical Information</h2>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">
+            <h3 className="mb-3 mt-6 text-xl font-semibold">
               5.1 PowerMySport Does Not Collect Medical Records
             </h3>
             <p>
@@ -155,7 +155,7 @@ export default function ParentalConsent() {
               dependent&apos;s safe participation, before each session.
             </p>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">
+            <h3 className="mb-3 mt-6 text-xl font-semibold">
               5.2 Medical Professional Consultation
             </h3>
             <p>You acknowledge that:</p>
@@ -173,7 +173,7 @@ export default function ParentalConsent() {
               </li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">5.3 Disclosure Obligation</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">5.3 Disclosure Obligation</h3>
             <p>
               You must fully disclose relevant health information directly to coaches and facility
               staff before each session. Failure to disclose material health information may result
@@ -185,7 +185,7 @@ export default function ParentalConsent() {
               <li>Liability for injuries or damages caused by non-disclosure</li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">5.4 Emergency Contact</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">5.4 Emergency Contact</h3>
             <p>
               You must ensure the phone number and email on your account are current and reachable,
               as they are the only emergency contact details PowerMySport or a venue/coach can use
@@ -196,11 +196,11 @@ export default function ParentalConsent() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">
               6. Supervision & Safety Requirements
             </h2>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">6.1 Parental Supervision</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">6.1 Parental Supervision</h3>
             <p>Depending on the minor's age and activity type:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>
@@ -216,7 +216,7 @@ export default function ParentalConsent() {
               </li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">6.2 Designated Supervisor</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">6.2 Designated Supervisor</h3>
             <p>
               If you will not be present at the facility, you must designate an alternate
               responsible adult:
@@ -228,7 +228,7 @@ export default function ParentalConsent() {
               <li>Inform the facility and coach of the designated person</li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">6.3 Drop-off & Pick-up</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">6.3 Drop-off & Pick-up</h3>
             <p>You are responsible for:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Dropping off your child on time before the activity begins</li>
@@ -240,7 +240,7 @@ export default function ParentalConsent() {
               </li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">6.4 Communication During Activity</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">6.4 Communication During Activity</h3>
             <p>You must:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Provide a phone number where you can be reached during the activity</li>
@@ -251,15 +251,15 @@ export default function ParentalConsent() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">7. Age-Restricted Activities</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">7. Age-Restricted Activities</h2>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">7.1 Low-Risk Activities (All Ages)</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">7.1 Low-Risk Activities (All Ages)</h3>
             <p>
               Activities such as badminton, cricket (recreational), basketball, and basic fitness
               classes are typically available to minors with parental consent.
             </p>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">
+            <h3 className="mb-3 mt-6 text-xl font-semibold">
               7.2 Medium-Risk Activities (Age 10+)
             </h3>
             <p>
@@ -272,14 +272,14 @@ export default function ParentalConsent() {
               <li>Increase parental supervision and communication</li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">7.3 High-Risk Activities (Age 15+)</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">7.3 High-Risk Activities (Age 15+)</h3>
             <p>
               Activities such as extreme sports, contact sports, or activities with elevated injury
               risk may only be available to minors age 15+ with enhanced parental consent and
               medical clearance.
             </p>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">7.4 Age Verification</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">7.4 Age Verification</h3>
             <p>
               PowerMySport may request proof of age (birth certificate, school ID) before allowing a
               minor to book age-restricted activities.
@@ -287,9 +287,9 @@ export default function ParentalConsent() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">8. Behavioral Expectations</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">8. Behavioral Expectations</h2>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">8.1 Code of Conduct</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">8.1 Code of Conduct</h3>
             <p>You agree to ensure your child:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Respects coaches, facility staff, and other participants</li>
@@ -302,7 +302,7 @@ export default function ParentalConsent() {
               <li>Does not be under the influence of alcohol or drugs</li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">8.2 Violation Consequences</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">8.2 Violation Consequences</h3>
             <p>If your child violates the code of conduct, consequences may include:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Verbal warning from coach or facility staff</li>
@@ -313,7 +313,7 @@ export default function ParentalConsent() {
               <li>Potential police involvement in case of criminal behavior</li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">8.3 Parental Responsibility</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">8.3 Parental Responsibility</h3>
             <p>You are responsible for:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Teaching your child appropriate behavior</li>
@@ -324,9 +324,9 @@ export default function ParentalConsent() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">9. Data & Privacy for Minors</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">9. Data & Privacy for Minors</h2>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">9.1 Limited Data Collection</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">9.1 Limited Data Collection</h3>
             <p>
               PowerMySport collects only the following personal information for a dependent profile:
             </p>
@@ -341,7 +341,7 @@ export default function ParentalConsent() {
               dependent.
             </p>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">9.2 Data Protection</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">9.2 Data Protection</h3>
             <p>We protect minor data by:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Restricting access to authorized personnel only</li>
@@ -360,7 +360,7 @@ export default function ParentalConsent() {
               </li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">9.3 Right to Access & Deletion</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">9.3 Right to Access & Deletion</h3>
             <p>Parents have the right to:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Request details of what personal data we hold about their child</li>
@@ -377,9 +377,9 @@ export default function ParentalConsent() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">10. Photo & Video Recording</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">10. Photo & Video Recording</h2>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">10.1 Facility Recording</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">10.1 Facility Recording</h3>
             <p>
               Facilities may use CCTV cameras for security and safety purposes. You acknowledge
               that:
@@ -390,7 +390,7 @@ export default function ParentalConsent() {
               <li>You consent to CCTV recording by using the facility</li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">10.2 Parent Photos & Videos</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">10.2 Parent Photos & Videos</h3>
             <p>If you want to photograph or video your child:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Inform the coach and facility in advance</li>
@@ -399,7 +399,7 @@ export default function ParentalConsent() {
               <li>Do not photograph or share photos without permission from other parents</li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">10.3 Social Media & Sharing</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">10.3 Social Media & Sharing</h3>
             <p>You agree to:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Not post photos of other children on social media without parental consent</li>
@@ -410,9 +410,9 @@ export default function ParentalConsent() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">11. Termination & Account Removal</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">11. Termination & Account Removal</h2>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">11.1 When to Remove a Minor</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">11.1 When to Remove a Minor</h3>
             <p>You may remove a minor from your account at any time by:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Logging into your PowerMySport account</li>
@@ -421,7 +421,7 @@ export default function ParentalConsent() {
               <li>Confirming the removal</li>
             </ul>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">11.2 Turning 18</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">11.2 Turning 18</h3>
             <p>
               A dependent&apos;s profile is not automatically removed or converted when they turn
               18. Once your dependent reaches 18, either of you may request that their profile be
@@ -430,7 +430,7 @@ export default function ParentalConsent() {
               and you remain responsible for it as set out in this policy.
             </p>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">11.3 Account Suspension</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">11.3 Account Suspension</h3>
             <p>PowerMySport may suspend or remove a minor's profile if:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Parental consent verification fails</li>
@@ -442,7 +442,7 @@ export default function ParentalConsent() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">12. Questions & Support</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">12. Questions & Support</h2>
             <p>For questions about parental consent, minor protection, or account management:</p>
             <div className="mt-4 rounded-lg bg-gray-100 p-6">
               <p>

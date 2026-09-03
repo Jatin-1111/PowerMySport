@@ -287,7 +287,7 @@ function MiniDashboard({ dotColor = "bg-power-orange" }: { dotColor?: string }) 
     <div className="grid grid-cols-2 gap-2">
       {stats.map((s, i) => (
         <div key={i} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-          <p className="text-[9px] font-medium tracking-wide text-slate-400 uppercase">{s.label}</p>
+          <p className="text-[9px] font-medium uppercase tracking-wide text-slate-400">{s.label}</p>
           <p
             className={cn(
               "text-sm font-bold",
@@ -385,8 +385,8 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
   return (
     <section className="relative py-16 sm:py-20 lg:py-24">
       {/* Ambient blobs */}
-      <div className="pointer-events-none absolute top-0 left-1/4 h-72 w-72 -translate-x-1/2 rounded-full bg-blue-100/25 blur-3xl" />
-      <div className="pointer-events-none absolute right-1/4 bottom-0 h-64 w-64 translate-x-1/2 rounded-full bg-orange-100/20 blur-3xl" />
+      <div className="pointer-events-none absolute left-1/4 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-blue-100/25 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 right-1/4 h-64 w-64 translate-x-1/2 rounded-full bg-orange-100/20 blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section header ── */}
@@ -458,7 +458,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
         >
           {/* ── Left: Parent worry list ── */}
           <div className="flex flex-col gap-2">
-            <p className="mb-2 text-[11px] font-semibold tracking-[0.12em] text-slate-400 uppercase">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
               Parents ask us…
             </p>
 
@@ -514,7 +514,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                   <div className="min-w-0 flex-1">
                     <p
                       className={cn(
-                        "text-[11px] leading-snug font-medium transition-colors duration-200",
+                        "text-[11px] font-medium leading-snug transition-colors duration-200",
                         isActive ? p.numColor : "text-slate-400 group-hover:text-slate-500"
                       )}
                     >
@@ -522,7 +522,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                     </p>
                     <p
                       className={cn(
-                        "mt-0.5 text-sm leading-snug font-semibold transition-colors duration-200",
+                        "mt-0.5 text-sm font-semibold leading-snug transition-colors duration-200",
                         isActive ? "text-slate-900" : "text-slate-500 group-hover:text-slate-700"
                       )}
                     >
@@ -564,7 +564,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
 
               {/* Radial glow top-right */}
               <div
-                className="pointer-events-none absolute top-0 right-0 h-80 w-80 rounded-full"
+                className="pointer-events-none absolute right-0 top-0 h-80 w-80 rounded-full"
                 style={{
                   background: `radial-gradient(circle at 100% 0%, ${pal.glowColor}, transparent 65%)`,
                 }}
@@ -572,7 +572,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
 
               {/* Big decorative step number */}
               <div
-                className="pointer-events-none absolute top-0 right-3 text-[9rem] leading-none font-black select-none"
+                className="pointer-events-none absolute right-3 top-0 select-none text-[9rem] font-black leading-none"
                 style={{ color: pal.stepHex, opacity: 0.55 }}
               >
                 {STEPS[active]}
@@ -674,7 +674,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                       />
                     ))}
                   </div>
-                  <span className="text-xs font-medium text-slate-300 tabular-nums">
+                  <span className="text-xs font-medium tabular-nums text-slate-300">
                     {STEPS[active]}&nbsp;/&nbsp;{String(features.length).padStart(2, "0")}
                   </span>
                 </div>

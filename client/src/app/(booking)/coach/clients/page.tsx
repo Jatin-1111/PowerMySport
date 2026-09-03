@@ -100,7 +100,7 @@ function StatCard({ icon, label, value, sub, accent }: StatCardProps) {
       </div>
       <div>
         <p
-          className={`text-2xl leading-none font-bold ${accent ? "text-white" : "text-slate-900"}`}
+          className={`text-2xl font-bold leading-none ${accent ? "text-white" : "text-slate-900"}`}
         >
           {value}
         </p>
@@ -120,7 +120,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
     <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-200 hover:border-orange-200 hover:shadow-md">
       {/* header row */}
       <div className="flex items-start gap-4">
-        <div className="bg-power-orange flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-bold text-white select-none">
+        <div className="bg-power-orange flex h-12 w-12 shrink-0 select-none items-center justify-center rounded-full text-base font-bold text-white">
           {getInitials(client.name)}
         </div>
         <div className="min-w-0 flex-1">
@@ -158,7 +158,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
             <Activity className="h-3.5 w-3.5" />
             <span className="text-xs">Sessions</span>
           </div>
-          <p className="text-lg leading-none font-bold text-slate-900">{client.totalSessions}</p>
+          <p className="text-lg font-bold leading-none text-slate-900">{client.totalSessions}</p>
           <p className="text-xs text-slate-400">{client.completedSessions} completed</p>
         </div>
         <div className="flex flex-col gap-1 rounded-xl bg-slate-50 p-3">
@@ -166,7 +166,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
             <Calendar className="h-3.5 w-3.5" />
             <span className="text-xs">Last session</span>
           </div>
-          <p className="text-sm leading-tight font-semibold text-slate-900">
+          <p className="text-sm font-semibold leading-tight text-slate-900">
             {formatDate(client.lastSessionDate)}
           </p>
           {client.firstSessionDate && (
@@ -303,13 +303,13 @@ export default function CoachClientsPage() {
         <div className="flex flex-col gap-3 sm:flex-row">
           {/* search */}
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="Search by name, email or sport…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pr-4 pl-10 text-sm text-slate-900 transition placeholder:text-slate-400 focus:border-transparent focus:ring-2 focus:ring-orange-400 focus:outline-none"
+              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 transition placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-orange-400"
             />
           </div>
 

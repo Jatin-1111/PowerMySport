@@ -252,7 +252,7 @@ export default function AdminPayoutsPage() {
             >
               <div className="flex flex-col md:flex-row md:items-stretch">
                 {/* Left side: Vendor Info */}
-                <div className="flex-1 border-b border-slate-100 p-6 md:border-r md:border-b-0">
+                <div className="flex-1 border-b border-slate-100 p-6 md:border-b-0 md:border-r">
                   <div className="mb-4 flex items-center gap-3">
                     <input
                       type="checkbox"
@@ -296,7 +296,7 @@ export default function AdminPayoutsPage() {
                 </div>
 
                 {/* Middle: Payout Method */}
-                <div className="flex-1 border-b border-slate-100 bg-slate-50/50 p-6 md:border-r md:border-b-0">
+                <div className="flex-1 border-b border-slate-100 bg-slate-50/50 p-6 md:border-b-0 md:border-r">
                   <p className="mb-3 text-sm font-semibold text-slate-500">
                     Preferred Payout Method
                   </p>

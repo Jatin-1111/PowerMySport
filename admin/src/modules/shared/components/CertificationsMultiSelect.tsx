@@ -78,7 +78,7 @@ export default function CertificationsMultiSelect({
 
         {/* Dropdown Menu */}
         {isOpen && !disabled && (
-          <div className="absolute top-full right-0 left-0 z-10 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-300 bg-white shadow-lg">
+          <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-300 bg-white shadow-lg">
             {CERTIFICATIONS_OPTIONS.map((cert) => (
               <label
                 key={cert}

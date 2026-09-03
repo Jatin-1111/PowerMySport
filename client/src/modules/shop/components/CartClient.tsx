@@ -39,7 +39,7 @@ export function CartClient() {
       <section>
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-bold tracking-[0.16em] text-orange-600 uppercase">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-600">
               Shopping Cart
             </p>
             <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
@@ -67,13 +67,13 @@ export function CartClient() {
                 exit={{ opacity: 0, x: -24 }}
                 className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[96px_1fr_auto]"
               >
-                <div className="aspect-square overflow-hidden rounded-lg bg-linear-to-br from-blue-50 to-orange-50">
+                <div className="bg-linear-to-br aspect-square overflow-hidden rounded-lg from-blue-50 to-orange-50">
                   {item.image ? (
                     <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
                   ) : null}
                 </div>
                 <div>
-                  <p className="text-xs font-bold tracking-[0.14em] text-slate-500 uppercase">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
                     {item.category || "Gear"}
                   </p>
                   <h2 className="mt-1 text-lg font-black text-slate-950">{item.name}</h2>

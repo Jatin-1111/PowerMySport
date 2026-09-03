@@ -19,7 +19,7 @@ export function ReportModal({ targetType, isSubmitting, onClose, onSubmit }: Rep
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+      className="z-60 fixed inset-0 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

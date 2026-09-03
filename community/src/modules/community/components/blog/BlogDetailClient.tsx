@@ -224,7 +224,7 @@ export default function BlogDetailClient({
         </motion.div>
 
         {/* Title */}
-        <h1 className="font-title mt-6 text-3xl leading-tight font-bold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="font-title mt-6 text-3xl font-bold leading-tight tracking-tight text-slate-900 sm:text-4xl">
           {blog.title}
         </h1>
 

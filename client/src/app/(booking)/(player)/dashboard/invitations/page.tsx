@@ -99,15 +99,15 @@ export default function InvitationsPage() {
       {/* Stats strip */}
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Pending</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pending</p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{pendingInvitations.length}</p>
         </div>
         <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Responded</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Responded</p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{respondedInvitations.length}</p>
         </div>
         <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Total</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{invitations.length}</p>
         </div>
       </div>

@@ -128,8 +128,8 @@ function FieldDiff({ live, proposed }: { live: unknown; proposed: unknown }) {
     <div className="divide-y divide-slate-100">
       <div className="grid grid-cols-1 gap-3 pb-2 sm:grid-cols-[160px_1fr_1fr]">
         <span />
-        <p className="text-xs font-bold tracking-wide text-slate-400 uppercase">Currently Live</p>
-        <p className="text-xs font-bold tracking-wide text-slate-400 uppercase">Proposed</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Currently Live</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Proposed</p>
       </div>
       {keys.map((key) => {
         const liveVal = liveObj?.[key];
@@ -140,7 +140,7 @@ function FieldDiff({ live, proposed }: { live: unknown; proposed: unknown }) {
             key={key}
             className={`grid grid-cols-1 gap-3 rounded-lg px-2 py-3 sm:grid-cols-[160px_1fr_1fr] ${changed ? "bg-amber-50" : ""}`}
           >
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               {humanizeKey(key)}
             </p>
             <DiffValue value={liveVal} />
@@ -169,7 +169,7 @@ function CalendarComparison({ live, proposed }: { live: unknown; proposed: unkno
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
-        <p className="mb-2 text-xs font-bold tracking-wide text-slate-400 uppercase">
+        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
           Currently in Calendar ({liveList.length})
         </p>
         <ul className="space-y-1.5">
@@ -186,7 +186,7 @@ function CalendarComparison({ live, proposed }: { live: unknown; proposed: unkno
         </ul>
       </div>
       <div>
-        <p className="mb-2 text-xs font-bold tracking-wide text-slate-400 uppercase">
+        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
           Proposed ({proposedList.length})
         </p>
         <ul className="space-y-1.5">
@@ -209,7 +209,7 @@ function CalendarComparison({ live, proposed }: { live: unknown; proposed: unkno
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <details className="rounded-lg border border-slate-200 bg-slate-50/60 p-3" open>
-      <summary className="cursor-pointer text-xs font-bold tracking-wide text-slate-600 uppercase">
+      <summary className="cursor-pointer text-xs font-bold uppercase tracking-wide text-slate-600">
         {title}
       </summary>
       <div className="mt-3 space-y-4">{children}</div>
@@ -978,7 +978,7 @@ function CalendarEditor({
           )}
 
           {edition.sourceQuote && (
-            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 italic">
+            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs italic text-slate-500">
               “{edition.sourceQuote}”
             </p>
           )}
@@ -1232,7 +1232,7 @@ export default function AdminDataSourceDetailPage() {
             )}
             {submission.extractionWarnings && submission.extractionWarnings.length > 0 && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                <p className="text-xs font-bold tracking-wide text-amber-700 uppercase">
+                <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
                   Extraction warnings
                 </p>
                 <ul className="mt-1 space-y-0.5">
@@ -1263,7 +1263,7 @@ export default function AdminDataSourceDetailPage() {
         <Card className="space-y-3 bg-white">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1">
-              <h2 className="text-sm font-bold tracking-wide text-slate-500 uppercase">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
                 Tournament Details
               </h2>
               <p className="max-w-2xl text-xs text-slate-500">
@@ -1302,7 +1302,7 @@ export default function AdminDataSourceDetailPage() {
       )}
 
       <Card className="space-y-3 bg-white">
-        <h2 className="text-sm font-bold tracking-wide text-slate-500 uppercase">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
           Live Now vs. Proposed
         </h2>
         <p className="text-xs text-slate-500">
@@ -1318,7 +1318,7 @@ export default function AdminDataSourceDetailPage() {
 
       {submission.citations && Object.keys(submission.citations).length > 0 && (
         <Card className="space-y-3 bg-white">
-          <h2 className="text-sm font-bold tracking-wide text-slate-500 uppercase">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
             Source Citations
           </h2>
           <p className="text-xs text-slate-500">
@@ -1328,10 +1328,10 @@ export default function AdminDataSourceDetailPage() {
           <div className="space-y-2">
             {Object.entries(submission.citations).map(([field, quote]) => (
               <div key={field} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
-                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {field}
                 </p>
-                <p className="mt-1 text-sm text-slate-700 italic">“{quote}”</p>
+                <p className="mt-1 text-sm italic text-slate-700">“{quote}”</p>
               </div>
             ))}
           </div>
@@ -1340,7 +1340,7 @@ export default function AdminDataSourceDetailPage() {
 
       {draft != null && (
         <Card className="space-y-4 bg-white">
-          <h2 className="text-sm font-bold tracking-wide text-slate-500 uppercase">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
             Edit Before Approving
           </h2>
           {submission.targetType === "FEDERATION" && (

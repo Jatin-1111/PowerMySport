@@ -47,7 +47,7 @@ export function FilterBar({
               {/* Search input - takes most space */}
               <div className="relative min-w-0 flex-1">
                 <Search
-                  className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400"
+                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                   size={16}
                 />
                 <input
@@ -55,13 +55,13 @@ export function FilterBar({
                   value={searchValue}
                   onChange={(e) => onSearchChange(e.target.value)}
                   placeholder={searchPlaceholder}
-                  className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pr-10 pl-10 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:outline-none"
+                  className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-10 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2"
                 />
                 {searchValue && (
                   <button
                     type="button"
                     onClick={onSearchClear}
-                    className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700"
                   >
                     <X size={15} />
                   </button>
@@ -77,15 +77,15 @@ export function FilterBar({
                 <SlidersHorizontal size={16} />
                 <span className="hidden sm:inline">Filters</span>
                 {hasFilters && (
-                  <span className="bg-power-orange absolute top-2 right-2 h-2.5 w-2.5 rounded-full ring-2 ring-white" />
+                  <span className="bg-power-orange absolute right-2 top-2 h-2.5 w-2.5 rounded-full ring-2 ring-white" />
                 )}
               </button>
             </div>
 
             {/* Active Filter Badges */}
             {hasFilters && (
-              <div className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1 whitespace-nowrap">
-                <span className="mr-1 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+              <div className="no-scrollbar flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1">
+                <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Active:
                 </span>
 

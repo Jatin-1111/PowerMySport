@@ -209,7 +209,7 @@ export default function VenueImageUpload({
                     <button
                       type="button"
                       onClick={() => handleRemoveImage(url.field)}
-                      className="absolute top-2 right-2 rounded-full bg-red-500 p-1.5 text-white hover:bg-red-600"
+                      className="absolute right-2 top-2 rounded-full bg-red-500 p-1.5 text-white hover:bg-red-600"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -291,7 +291,7 @@ export default function VenueImageUpload({
                         <button
                           type="button"
                           onClick={() => handleRemoveImage(url.field)}
-                          className="absolute top-1 right-1 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                          className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
                         >
                           <Trash2 size={14} />
                         </button>

@@ -3,9 +3,9 @@ import { Copyright } from "lucide-react";
 export function IpRights() {
   return (
     <section id="ip-rights" className="mb-8">
-      <h2 className="mt-8 mb-4 text-2xl font-semibold">11. Intellectual Property Rights</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">11. Intellectual Property Rights</h2>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">11.1 Your Rights Over Your Content</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">11.1 Your Rights Over Your Content</h3>
       <p>By submitting content to PowerMySport, you:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Retain ownership of your content</li>
@@ -19,7 +19,7 @@ export function IpRights() {
         <li>Confirm you own or have permission for all rights to the content</li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">11.2 Copyright Infringement</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">11.2 Copyright Infringement</h3>
       <p>If you believe your copyright has been infringed:</p>
       <ol className="mt-3 list-decimal space-y-2 pl-6">
         <li>Click "Report" on the infringing content</li>
@@ -31,7 +31,7 @@ export function IpRights() {
         We will investigate and remove content that infringes valid copyrights.
       </p>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">11.3 Copyright Counter-Notice</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">11.3 Copyright Counter-Notice</h3>
       <p>
         If your content is removed because of a copyright complaint and you believe it was removed
         in error or that you have the right to post it, you may submit a counter-notice by emailing
@@ -52,7 +52,7 @@ export function IpRights() {
         conduct at issue.
       </p>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">11.4 Trademark & Brand Rights</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">11.4 Trademark & Brand Rights</h3>
       <p>Users must not:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Impersonate PowerMySport or use our branding without permission</li>

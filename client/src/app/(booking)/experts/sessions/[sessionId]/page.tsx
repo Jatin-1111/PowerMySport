@@ -297,11 +297,11 @@ export default function ExpertSessionPage() {
           <Card className="overflow-hidden border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
             {/* Dark hero strip — consistent with the expert profile page */}
             <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 px-6 py-7 text-white sm:px-8">
-              <div className="bg-power-orange/20 pointer-events-none absolute -top-14 -right-14 h-44 w-44 rounded-full blur-3xl" />
+              <div className="bg-power-orange/20 pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full blur-3xl" />
               <div className="relative flex items-center gap-4">
                 <ExpertAvatar photoUrl={session.expert?.photoUrl} name={expertName} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold tracking-wide text-white/60 uppercase">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-white/60">
                     Session with
                   </p>
                   <h1 className="font-title truncate text-xl font-bold sm:text-2xl">
@@ -309,7 +309,7 @@ export default function ExpertSessionPage() {
                   </h1>
                   <span
                     className={cn(
-                      "mt-1.5 inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide uppercase ring-1 ring-white/20 ring-inset",
+                      "mt-1.5 inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset ring-white/20",
                       "bg-white/10 text-white/90"
                     )}
                   >
@@ -375,11 +375,11 @@ export default function ExpertSessionPage() {
               {["PAID", "SCHEDULED"].includes(session.status) && (
                 <div className="mt-3">
                   {session.expertAcceptance === "ACCEPTED" ? (
-                    <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 ring-inset">
+                    <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-100">
                       <CheckCircle2 className="h-3.5 w-3.5" /> Confirmed by your expert
                     </p>
                   ) : (
-                    <p className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 ring-inset">
+                    <p className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-100">
                       <Clock className="h-3.5 w-3.5" /> Awaiting expert confirmation
                     </p>
                   )}
@@ -460,7 +460,7 @@ export default function ExpertSessionPage() {
                       </p>
                     )}
                     {session.clientNote && (
-                      <p className="mt-2 flex items-start gap-1.5 text-sm leading-relaxed text-slate-600 italic">
+                      <p className="mt-2 flex items-start gap-1.5 text-sm italic leading-relaxed text-slate-600">
                         <MessageSquareText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
                         &ldquo;{session.clientNote}&rdquo;
                       </p>
@@ -479,7 +479,7 @@ export default function ExpertSessionPage() {
                       </div>
                       <p className="text-sm font-bold text-slate-900">Session notes</p>
                     </div>
-                    <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap text-slate-700">
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
                       {session.momNotes}
                     </p>
                   </div>
@@ -578,7 +578,7 @@ export default function ExpertSessionPage() {
                     value={reviewText}
                     onChange={(e) => setReviewText(e.target.value)}
                     placeholder="Share how the session went (optional)"
-                    className="focus:border-power-orange focus:ring-power-orange/20 mt-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm transition-all focus:bg-white focus:ring-2 focus:outline-none"
+                    className="focus:border-power-orange focus:ring-power-orange/20 mt-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
                   />
                   <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
                     <input

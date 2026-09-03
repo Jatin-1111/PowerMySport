@@ -364,16 +364,16 @@ function ProfilePageContent() {
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Sports</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Sports</p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{sportsCount}</p>
         </div>
         <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Dependents</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Dependents</p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{dependentsCount}</p>
         </div>
         <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Account</p>
-          <p className="mt-1 text-lg font-bold text-slate-900 capitalize">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Account</p>
+          <p className="mt-1 text-lg font-bold capitalize text-slate-900">
             {user.role.toLowerCase().replace("_", " ")}
           </p>
         </div>
@@ -579,7 +579,7 @@ function ProfilePageContent() {
                       value={playerProfileForm.bio}
                       onChange={(e) => setPlayerProfileForm((f) => ({ ...f, bio: e.target.value }))}
                       placeholder="e.g., Former club cricketer, now focused on my daughter's tennis journey."
-                      className="focus:border-power-orange focus:ring-power-orange/20 w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:outline-none"
+                      className="focus:border-power-orange focus:ring-power-orange/20 w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2"
                     />
                   </ProfileEditField>
 
@@ -654,7 +654,7 @@ function ProfilePageContent() {
 
                   {selectedSports.length > 0 ? (
                     <div className="mt-4 rounded-lg border border-orange-100 bg-white/80 p-3">
-                      <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Selected
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -802,7 +802,7 @@ function ProfilePageContent() {
             <div className="space-y-8">
               {isParent ? (
                 <div>
-                  <h4 className="mb-4 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                  <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
                     About You
                   </h4>
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -812,14 +812,14 @@ function ProfilePageContent() {
                           {user.parentProfile.bio}
                         </p>
                       ) : (
-                        <span className="text-sm text-slate-400 italic">Not provided</span>
+                        <span className="text-sm italic text-slate-400">Not provided</span>
                       )}
                     </ProfileInfoField>
                     <ProfileInfoField label="Years Involved in Sport">
                       {user.parentProfile?.involvementYears !== undefined ? (
                         `${user.parentProfile.involvementYears} year${user.parentProfile.involvementYears === 1 ? "" : "s"}`
                       ) : (
-                        <span className="text-sm text-slate-400 italic">Not provided</span>
+                        <span className="text-sm italic text-slate-400">Not provided</span>
                       )}
                     </ProfileInfoField>
                     <ProfileInfoField label="Sports Followed">
@@ -836,14 +836,14 @@ function ProfilePageContent() {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-sm text-slate-400 italic">Not provided</span>
+                        <span className="text-sm italic text-slate-400">Not provided</span>
                       )}
                     </ProfileInfoField>
                   </div>
                 </div>
               ) : (
                 <div>
-                  <h4 className="mb-4 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                  <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
                     My Sports
                   </h4>
                   {user.playerProfile?.sportsFocus && user.playerProfile.sportsFocus.length > 0 ? (
@@ -885,7 +885,7 @@ function ProfilePageContent() {
               )}
 
               <div className="border-t border-slate-100 pt-6">
-                <h4 className="mb-4 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
                   AI Guidance Preferences
                 </h4>
                 <div className="grid gap-4 sm:grid-cols-2">

@@ -1,9 +1,9 @@
 export function SpecialCases() {
   return (
     <section id="special-cases" className="mb-8">
-      <h2 className="mt-8 mb-4 text-2xl font-semibold">5. Special Cases</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">5. Special Cases</h2>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">5.1 No-Show Policy</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">5.1 No-Show Policy</h3>
       <p>
         <strong>Player No-Show:</strong> A player who does not use the booking&apos;s check-in code
         before it expires, without prior notice to PowerMySport, is treated as a no-show:
@@ -18,7 +18,7 @@ export function SpecialCases() {
         </li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">5.2 Partial Refunds</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">5.2 Partial Refunds</h3>
       <p>Where a service was only partially delivered:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>
@@ -35,7 +35,7 @@ export function SpecialCases() {
         </li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">5.3 Promo Code &amp; Discount Refunds</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">5.3 Promo Code &amp; Discount Refunds</h3>
       <p>When a booking made using a promo code or discount is cancelled:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>
@@ -52,7 +52,7 @@ export function SpecialCases() {
         </li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">5.4 Abuse of This Policy</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">5.4 Abuse of This Policy</h3>
       <p>
         PowerMySport monitors for patterns of frequent cancellations, repeated disputes, or
         chargeback abuse. Accounts exhibiting such patterns, as determined solely by PowerMySport,

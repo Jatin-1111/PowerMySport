@@ -517,7 +517,7 @@ export default function AdminBookingsPage() {
               <DetailSection title="Payout splits">
                 <div className="overflow-hidden rounded-lg border border-slate-200">
                   <table className="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead className="bg-slate-50 text-xs text-slate-500 uppercase">
+                    <thead className="bg-slate-50 text-xs uppercase text-slate-500">
                       <tr>
                         <th className="px-3 py-2 text-left">Payee</th>
                         <th className="px-3 py-2 text-right">Amount</th>

@@ -76,7 +76,7 @@ export function VerdictHero({
       className={`rounded-2xl border ${cfg.border} ${cfg.bg} p-5 sm:p-6`}
     >
       {levelContext && (
-        <div className="mb-3 flex flex-col justify-between gap-2 border-b border-current/10 pb-3 sm:flex-row sm:items-center">
+        <div className="border-current/10 mb-3 flex flex-col justify-between gap-2 border-b pb-3 sm:flex-row sm:items-center">
           <p className="text-xs font-semibold text-slate-500">
             Continuing your <span className="text-slate-800">{levelContext.sport}</span> pathway
             research
@@ -96,7 +96,7 @@ export function VerdictHero({
           <Icon className={`h-6 w-6 ${cfg.color}`} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="mb-1 text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
             {levelContext
               ? alreadyAtLevel
                 ? `Progressing from ${levelContext.levelLabel} — what's the path forward?`

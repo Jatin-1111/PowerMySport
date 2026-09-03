@@ -149,7 +149,7 @@ function ContributorsPageContent() {
             transition={{ duration: 0.35 }}
             className="rounded-2xl border border-amber-200/80 bg-[linear-gradient(125deg,#fff9ed_0%,#fffdf7_100%)] p-4 sm:p-5"
           >
-            <p className="mb-3 text-xs font-semibold tracking-wide text-amber-700 uppercase">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-amber-700">
               My Contribution
             </p>
             <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
@@ -191,8 +191,8 @@ function ContributorsPageContent() {
                     <stat.icon size={16} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-lg leading-tight font-bold text-slate-900">{stat.value}</p>
-                    <p className="truncate text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+                    <p className="text-lg font-bold leading-tight text-slate-900">{stat.value}</p>
+                    <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                       {stat.label}
                     </p>
                   </div>
@@ -218,7 +218,7 @@ function ContributorsPageContent() {
                 <p className="px-5 py-6 text-sm text-slate-500">No contributor data yet.</p>
               ) : (
                 <div className="overflow-x-auto">
-                  <div className="grid min-w-[560px] grid-cols-[3.5rem_1fr_5rem_5rem_5rem_5.5rem] items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-5 py-2.5 text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+                  <div className="grid min-w-[560px] grid-cols-[3.5rem_1fr_5rem_5rem_5rem_5.5rem] items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                     <span>Place</span>
                     <span>Contributor</span>
                     <span className="text-center">Posts</span>

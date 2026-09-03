@@ -28,7 +28,7 @@ export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardPr
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.28, ease: "easeOut" }}
       whileHover={{ y: -4 }}
-      className="group hover:border-power-orange/30 flex h-full flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-sm backdrop-blur-sm transition hover:shadow-xl hover:shadow-slate-900/5"
+      className="hover:border-power-orange/30 group flex h-full flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-sm backdrop-blur-sm transition hover:shadow-xl hover:shadow-slate-900/5"
     >
       {/* Cover */}
       <Link href={`/blog/${blog.id}`} className="relative block aspect-[16/10] overflow-hidden">
@@ -41,7 +41,7 @@ export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardPr
         ) : (
           <BlogCoverFallback topic={blog.topic} />
         )}
-        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
           <span
             className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur-sm ${topic.accent}`}
           >
@@ -54,7 +54,7 @@ export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardPr
       {/* Body */}
       <div className="flex flex-1 flex-col p-4 sm:p-5">
         <Link href={`/blog/${blog.id}`} className="block">
-          <h3 className="font-title group-hover:text-power-orange line-clamp-2 text-lg leading-snug font-bold text-slate-900 transition-colors">
+          <h3 className="font-title group-hover:text-power-orange line-clamp-2 text-lg font-bold leading-snug text-slate-900 transition-colors">
             {blog.title}
           </h3>
         </Link>

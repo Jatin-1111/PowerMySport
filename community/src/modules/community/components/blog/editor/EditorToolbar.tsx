@@ -255,7 +255,7 @@ export default function EditorToolbar({ editor }: { editor: Editor | null }) {
           {editor.isActive("link") ? <Unlink size={16} /> : <Link2 size={16} />}
         </ToolbarButton>
         {linkPopoverOpen ? (
-          <div className="absolute top-9 left-0 z-20 flex w-64 items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+          <div className="absolute left-0 top-9 z-20 flex w-64 items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
             <input
               autoFocus
               value={linkValue}

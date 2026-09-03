@@ -167,7 +167,7 @@ export default function EmojiPicker({ onSelect, onClose, alignRight }: EmojiPick
       <div className="emoji-picker-scroll max-h-[280px] space-y-2 overflow-y-auto p-2">
         {EMOJI_CATEGORIES.map((category) => (
           <div key={category.name}>
-            <p className="px-2 py-1 text-[10px] font-bold tracking-[0.15em] text-slate-400 uppercase">
+            <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
               {category.name}
             </p>
             <div className="grid grid-cols-8 gap-0.5">

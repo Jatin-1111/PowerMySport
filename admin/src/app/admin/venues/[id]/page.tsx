@@ -216,7 +216,7 @@ export default function AdminVenueDetailPage() {
           </div>
           <div className="shrink-0">
             <div className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/20 px-4 py-2 text-white shadow-lg backdrop-blur-md">
-              <span className="text-sm font-semibold tracking-wider uppercase">Base Price</span>
+              <span className="text-sm font-semibold uppercase tracking-wider">Base Price</span>
               <span className="text-2xl font-bold">₹{venue.pricePerHour}</span>
               <span className="text-xs font-medium opacity-80">/hr</span>
             </div>
@@ -232,7 +232,7 @@ export default function AdminVenueDetailPage() {
               <FileText className="text-power-orange" size={24} />
               <h2 className="text-xl font-bold text-slate-900">About this Venue</h2>
             </div>
-            <p className="leading-relaxed whitespace-pre-line text-slate-600">
+            <p className="whitespace-pre-line leading-relaxed text-slate-600">
               {venue.description || "No description provided."}
             </p>
           </Card>
@@ -254,7 +254,7 @@ export default function AdminVenueDetailPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-500 italic">No sports listed.</p>
+              <p className="text-sm italic text-slate-500">No sports listed.</p>
             )}
           </Card>
 
@@ -275,7 +275,7 @@ export default function AdminVenueDetailPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-500 italic">No amenities listed.</p>
+              <p className="text-sm italic text-slate-500">No amenities listed.</p>
             )}
           </Card>
         </div>
@@ -327,7 +327,7 @@ export default function AdminVenueDetailPage() {
             </div>
             <div className="space-y-3">
               <div>
-                <span className="mb-1 block text-xs font-medium tracking-wider text-slate-500 uppercase">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wider text-slate-500">
                   Coordinates
                 </span>
                 <p className="rounded border border-slate-100 bg-slate-50 p-2 font-mono text-sm text-slate-700">
@@ -337,10 +337,10 @@ export default function AdminVenueDetailPage() {
                 </p>
               </div>
               <div>
-                <span className="mb-1 block text-xs font-medium tracking-wider text-slate-500 uppercase">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wider text-slate-500">
                   Venue ID
                 </span>
-                <p className="font-mono text-xs break-all text-slate-500">
+                <p className="break-all font-mono text-xs text-slate-500">
                   {venue.id || venue._id}
                 </p>
               </div>
@@ -369,7 +369,7 @@ export default function AdminVenueDetailPage() {
                 )}
               </div>
             ) : (
-              <p className="text-sm text-slate-500 italic">Owner unavailable</p>
+              <p className="text-sm italic text-slate-500">Owner unavailable</p>
             )}
           </Card>
         </div>
@@ -396,7 +396,7 @@ export default function AdminVenueDetailPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Name
                 </label>
                 <input
@@ -407,7 +407,7 @@ export default function AdminVenueDetailPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Description
                 </label>
                 <textarea
@@ -421,7 +421,7 @@ export default function AdminVenueDetailPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Sports (comma separated)
                 </label>
                 <input
@@ -434,7 +434,7 @@ export default function AdminVenueDetailPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Amenities (comma separated)
                 </label>
                 <input
@@ -448,7 +448,7 @@ export default function AdminVenueDetailPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Price per hour (₹)
                   </label>
                   <input
@@ -467,7 +467,7 @@ export default function AdminVenueDetailPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Approval status
                   </label>
                   <select

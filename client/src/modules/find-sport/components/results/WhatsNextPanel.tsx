@@ -46,7 +46,7 @@ function loadBooked(dependentId?: string): BookedState {
 
 function AddOnTag() {
   return (
-    <span className="inline-flex items-center rounded-full bg-white/[0.07] px-2 py-0.5 text-[9px] font-bold tracking-wider text-white/50 uppercase ring-1 ring-white/10">
+    <span className="inline-flex items-center rounded-full bg-white/[0.07] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white/50 ring-1 ring-white/10">
       Optional add-on
     </span>
   );
@@ -128,14 +128,14 @@ export function WhatsNextPanel({
   return (
     <div className="relative mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800">
       {/* Ambient glow accents */}
-      <div className="bg-power-orange/[0.07] pointer-events-none absolute -top-28 -right-20 h-72 w-72 rounded-full blur-3xl" />
+      <div className="bg-power-orange/[0.07] pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-violet-500/[0.07] blur-3xl" />
 
       {/* Panel header — title and qualifier share the row on desktop instead of
           stacking into a third full-width line of centred-looking text. */}
-      <div className="relative flex flex-col gap-2 border-b border-white/[0.06] px-6 pt-6 pb-5 sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
+      <div className="relative flex flex-col gap-2 border-b border-white/[0.06] px-6 pb-5 pt-6 sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
         <div className="min-w-0">
-          <p className="mb-1.5 text-[10px] font-bold tracking-[0.22em] text-white/40 uppercase">
+          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">
             Add-ons &amp; extras
           </p>
           <h3 className="font-title text-xl font-bold text-white">

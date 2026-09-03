@@ -373,7 +373,7 @@ function QuestionScreen({
                 onAnswer("dob", val);
                 onAnswer("age", getDependentAge(val));
               }}
-              className="focus:border-power-orange focus:ring-power-orange/15 w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 focus:ring-2 focus:outline-none"
+              className="focus:border-power-orange focus:ring-power-orange/15 w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 focus:outline-none focus:ring-2"
             />
             {answers.dob && answers.age !== null && (
               <p className="text-sm text-slate-400">
@@ -421,19 +421,19 @@ function QuestionScreen({
               <button
                 type="button"
                 onClick={() => onAnswer("height", Math.max(80, hVal - 1))}
-                className="hover:border-power-orange hover:text-power-orange flex h-12 w-12 items-center justify-center rounded-full border-2 border-slate-200 text-2xl font-light text-slate-600 transition-colors select-none"
+                className="hover:border-power-orange hover:text-power-orange flex h-12 w-12 select-none items-center justify-center rounded-full border-2 border-slate-200 text-2xl font-light text-slate-600 transition-colors"
               >
                 −
               </button>
               <div className="min-w-[120px] text-center">
-                <span className="text-6xl font-bold text-slate-900 tabular-nums">{hVal}</span>
+                <span className="text-6xl font-bold tabular-nums text-slate-900">{hVal}</span>
                 <span className="ml-2 text-xl text-slate-400">cm</span>
-                <p className="mt-1 text-sm text-slate-400 tabular-nums">{cmToFeetInches(hVal)}</p>
+                <p className="mt-1 text-sm tabular-nums text-slate-400">{cmToFeetInches(hVal)}</p>
               </div>
               <button
                 type="button"
                 onClick={() => onAnswer("height", Math.min(220, hVal + 1))}
-                className="hover:border-power-orange hover:text-power-orange flex h-12 w-12 items-center justify-center rounded-full border-2 border-slate-200 text-2xl font-light text-slate-600 transition-colors select-none"
+                className="hover:border-power-orange hover:text-power-orange flex h-12 w-12 select-none items-center justify-center rounded-full border-2 border-slate-200 text-2xl font-light text-slate-600 transition-colors"
               >
                 +
               </button>
@@ -464,18 +464,18 @@ function QuestionScreen({
               <button
                 type="button"
                 onClick={() => onAnswer("weight", Math.max(15, wVal - 1))}
-                className="hover:border-power-orange hover:text-power-orange flex h-12 w-12 items-center justify-center rounded-full border-2 border-slate-200 text-2xl font-light text-slate-600 transition-colors select-none"
+                className="hover:border-power-orange hover:text-power-orange flex h-12 w-12 select-none items-center justify-center rounded-full border-2 border-slate-200 text-2xl font-light text-slate-600 transition-colors"
               >
                 −
               </button>
               <div className="min-w-[120px] text-center">
-                <span className="text-6xl font-bold text-slate-900 tabular-nums">{wVal}</span>
+                <span className="text-6xl font-bold tabular-nums text-slate-900">{wVal}</span>
                 <span className="ml-2 text-xl text-slate-400">kg</span>
               </div>
               <button
                 type="button"
                 onClick={() => onAnswer("weight", Math.min(120, wVal + 1))}
-                className="hover:border-power-orange hover:text-power-orange flex h-12 w-12 items-center justify-center rounded-full border-2 border-slate-200 text-2xl font-light text-slate-600 transition-colors select-none"
+                className="hover:border-power-orange hover:text-power-orange flex h-12 w-12 select-none items-center justify-center rounded-full border-2 border-slate-200 text-2xl font-light text-slate-600 transition-colors"
               >
                 +
               </button>
@@ -798,7 +798,7 @@ function QuestionScreen({
                   }
                 }
               }}
-              className="focus:border-power-orange focus:ring-power-orange/15 w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:outline-none"
+              className="focus:border-power-orange focus:ring-power-orange/15 w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2"
             />
             {answers.medicalConditions.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
@@ -999,10 +999,10 @@ function QuestionScreen({
   return (
     <div className="space-y-6">
       <div>
-        <p className="mb-2 text-xs font-semibold tracking-widest text-slate-400 uppercase">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
           {section[questionKey] ?? ""}
         </p>
-        <h2 className="font-title text-xl leading-snug font-bold text-slate-900">
+        <h2 className="font-title text-xl font-bold leading-snug text-slate-900">
           {questions[questionKey] ?? ""}
         </h2>
         {questionSubs[questionKey] && (
@@ -1418,8 +1418,8 @@ export function WizardShell() {
         <div className="hidden w-[320px] shrink-0 bg-slate-900 lg:block xl:w-[360px]">
           <aside className="sticky top-16 flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
             {/* Brand */}
-            <div className="border-b border-slate-800 px-8 pt-8 pb-6">
-              <p className="text-power-orange mb-0.5 text-[11px] font-bold tracking-widest uppercase">
+            <div className="border-b border-slate-800 px-8 pb-6 pt-8">
+              <p className="text-power-orange mb-0.5 text-[11px] font-bold uppercase tracking-widest">
                 PowerMySport
               </p>
               <p className="text-sm text-slate-400">Sport Assessment</p>
@@ -1450,7 +1450,7 @@ export function WizardShell() {
                     {sectionMeta.icon}
                   </div>
 
-                  <h2 className="font-title mb-2 text-xl leading-snug font-bold text-white">
+                  <h2 className="font-title mb-2 text-xl font-bold leading-snug text-white">
                     {sectionMeta.title}
                   </h2>
                   <p className="text-sm leading-relaxed text-slate-400">{sectionMeta.desc}</p>
@@ -1460,7 +1460,7 @@ export function WizardShell() {
               {/* Profile chips — grow as answers fill in */}
               {profileChips.length > 0 && (
                 <div className="mt-8">
-                  <p className="mb-3 text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
                     Profile so far
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -1565,7 +1565,7 @@ export function WizardShell() {
                   <div className="flex flex-col gap-7 bg-slate-900 p-7 lg:w-[52%] lg:shrink-0 xl:w-[55%] xl:p-9">
                     {/* Brand eyebrow */}
                     <div className="flex items-center gap-2">
-                      <span className="bg-power-orange/15 text-power-orange inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase">
+                      <span className="bg-power-orange/15 text-power-orange inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest">
                         <span className="bg-power-orange h-1.5 w-1.5 animate-pulse rounded-full" />
                         Sport Assessment
                       </span>
@@ -1573,7 +1573,7 @@ export function WizardShell() {
 
                     {/* Headline */}
                     <div>
-                      <h1 className="font-title mb-3 text-2xl leading-tight font-bold text-white xl:text-3xl">
+                      <h1 className="font-title mb-3 text-2xl font-bold leading-tight text-white xl:text-3xl">
                         Find the right sport
                         <br />
                         for your child.
@@ -1605,7 +1605,7 @@ export function WizardShell() {
 
                     {/* Category list */}
                     <div className="flex flex-col gap-2.5">
-                      <p className="mb-1 text-[10px] font-bold tracking-widest text-slate-600 uppercase">
+                      <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-600">
                         What we evaluate
                       </p>
                       <motion.div
@@ -1647,7 +1647,7 @@ export function WizardShell() {
                                   { className: "w-4 h-4" }
                                 )}
                               </div>
-                              <p className="truncate text-[12px] leading-tight font-semibold text-white">
+                              <p className="truncate text-[12px] font-semibold leading-tight text-white">
                                 {sec.title}
                               </p>
                             </motion.div>
@@ -1660,14 +1660,14 @@ export function WizardShell() {
                   {/* ── Right panel — CTA ── */}
                   <div className="relative flex flex-1 flex-col justify-center gap-7 overflow-hidden p-7 xl:p-9">
                     {/* Ambient glow — echoes the left panel's dark treatment without repeating it */}
-                    <div className="bg-power-orange/[0.06] pointer-events-none absolute -top-20 -right-16 h-56 w-56 rounded-full blur-3xl" />
+                    <div className="bg-power-orange/[0.06] pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full blur-3xl" />
                     <div className="pointer-events-none absolute -bottom-24 -left-12 h-56 w-56 rounded-full bg-sky-400/[0.06] blur-3xl" />
 
                     <div className="relative">
-                      <p className="mb-3 text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+                      <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
                         Personalised recommendation
                       </p>
-                      <h2 className="font-title mb-3 text-2xl leading-snug font-bold text-slate-900">
+                      <h2 className="font-title mb-3 text-2xl font-bold leading-snug text-slate-900">
                         Ready to find the perfect match?
                       </h2>
                       <p className="text-sm leading-relaxed text-slate-500">
@@ -1695,7 +1695,7 @@ export function WizardShell() {
                     {/* Child picker */}
                     {players.length > 0 && (
                       <div className="relative">
-                        <p className="mb-2.5 text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+                        <p className="mb-2.5 text-[11px] font-bold uppercase tracking-widest text-slate-400">
                           Who is this for?
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -1744,7 +1744,7 @@ export function WizardShell() {
                       <button
                         type="button"
                         onClick={goNext}
-                        className="group bg-power-orange relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl px-8 py-4 text-[15px] font-bold text-white shadow-[0_4px_24px_-4px_rgba(234,88,12,0.5)] transition-all duration-200 hover:bg-orange-600 hover:shadow-[0_8px_32px_-4px_rgba(234,88,12,0.6)] active:scale-[0.99]"
+                        className="bg-power-orange group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl px-8 py-4 text-[15px] font-bold text-white shadow-[0_4px_24px_-4px_rgba(234,88,12,0.5)] transition-all duration-200 hover:bg-orange-600 hover:shadow-[0_8px_32px_-4px_rgba(234,88,12,0.6)] active:scale-[0.99]"
                       >
                         <span>
                           {selectedDependentId
@@ -1792,7 +1792,7 @@ export function WizardShell() {
                       goNext();
                     }
                   }}
-                  className="focus:border-power-orange focus:ring-power-orange/15 w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:outline-none"
+                  className="focus:border-power-orange focus:ring-power-orange/15 w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2"
                 />
                 <button
                   type="button"

@@ -295,7 +295,7 @@ export default function AdminWebhookRecoveryPage() {
 
                       {isExpanded && (
                         <div className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Payload Summary
                           </p>
                           <div className="space-y-1 font-mono text-xs text-slate-700">
@@ -378,7 +378,7 @@ export default function AdminWebhookRecoveryPage() {
                       result: null,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-mono text-sm text-slate-700 transition outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-mono text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
 
@@ -413,7 +413,7 @@ export default function AdminWebhookRecoveryPage() {
 
           {/* Guide */}
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <p className="mb-3 text-xs font-bold tracking-wide text-slate-500 uppercase">
+            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">
               Recovery Guide
             </p>
             <ul className="space-y-2.5 text-xs text-slate-600">

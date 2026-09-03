@@ -1,7 +1,7 @@
 export function CoachVenueRefunds() {
   return (
     <section id="coach-venue-refunds" className="mb-8">
-      <h2 className="mt-8 mb-4 text-2xl font-semibold">6. Coach &amp; Venue Refunds</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">6. Coach &amp; Venue Refunds</h2>
       <p>
         Coaches and venue owners receive their earned revenue only after the PowerMySport commission
         and any applicable fees are deducted, and only in accordance with the following:

@@ -168,13 +168,13 @@ export default function SubscriptionsPage() {
       >
         <motion.div variants={itemVariants}>
           <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Total</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
             <p className="mt-1 text-2xl font-bold text-slate-900">{counts.all}</p>
           </div>
         </motion.div>
         <motion.div variants={itemVariants}>
           <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Active / Past Due
             </p>
             <p className="mt-1 text-2xl font-bold text-slate-900">{counts.live}</p>
@@ -182,7 +182,7 @@ export default function SubscriptionsPage() {
         </motion.div>
         <motion.div variants={itemVariants}>
           <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Ended</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Ended</p>
             <p className="mt-1 text-2xl font-bold text-slate-900">{counts.ended}</p>
           </div>
         </motion.div>

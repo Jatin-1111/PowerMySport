@@ -58,7 +58,7 @@ export default function QuoteOfTheDay() {
           card reads as glass rather than a flat white box. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-20 -right-16 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(233,115,22,0.22),transparent_66%)] blur-2xl"
+        className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(233,115,22,0.22),transparent_66%)] blur-2xl"
       />
       <div
         aria-hidden="true"
@@ -71,18 +71,18 @@ export default function QuoteOfTheDay() {
       <Quote
         aria-hidden="true"
         strokeWidth={1.25}
-        className="pointer-events-none absolute top-3 -right-4 h-24 w-24 rotate-6 text-slate-900/[0.045] transition-transform duration-500 group-hover:rotate-0"
+        className="pointer-events-none absolute -right-4 top-3 h-24 w-24 rotate-6 text-slate-900/[0.045] transition-transform duration-500 group-hover:rotate-0"
       />
 
       <figcaption className="relative flex flex-wrap items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-2 text-[11px] font-bold tracking-[0.18em] text-slate-500 uppercase">
+        <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
           <span className="text-power-orange flex h-6 w-6 items-center justify-center rounded-lg bg-[linear-gradient(135deg,rgba(233,115,22,0.16),rgba(245,158,11,0.2))]">
             <Quote size={12} aria-hidden="true" />
           </span>
           Quote of the day
         </span>
         {today && (
-          <span className="inline-flex items-center rounded-full border border-slate-200/80 bg-white/70 px-2.5 py-1 text-[11px] font-semibold text-slate-500 tabular-nums">
+          <span className="inline-flex items-center rounded-full border border-slate-200/80 bg-white/70 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-slate-500">
             {today.label} · IST
           </span>
         )}
@@ -98,17 +98,17 @@ export default function QuoteOfTheDay() {
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
               transition={{ duration: 0.35, ease: "easeOut" }}
             >
-              <p className="font-title text-[1.15rem] leading-snug font-medium tracking-tight text-pretty text-slate-900 sm:text-[1.35rem]">
+              <p className="font-title text-pretty text-[1.15rem] font-medium leading-snug tracking-tight text-slate-900 sm:text-[1.35rem]">
                 <span
                   aria-hidden="true"
-                  className="mr-0.5 bg-[linear-gradient(120deg,#E97316,#F59E0B)] bg-clip-text align-text-top text-2xl leading-none font-bold text-transparent sm:text-3xl"
+                  className="mr-0.5 bg-[linear-gradient(120deg,#E97316,#F59E0B)] bg-clip-text align-text-top text-2xl font-bold leading-none text-transparent sm:text-3xl"
                 >
                   &ldquo;
                 </span>
                 {today.quote.text}
                 <span
                   aria-hidden="true"
-                  className="ml-0.5 bg-[linear-gradient(120deg,#F59E0B,#E97316)] bg-clip-text align-text-bottom text-2xl leading-none font-bold text-transparent sm:text-3xl"
+                  className="ml-0.5 bg-[linear-gradient(120deg,#F59E0B,#E97316)] bg-clip-text align-text-bottom text-2xl font-bold leading-none text-transparent sm:text-3xl"
                 >
                   &rdquo;
                 </span>
@@ -121,7 +121,7 @@ export default function QuoteOfTheDay() {
                 >
                   {initials}
                 </span>
-                <cite className="min-w-0 truncate text-sm font-semibold text-slate-900 not-italic">
+                <cite className="min-w-0 truncate text-sm font-semibold not-italic text-slate-900">
                   {today.quote.author}
                 </cite>
               </footer>

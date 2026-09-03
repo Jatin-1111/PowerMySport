@@ -366,7 +366,7 @@ export default function CommunityChatPanel({ page }: Props) {
             onClick={() => setShowChatDetailsSidebar(!showChatDetailsSidebar)}
             className="flex min-w-0 flex-1 items-center gap-3 text-left transition hover:opacity-80"
           >
-            <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-sm font-bold text-slate-700 uppercase shadow-sm ring-2 ring-white">
+            <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-sm font-bold uppercase text-slate-700 shadow-sm ring-2 ring-white">
               {selectedConversationPhotoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -380,7 +380,7 @@ export default function CommunityChatPanel({ page }: Props) {
             </div>
 
             <div className="min-w-0 flex-1">
-              <h2 className="truncate text-[15px] leading-tight font-semibold tracking-tight text-slate-900">
+              <h2 className="truncate text-[15px] font-semibold leading-tight tracking-tight text-slate-900">
                 {selectedConversationDisplayName}
               </h2>
               <p className="mt-0.5 text-[11px] font-medium text-slate-500">
@@ -551,7 +551,7 @@ export default function CommunityChatPanel({ page }: Props) {
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pt-4 pb-4 sm:px-4 sm:pt-5"
+        className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pb-4 pt-4 sm:px-4 sm:pt-5"
       >
         {/* Load more spinner */}
         <AnimatePresence>
@@ -741,7 +741,7 @@ export default function CommunityChatPanel({ page }: Props) {
                   if (e.key === "Escape") handleCancelEditMessage();
                 }}
                 rows={2}
-                className="focus:border-power-orange focus:ring-power-orange/10 w-full resize-none rounded-[14px] border border-slate-200 bg-white/80 px-4 py-2.5 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] transition focus:bg-white focus:ring-4 focus:outline-none"
+                className="focus:border-power-orange focus:ring-power-orange/10 w-full resize-none rounded-[14px] border border-slate-200 bg-white/80 px-4 py-2.5 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] transition focus:bg-white focus:outline-none focus:ring-4"
               />
               <div className="mt-2 flex justify-end gap-2">
                 <button
@@ -802,7 +802,7 @@ export default function CommunityChatPanel({ page }: Props) {
               <div className="relative inline-block rounded-[16px] border border-slate-200/80 bg-white/50 p-1 shadow-sm backdrop-blur-md">
                 <button
                   onClick={() => setPendingImageFile(null)}
-                  className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full border border-white bg-slate-800 text-white shadow-md transition hover:bg-slate-700 active:scale-90"
+                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-white bg-slate-800 text-white shadow-md transition hover:bg-slate-700 active:scale-90"
                 >
                   <X size={12} />
                 </button>
@@ -892,7 +892,7 @@ export default function CommunityChatPanel({ page }: Props) {
               }
               disabled={!canSendSelectedConversationMessage || isUploadingImage}
               rows={textareaRows}
-              className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full resize-none rounded-[20px] border border-slate-200/80 bg-slate-50/60 px-4 py-2 text-[14px] leading-relaxed shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] transition-all focus:bg-white focus:ring-3 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+              className="focus:border-power-orange/50 focus:ring-power-orange/10 focus:ring-3 w-full resize-none rounded-[20px] border border-slate-200/80 bg-slate-50/60 px-4 py-2 text-[14px] leading-relaxed shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] transition-all focus:bg-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
               style={{
                 maxHeight: "9rem",
                 overflowY: textareaRows >= 5 ? "auto" : "hidden",
@@ -1003,7 +1003,7 @@ export default function CommunityChatPanel({ page }: Props) {
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
-            className="absolute right-0 bottom-0 left-0 z-30 flex gap-2 border-t border-slate-200 bg-white p-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]"
+            className="absolute bottom-0 left-0 right-0 z-30 flex gap-2 border-t border-slate-200 bg-white p-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]"
           >
             <button
               onClick={() => {

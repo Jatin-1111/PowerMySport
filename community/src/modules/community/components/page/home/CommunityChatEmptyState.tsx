@@ -7,10 +7,10 @@ type Props = {
 
 export default function CommunityChatEmptyState({ onBack }: Props) {
   return (
-    <div className="relative flex h-full w-full flex-col items-center justify-center bg-[#efeae2] bg-[radial-gradient(rgba(255,255,255,0.34)_1px,transparent_1px),radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] bg-size-[22px_22px] bg-position-[0_0,11px_11px]">
+    <div className="bg-size-[22px_22px] bg-position-[0_0,11px_11px] relative flex h-full w-full flex-col items-center justify-center bg-[#efeae2] bg-[radial-gradient(rgba(255,255,255,0.34)_1px,transparent_1px),radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)]">
       {/* Mobile back button if somehow landed here */}
       {onBack && (
-        <div className="absolute top-0 left-0 p-3 lg:hidden">
+        <div className="absolute left-0 top-0 p-3 lg:hidden">
           <button
             onClick={onBack}
             className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"

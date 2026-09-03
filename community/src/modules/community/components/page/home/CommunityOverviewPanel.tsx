@@ -110,9 +110,9 @@ export default function CommunityOverviewPanel({ page }: Props) {
         >
           <motion.div
             variants={panelVariants}
-            className="border-border/80 rounded-2xl border bg-white p-4 shadow-xs"
+            className="border-border/80 shadow-xs rounded-2xl border bg-white p-4"
           >
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Conversations
             </p>
             <p className="mt-2 text-2xl font-bold text-slate-900">{safeConversations.length}</p>
@@ -120,17 +120,17 @@ export default function CommunityOverviewPanel({ page }: Props) {
           </motion.div>
           <motion.div
             variants={panelVariants}
-            className="border-border/80 rounded-2xl border bg-white p-4 shadow-xs"
+            className="border-border/80 shadow-xs rounded-2xl border bg-white p-4"
           >
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Unread</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Unread</p>
             <p className="mt-2 text-2xl font-bold text-slate-900">{totalUnread}</p>
             <p className="mt-1 text-sm text-slate-500">Messages waiting</p>
           </motion.div>
           <motion.div
             variants={panelVariants}
-            className="border-border/80 rounded-2xl border bg-white p-4 shadow-xs"
+            className="border-border/80 shadow-xs rounded-2xl border bg-white p-4"
           >
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Groups joined
             </p>
             <p className="mt-2 text-2xl font-bold text-slate-900">{groupsJoinedCount}</p>
@@ -138,9 +138,9 @@ export default function CommunityOverviewPanel({ page }: Props) {
           </motion.div>
           <motion.div
             variants={panelVariants}
-            className="border-border/80 rounded-2xl border bg-white p-4 shadow-xs"
+            className="border-border/80 shadow-xs rounded-2xl border bg-white p-4"
           >
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Connection
             </p>
             <p className="mt-2 text-lg font-semibold text-slate-900">

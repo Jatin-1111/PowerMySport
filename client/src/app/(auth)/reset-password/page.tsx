@@ -102,13 +102,13 @@ function ResetPasswordContent() {
                       name="newPassword"
                       value={formData.newPassword}
                       onChange={handleChange}
-                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white/50 px-4 py-3 text-slate-900 backdrop-blur-sm transition-all focus:ring-2 focus:outline-none dark:border-slate-600"
+                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white/50 px-4 py-3 text-slate-900 backdrop-blur-sm transition-all focus:outline-none focus:ring-2 dark:border-slate-600"
                       placeholder="••••••••"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
                       title="Toggle password visibility"
                       aria-label="Toggle password visibility"
                     >
@@ -127,13 +127,13 @@ function ResetPasswordContent() {
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleChange}
-                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white/50 px-4 py-3 text-slate-900 backdrop-blur-sm transition-all focus:ring-2 focus:outline-none dark:border-slate-600"
+                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white/50 px-4 py-3 text-slate-900 backdrop-blur-sm transition-all focus:outline-none focus:ring-2 dark:border-slate-600"
                       placeholder="••••••••"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
                       title="Toggle password visibility"
                       aria-label="Toggle password visibility"
                     >

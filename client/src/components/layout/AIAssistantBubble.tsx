@@ -22,7 +22,7 @@ export function AIAssistantBubble() {
       <AssistantChatDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
       {!chatOpen && (
-        <div className="fixed right-6 bottom-6 z-50 flex flex-col items-end gap-3 select-none">
+        <div className="fixed bottom-6 right-6 z-50 flex select-none flex-col items-end gap-3">
           {/* Popup tooltip card */}
           <AnimatePresence>
             {hovered && (
@@ -37,12 +37,12 @@ export function AIAssistantBubble() {
                 {/* Downward caret */}
                 <div
                   aria-hidden="true"
-                  className="absolute right-[22px] -bottom-[7px] h-3.5 w-3.5 rotate-45 border-r border-b border-slate-100 bg-white"
+                  className="absolute -bottom-[7px] right-[22px] h-3.5 w-3.5 rotate-45 border-b border-r border-slate-100 bg-white"
                 />
-                <p className="text-power-orange text-[11px] font-bold tracking-widest uppercase">
+                <p className="text-power-orange text-[11px] font-bold uppercase tracking-widest">
                   PowerMySport AI
                 </p>
-                <p className="mt-1 text-sm leading-snug font-bold text-slate-900">
+                <p className="mt-1 text-sm font-bold leading-snug text-slate-900">
                   Get instant sports guidance
                 </p>
                 <p className="mt-0.5 text-xs text-slate-400">Free, personalized for your child</p>
@@ -78,7 +78,7 @@ export function AIAssistantBubble() {
               {/* AI sparkle badge */}
               <span
                 aria-hidden="true"
-                className="ring-power-orange absolute -top-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-white ring-2"
+                className="ring-power-orange absolute -right-1 -top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-white ring-2"
               >
                 <Sparkles className="text-power-orange h-3 w-3" fill="currentColor" />
               </span>

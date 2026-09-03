@@ -3,9 +3,9 @@ import { Copyright } from "lucide-react";
 export function ProhibitedContent() {
   return (
     <section id="prohibited-content" className="mb-8">
-      <h2 className="mt-8 mb-4 text-2xl font-semibold">4. Prohibited Content</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">4. Prohibited Content</h2>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">4.1 Abusive & Harassing Content</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">4.1 Abusive & Harassing Content</h3>
       <p>The following content is strictly prohibited:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Harassment, bullying, or intimidation of any individual</li>
@@ -20,7 +20,7 @@ export function ProhibitedContent() {
         <li>Revenge content (sharing intimate images without consent)</li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">4.2 Illegal & Dangerous Content</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">4.2 Illegal & Dangerous Content</h3>
       <p>The following content is strictly prohibited:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Content promoting, encouraging, or instructing illegal activities</li>
@@ -32,7 +32,7 @@ export function ProhibitedContent() {
         <li>Instructions for creating weapons or explosives</li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">4.3 Misleading & Fraudulent Content</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">4.3 Misleading & Fraudulent Content</h3>
       <p>The following content is strictly prohibited:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Fake reviews (submitted by friends, competitors, or paid reviewers)</li>
@@ -44,7 +44,7 @@ export function ProhibitedContent() {
         <li>Sharing false credentials or certifications</li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">4.4 Inappropriate Media Content</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">4.4 Inappropriate Media Content</h3>
       <p>The following content is strictly prohibited:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Explicit sexual content or pornography</li>
@@ -55,7 +55,7 @@ export function ProhibitedContent() {
         <li>Copyright-infringing media (unauthorized use of songs, movies, photos)</li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">4.5 Spam & Commercial Abuse</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">4.5 Spam & Commercial Abuse</h3>
       <p>The following content is strictly prohibited:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Spam (repetitive, irrelevant posts)</li>
@@ -66,7 +66,7 @@ export function ProhibitedContent() {
         <li>Collection of contact information for commercial purposes</li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">4.6 Privacy Violations</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">4.6 Privacy Violations</h3>
       <p>The following content is strictly prohibited:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>

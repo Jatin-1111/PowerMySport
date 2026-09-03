@@ -271,7 +271,7 @@ export default function HomeClient() {
                 <span className="group-hover:bg-power-orange/10 group-hover:text-power-orange flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors duration-300">
                   {p.icon}
                 </span>
-                <p className="text-sm leading-snug font-medium text-slate-700">
+                <p className="text-sm font-medium leading-snug text-slate-700">
                   &ldquo;{p.text}&rdquo;
                 </p>
               </motion.div>
@@ -304,7 +304,7 @@ export default function HomeClient() {
 
       {/* ── Available Now: Explore (Roadmap + Guidance) ── */}
       <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
-        <div className="pointer-events-none absolute top-1/4 -left-32 h-80 w-80 rounded-full bg-orange-100/30 blur-3xl" />
+        <div className="pointer-events-none absolute -left-32 top-1/4 h-80 w-80 rounded-full bg-orange-100/30 blur-3xl" />
         <div className="pointer-events-none absolute -right-32 bottom-1/4 h-80 w-80 rounded-full bg-indigo-100/25 blur-3xl" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -390,12 +390,12 @@ export default function HomeClient() {
               {/* Offset backdrop panel */}
               <div
                 aria-hidden
-                className="absolute -inset-x-6 top-10 -bottom-6 rounded-[2.5rem] bg-gradient-to-br from-orange-100/50 via-orange-50/30 to-indigo-50/40"
+                className="absolute -inset-x-6 -bottom-6 top-10 rounded-[2.5rem] bg-gradient-to-br from-orange-100/50 via-orange-50/30 to-indigo-50/40"
               />
               {/* Dotted accent */}
               <div
                 aria-hidden
-                className="absolute -top-7 -right-7 h-28 w-28 opacity-50"
+                className="absolute -right-7 -top-7 h-28 w-28 opacity-50"
                 style={{
                   backgroundImage:
                     "radial-gradient(circle, rgba(233,115,22,0.35) 1.5px, transparent 1.5px)",
@@ -403,7 +403,7 @@ export default function HomeClient() {
                 }}
               />
 
-              <div className="group relative aspect-[3/2] overflow-hidden rounded-[2rem] shadow-2xl ring-1 shadow-slate-900/10 ring-slate-900/5">
+              <div className="group relative aspect-[3/2] overflow-hidden rounded-[2rem] shadow-2xl shadow-slate-900/10 ring-1 ring-slate-900/5">
                 <Image
                   src="https://media.istockphoto.com/id/1496936307/photo/young-boy-watching-british-indian-mother-working-at-home.jpg?s=612x612&w=0&k=20&c=KOg86wvMpgJe42K-2i3UKdcuOD7egEWcxHO1n3WHtl8="
                   alt="Parent planning their child's sports journey"
@@ -420,7 +420,7 @@ export default function HomeClient() {
                 />
 
                 {/* Glass caption — single, integrated overlay */}
-                <div className="absolute right-4 bottom-4 left-4 flex items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
+                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="bg-power-orange flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg shadow-orange-950/40">
                       <Map size={17} />

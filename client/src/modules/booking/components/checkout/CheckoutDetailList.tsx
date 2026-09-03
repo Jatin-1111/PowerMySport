@@ -24,7 +24,7 @@ export function CheckoutDetailList({ items, className }: CheckoutDetailListProps
           key={`${item.label}-${item.value}`}
           className="flex items-start justify-between gap-4 px-4 py-3"
         >
-          <p className="pt-0.5 text-xs font-semibold tracking-wide text-slate-400 uppercase">
+          <p className="pt-0.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
             {item.label}
           </p>
           <div className="text-right">

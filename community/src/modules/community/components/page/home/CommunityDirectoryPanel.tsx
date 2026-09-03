@@ -40,7 +40,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
       className={`relative flex h-full min-h-0 flex-col border-r border-slate-200/70 bg-white ${workspaceView === "DIRECTORY" ? "flex" : "hidden md:flex"}`}
     >
       {/* ── Fixed Header ── */}
-      <div className="flex-none px-3 pt-3 pb-1">
+      <div className="flex-none px-3 pb-1 pt-3">
         {/* Title Row */}
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-[17px] font-bold tracking-tight text-slate-900">Inbox</h2>
@@ -59,7 +59,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                     initial={{ opacity: 0, scaleY: 0, transformOrigin: "top" }}
                     animate={{ opacity: 1, scaleY: 1 }}
                     exit={{ opacity: 0, scaleY: 0 }}
-                    className="absolute top-full right-0 z-50 mt-1 w-48 rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
+                    className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
                   >
                     <button
                       onClick={() => {
@@ -88,17 +88,17 @@ export default function CommunityDirectoryPanel({ page }: Props) {
 
         {/* Search Bar */}
         <div className="relative mb-2">
-          <Search size={13} className="absolute top-1/2 left-2.5 -translate-y-1/2 text-slate-400" />
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             value={conversationSearchQuery}
             onChange={(e) => setConversationSearchQuery(e.target.value)}
             placeholder="Search conversations..."
-            className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full rounded-lg border border-slate-200 bg-slate-50/80 py-1.5 pr-7 pl-8 text-[12px] transition focus:bg-white focus:ring-1 focus:outline-none"
+            className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full rounded-lg border border-slate-200 bg-slate-50/80 py-1.5 pl-8 pr-7 text-[12px] transition focus:bg-white focus:outline-none focus:ring-1"
           />
           {conversationSearchQuery && (
             <button
               onClick={() => setConversationSearchQuery("")}
-              className="absolute top-1/2 right-2.5 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
             >
               <X size={14} />
             </button>
@@ -107,16 +107,16 @@ export default function CommunityDirectoryPanel({ page }: Props) {
 
         {/* DM / Groups Toggle */}
         <div className="flex items-center gap-1.5">
-          <div className="border-border flex w-full items-center gap-0.5 rounded-lg border bg-slate-50 p-0.5 shadow-xs">
+          <div className="border-border shadow-xs flex w-full items-center gap-0.5 rounded-lg border bg-slate-50 p-0.5">
             <button
               onClick={() => setDirectoryView("CONTACTS")}
-              className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold transition ${directoryView === "CONTACTS" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-800"}`}
+              className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold transition ${directoryView === "CONTACTS" ? "shadow-xs bg-white text-slate-900" : "text-slate-500 hover:text-slate-800"}`}
             >
               <MessageSquare size={12} /> DMs
             </button>
             <button
               onClick={() => setDirectoryView("GROUPS")}
-              className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold transition ${directoryView === "GROUPS" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-800"}`}
+              className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold transition ${directoryView === "GROUPS" ? "shadow-xs bg-white text-slate-900" : "text-slate-500 hover:text-slate-800"}`}
             >
               <Users size={12} /> Groups
             </button>
@@ -127,15 +127,15 @@ export default function CommunityDirectoryPanel({ page }: Props) {
       {/* ── Scrollable Body ── */}
       <div className="flex min-h-0 flex-1 flex-col">
         {/* All / Unread Filter Capsules */}
-        <div className="flex-none px-4 pt-2 pb-2">
+        <div className="flex-none px-4 pb-2 pt-2">
           <div
-            className={`border-border grid gap-0.5 rounded-lg border bg-slate-50 p-0.5 shadow-xs ${directoryView === "GROUPS" ? "w-32 grid-cols-2" : "w-full grid-cols-3"}`}
+            className={`border-border shadow-xs grid gap-0.5 rounded-lg border bg-slate-50 p-0.5 ${directoryView === "GROUPS" ? "w-32 grid-cols-2" : "w-full grid-cols-3"}`}
           >
             {conversationModeOptions.map((item) => (
               <button
                 key={item.value}
                 onClick={() => setConversationMode(item.value as "ALL" | "UNREAD" | "REQUESTS")}
-                className={`rounded-md px-1 py-1 text-[10px] font-bold tracking-wider uppercase transition ${conversationMode === item.value ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-800"}`}
+                className={`rounded-md px-1 py-1 text-[10px] font-bold uppercase tracking-wider transition ${conversationMode === item.value ? "shadow-xs bg-white text-slate-900" : "text-slate-500 hover:text-slate-800"}`}
               >
                 {item.label}
               </button>
@@ -147,7 +147,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
         <div className="min-h-0 flex-1 overflow-y-auto">
           {/* Pinned section divider */}
           {managedConversations.some((c) => pinnedConversationIds.includes(c.id)) && (
-            <div className="bg-slate-50/50 px-4 py-1.5 text-[10px] font-bold tracking-[0.15em] text-slate-400 uppercase">
+            <div className="bg-slate-50/50 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
               Pinned
             </div>
           )}
@@ -166,13 +166,13 @@ export default function CommunityDirectoryPanel({ page }: Props) {
             return (
               <div key={conversation.id}>
                 {showAllDivider && (
-                  <div className="bg-slate-50/50 px-4 py-1.5 text-[10px] font-bold tracking-[0.15em] text-slate-400 uppercase">
+                  <div className="bg-slate-50/50 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
                     All Conversations
                   </div>
                 )}
                 <div className="group flex items-center">
                   {page.selectChatsMode && (
-                    <div className="flex items-center justify-center py-3 pr-1 pl-3">
+                    <div className="flex items-center justify-center py-3 pl-3 pr-1">
                       <button
                         onClick={() => page.toggleChatSelection(conversation.id)}
                         className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
@@ -230,7 +230,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
       {!page.selectChatsMode && (
         <button
           onClick={() => page.setShowAddChatModal(true)}
-          className="bg-power-orange absolute right-4 bottom-4 z-20 flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg shadow-orange-500/30 transition hover:scale-105 hover:bg-orange-600 active:scale-95"
+          className="bg-power-orange absolute bottom-4 right-4 z-20 flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg shadow-orange-500/30 transition hover:scale-105 hover:bg-orange-600 active:scale-95"
         >
           <Plus size={22} strokeWidth={2.5} />
         </button>
@@ -243,7 +243,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
-            className="absolute right-0 bottom-0 left-0 z-30 flex gap-2 border-t border-slate-200 bg-white p-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]"
+            className="absolute bottom-0 left-0 right-0 z-30 flex gap-2 border-t border-slate-200 bg-white p-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]"
           >
             <button
               onClick={() => {

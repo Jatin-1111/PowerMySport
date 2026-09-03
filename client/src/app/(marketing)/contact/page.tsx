@@ -100,7 +100,7 @@ function FloatingDots() {
   return (
     <svg
       aria-hidden="true"
-      className="pointer-events-none absolute top-0 right-0 h-64 w-64 opacity-30"
+      className="pointer-events-none absolute right-0 top-0 h-64 w-64 opacity-30"
       viewBox="0 0 200 200"
     >
       {Array.from({ length: 36 }).map((_, i) => {
@@ -132,7 +132,7 @@ function SkewedAccent() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute top-1/4 -left-12 h-80 w-[120%] -rotate-[6deg] rounded-3xl bg-gradient-to-r from-orange-500/8 via-amber-400/6 to-transparent"
+      className="from-orange-500/8 via-amber-400/6 pointer-events-none absolute -left-12 top-1/4 h-80 w-[120%] -rotate-[6deg] rounded-3xl bg-gradient-to-r to-transparent"
     />
   );
 }
@@ -244,7 +244,7 @@ function Field({ label, id, required, ...props }: FieldProps) {
       <input
         id={id}
         required={required}
-        className="w-full rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-400/25 focus:outline-none"
+        className="w-full rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
         {...props}
       />
     </div>
@@ -394,7 +394,7 @@ function CustomSelect({
         onClick={() => setOpen((o) => !o)}
         onKeyDown={handleTriggerKeyDown}
         whileTap={{ scale: 0.985 }}
-        className={`flex w-full items-center justify-between gap-3 rounded-xl border bg-white/60 px-4 py-3 text-left text-sm shadow-sm transition-all duration-200 focus:bg-white focus:ring-2 focus:ring-orange-400/25 focus:outline-none ${
+        className={`flex w-full items-center justify-between gap-3 rounded-xl border bg-white/60 px-4 py-3 text-left text-sm shadow-sm transition-all duration-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25 ${
           open
             ? "border-orange-400 bg-white ring-2 ring-orange-400/25"
             : "border-slate-200 hover:border-orange-300 hover:shadow-md"
@@ -554,7 +554,7 @@ export default function ContactPage() {
         {/* ── Background ambient blobs ── */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute top-24 -left-32 h-[500px] w-[500px] rounded-full bg-orange-100/40 blur-[100px]"
+          className="pointer-events-none absolute -left-32 top-24 h-[500px] w-[500px] rounded-full bg-orange-100/40 blur-[100px]"
         />
         <div
           aria-hidden="true"
@@ -562,7 +562,7 @@ export default function ContactPage() {
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute top-1/3 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-amber-100/20 blur-[60px]"
+          className="pointer-events-none absolute left-1/2 top-1/3 h-64 w-64 -translate-x-1/2 rounded-full bg-amber-100/20 blur-[60px]"
         />
 
         {/* ── Dot grid pattern ── */}
@@ -755,7 +755,7 @@ export default function ContactPage() {
                       onChange={handleChange}
                       required
                       rows={5}
-                      className="w-full resize-none rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-400/25 focus:outline-none"
+                      className="w-full resize-none rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
                       placeholder="Tell us about your inquiry..."
                     />
                   </motion.div>
@@ -809,7 +809,7 @@ export default function ContactPage() {
                 {/* Geo accent */}
                 <div
                   aria-hidden="true"
-                  className="absolute -top-6 -right-6 h-20 w-20 rounded-full bg-orange-400/30 blur-2xl"
+                  className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-orange-400/30 blur-2xl"
                 />
               </motion.div>
 
@@ -893,7 +893,7 @@ export default function ContactPage() {
       </section>
 
       {/* ── Wave Divider into CTA ─────────────────────────────────────────────── */}
-      <div className="relative z-10 -mb-1 text-slate-900/4">
+      <div className="text-slate-900/4 relative z-10 -mb-1">
         <WaveDivider />
       </div>
 
@@ -902,7 +902,7 @@ export default function ContactPage() {
         {/* Background radial burst */}
         <div
           aria-hidden="true"
-          className="bg-power-orange/10 pointer-events-none absolute top-0 left-1/2 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/3 rounded-full blur-[100px]"
+          className="bg-power-orange/10 pointer-events-none absolute left-1/2 top-0 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/3 rounded-full blur-[100px]"
         />
 
         {/* Diagonal stripe overlay */}
@@ -923,7 +923,7 @@ export default function ContactPage() {
             viewport={{ once: true, margin: "-80px" }}
           >
             <motion.div variants={scaleIn} className="mb-4 inline-flex">
-              <span className="border-power-orange/40 bg-power-orange/10 rounded-full border px-4 py-1.5 text-xs font-bold tracking-widest text-orange-400 uppercase">
+              <span className="border-power-orange/40 bg-power-orange/10 rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-orange-400">
                 Ready to play?
               </span>
             </motion.div>

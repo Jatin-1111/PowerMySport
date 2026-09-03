@@ -161,7 +161,7 @@ export function ResultsView({
               <Route className="text-power-orange h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-title text-lg leading-tight font-bold text-slate-900">
+              <h3 className="font-title text-lg font-bold leading-tight text-slate-900">
                 Your Path Forward
               </h3>
               <p className="mt-0.5 text-xs text-slate-500">Step-by-step from today to the goal</p>
@@ -185,7 +185,7 @@ export function ResultsView({
             <TrendingUp className="h-5 w-5 text-emerald-600" />
           </div>
           <div>
-            <h3 className="font-title text-lg leading-tight font-bold text-slate-900">
+            <h3 className="font-title text-lg font-bold leading-tight text-slate-900">
               Do This Next
             </h3>
             <p className="mt-0.5 text-xs text-slate-500">Immediate actions on PowerMySport</p>
@@ -202,7 +202,7 @@ export function ResultsView({
                 <CalendarCheck className="h-4 w-4 text-orange-600" />
               </div>
               <div>
-                <p className="text-[13px] leading-tight font-bold text-slate-800">Book an Expert</p>
+                <p className="text-[13px] font-bold leading-tight text-slate-800">Book an Expert</p>
                 <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
                   1-on-1 with a certified expert
                 </p>
@@ -220,7 +220,7 @@ export function ResultsView({
                 <Sparkles className="h-4 w-4 text-violet-600" />
               </div>
               <div>
-                <p className="text-[13px] leading-tight font-bold text-slate-800">
+                <p className="text-[13px] font-bold leading-tight text-slate-800">
                   Ask PowerMySport AI
                 </p>
                 <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
@@ -240,7 +240,7 @@ export function ResultsView({
                 <WhatsAppIcon className="h-4 w-4 text-emerald-600" />
               </div>
               <div>
-                <p className="text-[13px] leading-tight font-bold text-slate-800">WhatsApp Us</p>
+                <p className="text-[13px] font-bold leading-tight text-slate-800">WhatsApp Us</p>
                 <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
                   A specialist replies personally
                 </p>
@@ -262,7 +262,7 @@ export function ResultsView({
                 )}
               </div>
               <div>
-                <p className="text-[13px] leading-tight font-bold text-slate-800">Download PDF</p>
+                <p className="text-[13px] font-bold leading-tight text-slate-800">Download PDF</p>
                 <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
                   Save or share offline
                 </p>
@@ -279,13 +279,13 @@ export function ResultsView({
                     {i + 1}
                   </span>
                   <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
-                    <span className="text-sm leading-relaxed font-medium text-emerald-900/90">
+                    <span className="text-sm font-medium leading-relaxed text-emerald-900/90">
                       {step}.
                     </span>
                     {actionUrl && (
                       <Link
                         href={actionUrl}
-                        className="flex shrink-0 items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap text-emerald-700 transition hover:bg-emerald-50"
+                        className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border border-emerald-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-50"
                       >
                         Go <ArrowRight className="h-3 w-3" />
                       </Link>
@@ -309,7 +309,7 @@ export function ResultsView({
               <Trophy className="h-5 w-5 text-amber-500" />
             </div>
             <div>
-              <h3 className="font-title text-lg leading-tight font-bold text-slate-900">
+              <h3 className="font-title text-lg font-bold leading-tight text-slate-900">
                 Top Recommended Sports
               </h3>
               <p className="mt-0.5 text-xs text-slate-500">Based on your child's profile</p>
@@ -328,7 +328,7 @@ export function ResultsView({
                 <div className="text-power-orange flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white font-bold shadow-sm">
                   #{idx + 1}
                 </div>
-                <p className="leading-tight font-semibold text-slate-800">{sport}</p>
+                <p className="font-semibold leading-tight text-slate-800">{sport}</p>
               </motion.div>
             ))}
           </div>

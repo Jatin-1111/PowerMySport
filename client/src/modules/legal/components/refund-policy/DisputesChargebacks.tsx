@@ -1,9 +1,9 @@
 export function DisputesChargebacks() {
   return (
     <section id="disputes-chargebacks" className="mb-8">
-      <h2 className="mt-8 mb-4 text-2xl font-semibold">4. Payment Disputes &amp; Chargebacks</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">4. Payment Disputes &amp; Chargebacks</h2>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">4.1 Dispute Filing Process</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">4.1 Dispute Filing Process</h3>
       <p>
         If you believe a charge was made in error or a service was not delivered, you must raise a
         dispute directly with PowerMySport <strong>within 48 hours</strong> of the scheduled booking
@@ -28,7 +28,7 @@ export function DisputesChargebacks() {
         disengage and report it to teams@powermysport.com immediately.
       </p>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">4.2 Dispute Investigation Timeline</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">4.2 Dispute Investigation Timeline</h3>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>
           <strong>Acknowledgment:</strong> Within 48 hours of filing
@@ -49,7 +49,7 @@ export function DisputesChargebacks() {
         </li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">4.3 Chargeback Process</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">4.3 Chargeback Process</h3>
       <p>
         Filing a chargeback with your bank or payment provider without first exhausting the dispute
         process above is treated as a presumptive breach of these policies and of good faith. In
@@ -74,11 +74,11 @@ export function DisputesChargebacks() {
         <li>Repeated or disputed chargebacks will result in permanent account termination</li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">
+      <h3 className="mb-3 mt-6 text-xl font-semibold">
         4.4 Common Dispute Reasons &amp; Resolution
       </h3>
       <div className="overflow-x-auto">
-        <table className="mt-4 mb-4 w-full border-collapse border border-gray-300">
+        <table className="mb-4 mt-4 w-full border-collapse border border-gray-300">
           <thead className="bg-gray-100">
             <tr>
               <th className="border border-gray-300 p-3 text-left">Dispute Type</th>

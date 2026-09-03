@@ -271,12 +271,12 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
       {/* Bell Icon with Badge */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="focus:ring-power-orange relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:ring-2 focus:outline-none"
+        className="focus:ring-power-orange relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2"
         aria-label="Notifications"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -290,7 +290,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 z-50 mt-2 max-h-150 w-96 overflow-hidden rounded-2xl border border-white/80 bg-white/95 shadow-xl backdrop-blur-sm"
+            className="max-h-150 absolute right-0 z-50 mt-2 w-96 overflow-hidden rounded-2xl border border-white/80 bg-white/95 shadow-xl backdrop-blur-sm"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-200 bg-[linear-gradient(120deg,#f9fbff_0%,#eef5ff_100%)] px-4 py-3">
@@ -375,7 +375,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
                           <div className="text-muted-foreground mt-2 flex items-center gap-2 text-xs">
                             <span
                               className={cn(
-                                "rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase",
+                                "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
                                 tone.chip
                               )}
                             >

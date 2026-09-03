@@ -88,7 +88,7 @@ export default function SafetyPage() {
                     blockedUsers.map((user) => (
                       <div
                         key={user.id}
-                        className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-xs sm:flex-row sm:items-center sm:justify-between"
+                        className="shadow-xs flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <p className="text-sm font-medium text-slate-800">{user.name}</p>
                         <button
@@ -115,7 +115,7 @@ export default function SafetyPage() {
                     reports.map((report) => (
                       <div
                         key={report.id}
-                        className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-xs"
+                        className="shadow-xs rounded-2xl border border-slate-200 bg-white px-3 py-3"
                       >
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                           <p className="text-xs font-semibold text-slate-700">

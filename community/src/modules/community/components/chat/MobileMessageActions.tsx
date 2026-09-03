@@ -38,13 +38,13 @@ export function MobileMessageActions({
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="w-full rounded-t-[32px] border-t border-white/60 bg-white/80 px-5 pt-4 pb-8 shadow-[0_-8px_40px_rgba(0,0,0,0.12)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/70"
+        className="w-full rounded-t-[32px] border-t border-white/60 bg-white/80 px-5 pb-8 pt-4 shadow-[0_-8px_40px_rgba(0,0,0,0.12)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/70"
         onClick={(event) => event.stopPropagation()}
       >
         {/* Drag handle */}
         <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-slate-300/80 shadow-inner" />
 
-        <p className="mb-1 text-[13px] font-bold tracking-widest text-slate-400 uppercase">
+        <p className="mb-1 text-[13px] font-bold uppercase tracking-widest text-slate-400">
           Message Options
         </p>
 

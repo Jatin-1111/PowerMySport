@@ -276,7 +276,7 @@ export function AddressManagement() {
       {(isAddingNew || editingId) && (
         <form
           onSubmit={handleSubmit}
-          className="max-w-2xl space-y-6 rounded-3xl border border-slate-200/60 bg-slate-50/50 p-6 shadow-xs sm:p-8"
+          className="shadow-xs max-w-2xl space-y-6 rounded-3xl border border-slate-200/60 bg-slate-50/50 p-6 sm:p-8"
         >
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-bold text-slate-900">
@@ -293,7 +293,7 @@ export function AddressManagement() {
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 Recipient Name
               </label>
               <input
@@ -302,12 +302,12 @@ export function AddressManagement() {
                 placeholder="Full Name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 Email Address
               </label>
               <input
@@ -316,12 +316,12 @@ export function AddressManagement() {
                 placeholder="email@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 Phone Number
               </label>
               <input
@@ -330,12 +330,12 @@ export function AddressManagement() {
                 placeholder="e.g. +91 99999 99999"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 Address Line 1
               </label>
               <input
@@ -344,12 +344,12 @@ export function AddressManagement() {
                 placeholder="House/Flat No., Building, Street Name"
                 value={addressLine1}
                 onChange={(e) => setAddressLine1(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 Address Line 2 (Optional)
               </label>
               <input
@@ -357,12 +357,12 @@ export function AddressManagement() {
                 placeholder="Apartment, suite, floor, etc."
                 value={addressLine2}
                 onChange={(e) => setAddressLine2(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 City
               </label>
               <input
@@ -371,19 +371,19 @@ export function AddressManagement() {
                 placeholder="City"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 State
               </label>
               <select
                 required
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               >
                 <option value="">Select state</option>
                 {/* Preserve a legacy/non-canonical value so editing still shows it */}
@@ -397,7 +397,7 @@ export function AddressManagement() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 Postal / ZIP Code
               </label>
               <input
@@ -408,7 +408,7 @@ export function AddressManagement() {
                 placeholder="6-digit ZIP code"
                 value={postalCode}
                 onChange={(e) => handlePostalChange(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               />
               {pincodeLoading && (
                 <p className="mt-1 text-xs text-slate-400">Looking up city & state…</p>
@@ -416,14 +416,14 @@ export function AddressManagement() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                 Country
               </label>
               <select
                 required
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#ff5722]"
               >
                 {country && country !== "IN" && <option value={country}>{country}</option>}
                 <option value="IN">India</option>

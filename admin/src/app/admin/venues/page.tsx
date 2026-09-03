@@ -184,7 +184,7 @@ export default function AdminVenuesPage() {
             <span className="text-slate-400">({v.reviewCount ?? 0})</span>
           </span>
         ) : (
-          <span className="text-xs font-semibold text-slate-400 uppercase">New</span>
+          <span className="text-xs font-semibold uppercase text-slate-400">New</span>
         ),
     },
     {

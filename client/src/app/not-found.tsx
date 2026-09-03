@@ -9,13 +9,13 @@ export default function NotFound() {
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-white via-orange-50/40 to-white px-6 py-20 text-center">
       {/* soft brand glows */}
-      <div className="bg-power-orange/10 pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl" />
-      <div className="bg-turf-green/10 pointer-events-none absolute -right-24 -bottom-24 h-72 w-72 rounded-full blur-3xl" />
+      <div className="bg-power-orange/10 pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full blur-3xl" />
+      <div className="bg-turf-green/10 pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full blur-3xl" />
 
-      <p className="text-power-orange relative mb-2 text-sm font-semibold tracking-[0.2em] uppercase">
+      <p className="text-power-orange relative mb-2 text-sm font-semibold uppercase tracking-[0.2em]">
         Error 404
       </p>
-      <h1 className="font-title text-deep-slate relative text-7xl leading-none font-extrabold sm:text-8xl">
+      <h1 className="font-title text-deep-slate relative text-7xl font-extrabold leading-none sm:text-8xl">
         404
       </h1>
       <h2 className="font-title relative mt-4 text-2xl font-bold text-slate-900 sm:text-3xl">

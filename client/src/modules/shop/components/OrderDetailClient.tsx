@@ -192,7 +192,7 @@ export function OrderDetailClient({ orderId }: { orderId: string }) {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold tracking-wider text-slate-700 uppercase">
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold uppercase tracking-wider text-slate-700">
             {order.status}
           </span>
           <button
@@ -226,7 +226,7 @@ export function OrderDetailClient({ orderId }: { orderId: string }) {
                     <div className="relative pb-8">
                       {stepIdx !== steps.length - 1 ? (
                         <span
-                          className="absolute top-5 left-5 -ml-px h-full w-0.5 bg-slate-200"
+                          className="absolute left-5 top-5 -ml-px h-full w-0.5 bg-slate-200"
                           aria-hidden="true"
                         />
                       ) : null}

@@ -236,7 +236,7 @@ export default function Step2Location({
   };
 
   return (
-    <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
+    <div className="shadow-xs space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 md:p-8">
       <div className="mb-8 text-center">
         <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 2: Location & Contact</h2>
         <p className="text-slate-600">Where is your academy located?</p>
@@ -254,18 +254,18 @@ export default function Step2Location({
               value={addressQuery}
               onChange={handleAddressChange}
               placeholder="Search your academy location..."
-              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                 fieldErrors.address ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
               }`}
               disabled={isSubmitting}
             />
             {isSearching && (
-              <div className="absolute top-2.5 right-3">
+              <div className="absolute right-3 top-2.5">
                 <div className="border-power-orange h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
               </div>
             )}
             {suggestions.length > 0 && (
-              <div className="absolute top-full right-0 left-0 z-10 max-h-60 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+              <div className="absolute left-0 right-0 top-full z-10 max-h-60 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                 {suggestions.map((suggestion) => (
                   <button
                     key={`${suggestion.lat}-${suggestion.lon}`}
@@ -305,7 +305,7 @@ export default function Step2Location({
               value={formData.city}
               onChange={(e) => setFormData((prev) => ({ ...prev, city: e.target.value }))}
               placeholder="Mumbai"
-              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                 fieldErrors.city ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
               }`}
               disabled={isSubmitting}
@@ -320,7 +320,7 @@ export default function Step2Location({
             <select
               value={formData.state}
               onChange={(e) => setFormData((prev) => ({ ...prev, state: e.target.value }))}
-              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                 fieldErrors.state ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
               }`}
               disabled={isSubmitting}
@@ -345,7 +345,7 @@ export default function Step2Location({
               onChange={(e) => setFormData((prev) => ({ ...prev, pincode: e.target.value }))}
               placeholder="400001"
               maxLength={6}
-              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                 fieldErrors.pincode ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
               }`}
               disabled={isSubmitting}
@@ -375,7 +375,7 @@ export default function Step2Location({
                   }))
                 }
                 placeholder="Full name"
-                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                   fieldErrors.contactPersonName
                     ? "border-red-300 bg-red-50"
                     : "border-slate-300 bg-white"
@@ -413,7 +413,7 @@ export default function Step2Location({
                     }}
                     placeholder="9876543210"
                     maxLength={10}
-                    className={`focus:ring-power-orange flex-1 rounded-r-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                    className={`focus:ring-power-orange flex-1 rounded-r-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                       fieldErrors.contactPhone
                         ? "border-red-300 bg-red-50"
                         : "border-slate-300 bg-white"
@@ -440,7 +440,7 @@ export default function Step2Location({
                     }))
                   }
                   placeholder="contact@academy.com"
-                  className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                  className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                     fieldErrors.contactEmail
                       ? "border-red-300 bg-red-50"
                       : "border-slate-300 bg-white"
@@ -478,7 +478,7 @@ export default function Step2Location({
                   }}
                   placeholder="9876543210"
                   maxLength={10}
-                  className={`focus:ring-power-orange flex-1 rounded-r-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                  className={`focus:ring-power-orange flex-1 rounded-r-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                     fieldErrors.whatsappNumber
                       ? "border-red-300 bg-red-50"
                       : "border-slate-300 bg-white"

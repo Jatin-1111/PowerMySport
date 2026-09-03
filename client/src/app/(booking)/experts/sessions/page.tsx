@@ -100,7 +100,7 @@ export default function MyExpertSessionsPage() {
             <ArrowLeft className="h-4 w-4" /> Browse experts
           </Link>
           <FadeIn>
-            <p className="mb-2 text-[11px] font-bold tracking-[0.22em] text-orange-700 uppercase">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-orange-700">
               Your Bookings
             </p>
             <h1 className="font-title text-3xl font-black tracking-tight text-slate-900">
@@ -171,7 +171,7 @@ export default function MyExpertSessionsPage() {
                           </p>
                           <span
                             className={cn(
-                              "shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide uppercase ring-1 ring-inset",
+                              "shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset",
                               STATUS_STYLES[s.status] ||
                                 "bg-slate-100 text-slate-600 ring-slate-200"
                             )}

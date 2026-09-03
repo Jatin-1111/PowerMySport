@@ -43,7 +43,7 @@ export default function CommunityDetailsModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed top-1/2 left-1/2 z-[201] w-full max-w-md -translate-x-1/2 -translate-y-1/2 p-4"
+            className="fixed left-1/2 top-1/2 z-[201] w-full max-w-md -translate-x-1/2 -translate-y-1/2 p-4"
           >
             <div className="flex max-h-[90vh] flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-900/5">
               {/* Header / Hero Banner */}
@@ -51,12 +51,12 @@ export default function CommunityDetailsModal({
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
                 <button
                   onClick={onClose}
-                  className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-white backdrop-blur transition hover:bg-black/40"
+                  className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-white backdrop-blur transition hover:bg-black/40"
                 >
                   <X size={16} />
                 </button>
                 {community.isAdmin && onEdit && onDelete && (
-                  <div className="absolute top-4 right-14 z-10 flex gap-2">
+                  <div className="absolute right-14 top-4 z-10 flex gap-2">
                     <button
                       onClick={() => onEdit(community)}
                       className="flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-white backdrop-blur transition hover:bg-black/40"
@@ -101,7 +101,7 @@ export default function CommunityDetailsModal({
               </div>
 
               {/* Profile Avatar Overlap */}
-              <div className="relative px-6 pt-0 pb-6 sm:px-8">
+              <div className="relative px-6 pb-6 pt-0 sm:px-8">
                 <div className="font-title text-power-orange/60 absolute -top-12 left-6 flex h-24 w-24 items-center justify-center rounded-[1.5rem] border-4 border-white bg-orange-100 text-4xl font-bold shadow-sm sm:left-8">
                   {community.name.charAt(0).toUpperCase()}
                 </div>
@@ -113,7 +113,7 @@ export default function CommunityDetailsModal({
                     </h2>
                     <div className="mt-1 flex items-center gap-2">
                       {community.isMember && (
-                        <span className="inline-flex shrink-0 items-center rounded-md bg-slate-900 px-2 py-0.5 text-xs font-semibold tracking-wide text-white uppercase">
+                        <span className="inline-flex shrink-0 items-center rounded-md bg-slate-900 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white">
                           Member
                         </span>
                       )}
@@ -124,7 +124,7 @@ export default function CommunityDetailsModal({
                 {/* About & Stats */}
                 <div className="mt-6 space-y-4">
                   <div>
-                    <h3 className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                       About
                     </h3>
                     <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
@@ -138,7 +138,7 @@ export default function CommunityDetailsModal({
                         <Users size={14} />
                       </div>
                       <div>
-                        <p className="text-[10px] font-medium tracking-wider text-slate-500 uppercase">
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
                           Members
                         </p>
                         <p className="text-sm font-semibold text-slate-900">
@@ -152,7 +152,7 @@ export default function CommunityDetailsModal({
                         <Target size={14} />
                       </div>
                       <div>
-                        <p className="text-[10px] font-medium tracking-wider text-slate-500 uppercase">
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
                           Sport
                         </p>
                         <p className="max-w-[80px] truncate text-sm font-semibold text-slate-900">
@@ -167,7 +167,7 @@ export default function CommunityDetailsModal({
                           <MapPin size={14} />
                         </div>
                         <div>
-                          <p className="text-[10px] font-medium tracking-wider text-slate-500 uppercase">
+                          <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
                             Location
                           </p>
                           <p className="text-sm font-semibold text-slate-900">{community.city}</p>

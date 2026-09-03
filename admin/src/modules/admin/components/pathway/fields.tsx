@@ -27,7 +27,7 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-xs font-bold tracking-wide text-slate-500 uppercase">{label}</span>
+      <span className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</span>
       {hint && <span className="mt-0.5 block text-xs text-slate-400">{hint}</span>}
       <div className="mt-1.5">{children}</div>
     </label>
@@ -137,7 +137,7 @@ export function RepeatableList<T>({
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-3 text-xs text-slate-400 italic">{emptyText}</p>
+        <p className="mt-3 text-xs italic text-slate-400">{emptyText}</p>
       ) : (
         <ul className="mt-3 space-y-2">
           {items.map((item, index) => (

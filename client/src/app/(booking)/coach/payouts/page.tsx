@@ -62,7 +62,7 @@ export default function CoachPayoutsPage() {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* ── Page header ── */}
-      <div className="rounded-xl border border-slate-200 bg-linear-to-br from-blue-50 to-indigo-50 p-4 shadow-sm sm:p-6">
+      <div className="bg-linear-to-br rounded-xl border border-slate-200 from-blue-50 to-indigo-50 p-4 shadow-sm sm:p-6">
         <div className="flex flex-col items-start gap-4 sm:flex-row">
           <div className="bg-power-orange/15 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg">
             <BadgeIndianRupee size={24} className="text-power-orange" />

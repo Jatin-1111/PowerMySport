@@ -331,7 +331,7 @@ export default function AcademyOnboardingContainer() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <div className="bg-power-orange/20 mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full">
-            <div className="border-power-orange h-8 w-8 animate-spin rounded-full border-3 border-t-transparent" />
+            <div className="border-power-orange border-3 h-8 w-8 animate-spin rounded-full border-t-transparent" />
           </div>
           <p className="text-slate-600">Loading your progress...</p>
         </div>
@@ -340,7 +340,7 @@ export default function AcademyOnboardingContainer() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 px-4 py-8">
+    <div className="bg-linear-to-br min-h-screen from-slate-50 to-slate-100 px-4 py-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-8">
           <div className="mb-2 flex justify-between">
@@ -351,7 +351,7 @@ export default function AcademyOnboardingContainer() {
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-slate-200">
             <div
-              className="from-power-orange to-power-orange/80 h-full bg-linear-to-r transition-all duration-500"
+              className="from-power-orange to-power-orange/80 bg-linear-to-r h-full transition-all duration-500"
               style={{ width: `${(currentStep / 7) * 100}%` }}
             />
           </div>

@@ -103,7 +103,7 @@ function DefaultCTA({ title, description, primaryCTA, secondaryCTA, label }: CTA
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         <div className="premium-shadow relative overflow-hidden rounded-3xl border border-white/70 bg-white/80 px-8 py-14 text-center shadow-sm backdrop-blur-md">
           <SkewPolygon className="absolute inset-0 h-full w-full" />
-          <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-orange-200/25 blur-3xl" />
+          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-orange-200/25 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-sky-200/20 blur-3xl" />
           <motion.div
             variants={containerVariants}
@@ -175,7 +175,7 @@ function GradientCTA({ title, description, primaryCTA, secondaryCTA, label }: CT
           <SkewPolygon className="absolute inset-0 h-full w-full" />
 
           {/* Ambient blobs */}
-          <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-amber-200/35 blur-3xl" />
+          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-amber-200/35 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-sky-200/30 blur-3xl" />
 
           <motion.div

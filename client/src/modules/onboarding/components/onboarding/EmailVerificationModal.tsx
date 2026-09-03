@@ -200,7 +200,7 @@ export default function EmailVerificationModal({
         {showCloseButton && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+            className="absolute right-4 top-4 text-slate-400 hover:text-slate-600"
             disabled={loading}
           >
             <X size={24} />

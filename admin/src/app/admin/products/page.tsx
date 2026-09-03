@@ -292,7 +292,7 @@ function AdminProductsPageContent() {
 
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Name
                 </label>
                 <input
@@ -303,7 +303,7 @@ function AdminProductsPageContent() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Short description
                 </label>
                 <input
@@ -319,7 +319,7 @@ function AdminProductsPageContent() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Description
                 </label>
                 <textarea
@@ -337,7 +337,7 @@ function AdminProductsPageContent() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Category
                   </label>
                   <select
@@ -358,7 +358,7 @@ function AdminProductsPageContent() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Status
                   </label>
                   <select
@@ -379,7 +379,7 @@ function AdminProductsPageContent() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Base price (paise)
                   </label>
                   <input
@@ -395,7 +395,7 @@ function AdminProductsPageContent() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Sale price (paise, optional)
                   </label>
                   <input

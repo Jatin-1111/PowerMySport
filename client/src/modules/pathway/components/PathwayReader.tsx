@@ -267,7 +267,7 @@ function StageListItem({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ type: "spring", stiffness: 500, damping: 26 }}
-              className="mt-1 inline-flex origin-left items-center gap-1 rounded-full bg-amber-400 px-1.5 py-px text-[10px] font-black tracking-wide text-amber-950 uppercase"
+              className="mt-1 inline-flex origin-left items-center gap-1 rounded-full bg-amber-400 px-1.5 py-px text-[10px] font-black uppercase tracking-wide text-amber-950"
             >
               <MapPin className="h-2.5 w-2.5" /> You are here
             </motion.span>
@@ -331,7 +331,7 @@ function QuestionsList({ stage }: { stage: PathwayStage }) {
     <ul className="space-y-2.5">
       {stage.questions.map((item) => (
         <li key={item.question} className="rounded-xl border border-slate-200 bg-white p-3.5">
-          <span className="block text-[14.5px] leading-snug font-semibold text-slate-900">
+          <span className="block text-[14.5px] font-semibold leading-snug text-slate-900">
             {item.question}
           </span>
           {item.answer?.trim() && (
@@ -515,7 +515,7 @@ export function PathwayReader({
   );
 
   const ageField = (
-    <div className="px-3 pt-1 pb-2">
+    <div className="px-3 pb-2 pt-1">
       <label className="block text-[11px] font-bold text-slate-500">
         How old is your child?
         <input
@@ -576,7 +576,7 @@ export function PathwayReader({
           </details>
 
           <div className="hidden rounded-2xl border border-slate-200 bg-white p-2 lg:block">
-            <p className="px-3 py-2 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+            <p className="px-3 py-2 text-[11px] font-black uppercase tracking-widest text-slate-400">
               {total} stages
             </p>
             {ageField}
@@ -618,7 +618,7 @@ export function PathwayReader({
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     id="pathway-stage-position"
-                    className="inline-block rounded-md px-2 py-1 text-[11px] font-black tracking-widest text-white uppercase"
+                    className="inline-block rounded-md px-2 py-1 text-[11px] font-black uppercase tracking-widest text-white"
                     style={{ background: colorFor(safeIndex) }}
                   >
                     Stage {safeIndex + 1} of {total}
@@ -632,7 +632,7 @@ export function PathwayReader({
                         stiffness: 500,
                         damping: 24,
                       }}
-                      className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-2 py-1 text-[10px] font-black tracking-wide text-amber-950 uppercase"
+                      className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-amber-950"
                     >
                       <MapPin className="h-3 w-3" /> Your child is here
                     </motion.span>
@@ -644,7 +644,7 @@ export function PathwayReader({
                   what breaks heading-based navigation. */}
                 <h2
                   id="pathway-stage-name"
-                  className="mt-2 text-[22px] leading-tight font-extrabold tracking-[-0.01em] text-slate-900 sm:text-[26px]"
+                  className="mt-2 text-[22px] font-extrabold leading-tight tracking-[-0.01em] text-slate-900 sm:text-[26px]"
                 >
                   {stage.name}
                 </h2>
@@ -660,7 +660,7 @@ export function PathwayReader({
                 <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5">
                   <Users className="h-4 w-4 shrink-0 text-emerald-600" />
                   <div>
-                    <p className="text-[10px] font-black tracking-widest text-emerald-700 uppercase">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">
                       Typical age
                     </p>
                     <p className="text-[15px] font-extrabold text-emerald-900">{stage.ageRange}</p>
@@ -815,7 +815,7 @@ export function PathwayReader({
                           {String(i + 1).padStart(2, "0")}
                         </span>
                         <span>
-                          <span className="block text-[14.5px] leading-snug font-semibold text-slate-900">
+                          <span className="block text-[14.5px] font-semibold leading-snug text-slate-900">
                             {signal.title}
                           </span>
                           {signal.detail && (
@@ -837,7 +837,7 @@ export function PathwayReader({
                           key={decision.title}
                           className="rounded-xl border border-slate-200 bg-white p-3.5"
                         >
-                          <span className="block text-[14.5px] leading-snug font-semibold text-slate-900">
+                          <span className="block text-[14.5px] font-semibold leading-snug text-slate-900">
                             {decision.title}
                           </span>
                           {decision.detail && (
@@ -851,7 +851,7 @@ export function PathwayReader({
 
                     {stage.helpLinks.length > 0 && (
                       <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                        <p className="text-[11px] font-black tracking-widest text-slate-500 uppercase">
+                        <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">
                           Get help with this
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">

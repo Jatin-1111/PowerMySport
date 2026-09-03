@@ -317,7 +317,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
                 {saveIndicator}
               </span>
             )}
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
               {postStatus === "PUBLISHED"
                 ? "Editing story"
                 : postStatus === "DRAFT"
@@ -356,7 +356,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
             event.target.style.height = `${event.target.scrollHeight}px`;
           }}
           placeholder="Story title"
-          className="font-title mt-5 w-full resize-none bg-transparent text-3xl leading-tight font-bold tracking-tight text-slate-900 outline-none placeholder:text-slate-300 sm:text-4xl"
+          className="font-title mt-5 w-full resize-none bg-transparent text-3xl font-bold leading-tight tracking-tight text-slate-900 outline-none placeholder:text-slate-300 sm:text-4xl"
         />
 
         {/* Excerpt / subtitle */}
@@ -377,7 +377,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
         {/* Topic + tags */}
         <div className="mt-1 grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-400 uppercase">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">
               Topic
             </label>
             <select
@@ -393,7 +393,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-400 uppercase">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">
               Tags (comma separated)
             </label>
             <input

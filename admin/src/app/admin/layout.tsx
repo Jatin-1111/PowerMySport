@@ -408,7 +408,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="sticky top-0 z-30 border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] tracking-wide text-slate-500 uppercase">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-500">
                     Admin Dashboard
                   </p>
                   <p className="text-sm font-semibold text-slate-900">PowerMySport</p>
@@ -443,12 +443,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             )}
 
             {isMounted && isMobileNavOpen && (
-              <aside className="fixed top-0 right-0 z-40 h-screen w-[88vw] max-w-sm border-l border-slate-200 bg-white shadow-xl lg:hidden">
+              <aside className="fixed right-0 top-0 z-40 h-screen w-[88vw] max-w-sm border-l border-slate-200 bg-white shadow-xl lg:hidden">
                 <div className="flex h-full flex-col">
                   <div className="border-b border-slate-200 p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[11px] tracking-wide text-slate-500 uppercase">
+                        <p className="text-[11px] uppercase tracking-wide text-slate-500">
                           Navigation
                         </p>
                         <p className="text-sm font-semibold text-slate-900">{adminName}</p>
@@ -467,7 +467,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <nav className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
                     {navGroups.map((group) => (
                       <div key={`mobile-group-${group.title}`}>
-                        <p className="mb-2 px-2 text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+                        <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                           {group.title}
                         </p>
                         <div className="space-y-1">
@@ -515,7 +515,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {isMounted && !isMobile && (
               <aside
-                className={`fixed top-0 left-0 hidden h-screen flex-col overflow-x-hidden overflow-y-auto border-r border-slate-200 bg-white shadow-sm transition-[width] duration-200 lg:flex ${
+                className={`fixed left-0 top-0 hidden h-screen flex-col overflow-y-auto overflow-x-hidden border-r border-slate-200 bg-white shadow-sm transition-[width] duration-200 lg:flex ${
                   isSidebarCollapsed ? "w-20" : "w-72"
                 }`}
               >
@@ -525,7 +525,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                        icons. */}
                 <div className={isSidebarCollapsed ? "p-3" : "p-6"}>
                   <div
-                    className={`rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 text-white ${
+                    className={`bg-linear-to-br rounded-2xl from-slate-900 to-slate-800 text-white ${
                       isSidebarCollapsed ? "flex h-14 items-center justify-center" : "p-5"
                     }`}
                   >
@@ -535,7 +535,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       </span>
                     ) : (
                       <>
-                        <p className="text-xs tracking-wide text-slate-300 uppercase">
+                        <p className="text-xs uppercase tracking-wide text-slate-300">
                           Admin Dashboard
                         </p>
                         <h1 className="mt-2 text-2xl font-bold text-white">PowerMySport</h1>
@@ -603,7 +603,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       {isSidebarCollapsed ? (
                         <div aria-hidden className="mx-3 mb-2 border-t border-slate-200" />
                       ) : (
-                        <p className="mb-2 px-4 text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+                        <p className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                           {group.title}
                         </p>
                       )}
@@ -644,7 +644,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 badgeCount > 0 && (
                                   <span
                                     aria-hidden
-                                    className={`absolute top-2 right-2 h-2 w-2 rounded-full ${
+                                    className={`absolute right-2 top-2 h-2 w-2 rounded-full ${
                                       isActive ? "bg-white" : "bg-power-orange"
                                     }`}
                                   />

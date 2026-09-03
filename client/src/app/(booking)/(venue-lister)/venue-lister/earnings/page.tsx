@@ -283,7 +283,7 @@ export default function VenueListerEarningsPage() {
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold tracking-widest text-orange-400 uppercase">
+              <span className="text-xs font-semibold uppercase tracking-widest text-orange-400">
                 Pricing Management
               </span>
               <h3 className="text-lg font-bold text-white">Update venue pricing</h3>

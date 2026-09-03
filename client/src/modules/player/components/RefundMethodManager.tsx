@@ -392,7 +392,7 @@ export function RefundMethodManager({
                 <button
                   type="button"
                   onClick={() => setShowPasswords(!showPasswords)}
-                  className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
                   {showPasswords ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>

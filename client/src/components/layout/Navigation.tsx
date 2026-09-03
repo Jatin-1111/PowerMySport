@@ -160,12 +160,12 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
           {/* Logo */}
           <div className="relative z-50 h-full shrink-0">
             <Link href="/" className="inline-flex h-full flex-col items-start justify-center">
-              <span className="font-title text-2xl leading-none font-extrabold tracking-tight">
+              <span className="font-title text-2xl font-extrabold leading-none tracking-tight">
                 <span className="text-slate-900">Power</span>
                 <span className="text-power-orange">My</span>
                 <span className="text-slate-900">Sport</span>
               </span>
-              <span className="mt-1.5 hidden text-[9px] leading-none font-medium tracking-wider text-slate-400 uppercase sm:inline-block">
+              <span className="mt-1.5 hidden text-[9px] font-medium uppercase leading-none tracking-wider text-slate-400 sm:inline-block">
                 Confidence for Every Sporting Journey
               </span>
             </Link>
@@ -184,7 +184,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                 className={cn(
                   "shop-nav-link relative flex items-center gap-1 font-medium focus:outline-none",
                   isExploreActive &&
-                    "text-power-orange after:bg-power-orange/70 after:absolute after:right-0 after:-bottom-1 after:left-0 after:h-0.5 after:rounded-full"
+                    "text-power-orange after:bg-power-orange/70 after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:rounded-full"
                 )}
               >
                 Explore
@@ -245,7 +245,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                               <div>
                                 <p
                                   className={cn(
-                                    "mb-0.5 text-sm leading-none font-medium",
+                                    "mb-0.5 text-sm font-medium leading-none",
                                     pathname === item.href
                                       ? "text-power-orange"
                                       : "group-hover:text-power-orange text-slate-800"
@@ -271,7 +271,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
               className={cn(
                 "shop-nav-link relative font-medium",
                 isActive("/community") &&
-                  "text-power-orange after:bg-power-orange/70 bg-transparent after:absolute after:right-3 after:-bottom-1 after:left-3 after:h-0.5 after:rounded-full"
+                  "text-power-orange after:bg-power-orange/70 bg-transparent after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full"
               )}
             >
               Community
@@ -288,7 +288,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                 className={cn(
                   "shop-nav-link relative font-medium focus:outline-none",
                   isServicesActive &&
-                    "text-power-orange after:bg-power-orange/70 after:absolute after:right-0 after:-bottom-1 after:left-0 after:h-0.5 after:rounded-full"
+                    "text-power-orange after:bg-power-orange/70 after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:rounded-full"
                 )}
               >
                 <div className="flex flex-col items-center">
@@ -352,7 +352,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                               <div>
                                 <p
                                   className={cn(
-                                    "mb-0.5 text-sm leading-none font-medium",
+                                    "mb-0.5 text-sm font-medium leading-none",
                                     isBookingActive
                                       ? "text-power-orange"
                                       : "group-hover:text-power-orange text-slate-800"
@@ -403,7 +403,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                               <div>
                                 <p
                                   className={cn(
-                                    "mb-0.5 text-sm leading-none font-medium",
+                                    "mb-0.5 text-sm font-medium leading-none",
                                     pathname === item.href
                                       ? "text-power-orange"
                                       : "group-hover:text-power-orange text-slate-800"
@@ -431,7 +431,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                 className={cn(
                   "shop-nav-link relative font-medium",
                   isActive(link.href) &&
-                    "text-power-orange after:bg-power-orange/70 bg-transparent after:absolute after:right-3 after:-bottom-1 after:left-3 after:h-0.5 after:rounded-full"
+                    "text-power-orange after:bg-power-orange/70 bg-transparent after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full"
                 )}
               >
                 {link.label}
@@ -448,7 +448,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                    className="bg-power-orange focus:ring-power-orange flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-orange-600 focus:ring-2 focus:ring-offset-2 focus:outline-none"
+                    className="bg-power-orange focus:ring-power-orange flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2"
                     aria-label="User menu"
                   >
                     <User className="h-5 w-5" />
@@ -466,7 +466,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                         <div className="border-border border-b px-4 py-3">
                           <p className="text-card-foreground text-sm font-medium">{user.name}</p>
                           <p className="text-muted-foreground mt-1 text-xs">{user.email}</p>
-                          <p className="text-power-orange mt-1.5 text-[10px] font-semibold tracking-wider uppercase">
+                          <p className="text-power-orange mt-1.5 text-[10px] font-semibold uppercase tracking-wider">
                             {user.role.replace("_", " ")}
                           </p>
                         </div>
@@ -534,7 +534,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
           <div className="md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="hover:text-power-orange focus:ring-power-orange rounded-md p-2 text-slate-800 focus:ring-2 focus:outline-none"
+              className="hover:text-power-orange focus:ring-power-orange rounded-md p-2 text-slate-800 focus:outline-none focus:ring-2"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -553,7 +553,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
             transition={{ duration: 0.2, ease: "easeInOut" }}
             className="overflow-hidden border-t border-slate-200 bg-white/95 md:hidden"
           >
-            <div className="space-y-1 px-2 pt-2 pb-3">
+            <div className="space-y-1 px-2 pb-3 pt-2">
               {/* Mobile Explore Accordion (Roadmap + Guidance) */}
               <div>
                 <button
@@ -584,7 +584,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                       transition={{ duration: 0.2, ease: "easeInOut" }}
                       className="overflow-hidden"
                     >
-                      <div className="mt-1 ml-3 space-y-1 border-l-2 border-orange-100 pl-3">
+                      <div className="ml-3 mt-1 space-y-1 border-l-2 border-orange-100 pl-3">
                         {exploreItems.map((item) => {
                           const Icon = item.icon;
                           return (
@@ -670,7 +670,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                       transition={{ duration: 0.2, ease: "easeInOut" }}
                       className="overflow-hidden"
                     >
-                      <div className="mt-1 ml-3 space-y-1 border-l-2 border-orange-100 pl-3">
+                      <div className="ml-3 mt-1 space-y-1 border-l-2 border-orange-100 pl-3">
                         {/* Book link */}
                         {isBookingLive && (
                           <Link
@@ -735,13 +735,13 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
               ))}
 
               {/* Mobile Auth Buttons */}
-              <div className="space-y-2 pt-4 pb-2">
+              <div className="space-y-2 pb-2 pt-4">
                 {user ? (
                   <>
                     <div className="border-border border-b px-3 py-2">
                       <p className="text-sm font-medium text-slate-900">{user.name}</p>
                       <p className="mt-1 text-xs text-slate-500">{user.email}</p>
-                      <p className="text-power-orange mt-1.5 text-[10px] font-semibold tracking-wider uppercase">
+                      <p className="text-power-orange mt-1.5 text-[10px] font-semibold uppercase tracking-wider">
                         {user.role.replace("_", " ")}
                       </p>
                     </div>

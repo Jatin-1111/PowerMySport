@@ -43,7 +43,7 @@ export function OrdersClient() {
     <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-bold tracking-[0.16em] text-orange-600 uppercase">
+          <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-600">
             Order History
           </p>
           <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">Your orders</h1>

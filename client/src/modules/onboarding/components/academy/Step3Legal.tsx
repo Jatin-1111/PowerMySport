@@ -187,7 +187,7 @@ export default function Step3Legal({
   };
 
   return (
-    <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
+    <div className="shadow-xs space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 md:p-8">
       <div className="mb-8 text-center">
         <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 3: Legal & KYC</h2>
         <p className="text-slate-600">Provide your business and compliance details</p>
@@ -207,7 +207,7 @@ export default function Step3Legal({
                 businessType: e.target.value as AcademyBusinessType,
               }))
             }
-            className="focus:ring-power-orange w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:outline-none"
+            className="focus:ring-power-orange w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
             disabled={isSubmitting}
           >
             <option value="sole_proprietorship">Sole Proprietorship</option>
@@ -237,7 +237,7 @@ export default function Step3Legal({
                 }
                 placeholder="AAAAA0000A"
                 maxLength={10}
-                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                   fieldErrors.panNumber ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
                 }`}
                 disabled={isSubmitting}
@@ -313,7 +313,7 @@ export default function Step3Legal({
                   }))
                 }
                 placeholder="22AABCT1234H2Z0"
-                className="focus:ring-power-orange w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:outline-none"
+                className="focus:ring-power-orange w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
                 disabled={isSubmitting}
               />
               {formData.gstNumber && fieldErrors.gstNumber && (
@@ -385,7 +385,7 @@ export default function Step3Legal({
             }
             placeholder="1234"
             maxLength={4}
-            className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+            className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
               fieldErrors.aadhaarLast4 ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
             }`}
             disabled={isSubmitting}

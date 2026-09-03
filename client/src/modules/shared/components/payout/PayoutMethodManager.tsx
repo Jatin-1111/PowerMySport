@@ -46,7 +46,7 @@ const maskAccountNumber = (num: string) =>
 function FieldRow({ label, value, masked }: { label: string; value: string; masked?: boolean }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <p className="text-xs font-medium tracking-wider text-slate-600 uppercase">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-slate-600">{label}</p>
       <p className="ml-3 truncate text-right text-sm font-semibold text-slate-900">
         {masked ? maskAccountNumber(value) : value}
       </p>
@@ -287,7 +287,7 @@ export function PayoutMethodManager({
               <>
                 <div className="mb-4 flex items-center gap-2">
                   <CreditCard size={16} className="text-power-orange" />
-                  <span className="text-xs font-semibold tracking-wider text-slate-600 uppercase">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
                     Bank Transfer
                   </span>
                 </div>
@@ -301,7 +301,7 @@ export function PayoutMethodManager({
               <>
                 <div className="mb-4 flex items-center gap-2">
                   <Smartphone size={16} className="text-power-orange" />
-                  <span className="text-xs font-semibold tracking-wider text-slate-600 uppercase">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
                     UPI
                   </span>
                 </div>
@@ -536,7 +536,7 @@ function FormFieldGroup({
           <button
             type="button"
             onClick={() => setShowPassword((s) => !s)}
-            className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-500 transition-colors hover:text-slate-700"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition-colors hover:text-slate-700"
             tabIndex={-1}
           >
             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

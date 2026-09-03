@@ -22,7 +22,7 @@ export default function CookiePolicy() {
           </p>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">1. Overview</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">1. Overview</h2>
             <p>
               PowerMySport ("we," "us," "our," or "Company") uses essential cookies to keep you
               signed in and protect the platform. We do not use advertising cookies. We also collect
@@ -34,7 +34,7 @@ export default function CookiePolicy() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">2. What Are Cookies?</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">2. What Are Cookies?</h2>
             <p>
               Cookies are small text files stored on your device (computer, tablet, or mobile phone)
               when you visit our website. They contain information that is sent back to our servers.
@@ -44,9 +44,9 @@ export default function CookiePolicy() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">3. Types of Cookies We Use</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">3. Types of Cookies We Use</h2>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">3.1 Essential/Necessary Cookies</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">3.1 Essential/Necessary Cookies</h3>
             <p>
               These cookies are required for the website to function properly and cannot be
               disabled. They enable core functionality such as:
@@ -56,12 +56,12 @@ export default function CookiePolicy() {
               <li>Security measures and fraud prevention</li>
               <li>Secure session management for bookings</li>
             </ul>
-            <h3 className="mt-6 mb-3 text-xl font-semibold">3.2 Service-Provider Cookies</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">3.2 Service-Provider Cookies</h3>
             <p>
               Payment providers may set their own cookies during checkout to secure transactions.
               These cookies are controlled by the provider and are governed by their policies.
             </p>
-            <h3 className="mt-6 mb-3 text-xl font-semibold">3.3 Anonymous Analytics</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">3.3 Anonymous Analytics</h3>
             <p>
               To understand which pages and features are useful, we collect anonymous, aggregated
               usage data—for example, how many visitors open a page, which links they click, and how
@@ -74,7 +74,7 @@ export default function CookiePolicy() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">4. Cookie Duration</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">4. Cookie Duration</h2>
             <ul className="list-disc space-y-2 pl-6">
               <li>
                 <strong>Session Cookies:</strong> Deleted after you close your browser (e.g., login
@@ -88,7 +88,7 @@ export default function CookiePolicy() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">
               5. Information Collected via Cookies
             </h2>
             <p>Through cookies, we may collect:</p>
@@ -99,9 +99,9 @@ export default function CookiePolicy() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">6. Your Cookie Choices</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">6. Your Cookie Choices</h2>
 
-            <h3 className="mt-6 mb-3 text-xl font-semibold">6.1 Browser Controls</h3>
+            <h3 className="mb-3 mt-6 text-xl font-semibold">6.1 Browser Controls</h3>
             <p>Most web browsers allow you to control cookies through settings. You can:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Block all cookies</li>
@@ -115,7 +115,7 @@ export default function CookiePolicy() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">
               7. Local Storage & Similar Technologies
             </h2>
             <p>In addition to cookies, we may use other storage technologies such as:</p>
@@ -139,7 +139,7 @@ export default function CookiePolicy() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">8. Pixel Tags & Web Beacons</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">8. Pixel Tags & Web Beacons</h2>
             <p>
               We use pixel tags (small transparent images) embedded in emails and web pages to
               measure open rates, click-through rates, and campaign effectiveness. These do not
@@ -148,7 +148,7 @@ export default function CookiePolicy() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">9. Third-Party Links</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">9. Third-Party Links</h2>
             <p>
               Our website may contain links to third-party websites. We are not responsible for the
               cookie practices of external websites. Please review their privacy and cookie policies
@@ -157,7 +157,7 @@ export default function CookiePolicy() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">10. Changes to This Policy</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">10. Changes to This Policy</h2>
             <p>
               We may update this Cookie Policy periodically to reflect changes in our practices,
               technology, or legal requirements. The "Last Updated" date at the top of this page
@@ -167,7 +167,7 @@ export default function CookiePolicy() {
           </section>
 
           <section className="mb-8">
-            <h2 className="mt-8 mb-4 text-2xl font-semibold">11. Contact Us</h2>
+            <h2 className="mb-4 mt-8 text-2xl font-semibold">11. Contact Us</h2>
             <p>If you have questions or concerns about our use of cookies, please contact us at:</p>
             <div className="mt-4 rounded-lg bg-gray-100 p-6">
               <p>

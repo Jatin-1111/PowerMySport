@@ -72,7 +72,7 @@ export function ProductCard({ product }: { product: Product }) {
                   <img src={image} alt={product.name} className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent" />
                 </div>
-                <div className="absolute inset-0 [transform:rotateY(180deg)] overflow-hidden bg-slate-50 [backface-visibility:hidden]">
+                <div className="absolute inset-0 overflow-hidden bg-slate-50 [backface-visibility:hidden] [transform:rotateY(180deg)]">
                   <img src={hoverImage} alt={product.name} className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent" />
                 </div>
@@ -84,20 +84,20 @@ export function ProductCard({ product }: { product: Product }) {
             )}
           </motion.div>
         </Link>
-        <div className="pointer-events-none absolute top-4 left-4 z-20 flex flex-col gap-2">
+        <div className="pointer-events-none absolute left-4 top-4 z-20 flex flex-col gap-2">
           {product.salePrice ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ff5722] px-3 py-1.5 text-[10px] font-black tracking-wider text-white uppercase shadow-md">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ff5722] px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-md">
               <BadgePercent className="h-3.5 w-3.5" />
               Sale
             </span>
           ) : null}
           {product.condition === "USED" ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-black tracking-wider text-white uppercase shadow-md">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-md">
               Used
             </span>
           ) : null}
         </div>
-        <div className="absolute top-4 right-4 z-20">
+        <div className="absolute right-4 top-4 z-20">
           <WishlistButton productId={product.id} />
         </div>
       </div>
@@ -105,11 +105,11 @@ export function ProductCard({ product }: { product: Product }) {
       <div className="flex flex-1 flex-col p-5">
         <Link
           href={`/shop/products/${product.id}`}
-          className="mb-1 block text-lg leading-tight font-black text-slate-900 transition-colors hover:text-[#ff5722]"
+          className="mb-1 block text-lg font-black leading-tight text-slate-900 transition-colors hover:text-[#ff5722]"
         >
           {product.name}
         </Link>
-        <p className="text-[11px] font-bold tracking-[0.2em] text-slate-400 uppercase">
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
           {product.category} {product.sellerName ? `• Sold by: ${product.sellerName}` : ""}
         </p>
 
@@ -127,7 +127,7 @@ export function ProductCard({ product }: { product: Product }) {
             </div>
             <span
               className={cn(
-                "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase",
+                "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider",
                 stockLevel === "Sold out"
                   ? "bg-red-50 text-red-600"
                   : "bg-emerald-50 text-emerald-600"

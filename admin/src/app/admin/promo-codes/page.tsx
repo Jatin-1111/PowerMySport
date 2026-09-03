@@ -171,7 +171,7 @@ export default function AdminPromoCodesPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Code *
                 </label>
                 <input
@@ -187,7 +187,7 @@ export default function AdminPromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Description *
                 </label>
                 <input
@@ -198,7 +198,7 @@ export default function AdminPromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Discount Type *
                 </label>
                 <select
@@ -216,7 +216,7 @@ export default function AdminPromoCodesPage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Discount Value *
                 </label>
                 <input
@@ -229,7 +229,7 @@ export default function AdminPromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Applicable To
                 </label>
                 <select
@@ -248,7 +248,7 @@ export default function AdminPromoCodesPage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Min Booking Amount (₹)
                 </label>
                 <input
@@ -267,7 +267,7 @@ export default function AdminPromoCodesPage() {
               </div>
               {form.discountType === "PERCENTAGE" && (
                 <div>
-                  <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                     Max Discount Cap (₹)
                   </label>
                   <input
@@ -286,7 +286,7 @@ export default function AdminPromoCodesPage() {
                 </div>
               )}
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Max Total Uses
                 </label>
                 <input
@@ -299,7 +299,7 @@ export default function AdminPromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Max Uses Per User
                 </label>
                 <input
@@ -312,7 +312,7 @@ export default function AdminPromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Valid From *
                 </label>
                 <input
@@ -323,7 +323,7 @@ export default function AdminPromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Valid Until *
                 </label>
                 <input
@@ -417,7 +417,7 @@ export default function AdminPromoCodesPage() {
                     ].map((h) => (
                       <th
                         key={h}
-                        className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
+                        className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500"
                       >
                         {h}
                       </th>
@@ -434,14 +434,14 @@ export default function AdminPromoCodesPage() {
                         <td className="max-w-48 px-4 py-3 text-sm text-slate-700">
                           {pc.description}
                         </td>
-                        <td className="px-4 py-3 text-sm whitespace-nowrap text-slate-700">
+                        <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-700">
                           {pc.discountType === "PERCENTAGE"
                             ? `${pc.discountValue}%`
                             : `₹${pc.discountValue}`}
                           {pc.maxDiscountAmount ? ` (cap ₹${pc.maxDiscountAmount})` : ""}
                         </td>
                         <td className="px-4 py-3 text-sm text-slate-700">{pc.applicableTo}</td>
-                        <td className="px-4 py-3 text-xs whitespace-nowrap text-slate-500">
+                        <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-500">
                           {new Date(pc.validFrom).toLocaleDateString()} –{" "}
                           {new Date(pc.validUntil).toLocaleDateString()}
                         </td>
@@ -490,7 +490,7 @@ export default function AdminPromoCodesPage() {
                           <td colSpan={8} className="bg-slate-50 px-4 py-3 text-sm">
                             <div className="flex flex-wrap gap-6">
                               <div>
-                                <span className="text-xs tracking-wide text-slate-500 uppercase">
+                                <span className="text-xs uppercase tracking-wide text-slate-500">
                                   Total Uses
                                 </span>
                                 <p className="text-lg font-bold text-slate-900">
@@ -498,7 +498,7 @@ export default function AdminPromoCodesPage() {
                                 </p>
                               </div>
                               <div>
-                                <span className="text-xs tracking-wide text-slate-500 uppercase">
+                                <span className="text-xs uppercase tracking-wide text-slate-500">
                                   Total Discount Given
                                 </span>
                                 <p className="text-lg font-bold text-slate-900">
@@ -506,7 +506,7 @@ export default function AdminPromoCodesPage() {
                                 </p>
                               </div>
                               <div>
-                                <span className="text-xs tracking-wide text-slate-500 uppercase">
+                                <span className="text-xs uppercase tracking-wide text-slate-500">
                                   Unique Users
                                 </span>
                                 <p className="text-lg font-bold text-slate-900">
@@ -516,7 +516,7 @@ export default function AdminPromoCodesPage() {
                             </div>
                             {selectedStats.stats.recentUsages.length > 0 && (
                               <div className="mt-3">
-                                <p className="mb-1 text-xs font-semibold text-slate-500 uppercase">
+                                <p className="mb-1 text-xs font-semibold uppercase text-slate-500">
                                   Recent Usages
                                 </p>
                                 <ul className="space-y-0.5 text-xs text-slate-600">

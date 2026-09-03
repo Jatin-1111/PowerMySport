@@ -37,7 +37,7 @@ export function BurnoutRiskCard({ risk }: { risk: BurnoutRisk }) {
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h3 className={`font-title text-lg leading-tight font-bold ${cfg.title}`}>
+            <h3 className={`font-title text-lg font-bold leading-tight ${cfg.title}`}>
               Burnout Risk Alert
             </h3>
             <span

@@ -143,7 +143,7 @@ export function AcademyProfileClient() {
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
-      <section className="mx-auto w-full max-w-7xl px-4 pt-4 pb-8 sm:px-6 lg:px-8">
+      <section className="mx-auto w-full max-w-7xl px-4 pb-8 pt-4 sm:px-6 lg:px-8">
         <div className="mb-4">
           <Link
             href="/booking?tab=academies"
@@ -157,7 +157,7 @@ export function AcademyProfileClient() {
             {coverImage ? (
               <img src={coverImage} alt={academy.name} className="h-full w-full object-cover" />
             ) : (
-              <div className="flex h-full items-center justify-center bg-linear-to-br from-slate-200 to-slate-300 text-slate-600">
+              <div className="bg-linear-to-br flex h-full items-center justify-center from-slate-200 to-slate-300 text-slate-600">
                 No cover photo
               </div>
             )}
@@ -251,7 +251,7 @@ export function AcademyProfileClient() {
                 </p>
                 <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Age Groups
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -270,7 +270,7 @@ export function AcademyProfileClient() {
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Languages
                     </p>
                     <p className="mt-2 text-sm text-slate-700">
@@ -278,7 +278,7 @@ export function AcademyProfileClient() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Established
                     </p>
                     <p className="mt-2 text-sm text-slate-700">
@@ -286,7 +286,7 @@ export function AcademyProfileClient() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Batch Size
                     </p>
                     <p className="mt-2 text-sm text-slate-700">
@@ -344,7 +344,7 @@ export function AcademyProfileClient() {
                         key={day}
                         className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
                       >
-                        <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                           {label}
                         </p>
                         <p className="mt-1 text-sm font-medium text-slate-700">
@@ -525,7 +525,7 @@ export function AcademyProfileClient() {
               <h2 className="text-lg font-bold text-slate-900">Reviews</h2>
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Average Rating
                   </p>
                   <p className="mt-1 text-2xl font-bold text-slate-900">
@@ -533,7 +533,7 @@ export function AcademyProfileClient() {
                   </p>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Total Reviews
                   </p>
                   <p className="mt-1 text-2xl font-bold text-slate-900">

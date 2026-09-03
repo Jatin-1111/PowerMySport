@@ -79,7 +79,7 @@ export function RankingStatStrip({
     <dl className="bg-border mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border md:grid-cols-4">
       {tiles.map((tile) => (
         <div key={tile.hint} className="bg-card px-4 py-3.5 sm:px-5">
-          <dd className="text-2xl leading-none font-bold sm:text-3xl">{tile.value}</dd>
+          <dd className="text-2xl font-bold leading-none sm:text-3xl">{tile.value}</dd>
           <dt className="text-foreground mt-1.5 text-xs font-medium sm:text-sm">{tile.label}</dt>
           <p className="text-muted-foreground mt-0.5 truncate text-xs" title={tile.hint}>
             {tile.hint}

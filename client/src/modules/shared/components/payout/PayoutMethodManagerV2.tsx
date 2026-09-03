@@ -61,7 +61,7 @@ const getPayoutMethodLabel = (type: PayoutMethodType) => {
 function FieldRow({ label, value, masked }: { label: string; value: string; masked?: boolean }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <p className="text-xs font-medium tracking-wider text-slate-600 uppercase">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-slate-600">{label}</p>
       <p className="ml-3 truncate text-right text-sm font-semibold text-slate-900">
         {masked ? maskAccountNumber(value) : value}
       </p>
@@ -203,7 +203,7 @@ function FormFieldGroup({
           <button
             type="button"
             onClick={onTogglePassword}
-            className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>

@@ -127,7 +127,7 @@ export default function ConciergeRequestsPage() {
                 >
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
                         {request.sportSlug} · {request.itemType || "Tournament"}
                       </span>
                       <span className="text-xs text-slate-300">·</span>
@@ -174,10 +174,10 @@ export default function ConciergeRequestsPage() {
                     {/* Admin notes — the most important thing */}
                     {request.adminNotes && (
                       <div className="rounded-xl border border-slate-200 bg-white p-4">
-                        <p className="mb-2 flex items-center gap-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                        <p className="mb-2 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                           <MessageSquare className="h-3 w-3" /> Message from PowerMySport Team
                         </p>
-                        <p className="text-sm leading-relaxed whitespace-pre-line text-slate-800">
+                        <p className="whitespace-pre-line text-sm leading-relaxed text-slate-800">
                           {request.adminNotes}
                         </p>
                       </div>
@@ -186,7 +186,7 @@ export default function ConciergeRequestsPage() {
                     {/* Documents submitted */}
                     {request.documents && request.documents.length > 0 && (
                       <div>
-                        <p className="mb-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                           Documents Submitted
                         </p>
                         <div className="flex flex-wrap gap-2">

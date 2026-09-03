@@ -54,7 +54,7 @@ export function Timeline({ data, className }: TimelineProps) {
             </div>
 
             {/* Content */}
-            <div className="relative w-full pr-2 pl-16 md:pl-4">
+            <div className="relative w-full pl-16 pr-2 md:pl-4">
               <h3 className="mb-4 block text-2xl font-bold text-slate-300 md:hidden">
                 {item.title}
               </h3>
@@ -66,7 +66,7 @@ export function Timeline({ data, className }: TimelineProps) {
         {/* Track + animated beam */}
         <div
           style={{ height: height + "px" }}
-          className="absolute top-0 left-[1.6rem] w-[2px] overflow-hidden bg-gradient-to-b from-transparent from-[0%] via-slate-200 to-transparent to-[99%] [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] md:left-[1.1rem]"
+          className="absolute left-[1.6rem] top-0 w-[2px] overflow-hidden bg-gradient-to-b from-transparent from-[0%] via-slate-200 to-transparent to-[99%] [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] md:left-[1.1rem]"
         >
           <motion.div
             style={{ height: heightTransform, opacity: opacityTransform }}

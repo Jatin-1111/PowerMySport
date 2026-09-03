@@ -20,7 +20,7 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
     <nav aria-label="Breadcrumb" className={cn("flex items-center space-x-1 text-sm", className)}>
       <Link
         href="/"
-        className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange rounded transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+        className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         aria-label="Home"
       >
         <Home className="h-4 w-4" />
@@ -42,7 +42,7 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
             ) : (
               <Link
                 href={item.href}
-                className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange rounded px-1 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange rounded px-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               >
                 {item.label}
               </Link>
@@ -74,7 +74,7 @@ export function MobileBreadcrumbs({ items, maxItems = 2, className }: MobileBrea
     >
       <Link
         href="/"
-        className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange rounded transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+        className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         aria-label="Home"
       >
         <Home className="h-4 w-4" />
@@ -96,7 +96,7 @@ export function MobileBreadcrumbs({ items, maxItems = 2, className }: MobileBrea
             ) : (
               <Link
                 href={item.href}
-                className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange max-w-25 truncate rounded px-1 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange max-w-25 truncate rounded px-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               >
                 {item.label}
               </Link>

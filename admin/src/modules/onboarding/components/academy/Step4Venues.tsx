@@ -545,7 +545,7 @@ export default function Step4Venues({
   };
 
   return (
-    <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
+    <div className="shadow-xs space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 md:p-8">
       <div className="mb-8 text-center">
         <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 4: Venue Details</h2>
         <p className="text-slate-600">
@@ -776,7 +776,7 @@ export default function Step4Venues({
                               <button
                                 type="button"
                                 onClick={() => removeGeneralImage(index, slotIndex)}
-                                className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                                className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
                               >
                                 <Trash2 size={14} />
                               </button>
@@ -941,7 +941,7 @@ export default function Step4Venues({
                                   <button
                                     type="button"
                                     onClick={() => removeSportImage(index, sport, slotIndex)}
-                                    className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                                    className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
                                   >
                                     <Trash2 size={12} />
                                   </button>

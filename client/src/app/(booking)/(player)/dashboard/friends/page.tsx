@@ -280,17 +280,17 @@ export default function FriendsPage() {
       {/* Stats strip */}
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Friends</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Friends</p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{friends.length}</p>
         </div>
         <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Pending Requests
           </p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{pendingRequests.length}</p>
         </div>
         <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Sent</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Sent</p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{sentRequests.length}</p>
         </div>
       </div>

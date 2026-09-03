@@ -1,7 +1,7 @@
 export function Overview() {
   return (
     <section id="overview" className="mb-8">
-      <h2 className="mt-2 mb-4 text-2xl font-semibold">1. Overview</h2>
+      <h2 className="mb-4 mt-2 text-2xl font-semibold">1. Overview</h2>
       <p>
         This policy governs all cancellations, refunds, no-shows, and payment disputes for bookings
         made through PowerMySport and is incorporated by reference into our Terms of Service. It

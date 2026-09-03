@@ -100,7 +100,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
               className="absolute inset-y-0 right-0 z-50 flex w-[92vw] max-w-sm flex-col overflow-y-auto border-l border-white/40 bg-white/95 shadow-[-8px_0_30px_rgba(0,0,0,0.06)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/85 xl:w-[340px] xl:max-w-none"
             >
               {/* Close button */}
-              <div className="flex flex-none items-center justify-between px-4 pt-4 pb-2">
+              <div className="flex flex-none items-center justify-between px-4 pb-2 pt-4">
                 <h3 className="text-sm font-normal text-slate-600">
                   {isViewingMember ? "Contact Info" : isGroup ? "Group Info" : "Contact Info"}
                 </h3>
@@ -120,7 +120,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
               </div>
 
               {/* Profile Header */}
-              <div className="flex flex-none flex-col items-center border-b border-slate-100 px-4 pt-3 pb-5">
+              <div className="flex flex-none flex-col items-center border-b border-slate-100 px-4 pb-5 pt-3">
                 <button
                   onClick={() => {
                     const imgToEnlarge =
@@ -129,7 +129,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                         : selectedConversationPhotoUrl;
                     if (imgToEnlarge) setEnlargedImage(imgToEnlarge);
                   }}
-                  className={`flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-2xl font-bold text-slate-600 uppercase shadow-lg ring-4 ring-white ${
+                  className={`flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-2xl font-bold uppercase text-slate-600 shadow-lg ring-4 ring-white ${
                     (isViewingMember && selectedMemberProfile?.photoUrl) ||
                     selectedConversationPhotoUrl
                       ? "cursor-pointer transition hover:opacity-90"
@@ -219,7 +219,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                       <BadgeCheck size={16} className="text-slate-500" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                         Role
                       </p>
                       <p className="text-[13px] font-medium text-slate-800">
@@ -238,7 +238,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                       <Shield size={16} className="text-slate-500" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                         Privacy
                       </p>
                       <p className="text-[13px] font-medium text-slate-800">
@@ -259,7 +259,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                         <MapPin size={16} className="text-slate-500" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                           Location
                         </p>
                         <p className="text-[13px] font-medium text-slate-800">
@@ -290,7 +290,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                   </div>
 
                   {/* Members list */}
-                  <div className="flex-none px-4 pt-3 pb-1">
+                  <div className="flex-none px-4 pb-1 pt-3">
                     <div className="flex items-center justify-between">
                       <h4 className="text-[13px] font-semibold text-slate-800">
                         Members ({membersCount})
@@ -416,7 +416,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
             >
               <button
                 onClick={() => setEnlargedImage(null)}
-                className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition hover:bg-black/70"
+                className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition hover:bg-black/70"
               >
                 <X size={20} />
               </button>

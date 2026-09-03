@@ -185,7 +185,7 @@ export default function AdminSupportTicketsPage() {
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}
-            className="focus:border-power-orange rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition outline-none"
+            className="focus:border-power-orange rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition"
           >
             <option value="ALL">All statuses</option>
             <option value="OPEN">Open</option>
@@ -197,7 +197,7 @@ export default function AdminSupportTicketsPage() {
           <select
             value={priorityFilter}
             onChange={(event) => setPriorityFilter(event.target.value as typeof priorityFilter)}
-            className="focus:border-power-orange rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition outline-none"
+            className="focus:border-power-orange rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition"
           >
             <option value="ALL">All priorities</option>
             <option value="LOW">Low</option>

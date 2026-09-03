@@ -33,8 +33,8 @@ export default function ShopWaitlist() {
   return (
     <div className="relative -mb-12 flex w-full flex-1 flex-col items-center justify-center overflow-hidden bg-slate-50 py-12 font-sans">
       {/* Background Orbs */}
-      <div className="bg-power-orange/20 pointer-events-none absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full mix-blend-multiply blur-[120px]" />
-      <div className="pointer-events-none absolute right-[-10%] bottom-[-10%] h-[500px] w-[500px] rounded-full bg-amber-400/20 mix-blend-multiply blur-[120px]" />
+      <div className="bg-power-orange/20 pointer-events-none absolute left-[-10%] top-[-10%] h-[500px] w-[500px] rounded-full mix-blend-multiply blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-[-10%] right-[-10%] h-[500px] w-[500px] rounded-full bg-amber-400/20 mix-blend-multiply blur-[120px]" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -72,12 +72,12 @@ export default function ShopWaitlist() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Get notified when we launch"
               required
-              className="focus:border-power-orange focus:ring-power-orange/10 w-full rounded-full border border-slate-200 bg-white/80 py-4 pr-36 pl-12 text-sm text-slate-900 shadow-sm backdrop-blur-xl transition-all outline-none focus:ring-4"
+              className="focus:border-power-orange focus:ring-power-orange/10 w-full rounded-full border border-slate-200 bg-white/80 py-4 pl-12 pr-36 text-sm text-slate-900 shadow-sm outline-none backdrop-blur-xl transition-all focus:ring-4"
             />
             <button
               type="submit"
               disabled={loading}
-              className="bg-power-orange absolute top-2 right-2 bottom-2 flex items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
+              className="bg-power-orange absolute bottom-2 right-2 top-2 flex items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {loading ? "Joining..." : submitted ? "Subscribed!" : "Notify Me"}
             </button>
@@ -92,7 +92,7 @@ export default function ShopWaitlist() {
         >
           <Link
             href="/"
-            className="group hover:border-power-orange/30 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:shadow-md"
+            className="hover:border-power-orange/30 group flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:shadow-md"
           >
             Back to Dashboard
             <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />

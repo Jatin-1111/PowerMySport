@@ -273,7 +273,7 @@ export default function AdminAuditLogPage() {
                         label={key}
                         value={
                           typeof value === "object" && value !== null ? (
-                            <pre className="max-w-full overflow-x-auto rounded bg-slate-50 p-2 text-left text-xs break-words whitespace-pre-wrap text-slate-700">
+                            <pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded bg-slate-50 p-2 text-left text-xs text-slate-700">
                               {JSON.stringify(value, null, 2)}
                             </pre>
                           ) : (

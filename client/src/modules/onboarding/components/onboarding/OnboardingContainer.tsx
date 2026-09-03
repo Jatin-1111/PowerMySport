@@ -38,10 +38,10 @@ function OnboardingContainerSkeleton() {
           <div className="mx-auto h-10 w-64 animate-pulse rounded-xl bg-slate-200" />
           <div className="mx-auto mt-3 h-5 w-80 animate-pulse rounded-lg bg-slate-100" />
         </div>
-        <div className="mx-auto mb-8 max-w-4xl rounded-2xl border border-slate-200 bg-white/85 p-5 shadow-xs">
+        <div className="shadow-xs mx-auto mb-8 max-w-4xl rounded-2xl border border-slate-200 bg-white/85 p-5">
           <div className="relative mb-4 overflow-x-auto">
-            <div className="relative min-w-180">
-              <div className="absolute top-6 right-6 left-6 h-0.5 rounded-full bg-slate-100" />
+            <div className="min-w-180 relative">
+              <div className="absolute left-6 right-6 top-6 h-0.5 rounded-full bg-slate-100" />
               <div className="grid grid-cols-5 gap-3">
                 {Array.from({ length: 5 }).map((_, index) => (
                   <div key={`step-skeleton-${index}`} className="text-center">
@@ -55,7 +55,7 @@ function OnboardingContainerSkeleton() {
           </div>
           <div className="mt-4 h-1.5 w-full animate-pulse rounded-full bg-slate-100" />
         </div>
-        <div className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white/90 p-8 shadow-xs">
+        <div className="shadow-xs mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white/90 p-8">
           <div className="h-6 w-40 animate-pulse rounded bg-slate-200" />
           <div className="mt-5 space-y-4">
             <div className="h-12 animate-pulse rounded-xl bg-slate-100" />
@@ -725,7 +725,7 @@ function OnboardingFlow() {
             review and activate your listing once venue bookings launch.
           </p>
           {activeStepMeta && (
-            <p className="border-power-orange/20 bg-power-orange/10 text-power-orange mt-3 inline-flex items-center rounded-full border px-4 py-1 text-xs font-semibold tracking-wide uppercase">
+            <p className="border-power-orange/20 bg-power-orange/10 text-power-orange mt-3 inline-flex items-center rounded-full border px-4 py-1 text-xs font-semibold uppercase tracking-wide">
               Step {currentStep} of 5
             </p>
           )}
@@ -736,12 +736,12 @@ function OnboardingFlow() {
         </div>
 
         {/* Progress Bar */}
-        <div className="sticky top-4 z-20 mx-auto mb-8 max-w-4xl rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-xs backdrop-blur-sm">
+        <div className="shadow-xs sticky top-4 z-20 mx-auto mb-8 max-w-4xl rounded-2xl border border-slate-200/80 bg-white/90 p-5 backdrop-blur-sm">
           <div className="relative mb-4 overflow-x-auto">
-            <div className="relative min-w-180 pb-2">
-              <div className="absolute top-6 right-6 left-6 h-0.5 rounded-full bg-slate-200" />
+            <div className="min-w-180 relative pb-2">
+              <div className="absolute left-6 right-6 top-6 h-0.5 rounded-full bg-slate-200" />
               <div
-                className="bg-power-orange absolute top-6 left-6 h-0.5 rounded-full transition-all duration-500"
+                className="bg-power-orange absolute left-6 top-6 h-0.5 rounded-full transition-all duration-500"
                 style={{
                   width: `max(0px, calc(${progressPercent}% - 0.5rem))`,
                 }}
@@ -771,7 +771,7 @@ function OnboardingFlow() {
                           isCompleted
                             ? "bg-turf-green cursor-pointer text-white shadow-md hover:scale-105"
                             : isActive
-                              ? "from-power-orange scale-110 bg-linear-to-br to-orange-500 text-white shadow-lg"
+                              ? "from-power-orange bg-linear-to-br scale-110 to-orange-500 text-white shadow-lg"
                               : "cursor-not-allowed bg-slate-200 text-slate-600"
                         }`}
                       >
@@ -794,7 +794,7 @@ function OnboardingFlow() {
                       >
                         <div className="flex items-center justify-center gap-2">
                           <span
-                            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${
+                            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
                               isActive
                                 ? "bg-power-orange/15 text-power-orange"
                                 : isCompleted
@@ -806,7 +806,7 @@ function OnboardingFlow() {
                           </span>
                         </div>
                         <p
-                          className={`mt-2 text-[11px] leading-tight font-semibold md:text-xs ${
+                          className={`mt-2 text-[11px] font-semibold leading-tight md:text-xs ${
                             isActive ? "text-power-orange" : "text-slate-800"
                           }`}
                         >

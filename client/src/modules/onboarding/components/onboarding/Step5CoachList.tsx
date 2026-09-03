@@ -204,7 +204,7 @@ export default function Step5CoachList({ onFinalize, loading, venueId }: Step5Co
   };
 
   return (
-    <Card className="mx-auto w-full max-w-3xl rounded-2xl border border-slate-200 bg-white/90 shadow-xs">
+    <Card className="shadow-xs mx-auto w-full max-w-3xl rounded-2xl border border-slate-200 bg-white/90">
       <div className="space-y-6 p-6 md:p-8">
         {/* Header */}
         <div className="mb-8">
@@ -248,7 +248,7 @@ export default function Step5CoachList({ onFinalize, loading, venueId }: Step5Co
                         <span>{coach.hourlyRate}/hour</span>
                       </p>
                       {coach.bio && (
-                        <p className="mt-2 text-sm text-slate-600 italic">"{coach.bio}"</p>
+                        <p className="mt-2 text-sm italic text-slate-600">"{coach.bio}"</p>
                       )}
                     </div>
                   </div>
@@ -313,7 +313,7 @@ export default function Step5CoachList({ onFinalize, loading, venueId }: Step5Co
                       <button
                         type="button"
                         onClick={handleRemovePhoto}
-                        className="absolute -top-1 -right-1 rounded-full bg-red-500 p-1 text-white transition-colors hover:bg-red-600"
+                        className="absolute -right-1 -top-1 rounded-full bg-red-500 p-1 text-white transition-colors hover:bg-red-600"
                         aria-label="Remove photo"
                       >
                         <X className="h-3 w-3" />

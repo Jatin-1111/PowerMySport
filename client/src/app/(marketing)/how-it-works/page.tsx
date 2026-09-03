@@ -105,19 +105,19 @@ function AssetFrame({
       {/* Offset tinted backdrop panel */}
       <div
         aria-hidden
-        className={`absolute -inset-x-5 top-8 -bottom-5 rounded-[2.5rem] bg-gradient-to-br ${backdropTint}`}
+        className={`absolute -inset-x-5 -bottom-5 top-8 rounded-[2.5rem] bg-gradient-to-br ${backdropTint}`}
       />
       {/* Dotted accent */}
       <div
         aria-hidden
-        className="absolute -top-6 -right-6 h-24 w-24 opacity-50"
+        className="absolute -right-6 -top-6 h-24 w-24 opacity-50"
         style={{
           backgroundImage: "radial-gradient(circle, rgba(15,23,42,0.25) 1.5px, transparent 1.5px)",
           backgroundSize: "13px 13px",
         }}
       />
 
-      <div className="relative h-[280px] w-full overflow-hidden rounded-[2rem] shadow-2xl ring-1 shadow-slate-900/15 ring-slate-900/5 sm:h-[420px] lg:h-[480px]">
+      <div className="relative h-[280px] w-full overflow-hidden rounded-[2rem] shadow-2xl shadow-slate-900/15 ring-1 ring-slate-900/5 sm:h-[420px] lg:h-[480px]">
         {/* Main image */}
         <Image
           src={src}
@@ -144,15 +144,15 @@ function AssetFrame({
 
         {/* Step chip — glass, top-left */}
         {step !== undefined && (
-          <div className="absolute top-5 left-5 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 backdrop-blur-xl">
-            <p className="text-[10px] font-bold tracking-[0.18em] text-white/90 uppercase">
+          <div className="absolute left-5 top-5 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 backdrop-blur-xl">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/90">
               Step 0{step}
             </p>
           </div>
         )}
 
         {/* Floating glass overlay card */}
-        <div className="absolute right-5 bottom-5 left-5 flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-5 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
+        <div className="absolute bottom-5 left-5 right-5 flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-5 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white">
             {overlayIcon}
           </div>
@@ -203,7 +203,7 @@ function StepRow({
       >
         <motion.h3
           variants={fadeSlideUp}
-          className="mb-4 text-2xl leading-tight font-bold text-slate-900 sm:text-3xl lg:text-4xl"
+          className="mb-4 text-2xl font-bold leading-tight text-slate-900 sm:text-3xl lg:text-4xl"
         >
           {title}
         </motion.h3>
@@ -258,7 +258,7 @@ function DeliverableCard({
       {/* Soft corner glow */}
       <div
         aria-hidden
-        className={`pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-gradient-to-bl ${glow} to-transparent opacity-70 blur-2xl transition-transform duration-500 group-hover:scale-125`}
+        className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-bl ${glow} to-transparent opacity-70 blur-2xl transition-transform duration-500 group-hover:scale-125`}
       />
 
       <div
@@ -285,7 +285,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
       {/* Accent left border stripe */}
       <div
         aria-hidden
-        className="from-power-orange absolute top-0 bottom-0 left-0 w-1 rounded-l-2xl bg-gradient-to-b to-orange-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        className="from-power-orange absolute bottom-0 left-0 top-0 w-1 rounded-l-2xl bg-gradient-to-b to-orange-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
       />
       <h3 className="mb-3 text-lg font-bold text-slate-900">{q}</h3>
       <p className="text-base leading-relaxed text-slate-500">{a}</p>
@@ -460,9 +460,9 @@ export default function HowItWorksPage() {
       {/* ── Players Journey ── */}
       <section className="relative overflow-hidden py-20 sm:py-24 lg:py-32">
         {/* Ambient blobs */}
-        <AmbientBlob className="top-24 -left-48 h-96 w-96 bg-orange-100/40" />
-        <AmbientBlob className="top-1/3 -right-40 h-80 w-80 bg-indigo-100/30" />
-        <AmbientBlob className="bottom-1/4 -left-32 h-72 w-72 bg-indigo-100/30" />
+        <AmbientBlob className="-left-48 top-24 h-96 w-96 bg-orange-100/40" />
+        <AmbientBlob className="-right-40 top-1/3 h-80 w-80 bg-indigo-100/30" />
+        <AmbientBlob className="-left-32 bottom-1/4 h-72 w-72 bg-indigo-100/30" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Section header */}
@@ -512,8 +512,8 @@ export default function HowItWorksPage() {
             backgroundSize: "32px 32px",
           }}
         />
-        <AmbientBlob className="top-20 -right-32 h-96 w-96 bg-orange-100/50" />
-        <AmbientBlob className="bottom-16 -left-24 h-72 w-72 bg-sky-100/40" />
+        <AmbientBlob className="-right-32 top-20 h-96 w-96 bg-orange-100/50" />
+        <AmbientBlob className="-left-24 bottom-16 h-72 w-72 bg-sky-100/40" />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -557,8 +557,8 @@ export default function HowItWorksPage() {
 
       {/* ── The old way vs the clear way ── */}
       <section className="relative overflow-hidden py-20 sm:py-24 lg:py-32">
-        <AmbientBlob className="top-24 -right-40 h-96 w-96 bg-orange-100/40" />
-        <AmbientBlob className="bottom-16 -left-32 h-72 w-72 bg-indigo-100/30" />
+        <AmbientBlob className="-right-40 top-24 h-96 w-96 bg-orange-100/40" />
+        <AmbientBlob className="-left-32 bottom-16 h-72 w-72 bg-indigo-100/30" />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -598,7 +598,7 @@ export default function HowItWorksPage() {
               variants={cardReveal}
               className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-slate-50/80 p-7 sm:p-8"
             >
-              <p className="mb-1 text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase">
+              <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
                 Without a plan
               </p>
               <h3 className="mb-6 text-xl font-bold text-slate-700">Figuring it out alone</h3>
@@ -627,9 +627,9 @@ export default function HowItWorksPage() {
               {/* Corner glow */}
               <div
                 aria-hidden
-                className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full bg-gradient-to-bl from-orange-400/20 to-transparent blur-2xl"
+                className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-gradient-to-bl from-orange-400/20 to-transparent blur-2xl"
               />
-              <p className="text-power-orange mb-1 text-[11px] font-bold tracking-[0.16em] uppercase">
+              <p className="text-power-orange mb-1 text-[11px] font-bold uppercase tracking-[0.16em]">
                 With PowerMySport
               </p>
               <h3 className="mb-6 text-xl font-bold text-slate-900">
@@ -652,7 +652,7 @@ export default function HowItWorksPage() {
               </ul>
               <a
                 href="/assessment"
-                className="group text-power-orange mt-7 inline-flex items-center gap-1.5 text-sm font-bold transition-colors hover:text-orange-600"
+                className="text-power-orange group mt-7 inline-flex items-center gap-1.5 text-sm font-bold transition-colors hover:text-orange-600"
               >
                 Start free — it takes 10 minutes
                 <span className="transition-transform duration-200 group-hover:translate-x-0.5">
@@ -675,7 +675,7 @@ export default function HowItWorksPage() {
             backgroundSize: "48px 48px",
           }}
         />
-        <AmbientBlob className="top-16 -right-24 h-80 w-80 bg-indigo-100/40" />
+        <AmbientBlob className="-right-24 top-16 h-80 w-80 bg-indigo-100/40" />
 
         <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <motion.div

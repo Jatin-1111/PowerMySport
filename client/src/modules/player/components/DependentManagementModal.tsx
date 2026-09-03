@@ -297,7 +297,7 @@ export default function DependentManagementModal({
         {/* Progress */}
         <div className="mb-6">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
               Step {stepIndex + 1} of {STEPS.length}
             </span>
             {!currentStep.required && (
@@ -850,7 +850,7 @@ export default function DependentManagementModal({
                 {/* Show current sport matches if any */}
                 {(formData.sportMatches?.length ?? 0) > 0 && (
                   <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                    <p className="mb-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                    <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                       Current sport matches
                     </p>
                     <div className="space-y-2">

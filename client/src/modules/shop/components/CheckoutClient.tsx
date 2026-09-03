@@ -265,7 +265,7 @@ export function CheckoutClient() {
     <main className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_390px] lg:px-8">
       <form id="shop-checkout-form" onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <p className="text-sm font-bold tracking-[0.16em] text-orange-600 uppercase">
+          <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-600">
             Secure Checkout
           </p>
           <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
@@ -312,7 +312,7 @@ export function CheckoutClient() {
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-slate-900">{address.fullName}</span>
                         {address.isDefault && (
-                          <span className="bg-power-orange rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase">
+                          <span className="bg-power-orange rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                             Default
                           </span>
                         )}
@@ -364,19 +364,19 @@ export function CheckoutClient() {
                   value={form.fullName}
                   onChange={(event) => updateField("fullName", event.target.value)}
                   placeholder="Full name"
-                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
                 />
                 <input
                   value={form.email}
                   onChange={(event) => updateField("email", event.target.value)}
                   placeholder="Email"
-                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
                 />
                 <input
                   value={form.phone}
                   onChange={(event) => updateField("phone", event.target.value)}
                   placeholder="Phone"
-                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
                 />
                 <div>
                   <input
@@ -385,7 +385,7 @@ export function CheckoutClient() {
                     placeholder="Postal code"
                     inputMode="numeric"
                     maxLength={6}
-                    className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white"
+                    className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
                   />
                   {pincodeLoading && (
                     <p className="mt-1 text-xs text-slate-400">Looking up city & state…</p>
@@ -395,12 +395,12 @@ export function CheckoutClient() {
                   value={form.city}
                   onChange={(event) => updateField("city", event.target.value)}
                   placeholder="City"
-                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
                 />
                 <select
                   value={form.state}
                   onChange={(event) => updateField("state", event.target.value)}
-                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
                 >
                   <option value="">Select state</option>
                   {form.state && !INDIAN_STATES.includes(form.state) && (
@@ -416,13 +416,13 @@ export function CheckoutClient() {
                   value={form.addressLine1}
                   onChange={(event) => updateField("addressLine1", event.target.value)}
                   placeholder="Address line 1"
-                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white sm:col-span-2"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white sm:col-span-2"
                 />
                 <input
                   value={form.addressLine2}
                   onChange={(event) => updateField("addressLine2", event.target.value)}
                   placeholder="Address line 2 (optional)"
-                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white sm:col-span-2"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white sm:col-span-2"
                 />
               </div>
 

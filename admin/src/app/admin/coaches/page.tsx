@@ -459,7 +459,7 @@ export default function AdminCoachesPage() {
         {selectedCoach && editing && (
           <div className="space-y-4">
             <div>
-              <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Bio
               </label>
               <textarea
@@ -471,7 +471,7 @@ export default function AdminCoachesPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Hourly rate (₹)
                 </label>
                 <input
@@ -487,7 +487,7 @@ export default function AdminCoachesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Verification status
                 </label>
                 <select

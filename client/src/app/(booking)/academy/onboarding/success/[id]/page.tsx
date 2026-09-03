@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function AcademySubmissionSuccessPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-linear-to-br from-slate-50 to-slate-100 px-4 py-8">
+    <main className="bg-linear-to-br flex min-h-screen items-center justify-center from-slate-50 to-slate-100 px-4 py-8">
       <div className="w-full max-w-md">
         <div className="space-y-6 rounded-2xl bg-white p-8 text-center shadow-lg">
           {/* Success Icon */}

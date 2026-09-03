@@ -112,7 +112,7 @@ function MetricCard({
 }) {
   return (
     <div className={`rounded-xl border bg-white p-4 ${accentClassName}`}>
-      <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
       {detail ? <p className="mt-1 text-sm text-slate-500">{detail}</p> : null}
     </div>
@@ -793,7 +793,7 @@ export default function AdminAnalyticsPage() {
                           {unsupportedSports.rows.map((row, i) => (
                             <tr key={row.sport}>
                               <td className="px-4 py-3 text-slate-400">{i + 1}</td>
-                              <td className="px-4 py-3 font-medium text-slate-900 capitalize">
+                              <td className="px-4 py-3 font-medium capitalize text-slate-900">
                                 {row.sport}
                               </td>
                               <td className="px-4 py-3">

@@ -165,8 +165,8 @@ export default function BlogLandingClient() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       >
-        <div className="absolute top-[-8%] left-[-12%] h-136 w-136 rounded-full bg-sky-300/25 blur-3xl" />
-        <div className="absolute top-[14%] right-[-16%] h-124 w-124 rounded-full bg-amber-200/25 blur-3xl" />
+        <div className="h-136 w-136 absolute left-[-12%] top-[-8%] rounded-full bg-sky-300/25 blur-3xl" />
+        <div className="h-124 w-124 absolute right-[-16%] top-[14%] rounded-full bg-amber-200/25 blur-3xl" />
       </div>
 
       <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-5 sm:px-6 sm:py-8 lg:px-8">

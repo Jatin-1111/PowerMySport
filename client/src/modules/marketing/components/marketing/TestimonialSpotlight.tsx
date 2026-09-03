@@ -68,7 +68,7 @@ export function TestimonialSpotlight({
                 ))}
               </div>
             )}
-            <p className="text-xl leading-relaxed font-medium text-slate-800 sm:text-2xl">
+            <p className="text-xl font-medium leading-relaxed text-slate-800 sm:text-2xl">
               &ldquo;{current.quote}&rdquo;
             </p>
             <div className="mt-6 flex items-center justify-center gap-3">

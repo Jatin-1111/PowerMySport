@@ -391,7 +391,7 @@ export default function AdminsManagementPage() {
                 value={form.name}
                 onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
                 placeholder="Enter full name"
-                className="focus:border-power-orange focus:ring-power-orange/30 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 transition outline-none focus:ring-2"
+                className="focus:border-power-orange focus:ring-power-orange/30 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:ring-2"
               />
             </div>
 
@@ -404,7 +404,7 @@ export default function AdminsManagementPage() {
                 onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
                 placeholder="name@company.com"
                 type="email"
-                className="focus:border-power-orange focus:ring-power-orange/30 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 transition outline-none focus:ring-2"
+                className="focus:border-power-orange focus:ring-power-orange/30 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:ring-2"
               />
               <p className="mt-1.5 text-xs text-slate-500">
                 Temporary credentials will be sent to this email.
@@ -636,7 +636,7 @@ export default function AdminsManagementPage() {
                       name: event.target.value,
                     }))
                   }
-                  className="focus:border-power-orange focus:ring-power-orange/30 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 transition outline-none focus:ring-2"
+                  className="focus:border-power-orange focus:ring-power-orange/30 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:ring-2"
                 />
               </div>
 

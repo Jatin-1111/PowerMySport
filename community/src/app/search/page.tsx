@@ -97,14 +97,14 @@ function SearchPageContent() {
           <div className="relative">
             <Search
               size={16}
-              className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               autoFocus
               placeholder="Search questions and stories..."
-              className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white py-2.5 pr-3 pl-9 text-sm text-slate-800 focus:outline-none"
+              className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-800 focus:outline-none"
             />
           </div>
 
@@ -154,7 +154,7 @@ function SearchPageContent() {
               >
                 <div className="mb-1 flex flex-wrap items-center gap-2">
                   <span
-                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase ${
+                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
                       item.kind === "POST"
                         ? "bg-blue-50 text-blue-700"
                         : "bg-purple-50 text-purple-700"
@@ -171,7 +171,7 @@ function SearchPageContent() {
                     )}
                   </span>
                   {item.isSolved ? (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-800 uppercase">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800">
                       <CheckCircle2 size={11} /> Solved
                     </span>
                   ) : null}

@@ -209,7 +209,7 @@ export function TournamentRecommendationPanel({
           <Sparkles className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-power-orange text-[10px] font-bold tracking-widest uppercase">
+          <p className="text-power-orange text-[10px] font-bold uppercase tracking-widest">
             Personalised Recommendations
           </p>
           <p className="text-sm font-bold text-slate-900">
@@ -239,7 +239,7 @@ export function TournamentRecommendationPanel({
             }}
             className="overflow-hidden"
           >
-            <div className="space-y-4 border-t border-slate-100 px-5 pt-4 pb-5">
+            <div className="space-y-4 border-t border-slate-100 px-5 pb-5 pt-4">
               {/* Aspiration examples */}
               {examples.length > 0 && (
                 <p className="text-xs text-slate-500">
@@ -251,7 +251,7 @@ export function TournamentRecommendationPanel({
 
               {/* Goal selector */}
               <div>
-                <p className="mb-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   Select Your Child's Aspirational Goal
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -288,7 +288,7 @@ export function TournamentRecommendationPanel({
                 </div>
               ) : (
                 <div>
-                  <p className="mb-3 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                  <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     Recommended Tournaments
                     {goalLevel && currentLevel > 0
                       ? ` — Your child is at Level ${currentLevel}, aiming for ${activeGoal?.label}`
@@ -330,7 +330,7 @@ export function TournamentRecommendationPanel({
                             {/* Content */}
                             <div className="min-w-0 flex-1">
                               <div className="mb-1 flex items-start justify-between gap-2">
-                                <h4 className="group-hover:text-power-orange text-sm font-bold break-words text-slate-900 transition-colors">
+                                <h4 className="group-hover:text-power-orange break-words text-sm font-bold text-slate-900 transition-colors">
                                   {t.name}
                                 </h4>
                                 <ArrowRight className="group-hover:text-power-orange mt-0.5 h-4 w-4 shrink-0 text-slate-300 transition-colors" />

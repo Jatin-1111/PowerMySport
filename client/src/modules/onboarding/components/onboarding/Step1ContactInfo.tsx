@@ -92,7 +92,7 @@ export default function Step1ContactInfo({
   };
 
   return (
-    <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
+    <div className="shadow-xs space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 md:p-8">
       <div className="mb-8 text-center">
         <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 1: Tell us about you</h2>
         <p className="text-slate-600">Let's start by getting your contact information</p>

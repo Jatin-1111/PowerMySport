@@ -312,7 +312,7 @@ export default function AcademiesTab() {
           <label className="mb-3 block text-sm font-bold text-slate-900">Price Range (₹/hr)</label>
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
-              <span className="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-slate-400">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
                 ₹
               </span>
               <input
@@ -321,12 +321,12 @@ export default function AcademiesTab() {
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
                 placeholder="Min"
-                className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pr-3 pl-7 text-sm text-slate-900 focus:bg-white focus:outline-none"
+                className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:bg-white focus:outline-none"
               />
             </div>
             <div className="h-0.5 w-4 rounded-full bg-slate-300" />
             <div className="relative flex-1">
-              <span className="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-slate-400">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
                 ₹
               </span>
               <input
@@ -335,7 +335,7 @@ export default function AcademiesTab() {
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
                 placeholder="Max"
-                className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pr-3 pl-7 text-sm text-slate-900 focus:bg-white focus:outline-none"
+                className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:bg-white focus:outline-none"
               />
             </div>
           </div>
@@ -475,7 +475,7 @@ export default function AcademiesTab() {
                         type="button"
                         onClick={onToggleFollow}
                         className={cn(
-                          "absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-colors",
+                          "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-colors",
                           isFollowed
                             ? "text-power-orange border-white bg-white"
                             : "border-white/20 bg-black/20 text-white hover:bg-black/40"
@@ -508,7 +508,7 @@ export default function AcademiesTab() {
                           </span>
                         )}
                         {verified && (
-                          <span className="flex items-center gap-1 rounded-full bg-emerald-50/50 px-2.5 py-1 text-xs font-semibold text-emerald-600 ring-1 ring-emerald-100/50 ring-inset">
+                          <span className="flex items-center gap-1 rounded-full bg-emerald-50/50 px-2.5 py-1 text-xs font-semibold text-emerald-600 ring-1 ring-inset ring-emerald-100/50">
                             <BadgeCheck size={12} />
                             Verified
                           </span>

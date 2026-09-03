@@ -330,7 +330,7 @@ export default function AdminAcademiesPage() {
                 value={bulkRejectReason}
                 onChange={(event) => setBulkRejectReason(event.target.value)}
                 placeholder="Rejection reason applied to all selected academies..."
-                className="focus:border-power-orange focus:ring-power-orange/40 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                className="focus:border-power-orange focus:ring-power-orange/40 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
               />
               <button
                 disabled={bulkBusy}
@@ -545,13 +545,13 @@ export default function AdminAcademiesPage() {
 
                 <div className="space-y-3 text-sm text-slate-700">
                   <div>
-                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Sports
                     </p>
                     <p className="mt-1">{selectedAcademy.sports?.join(", ") || "N/A"}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Description
                     </p>
                     <p className="mt-1 leading-relaxed">
@@ -559,7 +559,7 @@ export default function AdminAcademiesPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Compliance
                     </p>
                     <p className="mt-1">
@@ -576,14 +576,14 @@ export default function AdminAcademiesPage() {
                     onChange={(event) => setRejectionReason(event.target.value)}
                     rows={4}
                     placeholder="Use this field for rejection reasons or review notes."
-                    className="focus:border-power-orange focus:ring-power-orange/40 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                    className="focus:border-power-orange focus:ring-power-orange/40 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
                   />
                   <textarea
                     value={suspendReason}
                     onChange={(event) => setSuspendReason(event.target.value)}
                     rows={3}
                     placeholder="Optional suspend reason."
-                    className="focus:border-power-orange focus:ring-power-orange/40 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+                    className="focus:border-power-orange focus:ring-power-orange/40 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
                   />
                 </div>
 

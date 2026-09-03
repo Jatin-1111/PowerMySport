@@ -33,7 +33,7 @@ export default function AcademyDashboardPage() {
     <main className="space-y-8">
       <section className="rounded-3xl border border-white/70 bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_55%,#fff4e5_100%)] px-6 py-8 text-white shadow-xl sm:px-8 sm:py-10">
         <div className="max-w-3xl space-y-4">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold tracking-[0.2em] text-white/80 uppercase">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
             <Building2 size={14} /> Academy Owner
           </div>
           <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">

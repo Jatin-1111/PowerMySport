@@ -85,7 +85,7 @@ export default function CoachPhotoUpload({
             type="button"
             onClick={handleRemovePhoto}
             disabled={disabled}
-            className="absolute -top-2 -right-2 rounded-full bg-red-500 p-2 text-white transition-colors hover:bg-red-600"
+            className="absolute -right-2 -top-2 rounded-full bg-red-500 p-2 text-white transition-colors hover:bg-red-600"
           >
             <Trash2 size={16} />
           </button>

@@ -62,7 +62,7 @@ function Bucket({
       <div className="mb-3 flex items-baseline gap-3">
         <span className="text-power-orange text-xs font-extrabold tracking-[0.18em]">{number}</span>
         <div>
-          <h2 className="text-sm font-extrabold tracking-wide text-slate-800 uppercase">{title}</h2>
+          <h2 className="text-sm font-extrabold uppercase tracking-wide text-slate-800">{title}</h2>
           <p className="text-xs text-slate-500">{subtitle}</p>
         </div>
       </div>

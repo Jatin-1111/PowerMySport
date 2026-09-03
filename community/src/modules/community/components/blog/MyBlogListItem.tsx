@@ -24,7 +24,7 @@ export default function MyBlogListItem({ blog, owner, onDelete }: MyBlogListItem
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
-      className="group hover:border-power-orange/30 flex gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:shadow-md sm:gap-4 sm:p-4"
+      className="hover:border-power-orange/30 group flex gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:shadow-md sm:gap-4 sm:p-4"
     >
       {/* Banner */}
       <Link
@@ -51,7 +51,7 @@ export default function MyBlogListItem({ blog, owner, onDelete }: MyBlogListItem
 
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
           {blog.status === "DRAFT" ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-amber-700 uppercase">
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700">
               Draft
             </span>
           ) : null}

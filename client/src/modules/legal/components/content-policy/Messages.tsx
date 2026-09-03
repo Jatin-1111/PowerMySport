@@ -1,9 +1,9 @@
 export function Messages() {
   return (
     <section id="messages" className="mb-8">
-      <h2 className="mt-8 mb-4 text-2xl font-semibold">7. Private Messages & Communication</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">7. Private Messages & Communication</h2>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">7.1 Acceptable Messaging</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">7.1 Acceptable Messaging</h3>
       <p>Messages should be:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Related to bookings, services, or legitimate inquiries</li>
@@ -11,7 +11,7 @@ export function Messages() {
         <li>Focused on resolving issues or coordinating activities</li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">7.2 Prohibited Messaging</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">7.2 Prohibited Messaging</h3>
       <p>Messages cannot contain:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Harassment, threats, or abusive language</li>
@@ -22,7 +22,7 @@ export function Messages() {
         <li>Attempts to move conversations off-platform to avoid detection</li>
       </ul>
 
-      <h3 className="mt-6 mb-3 text-xl font-semibold">7.3 Message Monitoring</h3>
+      <h3 className="mb-3 mt-6 text-xl font-semibold">7.3 Message Monitoring</h3>
       <p>PowerMySport may:</p>
       <ul className="mt-3 list-disc space-y-2 pl-6">
         <li>Monitor messages for safety, fraud, and policy violations</li>

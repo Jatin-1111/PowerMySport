@@ -362,7 +362,7 @@ export function AddCoachForm() {
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleInputChange}
-                className={`w-full rounded-lg border px-3 py-2 transition-colors focus:ring-2 focus:outline-none ${
+                className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.firstName
                     ? "border-red-500 bg-red-50 focus:ring-red-500/40"
                     : "focus:ring-power-orange/40 border-slate-300"
@@ -380,7 +380,7 @@ export function AddCoachForm() {
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleInputChange}
-                className={`w-full rounded-lg border px-3 py-2 transition-colors focus:ring-2 focus:outline-none ${
+                className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.lastName
                     ? "border-red-500 bg-red-50 focus:ring-red-500/40"
                     : "focus:ring-power-orange/40 border-slate-300"
@@ -400,7 +400,7 @@ export function AddCoachForm() {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`w-full rounded-lg border px-3 py-2 transition-colors focus:ring-2 focus:outline-none ${
+                className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.email
                     ? "border-red-500 bg-red-50 focus:ring-red-500/40"
                     : "focus:ring-power-orange/40 border-slate-300"
@@ -418,7 +418,7 @@ export function AddCoachForm() {
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
-                className={`w-full rounded-lg border px-3 py-2 transition-colors focus:ring-2 focus:outline-none ${
+                className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.phone
                     ? "border-red-500 bg-red-50 focus:ring-red-500/40"
                     : "focus:ring-power-orange/40 border-slate-300"
@@ -438,7 +438,7 @@ export function AddCoachForm() {
               value={formData.mobileNumber}
               onChange={handleInputChange}
               maxLength={20}
-              className={`w-full rounded-lg border px-3 py-2 transition-colors focus:ring-2 focus:outline-none ${
+              className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                 errors.mobileNumber
                   ? "border-red-500 bg-red-50 focus:ring-red-500/40"
                   : "focus:ring-power-orange/40 border-slate-300"
@@ -464,7 +464,7 @@ export function AddCoachForm() {
               onChange={handleInputChange}
               rows={3}
               maxLength={2000}
-              className={`w-full rounded-lg border px-3 py-2 transition-colors focus:ring-2 focus:outline-none ${
+              className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                 errors.bio
                   ? "border-red-500 bg-red-50 focus:ring-red-500/40"
                   : "focus:ring-power-orange/40 border-slate-300"
@@ -520,7 +520,7 @@ export function AddCoachForm() {
                         )
                       }
                       min="1"
-                      className="focus:ring-power-orange/40 w-24 rounded border border-slate-300 px-2 py-1 text-sm focus:ring-2 focus:outline-none"
+                      className="focus:ring-power-orange/40 w-24 rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2"
                       placeholder="Rate"
                       disabled={loading}
                     />
@@ -556,7 +556,7 @@ export function AddCoachForm() {
                 value={formData.hourlyRate}
                 onChange={handleInputChange}
                 min="1"
-                className={`flex-1 rounded-lg border px-3 py-2 transition-colors focus:ring-2 focus:outline-none ${
+                className={`flex-1 rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.hourlyRate
                     ? "border-red-500 bg-red-50 focus:ring-red-500/40"
                     : "focus:ring-power-orange/40 border-slate-300"
@@ -606,7 +606,7 @@ export function AddCoachForm() {
                   type="text"
                   value={addressQuery}
                   onChange={(e) => setAddressQuery(e.target.value)}
-                  className={`w-full rounded-lg border px-3 py-2 transition-colors focus:ring-2 focus:outline-none ${
+                  className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                     errors.baseLocation
                       ? "border-red-500 bg-red-50 focus:ring-red-500/40"
                       : "focus:ring-power-orange/40 border-slate-300"
@@ -661,7 +661,7 @@ export function AddCoachForm() {
                     value={formData.serviceRadiusKm}
                     onChange={handleInputChange}
                     min="1"
-                    className={`w-full rounded-lg border px-3 py-2 transition-colors focus:ring-2 focus:outline-none ${
+                    className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                       errors.serviceRadiusKm
                         ? "border-red-500 bg-red-50 focus:ring-red-500/40"
                         : "focus:ring-power-orange/40 border-slate-300"
@@ -683,7 +683,7 @@ export function AddCoachForm() {
                     value={formData.travelBufferTime}
                     onChange={handleInputChange}
                     min="0"
-                    className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:outline-none"
+                    className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
                     placeholder="e.g., 30"
                     disabled={loading}
                   />
@@ -705,7 +705,7 @@ export function AddCoachForm() {
                 name="venueId"
                 value={formData.venueId}
                 onChange={handleInputChange}
-                className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:outline-none"
+                className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
                 placeholder="Enter venue ID (if applicable)"
                 disabled={loading}
               />
@@ -723,7 +723,7 @@ export function AddCoachForm() {
               name="verificationStatus"
               value={formData.verificationStatus}
               onChange={handleInputChange}
-              className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:outline-none"
+              className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
               disabled={loading}
             >
               <option value="VERIFIED">Verified</option>
