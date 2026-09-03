@@ -161,6 +161,9 @@ const CONSOLE_HOME: Record<UserRole, string> = {
   Academy: "/academy",
   EXPERT: "/expert/dashboard",
   Admin: "/admin/users",
+  // Mid-onboarding venue listers have no console yet — send them back to
+  // finish the flow rather than into an inventory view with nothing in it.
+  VENUE_ONBOARDING: "/onboarding",
 };
 
 /**
@@ -197,6 +200,8 @@ const SETTINGS_HOME: Record<UserRole, string> = {
   Academy: "/academy/settings",
   EXPERT: "/expert/settings",
   Admin: "/admin/settings",
+  // No settings page exists mid-onboarding — same destination as CONSOLE_HOME.
+  VENUE_ONBOARDING: "/onboarding",
 };
 
 const FALLBACK_ROUTE = "/dashboard";

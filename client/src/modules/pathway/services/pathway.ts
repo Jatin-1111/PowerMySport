@@ -2,39 +2,16 @@ import axiosInstance from "@/lib/api/axios";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface FederationInfo {
-  name: string;
-  acronym: string;
-  website?: string;
-  type: "govt" | "private" | "hybrid";
-  about?: string;
-}
+// FederationInfo and Tournament now live in @powermysport/shared-types —
+// this was the only Tournament type outside the server model; admin and
+// community had none at all despite admin having a tournament-facing UI.
+export type { FederationInfo } from "@powermysport/shared-types";
+import type { Tournament as SharedTournament } from "@powermysport/shared-types";
 
-export interface Tournament {
+/** `_id` kept for compatibility with any existing reference to it, alongside
+ *  the shared type's `id`. */
+export interface Tournament extends SharedTournament {
   _id?: string;
-  name: string;
-  sportSlug?: string;
-  slug?: string;
-  level: string;
-  description: string;
-  ageGroup: string;
-  typicalDates?: string;
-  registrationDeadline?: string;
-  isCurated?: boolean;
-  isVerified?: boolean;
-  federation?: FederationInfo | string;
-  participationGuide?: string[];
-  qualificationPath?: string;
-  format?: string;
-  prestige?: "flagship" | "developmental" | "ranking";
-  prizePool?: string;
-  registrationUrl?: string;
-  sourceUrls?: string[];
-  city?: string;
-  prerequisiteId?: string;
-  prerequisiteName?: string;
-  prerequisiteGuide?: string[];
-  documentChecklist?: string[];
 }
 
 export interface Scholarship {

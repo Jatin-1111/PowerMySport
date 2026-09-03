@@ -1,0 +1,11 @@
+{
+  "name": "@powermysport/shared-types",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Canonical TypeScript types shared across server, admin, client and community — the fix for User/Tournament/Booking having drifted into three independent definitions.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

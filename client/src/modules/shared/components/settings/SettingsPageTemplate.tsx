@@ -111,6 +111,15 @@ const roleSettingsLinks: Record<
       description: "Manage client sessions booked with you.",
     },
   ],
+  // Policy redirects this role to /onboarding before it can reach settings —
+  // this entry exists only so the map stays exhaustive over UserRole.
+  VENUE_ONBOARDING: [
+    {
+      href: "/onboarding",
+      label: "Onboarding",
+      description: "Complete venue onboarding and verification steps.",
+    },
+  ],
 };
 
 const initials = (name: string) =>

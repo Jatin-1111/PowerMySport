@@ -1,15 +1,24 @@
 // ============================================
 // ROLE & ENUM TYPES
 // ============================================
-export type UserRole =
-  | "Player"
-  | "Parent"
-  | "VenueLister"
-  | "Coach"
-  | "Academy"
-  | "EXPERT"
-  | "Admin"
-  | "VENUE_ONBOARDING";
+// UserRole, BookingStatus, OCCUPYING_BOOKING_STATUSES,
+// CANCELLABLE_BOOKING_STATUSES, PaymentUserType, PaymentStatus and
+// ApiResponse now live in @powermysport/shared-types — this was the
+// canonical source they were copied from into admin's and client's
+// independent (and drifted) local copies, so this is the one declaration
+// site all four apps import from.
+import type {
+  UserRole,
+  PaymentUserType,
+  PaymentStatus,
+  ApiResponse,
+  BookingStatus,
+} from "@powermysport/shared-types";
+export type { UserRole, PaymentUserType, PaymentStatus, ApiResponse, BookingStatus };
+export {
+  OCCUPYING_BOOKING_STATUSES,
+  CANCELLABLE_BOOKING_STATUSES,
+} from "@powermysport/shared-types";
 
 // Admin role types
 export type AdminRole =
@@ -25,95 +34,15 @@ export interface RoleTemplate {
 }
 
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
-/**
- * Canonical booking lifecycle.
- *
- *   PENDING_INVITES ─┐                     (group bookings only)
- *                    ├─> AWAITING_PAYMENT ──> AWAITING_PROVIDER ──> CONFIRMED
- *                    ┘                                                  │
- *                                                          IN_PROGRESS ─┘
- *                                                               │
- *                                                          COMPLETED
- *
- *   Terminal at any point: CANCELLED | EXPIRED | NO_SHOW
- *
- * AWAITING_PAYMENT and AWAITING_PROVIDER were previously a single
- * PENDING_CONFIRMATION state, with `paymentConfirmedAt` as the only way to
- * tell "nobody has paid yet" from "paid, waiting on the provider". Those are
- * different situations with different handling — an unpaid one is an abandoned
- * checkout that should be cleaned up, a paid one owes the customer a refund if
- * it lapses — so they are now distinct states rather than an implicit flag.
- */
-export type BookingStatus =
-  | "PENDING_INVITES" // Group booking waiting for invites to be accepted
-  | "AWAITING_PAYMENT" // Slot held, payment not yet completed
-  | "AWAITING_PROVIDER" // Paid, awaiting coach/venue/academy/expert acceptance
-  | "CONFIRMED"
-  | "IN_PROGRESS" // Booking started, check-in completed
-  | "COMPLETED" // Booking finished successfully
-  | "NO_SHOW" // User didn't show up
-  | "CANCELLED"
-  | "EXPIRED"; // Lapsed before it could be confirmed — refunded if it was paid
-
-/** States in which a booking still occupies its slot and blocks other bookings. */
-export const OCCUPYING_BOOKING_STATUSES: BookingStatus[] = [
-  "PENDING_INVITES",
-  "AWAITING_PAYMENT",
-  "AWAITING_PROVIDER",
-  "CONFIRMED",
-  "IN_PROGRESS",
-];
-
-/** States a customer may still cancel from. */
-export const CANCELLABLE_BOOKING_STATUSES: BookingStatus[] = [
-  "PENDING_INVITES",
-  "AWAITING_PAYMENT",
-  "AWAITING_PROVIDER",
-  "CONFIRMED",
-  "IN_PROGRESS",
-];
 
 // ============================================
 // USER TYPES
 // ============================================
 
-export interface IPlayerProfile {
-  sports?: string[];
-}
-
-export interface IBusinessDetails {
-  name: string;
-  gstNumber?: string;
-  address: string;
-}
-
-export interface IPayoutInfo {
-  accountNumber: string;
-  ifsc: string;
-  bankName: string;
-}
-
-export interface IVenueListerProfile {
-  businessDetails: IBusinessDetails;
-  payoutInfo: IPayoutInfo;
-  canAddMoreVenues?: boolean;
-}
-
-export interface IUser {
-  id?: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: UserRole;
-  password: string;
-  photoUrl?: string;
-  photoS3Key?: string; // S3 key for profile picture
-  playerProfile?: IPlayerProfile;
-  venueListerProfile?: IVenueListerProfile;
-  lastActiveAt?: Date;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
+// IUser, IPlayerProfile, IBusinessDetails, IPayoutInfo and IVenueListerProfile
+// were all dead code — declared here, never imported anywhere else in the
+// server, superseded long ago by the real Mongoose model in
+// client/models/User.ts. Removed rather than migrated.
 
 export interface IUserPayload {
   id: string;
@@ -351,8 +280,8 @@ export interface IPendingVenue {
 // ============================================
 // BOOKING TYPES
 // ============================================
-export type PaymentUserType = "VenueLister" | "Coach" | "Academy" | "Expert" | "Player";
-export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
+// PaymentUserType, PaymentStatus and ApiResponse are re-exported from
+// @powermysport/shared-types at the top of this file.
 
 export interface IPayment {
   userId: string;
@@ -367,30 +296,5 @@ export interface IPayment {
   paidAt?: Date;
 }
 
-export interface IBooking {
-  id?: string;
-  userId: string; // Player
-  venueId: string;
-  coachId?: string; // Optional
-  date: Date;
-  startTime: string; // "18:00"
-  endTime: string; // "19:00"
-  totalAmount: number;
-  status: BookingStatus;
-  expiresAt: Date;
-  checkInCode?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-// API Response Types
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data?: T;
-}
-
-export interface AuthResponse {
-  token: string;
-  user: IUser;
-}
+// IBooking and AuthResponse were dead code too — same story as IUser above,
+// superseded by the real Mongoose model in client/models/Booking.ts.

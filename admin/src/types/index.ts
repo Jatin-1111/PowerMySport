@@ -1,8 +1,22 @@
 // ============================================
 // USER & AUTH TYPES
 // ============================================
-export type UserRole =
-  "Player" | "Parent" | "VenueLister" | "Coach" | "Academy" | "EXPERT" | "Admin";
+// UserRole, BookingStatus, PaymentUserType, PaymentStatus, VenueListerProfile
+// and the base User shape now live in @powermysport/shared-types — this file
+// previously had its own independent copy of each, which had drifted from
+// both the server model and client's copy (missing "VENUE_ONBOARDING" on
+// UserRole, missing "Expert"/"Player" on PaymentUserType, missing most
+// moderation/address fields on User entirely). See that package for the
+// merge notes.
+import type {
+  UserRole,
+  BookingStatus,
+  PaymentUserType,
+  PaymentStatus,
+  VenueListerProfile,
+  User as SharedUser,
+} from "@powermysport/shared-types";
+export type { UserRole, BookingStatus, PaymentUserType, PaymentStatus, VenueListerProfile };
 
 // Admin role types
 export type AdminRole =
@@ -18,24 +32,6 @@ export interface RoleTemplate {
 }
 
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
-/**
- * Mirrors the server's BookingStatus. This previously listed only five of the
- * states the API actually returns — PENDING_INVITES and EXPIRED bookings were
- * reaching this app while the type declared them impossible.
- */
-export type BookingStatus =
-  | "PENDING_INVITES"
-  | "AWAITING_PAYMENT"
-  | "AWAITING_PROVIDER"
-  | "CONFIRMED"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "NO_SHOW"
-  | "CANCELLED"
-  | "EXPIRED";
-
-export type PaymentUserType = "VenueLister" | "Coach" | "Academy";
-export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
 
 export interface IPayment {
   userId: string;
@@ -43,20 +39,6 @@ export interface IPayment {
   amount: number;
   status: PaymentStatus;
   paidAt?: string;
-}
-
-export interface VenueListerProfile {
-  businessDetails?: {
-    name?: string;
-    gstNumber?: string;
-    address?: string;
-  };
-  payoutInfo?: {
-    accountNumber?: string;
-    ifsc?: string;
-    bankName?: string;
-  };
-  canAddMoreVenues?: boolean;
 }
 
 export interface Dependent {
@@ -68,16 +50,11 @@ export interface Dependent {
   sports?: string[];
 }
 
-export interface User {
+/** admin always has `id` (never optional here) and `dependents` is a real
+ *  typed array in this app (the shared type keeps it loose — see that
+ *  package's note on why). */
+export interface User extends Omit<SharedUser, "id" | "dependents"> {
   id: string;
-  name: string;
-  email: string;
-  phone: string;
-  dob?: string;
-  role: UserRole;
-  photoUrl?: string;
-  photoS3Key?: string; // S3 key for profile picture
-  venueListerProfile?: VenueListerProfile;
   dependents?: Dependent[];
 }
 
@@ -199,9 +176,18 @@ export interface Venue {
 // ============================================
 // BOOKING TYPES
 // ============================================
-export interface Booking {
-  id: string;
-  userId: string;
+// Everything on the canonical Booking (group-booking fields, expert/delivery
+// details, the full cancellation/completion lifecycle) now lives in
+// @powermysport/shared-types — this app previously had none of that typed
+// at all, not even as optional. The populated-reference fields below
+// (venue/coach/*Name) are an admin-only convenience the API layer adds on
+// top, so they stay here rather than in the shared shape.
+import type { Booking as SharedBooking } from "@powermysport/shared-types";
+
+export interface Booking extends Omit<
+  SharedBooking,
+  "venueId" | "coachId" | "createdAt" | "updatedAt"
+> {
   playerName?: string;
   venueId?: string | Venue; // Can be populated
   venueName?: string;
@@ -209,33 +195,8 @@ export interface Booking {
   coachId?: string | Coach; // Can be populated
   coach?: Coach; // Populated coach data
   coachName?: string;
-  academyId?: string;
   academyName?: string;
-  expertId?: string;
   expertName?: string;
-  /**
-   * Server-derived provider discriminator. Optional only because bookings
-   * created before the field existed may not carry it — consumers should fall
-   * back to the ids rather than assume VENUE.
-   */
-  providerType?: "VENUE" | "COACH" | "ACADEMY" | "EXPERT";
-  sport?: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  totalAmount: number;
-  serviceFee?: number;
-  taxAmount?: number;
-  payments?: Array<{
-    userId: string;
-    userType: PaymentUserType;
-    amount: number;
-    status: PaymentStatus;
-    paidAt?: string;
-  }>;
-  status: BookingStatus;
-  expiresAt?: string; // Optional - only set for PENDING_PAYMENT bookings
-  checkInCode?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -243,21 +204,7 @@ export interface Booking {
 // ============================================
 // API RESPONSE TYPES
 // ============================================
-export interface PaginationMetadata {
-  total: number;
-  page: number;
-  totalPages: number;
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data?: T;
-  pagination?: {
-    // Allow nested pagination or top-level
-    [key: string]: PaginationMetadata | undefined;
-  } & PaginationMetadata; // Or just top-level
-}
+export type { PaginationMetadata, ApiResponse } from "@powermysport/shared-types";
 
 export interface Availability {
   availableSlots: string[];
